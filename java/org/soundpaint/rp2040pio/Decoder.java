@@ -1,0 +1,132 @@
+/*
+ * @(#)SM.java 1.00 21/01/31
+ *
+ * Copyright (C) 2021 Jürgen Reuter
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * For updates and more info or contacting the author, visit:
+ * <https://github.com/soundpaint/rp2040pio>
+ *
+ * Author's web site: www.juergen-reuter.de
+ */
+package org.soundpaint.rp2040pio;
+
+/**
+ * Instruction Decoder
+ */
+public class Decoder
+{
+  public static class DecodeException extends Exception
+  {
+    private static final long serialVersionUID = -3754988538292081517L;
+
+    public DecodeException()
+    {
+      super();
+    }
+
+    public DecodeException(final String message)
+    {
+      super(message);
+    }
+
+    public DecodeException(final String message, final Throwable cause)
+    {
+      super(message, cause);
+    }
+
+    public DecodeException(final String message, final Throwable cause,
+                           final boolean enableSupression,
+                           final boolean writableStackTrace)
+    {
+      super(message, cause, enableSupression, writableStackTrace);
+    }
+
+    public DecodeException(final Throwable cause)
+    {
+      super(cause);
+    }
+  }
+
+  private final Memory memory;
+  private final SM.Status smStatus;
+  private final Instructions instructions;
+
+  private class Instructions
+  {
+    private final Instruction.Jmp jmp;
+    private final Instruction.Wait wait;
+    private final Instruction.In in;
+    private final Instruction.Out out;
+    private final Instruction.Push push;
+    private final Instruction.Pull pull;
+    private final Instruction.Mov mov;
+    private final Instruction.Irq irq;
+    private final Instruction.Set set;
+
+    public Instructions()
+    {
+      jmp = new Instruction.Jmp(memory, smStatus);
+      wait = new Instruction.Wait(memory, smStatus);
+      in = new Instruction.In(memory, smStatus);
+      out = new Instruction.Out(memory, smStatus);
+      push = new Instruction.Push(memory, smStatus);
+      pull = new Instruction.Pull(memory, smStatus);
+      mov = new Instruction.Mov(memory, smStatus);
+      irq = new Instruction.Irq(memory, smStatus);
+      set = new Instruction.Set(memory, smStatus);
+    }
+  }
+
+  private Decoder()
+  {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public Decoder(final Memory memory, final SM.Status smStatus)
+  {
+    this.memory = memory;
+    this.smStatus = smStatus;
+    instructions = new Instructions();
+  }
+
+  public Instruction decode(final short word) throws DecodeException
+  {
+    switch ((word >>> 13) & 0x7) {
+    case 0b000: return instructions.jmp.decode(word);
+    case 0b001: return instructions.wait.decode(word);
+    case 0b010: return instructions.in.decode(word);
+    case 0b011: return instructions.out.decode(word);
+    case 0b100:
+      if ((word & 0x80) == 0)
+        return instructions.push.decode(word);
+      else
+        return instructions.pull.decode(word);
+    case 0b101: return instructions.mov.decode(word);
+    case 0b110: return instructions.irq.decode(word);
+    case 0b111: return instructions.set.decode(word);
+    default:
+      throw new InternalError("unexpected case fall-through");
+    }
+  }
+}
+
+/*
+ * Local Variables:
+ *   coding:utf-8
+ *   mode:Java
+ * End:
+ */
