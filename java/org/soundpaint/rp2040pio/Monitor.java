@@ -1,5 +1,5 @@
 /*
- * @(#)Main.java 1.00 21/01/31
+ * @(#)Monitor.java 1.00 21/02/02
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -26,25 +26,39 @@ package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
 
-public class Main
+/**
+ * Program Execution Monitor And Control
+ */
+public class Monitor
 {
-  public Main()
+  private static final String about =
+    "RP2040 PIO Emulator V0.1\n" +
+    "\n" +
+    "© 2021 by J. Reuter\n" +
+    "Karlsruhe, Germany\n";
+
+  private final PIO pio;
+
+  public Monitor()
   {
+    pio = new PIO();
+    System.out.println(about);
   }
 
-  public void run() throws IOException
+  public void loadProgram(final String programResourcePath)
+    throws IOException
   {
-    final Monitor monitor = new Monitor();
-    //final String programResourcePath = "/examples/squarewave.hex";
-    final String programResourcePath = "/examples/ws2812.hex";
-    monitor.loadProgram(programResourcePath);
-    monitor.setSideSetCount(1);
-    monitor.dumpProgram();
+    pio.getMemory().loadFromHexResource(programResourcePath);
   }
 
-  public static void main(final String argv[]) throws IOException
+  public void dumpProgram()
   {
-    new Main().run();
+    pio.getSM(0).dumpMemory();
+  }
+
+  public void setSideSetCount(final int count)
+  {
+    pio.setSideSetCount(count);
   }
 }
 

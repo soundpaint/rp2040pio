@@ -29,6 +29,16 @@ package org.soundpaint.rp2040pio;
  */
 public class SM
 {
+  private static final int[] SHIFT_MASK = new int[32];
+  static {
+    int maskValue = 0;
+    for (int i = 0; i < SHIFT_MASK.length; i++) {
+      maskValue = (maskValue << 1) | 0x1;
+      SHIFT_MASK[i] = maskValue;
+    }
+  };
+
+  private final int num;
   private final GPIO gpio;
   private final Memory memory;
   private final Status status;
@@ -36,7 +46,6 @@ public class SM
 
   public class Status
   {
-    public final int smNum;
     public int regX;
     public int regY;
     public int regPC;
@@ -54,7 +63,9 @@ public class SM
     public PIO.ShiftDir inShiftDir;
     public PIO.ShiftDir outShiftDir;
     public int pushThresh;
+    public boolean autoPush;
     public int pullThresh;
+    public boolean autoPull;
 
     public GPIO.Bit jmpPin()
     {
@@ -66,14 +77,8 @@ public class SM
       return osrFillLevel == 0;
     }
 
-    private Status()
+    public Status()
     {
-      throw new UnsupportedOperationException("unsupported empty constructor");
-    }
-
-    public Status(final int smNum)
-    {
-      this.smNum = smNum;
       regX = 0;
       regY = 0;
       regPC = 0;
@@ -91,7 +96,9 @@ public class SM
       inShiftDir = PIO.ShiftDir.SHIFT_LEFT;
       outShiftDir = PIO.ShiftDir.SHIFT_LEFT;
       pushThresh = 0;
+      autoPush = false;
       pullThresh = 0;
+      autoPull = false;
     }
   }
 
@@ -100,14 +107,124 @@ public class SM
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public SM(final int smNum, final GPIO gpio, final Memory memory)
+  public SM(final int num, final GPIO gpio, final Memory memory)
   {
     if (gpio == null) throw new NullPointerException("gpio");
     if (memory == null) throw new NullPointerException("memory");
+    this.num = num;
     this.gpio = gpio;
     this.memory = memory;
-    status = new Status(smNum);
-    decoder = new Decoder(memory, status);
+    status = new Status();
+    decoder = new Decoder(this);
+  }
+
+  public Memory getMemory()
+  {
+    return memory;
+  }
+
+  public Status getStatus()
+  {
+    return status;
+  }
+
+  public GPIO.Bit getGPIO(final int index)
+  {
+    return gpio.getBit(index);
+  }
+
+  public GPIO.Bit getPin(final int index)
+  {
+    return gpio.getBit(mapPin(index));
+  }
+
+  public int getAllPins()
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  public GPIO.Bit getIRQ(final int index)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  public GPIO.Bit clearIRQ(final int index)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  private int saturate(final int base, final int increment, final int limit)
+  {
+    final int sum = base + increment;
+    return sum < limit ? sum : limit;
+  }
+
+  public int getISRValue() { return status.isrValue; }
+
+  public void shiftISRLeft(final int bitCount, final int data)
+  {
+    status.isrValue <<= bitCount;
+    status.isrValue |= data & SHIFT_MASK[bitCount];
+    status.isrFillLevel = saturate(status.isrFillLevel, bitCount, 32);
+    if ((status.isrFillLevel == status.pushThresh) && status.autoPush) {
+      // rxFIFO.push(status.isrValue); // TODO
+    }
+  }
+
+  public void shiftISRRight(final int bitCount, final int data)
+  {
+    status.isrValue >>>= bitCount;
+    status.isrValue |= (data & SHIFT_MASK[bitCount]) << (32 - bitCount);
+    status.isrFillLevel = saturate(status.isrFillLevel, bitCount, 32);
+    if ((status.isrFillLevel == status.pushThresh) && status.autoPush) {
+      // rxFIFO.push(status.isrValue); // TODO
+    }
+  }
+
+  public void resetISRShiftCount()
+  {
+    status.isrFillLevel = 0;
+  }
+
+  public int getOSRValue() { return status.osrValue; }
+
+  public void shiftOSRLeft(final int bitCount, final int data)
+  {
+    status.osrValue <<= bitCount;
+    status.osrValue |= data & SHIFT_MASK[bitCount];
+    status.osrFillLevel = saturate(status.osrFillLevel, bitCount, 32);
+    if ((status.osrFillLevel == status.pullThresh) && status.autoPull) {
+      // status.osrValue = txFIFO.pull(); // TODO
+    }
+  }
+
+  public void shiftOSRRight(final int bitCount, final int data)
+  {
+    status.osrValue >>>= bitCount;
+    status.osrValue |= (data & SHIFT_MASK[bitCount]) << (32 - bitCount);
+    status.osrFillLevel = saturate(status.osrFillLevel, bitCount, 32);
+    if ((status.osrFillLevel == status.pullThresh) && status.autoPull) {
+      // status.osrValue = txFIFO.pull(); // TODO
+    }
+  }
+
+  public void resetOSRShiftCount()
+  {
+    status.osrFillLevel = 0;
+  }
+
+  private int mapPin(final int index)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  public int getNum()
+  {
+    return num;
   }
 
   public void setSideSetCount(final int count)
@@ -160,10 +277,20 @@ public class SM
     status.inShiftDir = shiftDir;
   }
 
+  public PIO.ShiftDir getInShiftDir()
+  {
+    return status.inShiftDir;
+  }
+
   public void setOutShiftDir(final PIO.ShiftDir shiftDir)
   {
     if (shiftDir == null) { throw new NullPointerException("shiftDir"); }
     status.outShiftDir = shiftDir;
+  }
+
+  public PIO.ShiftDir getOutShiftDir()
+  {
+    return status.outShiftDir;
   }
 
   public void setPushThresh(final int thresh)
@@ -177,6 +304,11 @@ public class SM
     status.pushThresh = thresh;
   }
 
+  public void setAutoPush(final boolean auto)
+  {
+    status.autoPush = auto;
+  }
+
   public void setPullThresh(final int thresh)
   {
     if (thresh < 0) {
@@ -187,6 +319,25 @@ public class SM
     }
     status.pullThresh = thresh;
   }
+
+  public void setAutoPull(final boolean auto)
+  {
+    status.autoPull = auto;
+  }
+
+  private void decX()
+  {
+    status.regX--;
+  }
+
+  public int getX() { return status.regX; }
+
+  private void decY()
+  {
+    status.regY--;
+  }
+
+  public int getY() { return status.regY; }
 
   private void incPC()
   {
@@ -204,7 +355,7 @@ public class SM
   {
     final short word = fetch();
     final Instruction instruction = decoder.decode(word);
-    instruction.execute();
+    if (!instruction.execute()) incPC();
   }
 
   public void dumpMemory()

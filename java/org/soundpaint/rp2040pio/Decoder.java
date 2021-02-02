@@ -61,8 +61,7 @@ public class Decoder
     }
   }
 
-  private final Memory memory;
-  private final SM.Status smStatus;
+  private final SM sm;
   private final Instructions instructions;
 
   private class Instructions
@@ -79,15 +78,15 @@ public class Decoder
 
     public Instructions()
     {
-      jmp = new Instruction.Jmp(memory, smStatus);
-      wait = new Instruction.Wait(memory, smStatus);
-      in = new Instruction.In(memory, smStatus);
-      out = new Instruction.Out(memory, smStatus);
-      push = new Instruction.Push(memory, smStatus);
-      pull = new Instruction.Pull(memory, smStatus);
-      mov = new Instruction.Mov(memory, smStatus);
-      irq = new Instruction.Irq(memory, smStatus);
-      set = new Instruction.Set(memory, smStatus);
+      jmp = new Instruction.Jmp(sm);
+      wait = new Instruction.Wait(sm);
+      in = new Instruction.In(sm);
+      out = new Instruction.Out(sm);
+      push = new Instruction.Push(sm);
+      pull = new Instruction.Pull(sm);
+      mov = new Instruction.Mov(sm);
+      irq = new Instruction.Irq(sm);
+      set = new Instruction.Set(sm);
     }
   }
 
@@ -96,10 +95,10 @@ public class Decoder
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Decoder(final Memory memory, final SM.Status smStatus)
+  public Decoder(final SM sm)
   {
-    this.memory = memory;
-    this.smStatus = smStatus;
+    if (sm == null) throw new NullPointerException("sm");
+    this.sm = sm;
     instructions = new Instructions();
   }
 

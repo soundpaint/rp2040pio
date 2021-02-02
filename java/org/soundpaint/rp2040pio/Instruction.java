@@ -33,8 +33,7 @@ import java.util.function.Function;
  */
 public abstract class Instruction
 {
-  protected final Memory memory;
-  protected final SM.Status smStatus;
+  protected final SM sm;
   private int delay;
   private int sideSet;
 
@@ -43,14 +42,21 @@ public abstract class Instruction
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Instruction(final Memory memory, final SM.Status smStatus)
+  public Instruction(final SM sm)
   {
-    this.memory = memory;
-    this.smStatus = smStatus;
+    this.sm = sm;
     delay = 0;
   }
 
-  abstract void execute();
+  /**
+   * @return True, if and only if the instruction has modified the
+   * program counter (PC) by itself, or if the PC should be kept
+   * unmodified (e.g. as the result of a wait instruction keeping
+   * unfulfilled).  False, if the instruction itself did not update
+   * the PC, but leaves it to the program control to ordinarily
+   * increase it by one.
+   */
+  abstract boolean execute();
 
   private short[] DELAY_MASK = {
     0x1f, 0x0f, 0x07, 0x03, 0x01, 0x00
@@ -79,6 +85,7 @@ public abstract class Instruction
   public Instruction decode(final short word)
     throws Decoder.DecodeException
   {
+    final SM.Status smStatus = sm.getStatus();
     final int delayAndSideSet = (word >>> 0x8) & 0x1f;
     final int delayMask = DELAY_MASK[smStatus.sideSetCount];
     delay = delayAndSideSet & delayMask;
@@ -103,22 +110,28 @@ public abstract class Instruction
 
   abstract String getParamsDisplay();
 
-  protected String getIrqNumDisplay(final int index)
+  protected static void checkIRQIndex(final int irqIndex)
+    throws Decoder.DecodeException
+  {
+    if ((irqIndex & 0x08) != 0)
+      throw new Decoder.DecodeException();
+    if ((irqIndex & 0x10) != 0)
+      if ((irqIndex & 0x04) != 0)
+        throw new Decoder.DecodeException();
+  }
+
+  protected static int getIRQNum(final int smNum, final int index)
+  {
+    return
+      (index & 0x10) != 0 ? (smNum + index) & 0x3 : index & 0x7;
+  }
+
+  protected static String getIRQNumDisplay(final int index)
   {
     return
       (index & 0x10) != 0 ?
       (index & 0x3) + "_rel" :
       Integer.toString(index & 0x7);
-  }
-
-  protected void checkIrqNum(final int index)
-    throws Decoder.DecodeException
-  {
-    if ((index & 0x08) != 0)
-      throw new Decoder.DecodeException();
-    if ((index & 0x10) != 0)
-      if ((index & 0x04) != 0)
-        throw new Decoder.DecodeException();
   }
 
   @Override
@@ -145,19 +158,11 @@ public abstract class Instruction
 
     private enum Condition
     {
-      ALWAYS(0b000, "", (smStatus) -> false),
+      ALWAYS(0b000, "", (smStatus) -> true),
       NOT_X(0b001, "!x", (smStatus) -> smStatus.regX == 0),
-      DEC_X(0b010, "x--", (smStatus) -> {
-          final boolean result = smStatus.regX == 0;
-          smStatus.regX--;
-          return result;
-        }),
+      DEC_X(0b010, "x--", (smStatus) -> smStatus.regX-- == 0),
       NOT_Y(0b011, "!y", (smStatus) -> smStatus.regY == 0),
-      DEC_Y(0b100, "y--", (smStatus) -> {
-          final boolean result = smStatus.regY == 0;
-          smStatus.regY--;
-          return result;
-        }),
+      DEC_Y(0b100, "y--", (smStatus) -> smStatus.regY-- == 0),
       X_NEQ_Y(0b101, "x!=y", (smStatus) -> smStatus.regX != smStatus.regX),
       PIN(0b110, "pin", (smStatus) -> smStatus.jmpPin() == GPIO.Bit.HIGH),
       NOT_OSRE(0b111, "!osre", (smStatus) -> !smStatus.osrEmpty());
@@ -190,19 +195,21 @@ public abstract class Instruction
     private int address;
     private Condition condition;
 
-    public Jmp(final Memory memory, final SM.Status smStatus)
+    public Jmp(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
 
       // force class initializer to be called such that map is filled
       condition = Condition.ALWAYS;
     }
 
     @Override
-    public void execute()
+    public boolean execute()
     {
-      if (condition.fulfilled(smStatus))
-        smStatus.regPC = address;
+      final SM.Status smStatus = sm.getStatus();
+      final boolean doJump = condition.fulfilled(smStatus);
+      if (doJump) smStatus.regPC = address;
+      return doJump;
     }
 
     @Override
@@ -235,19 +242,33 @@ public abstract class Instruction
 
     private enum Source
     {
-      GPIO(0b00, "gpio"),
-      PIN(0b01, "pin"),
-      IRQ(0b10, "irq"),
-      RESERVED(0b11, "???");
+      GPIO_(0b00, "gpio", (wait) -> wait.sm.getGPIO(wait.index)),
+      PIN(0b01, "pin", (wait) -> wait.sm.getPin(wait.index)),
+      IRQ(0b10, "irq", (wait) -> {
+          final int irqNum = getIRQNum(wait.sm.getNum(), wait.index);
+          final GPIO.Bit bit = wait.sm.getIRQ(irqNum);
+          if ((wait.polarity == GPIO.Bit.HIGH) && (bit == wait.polarity))
+            wait.sm.clearIRQ(irqNum);
+          return bit;
+        }),
+      RESERVED(0b11, "???", null);
 
       private final int code;
       private final String mnemonic;
+      private final Function<Wait, GPIO.Bit> eval;
 
-      private Source(final int code, final String mnemonic)
+      private Source(final int code, final String mnemonic,
+                     final Function<Wait, GPIO.Bit> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
+        this.eval = eval;
         code2src.put(code, this);
+      }
+
+      public GPIO.Bit getBit(final Wait wait)
+      {
+        return eval.apply(wait);
       }
 
       @Override
@@ -261,18 +282,20 @@ public abstract class Instruction
     private Source src;
     private int index;
 
-    public Wait(final Memory memory, final SM.Status smStatus)
+    public Wait(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
       polarity = GPIO.Bit.LOW;
 
       // force class initializer to be called such that map is filled
-      src = Source.GPIO;
+      src = Source.GPIO_;
     }
 
     @Override
-    public void execute()
+    public boolean execute()
     {
+      final boolean doStall = src.getBit(this) != polarity;
+      return doStall;
     }
 
     @Override
@@ -284,7 +307,7 @@ public abstract class Instruction
       if (src == Source.RESERVED)
         throw new Decoder.DecodeException();
       index = lsb & 0x1f;
-      checkIrqNum(index);
+      checkIRQIndex(index);
     }
 
     @Override
@@ -298,7 +321,7 @@ public abstract class Instruction
     {
       final int maskedIndex;
       final String num =
-        src == Source.IRQ ? getIrqNumDisplay(index) : Integer.toString(index);
+        src == Source.IRQ ? getIRQNumDisplay(index) : Integer.toString(index);
       return polarity + " " + src + " " + num;
     }
   }
@@ -310,23 +333,31 @@ public abstract class Instruction
 
     private enum Source
     {
-      PINS(0b000, "pins"),
-      X(0b001, "x"),
-      Y(0b010, "y"),
-      NULL(0b011, "null"),
-      RESERVED1(0b100, "???"),
-      RESERVED2(0b101, "???"),
-      ISR(0b110, "ISR"),
-      OSR(0b111, "OSR");
+      PINS(0b000, "pins", (sm) -> sm.getAllPins()),
+      X(0b001, "x", (sm) -> sm.getX()),
+      Y(0b010, "y", (sm) -> sm.getX()),
+      NULL(0b011, "null", (sm) -> 0),
+      RESERVED1(0b100, "???", null),
+      RESERVED2(0b101, "???", null),
+      ISR(0b110, "ISR", (sm) -> sm.getISRValue()),
+      OSR(0b111, "OSR", (sm) -> sm.getOSRValue());
 
       private final int code;
       private final String mnemonic;
+      private final Function<SM, Integer> eval;
 
-      private Source(final int code, final String mnemonic)
+      private Source(final int code, final String mnemonic,
+                     final Function<SM, Integer> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
+        this.eval = eval;
         code2src.put(code, this);
+      }
+
+      public Integer getData(final SM sm)
+      {
+        return eval.apply(sm);
       }
 
       @Override
@@ -339,17 +370,23 @@ public abstract class Instruction
     private Source src;
     private int bitCount;
 
-    public In(final Memory memory, final SM.Status smStatus)
+    public In(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
 
       // force class initializer to be called such that map is filled
       src = Source.PINS;
     }
 
     @Override
-    public void execute()
+    public boolean execute()
     {
+      if (sm.getInShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
+        sm.shiftISRLeft(bitCount, src.getData(sm));
+      } else {
+        sm.shiftISRRight(bitCount, src.getData(sm));
+      }
+      return false;
     }
 
     @Override
@@ -413,17 +450,18 @@ public abstract class Instruction
     private Destination dst;
     private int bitCount;
 
-    public Out(final Memory memory, final SM.Status smStatus)
+    public Out(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
 
       // force class initializer to be called such that map is filled
       dst = Destination.PINS;
     }
 
     @Override
-    public void execute()
+    public boolean execute()
     {
+      return false;
     }
 
     @Override
@@ -449,17 +487,18 @@ public abstract class Instruction
 
   public static class Push extends Instruction
   {
-    public Push(final Memory memory, final SM.Status smStatus)
+    public Push(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
     }
 
     private boolean ifFull;
     private boolean block;
 
     @Override
-    public void execute()
+    public boolean execute()
     {
+      return false;
     }
 
     @Override
@@ -487,17 +526,18 @@ public abstract class Instruction
 
   public static class Pull extends Instruction
   {
-    public Pull(final Memory memory, final SM.Status smStatus)
+    public Pull(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
     }
 
     private boolean ifEmpty;
     private boolean block;
 
     @Override
-    public void execute()
+    public boolean execute()
     {
+      return false;
     }
 
     @Override
@@ -616,9 +656,9 @@ public abstract class Instruction
     private Destination dst;
     private Operation op;
 
-    public Mov(final Memory memory, final SM.Status smStatus)
+    public Mov(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
 
       // force class initializer to be called such that map is filled
       src = Source.PINS;
@@ -627,8 +667,9 @@ public abstract class Instruction
     }
 
     @Override
-    public void execute()
+    public boolean execute()
     {
+      return false;
     }
 
     @Override
@@ -666,14 +707,15 @@ public abstract class Instruction
     private boolean wait;
     private int index;
 
-    public Irq(final Memory memory, final SM.Status smStatus)
+    public Irq(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
     }
 
     @Override
-    public void execute()
+    public boolean execute()
     {
+      return false;
     }
 
     @Override
@@ -684,7 +726,7 @@ public abstract class Instruction
       clr = (lsb & 0x40) != 0;
       wait = (lsb & 0x20) != 0;
       index = lsb & 0x1f;
-      checkIrqNum(index);
+      checkIRQIndex(index);
     }
 
     @Override
@@ -702,7 +744,7 @@ public abstract class Instruction
        * For display, we deliberately choose "".
        */
       final String mode = clr ? "clear" : (wait ? "wait" : "");
-      return mode + " " + getIrqNumDisplay(index);
+      return mode + " " + getIRQNumDisplay(index);
     }
   }
 
@@ -742,17 +784,18 @@ public abstract class Instruction
     private Destination dst;
     private int data;
 
-    public Set(final Memory memory, final SM.Status smStatus)
+    public Set(final SM sm)
     {
-      super(memory, smStatus);
+      super(sm);
 
       // force class initializer to be called such that map is filled
       dst = Destination.PINS;
     }
 
     @Override
-    public void execute()
+    public boolean execute()
     {
+      return false;
     }
 
     @Override

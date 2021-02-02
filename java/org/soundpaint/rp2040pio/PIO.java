@@ -24,8 +24,6 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.io.IOException;
-
 /**
  * Peripheral I/O Unit
  */
@@ -47,19 +45,19 @@ public class PIO
     SHIFT_RIGHT
   };
 
-  private PIO()
-  {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
-
-  public PIO(final String programResourcePath) throws IOException
+  public PIO()
   {
     gpio = new GPIO();
-    memory = new Memory(programResourcePath);
+    memory = new Memory();
     sms = new SM[SM_COUNT];
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
       sms[smNum] = new SM(smNum, gpio, memory);
     }
+  }
+
+  public Memory getMemory()
+  {
+    return memory;
   }
 
   public SM getSM(final int index)

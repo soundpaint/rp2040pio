@@ -39,15 +39,9 @@ public class Memory
 
   private final short[] code;
 
-  private Memory()
-  {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
-
-  public Memory(final String resourcePath) throws IOException
+  public Memory()
   {
     code = new short[SIZE];
-    loadFromHexResource(resourcePath);
   }
 
   public void set(final int address, final short value)
@@ -66,7 +60,7 @@ public class Memory
     return code[address];
   }
 
-  private void loadFromBinResource(final String resourcePath)
+  public void loadFromBinResource(final String resourcePath)
     throws IOException
   {
     final InputStream in = Main.class.getResourceAsStream(resourcePath);
@@ -96,7 +90,7 @@ public class Memory
     System.out.println("loaded " + (available / 4) + " instructions into PIO");
   }
 
-  private void loadFromHexResource(final String resourcePath)
+  public void loadFromHexResource(final String resourcePath)
     throws IOException
   {
     final InputStream in = Main.class.getResourceAsStream(resourcePath);
