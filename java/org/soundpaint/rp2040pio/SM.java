@@ -71,6 +71,8 @@ public class SM
     public boolean autoPull;
     public int pendingDelay;
     public int pendingInstruction;
+    public int wrapTop;
+    public int wrapBottom;
 
     public GPIO.Bit jmpPin()
     {
@@ -102,6 +104,8 @@ public class SM
       autoPush = false;
       pullThresh = 0;
       autoPull = false;
+      wrapTop = -1;
+      wrapBottom = -1;
       reset();
     }
 
@@ -478,6 +482,34 @@ public class SM
     status.regY--;
   }
 
+  public void setWrapTop(final int value)
+  {
+    if (value < 0) {
+      throw new IllegalArgumentException("wrap top value < 0: " + value);
+    }
+    if (value > 31) {
+      throw new IllegalArgumentException("wrap top value > 31: " + value);
+    }
+    status.wrapTop = value;
+  }
+
+  public void setWrapBottom(final int value)
+  {
+    if (value < 0) {
+      throw new IllegalArgumentException("wrap bottom value < 0: " + value);
+    }
+    if (value > 31) {
+      throw new IllegalArgumentException("wrap bottom value > 31: " + value);
+    }
+    status.wrapBottom = value;
+  }
+
+  public void deactivateWrap()
+  {
+    status.wrapTop = -1;
+    status.wrapBottom = -1;
+  }
+
   public void setPC(final int value)
   {
     if (value < 0) {
@@ -489,9 +521,16 @@ public class SM
     status.regPC = value;
   }
 
-  private void incPC()
+  private void updatePC()
   {
-    status.regPC = (status.regPC + 1) & 0x1f;
+    if (status.regPC == status.wrapTop) {
+      if (status.wrapBottom < 0) {
+        throw new InternalError("inconsistent wrap configuration");
+      }
+      status.regPC = status.wrapBottom;
+    } else {
+      status.regPC = (status.regPC + 1) & 0x1f;
+    }
   }
 
   private short fetch()
@@ -526,7 +565,7 @@ public class SM
     final Instruction instruction = decoder.decode(word);
     final Instruction.ResultState resultState = instruction.execute();
     if (resultState == Instruction.ResultState.COMPLETE) {
-      incPC();
+      updatePC();
     }
     if (resultState != Instruction.ResultState.STALL) {
       status.setPendingDelay(instruction.getDelay());
