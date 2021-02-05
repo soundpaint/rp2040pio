@@ -39,6 +39,28 @@ public abstract class Instruction
   private int delay;
   private int sideSet;
 
+  public enum ResultState
+  {
+    /**
+     * The instruction leaves it to the program control to ordinarily
+     * update the program counter (PC) by increasing it by one and
+     * perform any delay.
+     */
+    COMPLETE,
+    /**
+     * The PC must be kept unmodified (e.g. as the result of a wait
+     * instruction keeping unfulfilled or an additional synthetic
+     * instruction being inserted), and any delay must not yet be
+     * performed.
+     */
+    STALL,
+    /**
+     * The instruction has modified the PC by itself.  Delay must be
+     * ordinarily performed.
+     */
+    JUMP
+  };
+
   private Instruction()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
@@ -50,15 +72,7 @@ public abstract class Instruction
     delay = 0;
   }
 
-  /**
-   * @return True, if and only if the instruction has modified the
-   * program counter (PC) by itself, or if the PC should be kept
-   * unmodified (e.g. as the result of a wait instruction keeping
-   * unfulfilled).  False, if the instruction itself did not update
-   * the PC, but leaves it to the program control to ordinarily
-   * increase it by one.
-   */
-  abstract boolean execute();
+  abstract ResultState execute();
 
   private short[] DELAY_MASK = {
     0x1f, 0x0f, 0x07, 0x03, 0x01, 0x00
@@ -115,11 +129,13 @@ public abstract class Instruction
   protected static void checkIRQIndex(final int irqIndex)
     throws Decoder.DecodeException
   {
-    if ((irqIndex & 0x08) != 0)
+    if ((irqIndex & 0x08) != 0) {
       throw new Decoder.DecodeException();
-    if ((irqIndex & 0x10) != 0)
-      if ((irqIndex & 0x04) != 0)
-        throw new Decoder.DecodeException();
+    }
+    if (((irqIndex & 0x10) != 0) &&
+        ((irqIndex & 0x04) != 0)) {
+      throw new Decoder.DecodeException();
+    }
   }
 
   protected static int getIRQNum(final int smNum, final int index)
@@ -206,12 +222,12 @@ public abstract class Instruction
     }
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
       final SM.Status smStatus = sm.getStatus();
       final boolean doJump = condition.fulfilled(smStatus);
       if (doJump) smStatus.regPC = address;
-      return doJump;
+      return doJump ? ResultState.JUMP : ResultState.COMPLETE;
     }
 
     @Override
@@ -294,10 +310,10 @@ public abstract class Instruction
     }
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
       final boolean doStall = src.getBit(this) != polarity;
-      return doStall;
+      return doStall ? ResultState.STALL : ResultState.COMPLETE;
     }
 
     @Override
@@ -306,8 +322,9 @@ public abstract class Instruction
     {
       polarity = (lsb & 0x80) != 0 ? GPIO.Bit.HIGH : GPIO.Bit.LOW;
       src = code2src.get((lsb & 0x7f) >>> 5);
-      if (src == Source.RESERVED_3)
+      if (src == Source.RESERVED_3) {
         throw new Decoder.DecodeException();
+      }
       index = lsb & 0x1f;
       checkIRQIndex(index);
     }
@@ -381,7 +398,7 @@ public abstract class Instruction
     }
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
       final boolean stall;
       if (sm.getInShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
@@ -389,7 +406,7 @@ public abstract class Instruction
       } else {
         stall = sm.shiftISRRight(bitCount, src.getData(sm));
       }
-      return stall;
+      return stall ? ResultState.STALL : ResultState.COMPLETE;
     }
 
     @Override
@@ -398,8 +415,9 @@ public abstract class Instruction
     {
       src = code2src.get((lsb & 0xe0) >>> 5);
       if ((src == Source.RESERVED_4) ||
-          (src == Source.RESERVED_5))
+          (src == Source.RESERVED_5)) {
         throw new Decoder.DecodeException();
+      }
       bitCount = lsb & 0x1f;
       if (bitCount == 0) bitCount = 32;
     }
@@ -452,7 +470,7 @@ public abstract class Instruction
           return null;
         }),
       EXEC(0b111, "exec", (sm, data) -> {
-          sm.setNextInstruction(data);
+          sm.insertInstruction(data);
           return null;
         });
 
@@ -495,14 +513,19 @@ public abstract class Instruction
     }
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
+      final boolean stall;
       if (sm.getOutShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
-        sm.shiftOSRLeft(bitCount, dst.getConsumer(sm));
+        stall = sm.shiftOSRLeft(bitCount, dst.getConsumer(sm));
       } else {
-        sm.shiftOSRRight(bitCount, dst.getConsumer(sm));
+        stall = sm.shiftOSRRight(bitCount, dst.getConsumer(sm));
       }
-      return dst == Destination.PC;
+      return (stall || dst == Destination.EXEC) ?
+        ResultState.STALL :
+        (dst == Destination.PC ?
+         ResultState.JUMP :
+         ResultState.COMPLETE);
     }
 
     @Override
@@ -537,9 +560,11 @@ public abstract class Instruction
     private boolean block;
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
-      return sm.rxPush(ifFull, block);
+      return sm.rxPush(ifFull, block) ?
+        ResultState.STALL :
+        ResultState.COMPLETE;
     }
 
     @Override
@@ -548,8 +573,9 @@ public abstract class Instruction
     {
       ifFull = (lsb & 0x40) != 0;
       block = (lsb & 0x20) != 0;
-      if ((lsb & 0x1f) != 0)
+      if ((lsb & 0x1f) != 0) {
         throw new Decoder.DecodeException();
+      }
     }
 
     @Override
@@ -576,9 +602,11 @@ public abstract class Instruction
     private boolean block;
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
-      return sm.txPull(ifEmpty, block);
+      return sm.txPull(ifEmpty, block) ?
+        ResultState.STALL :
+        ResultState.COMPLETE;
     }
 
     @Override
@@ -587,8 +615,9 @@ public abstract class Instruction
     {
       ifEmpty = (lsb & 0x40) != 0;
       block = (lsb & 0x20) != 0;
-      if ((lsb & 0x1f) != 0)
+      if ((lsb & 0x1f) != 0) {
         throw new Decoder.DecodeException();
+      }
     }
 
     @Override
@@ -665,7 +694,7 @@ public abstract class Instruction
         }),
       RESERVED_3(0b011, "???", null),
       EXEC(0b100, "exec", (sm, data) -> {
-          sm.pushInstruction(data & 0x1f);
+          sm.insertInstruction(data);
           return null;
         }),
       PC(0b101, "pc", (sm, data) -> {
@@ -753,10 +782,15 @@ public abstract class Instruction
     }
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
       dst.write(sm, op.apply(src.read(sm)));
-      return dst == Destination.PC;
+      return
+        dst == Destination.EXEC ?
+        ResultState.STALL :
+        (dst == Destination.PC ?
+         ResultState.JUMP :
+         ResultState.COMPLETE);
     }
 
     @Override
@@ -764,14 +798,17 @@ public abstract class Instruction
       throws Decoder.DecodeException
     {
       src = code2src.get(lsb & 03);
-      if (src == Source.RESERVED_4)
+      if (src == Source.RESERVED_4) {
         throw new Decoder.DecodeException();
+      }
       dst = code2dst.get((lsb & 0xe0) >>> 5);
-      if (dst == Destination.RESERVED_3)
+      if (dst == Destination.RESERVED_3) {
         throw new Decoder.DecodeException();
+      }
       op = code2op.get((lsb & 0x18) >>> 3);
-      if (op == Operation.RESERVED_3)
+      if (op == Operation.RESERVED_3) {
         throw new Decoder.DecodeException();
+      }
     }
 
     @Override
@@ -800,7 +837,7 @@ public abstract class Instruction
     }
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
       final boolean stall;
       final int irqNum = getIRQNum(sm.getNum(), index);
@@ -811,14 +848,16 @@ public abstract class Instruction
         sm.setIRQ(irqNum);
         stall = wait;
       }
-      return stall;
+      return stall ? ResultState.STALL : ResultState.COMPLETE;
     }
 
     @Override
     public void decodeLSB(final int lsb)
       throws Decoder.DecodeException
     {
-      if ((lsb & 0x80) != 0) throw new Decoder.DecodeException();
+      if ((lsb & 0x80) != 0) {
+        throw new Decoder.DecodeException();
+      }
       clr = (lsb & 0x40) != 0;
       wait = (lsb & 0x20) != 0;
       index = lsb & 0x1f;
@@ -909,10 +948,10 @@ public abstract class Instruction
     }
 
     @Override
-    public boolean execute()
+    public ResultState execute()
     {
       dst.write(sm, data);
-      return false;
+      return ResultState.COMPLETE;
     }
 
     @Override
@@ -923,8 +962,9 @@ public abstract class Instruction
       if ((dst == Destination.RESERVED_3) ||
           (dst == Destination.RESERVED_5) ||
           (dst == Destination.RESERVED_6) ||
-          (dst == Destination.RESERVED_7))
+          (dst == Destination.RESERVED_7)) {
         throw new Decoder.DecodeException();
+      }
       data = lsb & 0x1f;
     }
 

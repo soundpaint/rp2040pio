@@ -69,6 +69,8 @@ public class SM
     public boolean autoPush;
     public int pullThresh;
     public boolean autoPull;
+    public int pendingDelay;
+    public int pendingInstruction;
 
     public GPIO.Bit jmpPin()
     {
@@ -100,6 +102,7 @@ public class SM
       autoPush = false;
       pullThresh = 0;
       autoPull = false;
+      reset();
     }
 
     public int asWord()
@@ -108,10 +111,31 @@ public class SM
       throw new InternalError("not yet implemented");
     }
 
-    private void restart()
+    private void reset()
     {
       isrShiftCount = 0;
       osrShiftCount = 32;
+      pendingDelay = 0;
+      pendingInstruction = -1;
+    }
+
+    private boolean consumePendingDelay()
+    {
+      if (pendingDelay == 0)
+        return false;
+      pendingDelay--;
+      return true;
+    }
+
+    private void setPendingDelay(final int delay)
+    {
+      if (delay < 0) {
+        throw new IllegalArgumentException("delay < 0: " + delay);
+      }
+      if (delay > 31) {
+        throw new IllegalArgumentException("delay > 31: " + delay);
+      }
+      this.pendingDelay = delay;
     }
   }
 
@@ -122,8 +146,12 @@ public class SM
 
   public SM(final int num, final GPIO gpio, final Memory memory)
   {
-    if (gpio == null) throw new NullPointerException("gpio");
-    if (memory == null) throw new NullPointerException("memory");
+    if (gpio == null) {
+      throw new NullPointerException("gpio");
+    }
+    if (memory == null) {
+      throw new NullPointerException("memory");
+    }
     this.num = num;
     this.gpio = gpio;
     this.memory = memory;
@@ -134,7 +162,7 @@ public class SM
 
   public void restart()
   {
-    status.restart();
+    status.reset();
   }
 
   public Memory getMemory()
@@ -301,12 +329,6 @@ public class SM
     return txPull(true, true);
   }
 
-  public void setNextInstruction(final int code)
-  {
-    // TODO
-    throw new InternalError("not yet implemented");
-  }
-
   private int mapPin(final int index)
   {
     // TODO
@@ -321,10 +343,10 @@ public class SM
   public void setSideSetCount(final int count)
   {
     if (count < 0) {
-      throw new IllegalArgumentException("side set count < 0");
+      throw new IllegalArgumentException("side set count < 0: " + count);
     }
     if (count > 5) {
-      throw new IllegalArgumentException("side set count > 5");
+      throw new IllegalArgumentException("side set count > 5: " + count);
     }
     status.sideSetCount = count;
   }
@@ -332,10 +354,10 @@ public class SM
   public void setSideSetBase(final int base)
   {
     if (base < 0) {
-      throw new IllegalArgumentException("side set base < 0");
+      throw new IllegalArgumentException("side set base < 0: " + base);
     }
     if (base > 31) {
-      throw new IllegalArgumentException("side set base > 31");
+      throw new IllegalArgumentException("side set base > 31: " + base);
     }
     status.sideSetBase = base;
   }
@@ -347,7 +369,9 @@ public class SM
 
   public void setSideSetPinDir(final PIO.PinDir pinDir)
   {
-    if (pinDir == null) { throw new NullPointerException("pinDir"); }
+    if (pinDir == null) {
+      throw new NullPointerException("pinDir");
+    }
     status.sideSetPinDir = pinDir;
   }
 
@@ -360,17 +384,19 @@ public class SM
   public void setJmpPin(final int pin)
   {
     if (pin < 0) {
-      throw new IllegalArgumentException("exec ctrl jmp pin < 0");
+      throw new IllegalArgumentException("exec ctrl jmp pin < 0: " + pin);
     }
     if (pin > 31) {
-      throw new IllegalArgumentException("exec ctrl jmp pin > 31");
+      throw new IllegalArgumentException("exec ctrl jmp pin > 31: " + pin);
     }
     status.jmpPin = pin;
   }
 
   public void setInShiftDir(final PIO.ShiftDir shiftDir)
   {
-    if (shiftDir == null) { throw new NullPointerException("shiftDir"); }
+    if (shiftDir == null) {
+      throw new NullPointerException("shiftDir");
+    }
     status.inShiftDir = shiftDir;
   }
 
@@ -381,7 +407,9 @@ public class SM
 
   public void setOutShiftDir(final PIO.ShiftDir shiftDir)
   {
-    if (shiftDir == null) { throw new NullPointerException("shiftDir"); }
+    if (shiftDir == null) {
+      throw new NullPointerException("shiftDir");
+    }
     status.outShiftDir = shiftDir;
   }
 
@@ -393,10 +421,12 @@ public class SM
   public void setPushThresh(final int thresh)
   {
     if (thresh < 0) {
-      throw new IllegalArgumentException("shift ctrl push threshold < 0");
+      throw new IllegalArgumentException("shift ctrl push threshold < 0: " +
+                                         thresh);
     }
     if (thresh > 31) {
-      throw new IllegalArgumentException("shift ctrl push threshold > 31");
+      throw new IllegalArgumentException("shift ctrl push threshold > 31: " +
+                                         thresh);
     }
     status.pushThresh = thresh;
   }
@@ -409,10 +439,12 @@ public class SM
   public void setPullThresh(final int thresh)
   {
     if (thresh < 0) {
-      throw new IllegalArgumentException("shift ctrl pull threshold < 0");
+      throw new IllegalArgumentException("shift ctrl pull threshold < 0: " +
+                                         thresh);
     }
     if (thresh > 31) {
-      throw new IllegalArgumentException("shift ctrl pull threshold > 31");
+      throw new IllegalArgumentException("shift ctrl pull threshold > 31: " +
+                                         thresh);
     }
     status.pullThresh = thresh;
   }
@@ -449,10 +481,10 @@ public class SM
   public void setPC(final int value)
   {
     if (value < 0) {
-      throw new IllegalArgumentException("pc value < 0");
+      throw new IllegalArgumentException("pc value < 0: " + value);
     }
     if (value > 31) {
-      throw new IllegalArgumentException("pc value > 31");
+      throw new IllegalArgumentException("pc value > 31: " + value);
     }
     status.regPC = value;
   }
@@ -464,22 +496,41 @@ public class SM
 
   private short fetch()
   {
-    final short word = memory.get(status.regPC);
-    incPC();
-    return word;
+    final int pendingInstruction = status.pendingInstruction;
+    if (pendingInstruction >= 0) {
+      status.pendingInstruction = -1;
+      return (short)pendingInstruction;
+    }
+    return memory.get(status.regPC);
   }
 
-  public void pushInstruction(final int word)
+  public void insertInstruction(final int instruction)
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    if (status.pendingInstruction >= 0) {
+      throw new InternalError("already have pending instruction");
+    }
+    if (instruction < 0) {
+      throw new IllegalArgumentException("instruction < 0: " + instruction);
+    }
+    if (instruction > 65535) {
+      throw new IllegalArgumentException("instruction > 65535: " + instruction);
+    }
+    status.pendingInstruction = instruction;
   }
 
   public void execute() throws Decoder.DecodeException
   {
+    if (status.consumePendingDelay())
+      return;
     final short word = fetch();
     final Instruction instruction = decoder.decode(word);
-    if (!instruction.execute()) incPC();
+    final Instruction.ResultState resultState = instruction.execute();
+    if (resultState == Instruction.ResultState.COMPLETE) {
+      incPC();
+    }
+    if (resultState != Instruction.ResultState.STALL) {
+      status.setPendingDelay(instruction.getDelay());
+    }
   }
 
   public void dumpMemory()
