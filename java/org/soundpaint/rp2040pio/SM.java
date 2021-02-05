@@ -24,6 +24,8 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.function.IntConsumer;
+
 /**
  * State Machine
  */
@@ -43,16 +45,17 @@ public class SM
   private final Memory memory;
   private final Status status;
   private final Decoder decoder;
+  private final FIFO fifo;
 
   public class Status
   {
     public int regX;
     public int regY;
     public int regPC;
-    public int osrValue;
-    public int osrFillLevel;
     public int isrValue;
-    public int isrFillLevel;
+    public int isrShiftCount;
+    public int osrValue;
+    public int osrShiftCount;
     public int clockDivIntegral;
     public int clockDivFraction;
     public int sideSetCount;
@@ -74,7 +77,7 @@ public class SM
 
     public boolean osrEmpty()
     {
-      return osrFillLevel == 0;
+      return osrShiftCount == 0;
     }
 
     public Status()
@@ -82,10 +85,8 @@ public class SM
       regX = 0;
       regY = 0;
       regPC = 0;
-      osrValue = 0;
-      osrFillLevel = 0;
       isrValue = 0;
-      isrFillLevel = 0;
+      osrValue = 0;
       clockDivIntegral = 1;
       clockDivFraction = 0;
       sideSetCount = 0;
@@ -99,6 +100,18 @@ public class SM
       autoPush = false;
       pullThresh = 0;
       autoPull = false;
+    }
+
+    public int asWord()
+    {
+      // TODO
+      throw new InternalError("not yet implemented");
+    }
+
+    private void restart()
+    {
+      isrShiftCount = 0;
+      osrShiftCount = 32;
     }
   }
 
@@ -116,6 +129,12 @@ public class SM
     this.memory = memory;
     status = new Status();
     decoder = new Decoder(this);
+    fifo = new FIFO();
+  }
+
+  public void restart()
+  {
+    status.restart();
   }
 
   public Memory getMemory()
@@ -144,6 +163,12 @@ public class SM
     throw new InternalError("not yet implemented");
   }
 
+  public void setAllPins(final int value)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
   public GPIO.Bit getIRQ(final int index)
   {
     // TODO
@@ -156,6 +181,61 @@ public class SM
     throw new InternalError("not yet implemented");
   }
 
+  public GPIO.Bit setIRQ(final int index)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  /**
+   * @return True if operation stall due to full FIFO.
+   */
+  public boolean rxPush(final boolean ifFull, final boolean block)
+  {
+    final boolean isrFull = status.isrShiftCount >= status.pushThresh;
+    if (!ifFull || (isrFull && status.autoPush)) {
+      final boolean fifoFull = fifo.fstatRxFull();
+      if (fifoFull) {
+        return block; // stall on block
+      } else {
+        fifo.rxPush(status.isrValue);
+        status.isrValue = 0;
+        status.isrShiftCount = 0;
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * @return True if operation stall due to empty FIFO.
+   */
+  public boolean txPull(final boolean ifEmpty, final boolean block)
+  {
+    /*
+     * TODO: Clarify: Need "status.osrShiftCount = 0" prior to the
+     * following code, as 3.5.4.2 ("Autopull Details") of RP2040
+     * datasheet suggests?  Also, stall behaviour may be wrong?
+     */
+    final boolean osrEmpty = status.osrShiftCount >= status.pullThresh;
+    if (!ifEmpty || (osrEmpty && status.autoPull)) {
+      final boolean fifoEmpty = fifo.fstatTxEmpty();
+      if (fifoEmpty) {
+        if (!block) {
+          status.osrValue = status.regX;
+          status.osrShiftCount = 0;
+        }
+        return block; // stall on block
+      } else {
+        status.osrValue = fifo.txPull();
+        status.osrShiftCount = 0;
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
   private int saturate(final int base, final int increment, final int limit)
   {
     final int sum = base + increment;
@@ -164,56 +244,67 @@ public class SM
 
   public int getISRValue() { return status.isrValue; }
 
-  public void shiftISRLeft(final int bitCount, final int data)
+  public void setISRValue(final int value)
   {
+    status.isrValue = value;
+  }
+
+  public boolean shiftISRLeft(final int bitCount, final int data)
+  {
+    // TODO: Clarify: Shift ISR always or only if not (isrFull &&
+    // status.autoPush)?
     status.isrValue <<= bitCount;
     status.isrValue |= data & SHIFT_MASK[bitCount];
-    status.isrFillLevel = saturate(status.isrFillLevel, bitCount, 32);
-    if ((status.isrFillLevel == status.pushThresh) && status.autoPush) {
-      // rxFIFO.push(status.isrValue); // TODO
-    }
+    status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
+    return rxPush(true, true);
   }
 
-  public void shiftISRRight(final int bitCount, final int data)
+  public boolean shiftISRRight(final int bitCount, final int data)
   {
+    // TODO: Clarify: Shift ISR always or only if not (isrFull &&
+    // status.autoPush)?
     status.isrValue >>>= bitCount;
     status.isrValue |= (data & SHIFT_MASK[bitCount]) << (32 - bitCount);
-    status.isrFillLevel = saturate(status.isrFillLevel, bitCount, 32);
-    if ((status.isrFillLevel == status.pushThresh) && status.autoPush) {
-      // rxFIFO.push(status.isrValue); // TODO
-    }
-  }
-
-  public void resetISRShiftCount()
-  {
-    status.isrFillLevel = 0;
+    status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
+    return rxPush(true, true);
   }
 
   public int getOSRValue() { return status.osrValue; }
 
-  public void shiftOSRLeft(final int bitCount, final int data)
+  public void setOSRValue(final int value)
   {
+    status.osrValue = value;
+  }
+
+  public boolean shiftOSRLeft(final int bitCount,
+                              final IntConsumer destination)
+  {
+    // TODO: Clarify: Shift OSR always or only if not (isrEmpty &&
+    // status.autoPush)?
+    final int data =
+      (status.osrValue & ~SHIFT_MASK[32 - bitCount]) >>> (32 - bitCount);
     status.osrValue <<= bitCount;
-    status.osrValue |= data & SHIFT_MASK[bitCount];
-    status.osrFillLevel = saturate(status.osrFillLevel, bitCount, 32);
-    if ((status.osrFillLevel == status.pullThresh) && status.autoPull) {
-      // status.osrValue = txFIFO.pull(); // TODO
-    }
+    status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
+    destination.accept(data);
+    return txPull(true, true);
   }
 
-  public void shiftOSRRight(final int bitCount, final int data)
+  public boolean shiftOSRRight(final int bitCount,
+                               final IntConsumer destination)
   {
+    // TODO: Clarify: Shift OSR always or only if not (osrEmpty &&
+    // status.autoPush)?
+    final int data = status.osrValue & SHIFT_MASK[bitCount];
     status.osrValue >>>= bitCount;
-    status.osrValue |= (data & SHIFT_MASK[bitCount]) << (32 - bitCount);
-    status.osrFillLevel = saturate(status.osrFillLevel, bitCount, 32);
-    if ((status.osrFillLevel == status.pullThresh) && status.autoPull) {
-      // status.osrValue = txFIFO.pull(); // TODO
-    }
+    status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
+    destination.accept(data);
+    return txPull(true, true);
   }
 
-  public void resetOSRShiftCount()
+  public void setNextInstruction(final int code)
   {
-    status.osrFillLevel = 0;
+    // TODO
+    throw new InternalError("not yet implemented");
   }
 
   private int mapPin(final int index)
@@ -258,6 +349,12 @@ public class SM
   {
     if (pinDir == null) { throw new NullPointerException("pinDir"); }
     status.sideSetPinDir = pinDir;
+  }
+
+  public void setPinDirs(final int pinDirs)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
   }
 
   public void setJmpPin(final int pin)
@@ -325,19 +422,40 @@ public class SM
     status.autoPull = auto;
   }
 
+  public int getX() { return status.regX; }
+
+  public void setX(final int value)
+  {
+    status.regX = value;
+  }
+
   private void decX()
   {
     status.regX--;
   }
 
-  public int getX() { return status.regX; }
+  public int getY() { return status.regY; }
+
+  public void setY(final int value)
+  {
+    status.regY = value;
+  }
 
   private void decY()
   {
     status.regY--;
   }
 
-  public int getY() { return status.regY; }
+  public void setPC(final int value)
+  {
+    if (value < 0) {
+      throw new IllegalArgumentException("pc value < 0");
+    }
+    if (value > 31) {
+      throw new IllegalArgumentException("pc value > 31");
+    }
+    status.regPC = value;
+  }
 
   private void incPC()
   {
@@ -349,6 +467,12 @@ public class SM
     final short word = memory.get(status.regPC);
     incPC();
     return word;
+  }
+
+  public void pushInstruction(final int word)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
   }
 
   public void execute() throws Decoder.DecodeException

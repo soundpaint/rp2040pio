@@ -26,7 +26,9 @@ package org.soundpaint.rp2040pio;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 
 /**
  * Instruction
@@ -251,7 +253,7 @@ public abstract class Instruction
             wait.sm.clearIRQ(irqNum);
           return bit;
         }),
-      RESERVED(0b11, "???", null);
+      RESERVED_3(0b11, "???", null);
 
       private final int code;
       private final String mnemonic;
@@ -304,7 +306,7 @@ public abstract class Instruction
     {
       polarity = (lsb & 0x80) != 0 ? GPIO.Bit.HIGH : GPIO.Bit.LOW;
       src = code2src.get((lsb & 0x7f) >>> 5);
-      if (src == Source.RESERVED)
+      if (src == Source.RESERVED_3)
         throw new Decoder.DecodeException();
       index = lsb & 0x1f;
       checkIRQIndex(index);
@@ -337,8 +339,8 @@ public abstract class Instruction
       X(0b001, "x", (sm) -> sm.getX()),
       Y(0b010, "y", (sm) -> sm.getX()),
       NULL(0b011, "null", (sm) -> 0),
-      RESERVED1(0b100, "???", null),
-      RESERVED2(0b101, "???", null),
+      RESERVED_4(0b100, "???", null),
+      RESERVED_5(0b101, "???", null),
       ISR(0b110, "ISR", (sm) -> sm.getISRValue()),
       OSR(0b111, "OSR", (sm) -> sm.getOSRValue());
 
@@ -381,12 +383,13 @@ public abstract class Instruction
     @Override
     public boolean execute()
     {
+      final boolean stall;
       if (sm.getInShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
-        sm.shiftISRLeft(bitCount, src.getData(sm));
+        stall = sm.shiftISRLeft(bitCount, src.getData(sm));
       } else {
-        sm.shiftISRRight(bitCount, src.getData(sm));
+        stall = sm.shiftISRRight(bitCount, src.getData(sm));
       }
-      return false;
+      return stall;
     }
 
     @Override
@@ -394,8 +397,8 @@ public abstract class Instruction
       throws Decoder.DecodeException
     {
       src = code2src.get((lsb & 0xe0) >>> 5);
-      if ((src == Source.RESERVED1) ||
-          (src == Source.RESERVED2))
+      if ((src == Source.RESERVED_4) ||
+          (src == Source.RESERVED_5))
         throw new Decoder.DecodeException();
       bitCount = lsb & 0x1f;
       if (bitCount == 0) bitCount = 32;
@@ -421,23 +424,56 @@ public abstract class Instruction
 
     private enum Destination
     {
-      PINS(0b000, "pins"),
-      X(0b001, "x"),
-      Y(0b010, "y"),
-      NULL(0b011, "null"),
-      PINDIRS(0b100, "pindirs"),
-      PC(0b101, "pc"),
-      ISR(0b110, "isr"),
-      EXEC(0b111, "exec");
+      PINS(0b000, "pins", (sm, data) -> {
+          sm.setAllPins(data);
+          return null;
+        }),
+      X(0b001, "x", (sm, data) -> {
+          sm.setX(data);
+          return null;
+        }),
+      Y(0b010, "y", (sm, data) -> {
+          sm.setY(data);
+          return null;
+        }),
+      NULL(0b011, "null", (sm, data) -> {
+          return null;
+        }),
+      PINDIRS(0b100, "pindirs", (sm, data) -> {
+          sm.setPinDirs(data);
+          return null;
+        }),
+      PC(0b101, "pc", (sm, data) -> {
+          sm.setPC(data);
+          return null;
+        }),
+      ISR(0b110, "isr", (sm, data) -> {
+          sm.setISRValue(data);
+          return null;
+        }),
+      EXEC(0b111, "exec", (sm, data) -> {
+          sm.setNextInstruction(data);
+          return null;
+        });
 
       private final int code;
       private final String mnemonic;
+      private final BiFunction<SM, Integer, Void> eval;
 
-      private Destination(final int code, final String mnemonic)
+      private Destination(final int code, final String mnemonic,
+                          final BiFunction<SM, Integer, Void> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
+        this.eval = eval;
         code2dst.put(code, this);
+      }
+
+      public IntConsumer getConsumer(final SM sm)
+      {
+        return (data) -> {
+          eval.apply(sm, data);
+        };
       }
 
       @Override
@@ -461,7 +497,12 @@ public abstract class Instruction
     @Override
     public boolean execute()
     {
-      return false;
+      if (sm.getOutShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
+        sm.shiftOSRLeft(bitCount, dst.getConsumer(sm));
+      } else {
+        sm.shiftOSRRight(bitCount, dst.getConsumer(sm));
+      }
+      return dst == Destination.PC;
     }
 
     @Override
@@ -498,7 +539,7 @@ public abstract class Instruction
     @Override
     public boolean execute()
     {
-      return false;
+      return sm.rxPush(ifFull, block);
     }
 
     @Override
@@ -537,7 +578,7 @@ public abstract class Instruction
     @Override
     public boolean execute()
     {
-      return false;
+      return sm.txPull(ifEmpty, block);
     }
 
     @Override
@@ -574,23 +615,31 @@ public abstract class Instruction
 
     private enum Source
     {
-      PINS(0b000, "pins"),
-      X(0b001, "x"),
-      Y(0b010, "y"),
-      NULL(0b011, "null"),
-      RESERVED(0b100, "???"),
-      STATUS(0b101, "status"),
-      ISR(0b110, "isr"),
-      OSR(0b111, "osr");
+      PINS(0b000, "pins", (sm) -> sm.getAllPins()),
+      X(0b001, "x", (sm) -> sm.getX()),
+      Y(0b010, "y", (sm) -> sm.getY()),
+      NULL(0b011, "null", (sm) -> 0),
+      RESERVED_4(0b100, "???", null),
+      STATUS(0b101, "status", (sm) -> sm.getStatus().asWord()),
+      ISR(0b110, "isr", (sm) -> sm.getISRValue()),
+      OSR(0b111, "osr", (sm) -> sm.getOSRValue());
 
       private final int code;
       private final String mnemonic;
+      private final Function<SM, Integer> eval;
 
-      private Source(final int code, final String mnemonic)
+      private Source(final int code, final String mnemonic,
+                     final Function<SM, Integer> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
+        this.eval = eval;
         code2src.put(code, this);
+      }
+
+      public Integer read(final SM sm)
+      {
+        return eval.apply(sm);
       }
 
       @Override
@@ -602,23 +651,52 @@ public abstract class Instruction
 
     private enum Destination
     {
-      PINS(0b000, "pins"),
-      X(0b001, "x"),
-      Y(0b010, "y"),
-      RESERVED(0b011, "???"),
-      EXEC(0b100, "exec"),
-      PC(0b101, "pc"),
-      ISR(0b110, "isr"),
-      OSR(0b111, "osr");
+      PINS(0b000, "pins", (sm, data) -> {
+          sm.setAllPins(data);
+          return null;
+        }),
+      X(0b001, "x", (sm, data) -> {
+          sm.setX(data);
+          return null;
+        }),
+      Y(0b010, "y", (sm, data) -> {
+          sm.setY(data);
+          return null;
+        }),
+      RESERVED_3(0b011, "???", null),
+      EXEC(0b100, "exec", (sm, data) -> {
+          sm.pushInstruction(data & 0x1f);
+          return null;
+        }),
+      PC(0b101, "pc", (sm, data) -> {
+          sm.setPC(data);
+          return null;
+        }),
+      ISR(0b110, "isr", (sm, data) -> {
+          sm.setISRValue(data);
+          return null;
+        }),
+      OSR(0b111, "osr", (sm, data) -> {
+          sm.setOSRValue(data);
+          return null;
+        });
 
       private final int code;
       private final String mnemonic;
+      private final BiFunction<SM, Integer, Void> eval;
 
-      private Destination(final int code, final String mnemonic)
+      private Destination(final int code, final String mnemonic,
+                          final BiFunction<SM, Integer, Void> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
+        this.eval = eval;
         code2dst.put(code, this);
+      }
+
+      public void write(final SM sm, final int data)
+      {
+        eval.apply(sm, data);
       }
 
       @Override
@@ -630,19 +708,27 @@ public abstract class Instruction
 
     private enum Operation
     {
-      NONE(0b00, ""),
-      INVERT(0b01, "x"),
-      BIT_REVERSE(0b10, "y"),
-      RESERVED(0b11, "???");
+      NONE(0b00, "", (data) -> data),
+      INVERT(0b01, "x", (data) -> ~data),
+      BIT_REVERSE(0b10, "y", (data) -> Integer.reverse(data)),
+      RESERVED_3(0b11, "???", null);
 
       private final int code;
       private final String mnemonic;
+      private final Function<Integer, Integer> eval;
 
-      private Operation(final int code, final String mnemonic)
+      private Operation(final int code, final String mnemonic,
+                     final Function<Integer, Integer> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
+        this.eval = eval;
         code2op.put(code, this);
+      }
+
+      private int apply(final int data)
+      {
+        return eval.apply(data);
       }
 
       @Override
@@ -669,7 +755,8 @@ public abstract class Instruction
     @Override
     public boolean execute()
     {
-      return false;
+      dst.write(sm, op.apply(src.read(sm)));
+      return dst == Destination.PC;
     }
 
     @Override
@@ -677,13 +764,13 @@ public abstract class Instruction
       throws Decoder.DecodeException
     {
       src = code2src.get(lsb & 03);
-      if (src == Source.RESERVED)
+      if (src == Source.RESERVED_4)
         throw new Decoder.DecodeException();
       dst = code2dst.get((lsb & 0xe0) >>> 5);
-      if (dst == Destination.RESERVED)
+      if (dst == Destination.RESERVED_3)
         throw new Decoder.DecodeException();
       op = code2op.get((lsb & 0x18) >>> 3);
-      if (op == Operation.RESERVED)
+      if (op == Operation.RESERVED_3)
         throw new Decoder.DecodeException();
     }
 
@@ -715,7 +802,16 @@ public abstract class Instruction
     @Override
     public boolean execute()
     {
-      return false;
+      final boolean stall;
+      final int irqNum = getIRQNum(sm.getNum(), index);
+      if (clr) {
+        sm.clearIRQ(irqNum);
+        stall = false;
+      } else {
+        sm.setIRQ(irqNum);
+        stall = wait;
+      }
+      return stall;
     }
 
     @Override
@@ -755,23 +851,43 @@ public abstract class Instruction
 
     private enum Destination
     {
-      PINS(0b000, "pins"),
-      X(0b001, "x"),
-      Y(0b010, "y"),
-      RESERVED1(0b011, "???"),
-      PINDIRS(0b100, "pindirs"),
-      RESERVED2(0b101, "???"),
-      RESERVED3(0b110, "???"),
-      RESERVED4(0b111, "???");
+      PINS(0b000, "pins", (sm, data) -> {
+          sm.setAllPins(data);
+          return null;
+        }),
+      X(0b001, "x", (sm, data) -> {
+          sm.setX(data);
+          return null;
+        }),
+      Y(0b010, "y", (sm, data) -> {
+          sm.setY(data);
+          return null;
+        }),
+      RESERVED_3(0b011, "???", null),
+      PINDIRS(0b100, "pindirs", (sm, data) -> {
+          sm.setPinDirs(data);
+          return null;
+        }),
+      RESERVED_5(0b101, "???", null),
+      RESERVED_6(0b110, "???", null),
+      RESERVED_7(0b111, "???", null);
 
       private final int code;
       private final String mnemonic;
+      private final BiFunction<SM, Integer, Void> eval;
 
-      private Destination(final int code, final String mnemonic)
+      private Destination(final int code, final String mnemonic,
+                          final BiFunction<SM, Integer, Void> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
+        this.eval = eval;
         code2dst.put(code, this);
+      }
+
+      public void write(final SM sm, final int data)
+      {
+        eval.apply(sm, data);
       }
 
       @Override
@@ -795,6 +911,7 @@ public abstract class Instruction
     @Override
     public boolean execute()
     {
+      dst.write(sm, data);
       return false;
     }
 
@@ -803,10 +920,10 @@ public abstract class Instruction
       throws Decoder.DecodeException
     {
       dst = code2dst.get((lsb & 0xe0) >>> 5);
-      if ((dst == Destination.RESERVED1) ||
-          (dst == Destination.RESERVED2) ||
-          (dst == Destination.RESERVED3) ||
-          (dst == Destination.RESERVED4))
+      if ((dst == Destination.RESERVED_3) ||
+          (dst == Destination.RESERVED_5) ||
+          (dst == Destination.RESERVED_6) ||
+          (dst == Destination.RESERVED_7))
         throw new Decoder.DecodeException();
       data = lsb & 0x1f;
     }
