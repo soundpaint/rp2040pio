@@ -24,6 +24,9 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Peripheral I/O Unit
  */
@@ -31,6 +34,7 @@ public class PIO
 {
   private static final int SM_COUNT = 4;
 
+  private final List<Decoder.DecodeException> caughtExceptions;
   private final GPIO gpio;
   private final Memory memory;
   private final SM[] sms;
@@ -45,13 +49,19 @@ public class PIO
     SHIFT_RIGHT
   };
 
-  public PIO()
+  private PIO()
   {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public PIO(final Clock clock)
+  {
+    caughtExceptions = new ArrayList<Decoder.DecodeException>();
     gpio = new GPIO();
     memory = new Memory();
     sms = new SM[SM_COUNT];
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-      sms[smNum] = new SM(smNum, gpio, memory);
+      sms[smNum] = new SM(smNum, clock, gpio, memory);
     }
   }
 
@@ -164,6 +174,21 @@ public class PIO
     }
     for (final SM sm : sms) {
       sm.setPullThresh(thresh);
+    }
+  }
+
+  public void clockRaisingEdge() throws Decoder.MultiDecodeException
+  {
+    caughtExceptions.clear();
+    for (final SM sm : sms) {
+      try {
+        sm.clockRaisingEdge();
+      } catch (final Decoder.DecodeException e) {
+        caughtExceptions.add(e);
+      }
+    }
+    if (caughtExceptions.size() > 0) {
+      throw new Decoder.MultiDecodeException(List.copyOf(caughtExceptions));
     }
   }
 }

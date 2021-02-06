@@ -38,6 +38,7 @@ public abstract class Instruction
   protected final SM sm;
   private int delay;
   private int sideSet;
+  private int opCode;
 
   public enum ResultState
   {
@@ -78,6 +79,11 @@ public abstract class Instruction
     0x1f, 0x0f, 0x07, 0x03, 0x01, 0x00
   };
 
+  public SM getSM()
+  {
+    return sm;
+  }
+
   public int getDelay()
   {
     return delay;
@@ -93,17 +99,23 @@ public abstract class Instruction
     return sideSet;
   }
 
+  public int getOpCode()
+  {
+    return opCode;
+  }
+
   private String getSideSetDisplayValue()
   {
     return sideSet >= 0 ? "side " + Integer.toString(sideSet) : "";
   }
 
-  public Instruction decode(final short word)
+  public Instruction decode(final short opCode)
     throws Decoder.DecodeException
   {
     final SM.Status smStatus = sm.getStatus();
-    final int delayAndSideSet = (word >>> 0x8) & 0x1f;
+    final int delayAndSideSet = (opCode >>> 0x8) & 0x1f;
     final int delayMask = DELAY_MASK[smStatus.sideSetCount];
+    this.opCode = opCode;
     delay = delayAndSideSet & delayMask;
     final int enableRemoved =
       smStatus.sideSetEnable ? delayAndSideSet & 0xf : delayAndSideSet;
@@ -112,7 +124,7 @@ public abstract class Instruction
     } else {
       sideSet = -1;
     }
-    decodeLSB(word & 0xff);
+    decodeLSB(opCode & 0xff);
     return this;
   }
 
@@ -126,15 +138,15 @@ public abstract class Instruction
 
   abstract String getParamsDisplay();
 
-  protected static void checkIRQIndex(final int irqIndex)
+  protected void checkIRQIndex(final int irqIndex)
     throws Decoder.DecodeException
   {
     if ((irqIndex & 0x08) != 0) {
-      throw new Decoder.DecodeException();
+      throw new Decoder.DecodeException(this, getOpCode());
     }
     if (((irqIndex & 0x10) != 0) &&
         ((irqIndex & 0x04) != 0)) {
-      throw new Decoder.DecodeException();
+      throw new Decoder.DecodeException(this, getOpCode());
     }
   }
 
@@ -323,7 +335,7 @@ public abstract class Instruction
       polarity = (lsb & 0x80) != 0 ? GPIO.Bit.HIGH : GPIO.Bit.LOW;
       src = code2src.get((lsb & 0x7f) >>> 5);
       if (src == Source.RESERVED_3) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
       index = lsb & 0x1f;
       checkIRQIndex(index);
@@ -416,7 +428,7 @@ public abstract class Instruction
       src = code2src.get((lsb & 0xe0) >>> 5);
       if ((src == Source.RESERVED_4) ||
           (src == Source.RESERVED_5)) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
       bitCount = lsb & 0x1f;
       if (bitCount == 0) bitCount = 32;
@@ -574,7 +586,7 @@ public abstract class Instruction
       ifFull = (lsb & 0x40) != 0;
       block = (lsb & 0x20) != 0;
       if ((lsb & 0x1f) != 0) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
     }
 
@@ -616,7 +628,7 @@ public abstract class Instruction
       ifEmpty = (lsb & 0x40) != 0;
       block = (lsb & 0x20) != 0;
       if ((lsb & 0x1f) != 0) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
     }
 
@@ -799,15 +811,15 @@ public abstract class Instruction
     {
       src = code2src.get(lsb & 03);
       if (src == Source.RESERVED_4) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
       dst = code2dst.get((lsb & 0xe0) >>> 5);
       if (dst == Destination.RESERVED_3) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
       op = code2op.get((lsb & 0x18) >>> 3);
       if (op == Operation.RESERVED_3) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
     }
 
@@ -856,7 +868,7 @@ public abstract class Instruction
       throws Decoder.DecodeException
     {
       if ((lsb & 0x80) != 0) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
       clr = (lsb & 0x40) != 0;
       wait = (lsb & 0x20) != 0;
@@ -963,7 +975,7 @@ public abstract class Instruction
           (dst == Destination.RESERVED_5) ||
           (dst == Destination.RESERVED_6) ||
           (dst == Destination.RESERVED_7)) {
-        throw new Decoder.DecodeException();
+        throw new Decoder.DecodeException(this, getOpCode());
       }
       data = lsb & 0x1f;
     }

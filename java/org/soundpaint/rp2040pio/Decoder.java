@@ -24,6 +24,8 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.List;
+
 /**
  * Instruction Decoder
  */
@@ -33,32 +35,44 @@ public class Decoder
   {
     private static final long serialVersionUID = -3754988538292081517L;
 
-    public DecodeException()
+    private final Instruction instruction;
+    private final int opCode;
+
+    private DecodeException()
     {
-      super();
+      throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public DecodeException(final String message)
+    public DecodeException(final Instruction instruction, final int opCode)
     {
-      super(message);
+      super("decode failed: unsupported op-code: " +
+            String.format("%04x", opCode));
+      this.instruction = instruction;
+      this.opCode = opCode;
     }
 
-    public DecodeException(final String message, final Throwable cause)
+    public Instruction getInstruction() { return instruction; }
+
+    public int getOpCode() { return opCode; }
+  }
+
+  public static class MultiDecodeException extends Exception
+  {
+    private static final long serialVersionUID = 1631236078957230846L;
+
+    private final List<DecodeException> causes;
+
+    private MultiDecodeException()
     {
-      super(message, cause);
+      throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public DecodeException(final String message, final Throwable cause,
-                           final boolean enableSupression,
-                           final boolean writableStackTrace)
+    public MultiDecodeException(final List<DecodeException> causes)
     {
-      super(message, cause, enableSupression, writableStackTrace);
+      super("decode failed: unsupported op-code(s) found");
+      this.causes = causes;
     }
-
-    public DecodeException(final Throwable cause)
-    {
-      super(cause);
-    }
+    public List<DecodeException> getCauses() { return causes; }
   }
 
   private final SM sm;

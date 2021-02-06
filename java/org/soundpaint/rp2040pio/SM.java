@@ -46,9 +46,12 @@ public class SM
   private final Status status;
   private final Decoder decoder;
   private final FIFO fifo;
+  private final PLL pll;
 
   public class Status
   {
+    public boolean enabled;
+    public boolean clockEnabled;
     public int regX;
     public int regY;
     public int regPC;
@@ -56,8 +59,6 @@ public class SM
     public int isrShiftCount;
     public int osrValue;
     public int osrShiftCount;
-    public int clockDivIntegral;
-    public int clockDivFraction;
     public int sideSetCount;
     public int sideSetBase;
     public boolean sideSetEnable;
@@ -91,8 +92,6 @@ public class SM
       regPC = 0;
       isrValue = 0;
       osrValue = 0;
-      clockDivIntegral = 1;
-      clockDivFraction = 0;
       sideSetCount = 0;
       sideSetBase = 0;
       sideSetEnable = false;
@@ -121,6 +120,8 @@ public class SM
       osrShiftCount = 32;
       pendingDelay = 0;
       pendingInstruction = -1;
+      enabled = false;
+      clockEnabled = false;
     }
 
     private boolean consumePendingDelay()
@@ -148,8 +149,18 @@ public class SM
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public SM(final int num, final GPIO gpio, final Memory memory)
+  public SM(final int num, final Clock clock,
+            final GPIO gpio, final Memory memory)
   {
+    if (num < 0) {
+      throw new IllegalArgumentException("SM num < 0: " + num);
+    }
+    if (num > 3) {
+      throw new IllegalArgumentException("SM num > 3: " + num);
+    }
+    if (clock == null) {
+      throw new NullPointerException("clock");
+    }
     if (gpio == null) {
       throw new NullPointerException("gpio");
     }
@@ -162,6 +173,27 @@ public class SM
     status = new Status();
     decoder = new Decoder(this);
     fifo = new FIFO();
+    pll = new PLL(clock);
+    pll.addTransitionListener(new Clock.TransitionListener()
+      {
+        @Override
+        public void raisingEdge(final long wallClock)
+        {
+          status.clockEnabled = true;
+        }
+        @Override
+        public void fallingEdge(final long wallClock)
+        {
+          status.clockEnabled = false;
+        }
+      });
+  }
+
+  public void clockRaisingEdge() throws Decoder.DecodeException
+  {
+    if (status.enabled && status.clockEnabled) {
+      execute();
+    }
   }
 
   public void restart()
@@ -570,6 +602,36 @@ public class SM
     if (resultState != Instruction.ResultState.STALL) {
       status.setPendingDelay(instruction.getDelay());
     }
+  }
+
+  public int getClockDivIntegerBits()
+  {
+    return pll.getDivIntegerBits();
+  }
+
+  public void setClockDivIntegerBits(final int divIntegerBits)
+  {
+    pll.setDivIntegerBits(divIntegerBits);
+  }
+
+  public int getClockDivFractionalBits()
+  {
+    return pll.getDivFractionalBits();
+  }
+
+  public void setClockDivFractionalBits(final int divFractionalBits)
+  {
+    pll.setDivFractionalBits(divFractionalBits);
+  }
+
+  public void enable()
+  {
+    status.enabled = true;
+  }
+
+  public void disable()
+  {
+    status.enabled = false;
   }
 
   public void dumpMemory()

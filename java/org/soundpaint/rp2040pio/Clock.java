@@ -1,5 +1,5 @@
 /*
- * @(#)Main.java 1.00 21/01/31
+ * @(#)Clock.java 1.00 21/02/05
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,29 +24,23 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Main
+/**
+ * Clock Signal Provider
+ */
+public interface Clock
 {
-  public Main()
+  public static interface TransitionListener
   {
+    void raisingEdge(final long wallClock);
+    void fallingEdge(final long wallClock);
   }
 
-  public void run() throws IOException
-  {
-    final Clock clock = new MasterClock();
-    final Monitor monitor = new Monitor(clock);
-    //final String programResourcePath = "/examples/squarewave.hex";
-    final String programResourcePath = "/examples/ws2812.hex";
-    monitor.loadProgram(programResourcePath);
-    monitor.setSideSetCount(1);
-    monitor.dumpProgram();
-  }
-
-  public static void main(final String argv[]) throws IOException
-  {
-    new Main().run();
-  }
+  void addTransitionListener(final TransitionListener listener);
+  boolean removeTransitionListener(final TransitionListener listener);
+  long getWallClock();
 }
 
 /*
