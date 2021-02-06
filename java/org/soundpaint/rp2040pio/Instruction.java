@@ -194,7 +194,7 @@ public abstract class Instruction
       NOT_Y(0b011, "!y", (smStatus) -> smStatus.regY == 0),
       DEC_Y(0b100, "y--", (smStatus) -> smStatus.regY-- == 0),
       X_NEQ_Y(0b101, "x!=y", (smStatus) -> smStatus.regX != smStatus.regX),
-      PIN(0b110, "pin", (smStatus) -> smStatus.jmpPin() == GPIO.Bit.HIGH),
+      PIN(0b110, "pin", (smStatus) -> smStatus.jmpPin() == Bit.HIGH),
       NOT_OSRE(0b111, "!osre", (smStatus) -> !smStatus.osrEmpty());
 
       private final int code;
@@ -276,8 +276,8 @@ public abstract class Instruction
       PIN(0b01, "pin", (wait) -> wait.sm.getStatus().jmpPin()),
       IRQ(0b10, "irq", (wait) -> {
           final int irqNum = getIRQNum(wait.sm.getNum(), wait.index);
-          final GPIO.Bit bit = wait.sm.getIRQ(irqNum);
-          if ((wait.polarity == GPIO.Bit.HIGH) && (bit == wait.polarity))
+          final Bit bit = wait.sm.getIRQ(irqNum);
+          if ((wait.polarity == Bit.HIGH) && (bit == wait.polarity))
             wait.sm.clearIRQ(irqNum);
           return bit;
         }),
@@ -285,10 +285,10 @@ public abstract class Instruction
 
       private final int code;
       private final String mnemonic;
-      private final Function<Wait, GPIO.Bit> eval;
+      private final Function<Wait, Bit> eval;
 
       private Source(final int code, final String mnemonic,
-                     final Function<Wait, GPIO.Bit> eval)
+                     final Function<Wait, Bit> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
@@ -296,7 +296,7 @@ public abstract class Instruction
         code2src.put(code, this);
       }
 
-      public GPIO.Bit getBit(final Wait wait)
+      public Bit getBit(final Wait wait)
       {
         return eval.apply(wait);
       }
@@ -308,14 +308,14 @@ public abstract class Instruction
       }
     }
 
-    private GPIO.Bit polarity;
+    private Bit polarity;
     private Source src;
     private int index;
 
     public Wait(final SM sm)
     {
       super(sm);
-      polarity = GPIO.Bit.LOW;
+      polarity = Bit.LOW;
 
       // force class initializer to be called such that map is filled
       src = Source.GPIO_;
@@ -332,7 +332,7 @@ public abstract class Instruction
     public void decodeLSB(final int lsb)
       throws Decoder.DecodeException
     {
-      polarity = (lsb & 0x80) != 0 ? GPIO.Bit.HIGH : GPIO.Bit.LOW;
+      polarity = (lsb & 0x80) != 0 ? Bit.HIGH : Bit.LOW;
       src = code2src.get((lsb & 0x7f) >>> 5);
       if (src == Source.RESERVED_3) {
         throw new Decoder.DecodeException(this, getOpCode());

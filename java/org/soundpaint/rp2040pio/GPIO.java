@@ -60,28 +60,6 @@ public class GPIO
     throw new IllegalArgumentException("value is neither 0 nor 1: " + value);
   }
 
-  public enum Bit {
-    LOW(0, "0"),
-    HIGH(1, "1");
-
-    private final int value;
-    private final String label;
-
-    private Bit(final int value, final String label)
-    {
-      this.value = value;
-      this.label = label;
-    }
-
-    private int getValue() { return value; }
-
-    @Override
-    public String toString()
-    {
-      return label;
-    }
-  };
-
   private static Bit bitFromValue(final int value)
   {
     if (value == 0)

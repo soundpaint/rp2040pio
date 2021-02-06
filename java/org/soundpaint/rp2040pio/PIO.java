@@ -37,6 +37,7 @@ public class PIO
   private final List<Decoder.DecodeException> caughtExceptions;
   private final GPIO gpio;
   private final Memory memory;
+  private final IRQ irq;
   private final SM[] sms;
 
   public enum PinDir {
@@ -59,9 +60,10 @@ public class PIO
     caughtExceptions = new ArrayList<Decoder.DecodeException>();
     gpio = new GPIO();
     memory = new Memory();
+    irq = new IRQ();
     sms = new SM[SM_COUNT];
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-      sms[smNum] = new SM(smNum, clock, gpio, memory);
+      sms[smNum] = new SM(smNum, clock, gpio, memory, irq);
     }
   }
 

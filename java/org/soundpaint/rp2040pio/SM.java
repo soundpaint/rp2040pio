@@ -44,6 +44,7 @@ public class SM
   private final int num;
   private final GPIO gpio;
   private final Memory memory;
+  private final IRQ irq;
   private final Status status;
   private final Decoder decoder;
   private final FIFO fifo;
@@ -108,7 +109,7 @@ public class SM
     public int wrapTop;
     public int wrapBottom;
 
-    public GPIO.Bit jmpPin()
+    public Bit jmpPin()
     {
       return gpio.getBit(jmpPin);
     }
@@ -189,7 +190,7 @@ public class SM
   }
 
   public SM(final int num, final Clock clock,
-            final GPIO gpio, final Memory memory)
+            final GPIO gpio, final Memory memory, final IRQ irq)
   {
     if (num < 0) {
       throw new IllegalArgumentException("SM num < 0: " + num);
@@ -206,9 +207,13 @@ public class SM
     if (memory == null) {
       throw new NullPointerException("memory");
     }
+    if (irq == null) {
+      throw new NullPointerException("irq");
+    }
     this.num = num;
     this.gpio = gpio;
     this.memory = memory;
+    this.irq = irq;
     status = new Status();
     decoder = new Decoder(this);
     fifo = new FIFO();
@@ -250,27 +255,24 @@ public class SM
     return status;
   }
 
-  public GPIO.Bit getGPIO(final int index)
+  public Bit getGPIO(final int index)
   {
     return gpio.getBit(index);
   }
 
-  public GPIO.Bit getIRQ(final int index)
+  public Bit getIRQ(final int index)
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    return irq.get(index);
   }
 
-  public GPIO.Bit clearIRQ(final int index)
+  public void clearIRQ(final int index)
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    irq.clear(index);
   }
 
-  public GPIO.Bit setIRQ(final int index)
+  public void setIRQ(final int index)
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    irq.set(index);
   }
 
   /**
