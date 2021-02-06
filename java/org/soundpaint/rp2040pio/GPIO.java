@@ -30,8 +30,35 @@ package org.soundpaint.rp2040pio;
 public class GPIO
 {
   public enum Direction {
-    IN, OUT
+    IN(0, "in"),
+    OUT(1, "out");
+
+    private final int value;
+    private final String label;
+
+    private Direction(final int value, final String label)
+    {
+      this.value = value;
+      this.label = label;
+    }
+
+    private int getValue() { return value; }
+
+    @Override
+    public String toString()
+    {
+      return label;
+    }
   };
+
+  private static Direction directionFromValue(final int value)
+  {
+    if (value == 0)
+      return Direction.IN;
+    else if (value == 1)
+      return Direction.OUT;
+    throw new IllegalArgumentException("value is neither 0 nor 1: " + value);
+  }
 
   public enum Bit {
     LOW(0, "0"),
@@ -46,12 +73,23 @@ public class GPIO
       this.label = label;
     }
 
+    private int getValue() { return value; }
+
     @Override
     public String toString()
     {
       return label;
     }
   };
+
+  private static Bit bitFromValue(final int value)
+  {
+    if (value == 0)
+      return Bit.LOW;
+    else if (value == 1)
+      return Bit.HIGH;
+    throw new IllegalArgumentException("value is neither 0 nor 1: " + value);
+  }
 
   private static class Terminal
   {
@@ -108,6 +146,67 @@ public class GPIO
       throw new IllegalArgumentException("port out of range: " + port);
     }
     return terminals[port].direction;
+  }
+
+  public int getPins(final int base, final int count)
+  {
+    if (base < 0) {
+      throw new IllegalArgumentException("GPIO pin base < 0: " + base);
+    }
+    if (base > 31) {
+      throw new IllegalArgumentException("GPIO pin base > 31: " + base);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("GPIO pin count < 0: " + count);
+    }
+    if (count > 31) {
+      throw new IllegalArgumentException("GPIO pin count > 31: " + count);
+    }
+    int pins = 0;
+    for (int pin = 0; pin < count; pin++) {
+      pins = (pins << 0x1) |
+        getBit((base + count) & 0x1f).getValue();
+    }
+    return pins;
+  }
+
+  public void setPins(final int pins, final int base, final int count)
+  {
+    if (base < 0) {
+      throw new IllegalArgumentException("GPIO pin base < 0: " + base);
+    }
+    if (base > 31) {
+      throw new IllegalArgumentException("GPIO pin base > 31: " + base);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("GPIO pin count < 0: " + count);
+    }
+    if (count > 31) {
+      throw new IllegalArgumentException("GPIO pin count > 31: " + count);
+    }
+    for (int pin = 0; pin < count; pin++) {
+      setBit((base + count) & 0x1f, bitFromValue((pins >>> count) & 0x1));
+    }
+  }
+
+  public void setPinDirs(final int pinDirs, final int base, final int count)
+  {
+    if (base < 0) {
+      throw new IllegalArgumentException("GPIO pin base < 0: " + base);
+    }
+    if (base > 31) {
+      throw new IllegalArgumentException("GPIO pin base > 31: " + base);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("GPIO pin count < 0: " + count);
+    }
+    if (count > 31) {
+      throw new IllegalArgumentException("GPIO pin count > 31: " + count);
+    }
+    for (int pin = 0; pin < count; pin++) {
+      setDirection((base + count) & 0x1f,
+                   directionFromValue((pinDirs >>> count) & 0x1));
+    }
   }
 }
 

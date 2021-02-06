@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 
 /**
@@ -48,6 +49,33 @@ public class SM
   private final FIFO fifo;
   private final PLL pll;
 
+  public enum IOMapping
+  {
+    SET((sm) -> sm.status.setBase, (sm) -> sm.status.setCount),
+    OUT((sm) -> sm.status.outBase, (sm) -> sm.status.outCount),
+    SIDE_SET((sm) -> sm.status.sideSetBase, (sm) -> sm.status.sideSetCount);
+
+    private final Function<SM, Integer> baseGetter;
+    private final Function<SM, Integer> countGetter;
+
+    private IOMapping(final Function<SM, Integer> baseGetter,
+                      final Function<SM, Integer> countGetter)
+    {
+      this.baseGetter = baseGetter;
+      this.countGetter = countGetter;
+    }
+
+    public void setPins(final SM sm, final int data)
+    {
+      sm.gpio.setPins(data, baseGetter.apply(sm), countGetter.apply(sm));
+    }
+
+    public void setPinDirs(final SM sm, final int data)
+    {
+      sm.gpio.setPinDirs(data, baseGetter.apply(sm), countGetter.apply(sm));
+    }
+  };
+
   public class Status
   {
     public boolean enabled;
@@ -59,8 +87,13 @@ public class SM
     public int isrShiftCount;
     public int osrValue;
     public int osrShiftCount;
+    public int setCount;
+    public int setBase;
+    public int outCount;
+    public int outBase;
     public int sideSetCount;
     public int sideSetBase;
+    public int inBase;
     public boolean sideSetEnable;
     public PIO.PinDir sideSetPinDir;
     public int jmpPin;
@@ -92,8 +125,13 @@ public class SM
       regPC = 0;
       isrValue = 0;
       osrValue = 0;
+      setCount = 0;
+      setBase = 0;
+      outCount = 0;
+      outBase = 0;
       sideSetCount = 0;
       sideSetBase = 0;
+      inBase = 0;
       sideSetEnable = false;
       sideSetPinDir = PIO.PinDir.GPIO_LEVELS;
       jmpPin = 0;
@@ -108,10 +146,11 @@ public class SM
       reset();
     }
 
-    public int asWord()
+    public boolean getStatusSel()
     {
       // TODO
       throw new InternalError("not yet implemented");
+      // as defined by EXECCTRL_STATUS_SEL
     }
 
     private void reset()
@@ -214,23 +253,6 @@ public class SM
   public GPIO.Bit getGPIO(final int index)
   {
     return gpio.getBit(index);
-  }
-
-  public GPIO.Bit getPin(final int index)
-  {
-    return gpio.getBit(mapPin(index));
-  }
-
-  public int getAllPins()
-  {
-    // TODO
-    throw new InternalError("not yet implemented");
-  }
-
-  public void setAllPins(final int value)
-  {
-    // TODO
-    throw new InternalError("not yet implemented");
   }
 
   public GPIO.Bit getIRQ(final int index)
@@ -376,6 +398,50 @@ public class SM
     return num;
   }
 
+  public void setSetCount(final int count)
+  {
+    if (count < 0) {
+      throw new IllegalArgumentException("set count < 0: " + count);
+    }
+    if (count > 5) {
+      throw new IllegalArgumentException("set count > 5: " + count);
+    }
+    status.setCount = count;
+  }
+
+  public void setSetBase(final int base)
+  {
+    if (base < 0) {
+      throw new IllegalArgumentException("set base < 0: " + base);
+    }
+    if (base > 31) {
+      throw new IllegalArgumentException("set base > 31: " + base);
+    }
+    status.setBase = base;
+  }
+
+  public void setOutCount(final int count)
+  {
+    if (count < 0) {
+      throw new IllegalArgumentException("out count < 0: " + count);
+    }
+    if (count > 5) {
+      throw new IllegalArgumentException("out count > 5: " + count);
+    }
+    status.outCount = count;
+  }
+
+  public void setOutBase(final int base)
+  {
+    if (base < 0) {
+      throw new IllegalArgumentException("out base < 0: " + base);
+    }
+    if (base > 31) {
+      throw new IllegalArgumentException("out base > 31: " + base);
+    }
+    status.outBase = base;
+  }
+
   public void setSideSetCount(final int count)
   {
     if (count < 0) {
@@ -398,6 +464,22 @@ public class SM
     status.sideSetBase = base;
   }
 
+  public void setInBase(final int base)
+  {
+    if (base < 0) {
+      throw new IllegalArgumentException("in base < 0: " + base);
+    }
+    if (base > 31) {
+      throw new IllegalArgumentException("in base > 31: " + base);
+    }
+    status.inBase = base;
+  }
+
+  public int getPins()
+  {
+    return gpio.getPins(status.inBase, 32);
+  }
+
   public void setSideSetEnable(final boolean enable)
   {
     status.sideSetEnable = enable;
@@ -409,12 +491,6 @@ public class SM
       throw new NullPointerException("pinDir");
     }
     status.sideSetPinDir = pinDir;
-  }
-
-  public void setPinDirs(final int pinDirs)
-  {
-    // TODO
-    throw new InternalError("not yet implemented");
   }
 
   public void setJmpPin(final int pin)

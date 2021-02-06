@@ -273,7 +273,7 @@ public abstract class Instruction
     private enum Source
     {
       GPIO_(0b00, "gpio", (wait) -> wait.sm.getGPIO(wait.index)),
-      PIN(0b01, "pin", (wait) -> wait.sm.getPin(wait.index)),
+      PIN(0b01, "pin", (wait) -> wait.sm.getStatus().jmpPin()),
       IRQ(0b10, "irq", (wait) -> {
           final int irqNum = getIRQNum(wait.sm.getNum(), wait.index);
           final GPIO.Bit bit = wait.sm.getIRQ(irqNum);
@@ -364,7 +364,7 @@ public abstract class Instruction
 
     private enum Source
     {
-      PINS(0b000, "pins", (sm) -> sm.getAllPins()),
+      PINS(0b000, "pins", (sm) -> sm.getPins()),
       X(0b001, "x", (sm) -> sm.getX()),
       Y(0b010, "y", (sm) -> sm.getX()),
       NULL(0b011, "null", (sm) -> 0),
@@ -455,7 +455,7 @@ public abstract class Instruction
     private enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
-          sm.setAllPins(data);
+          SM.IOMapping.OUT.setPins(sm, data);
           return null;
         }),
       X(0b001, "x", (sm, data) -> {
@@ -470,7 +470,7 @@ public abstract class Instruction
           return null;
         }),
       PINDIRS(0b100, "pindirs", (sm, data) -> {
-          sm.setPinDirs(data);
+          SM.IOMapping.OUT.setPinDirs(sm, data);
           return null;
         }),
       PC(0b101, "pc", (sm, data) -> {
@@ -656,12 +656,12 @@ public abstract class Instruction
 
     private enum Source
     {
-      PINS(0b000, "pins", (sm) -> sm.getAllPins()),
+      PINS(0b000, "pins", (sm) -> sm.getPins()),
       X(0b001, "x", (sm) -> sm.getX()),
       Y(0b010, "y", (sm) -> sm.getY()),
       NULL(0b011, "null", (sm) -> 0),
       RESERVED_4(0b100, "???", null),
-      STATUS(0b101, "status", (sm) -> sm.getStatus().asWord()),
+      STATUS(0b101, "status", (sm) -> (sm.getStatus().getStatusSel() ? ~0 : 0)),
       ISR(0b110, "isr", (sm) -> sm.getISRValue()),
       OSR(0b111, "osr", (sm) -> sm.getOSRValue());
 
@@ -693,7 +693,7 @@ public abstract class Instruction
     private enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
-          sm.setAllPins(data);
+          SM.IOMapping.OUT.setPins(sm, data);
           return null;
         }),
       X(0b001, "x", (sm, data) -> {
@@ -903,7 +903,7 @@ public abstract class Instruction
     private enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
-          sm.setAllPins(data);
+          SM.IOMapping.SET.setPins(sm, data);
           return null;
         }),
       X(0b001, "x", (sm, data) -> {
@@ -916,7 +916,7 @@ public abstract class Instruction
         }),
       RESERVED_3(0b011, "???", null),
       PINDIRS(0b100, "pindirs", (sm, data) -> {
-          sm.setPinDirs(data);
+          SM.IOMapping.SET.setPinDirs(sm, data);
           return null;
         }),
       RESERVED_5(0b101, "???", null),
