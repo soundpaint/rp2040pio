@@ -28,7 +28,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 /**
- * A pair of an RX FIFO and a TX FIFO, each having a capacity of 4
+ * A pair of an RX FIFO and a TX FIFO, each having a capacity of DEPTH
  * words of 32 bits.  One of the FIFOs' capacity can be reconfigured
  * to be joined with the capacity of the other FIFO, thus resulting in
  * 8 words of capacity for that FIFO and leaving no capacity left for
@@ -36,20 +36,20 @@ import java.util.Queue;
  */
 public class FIFO
 {
+  public static final int DEPTH = 4;
 
   /**
    * RX queue from state machine to system.
    */
   private final Queue<Integer> rx;
 
-  private int rxCapacity;
-
   /**
    * TX queue from system to state machine.
    */
   private final Queue<Integer> tx;
 
-  private int txCapacity;
+  private boolean regSHIFTCTRL_FJOIN_RX; // bit 31 of SHIFTCTRL
+  private boolean regSHIFTCTRL_FJOIN_TX; // bit 30 of SHIFTCTRL
 
   public FIFO()
   {
@@ -61,28 +61,35 @@ public class FIFO
   public void reset()
   {
     rx.clear();
-    rxCapacity = 4;
     tx.clear();
-    txCapacity = 4;
+    regSHIFTCTRL_FJOIN_RX = false;
+    regSHIFTCTRL_FJOIN_TX = false;
   }
 
-  public void rxJoin()
+  public void setJoinRX(final boolean join)
   {
-    if (rxCapacity > 4)
-      throw new InternalError("rx already joind");
+    if (join == regSHIFTCTRL_FJOIN_RX)
+      return;
+    if (join)
+      regSHIFTCTRL_FJOIN_TX = false;
     rx.clear();
-    rxCapacity = 8;
     tx.clear();
-    txCapacity = 0;
+  }
+
+  public int getRXLevel()
+  {
+    return rx.size();
   }
 
   public boolean fstatRxFull()
   {
-    return rx.size() >= rxCapacity;
+    // bit 0, 1, 2 or 3 (for SM_0 .. SM_3) of FSTAT
+    return rx.size() >= (regSHIFTCTRL_FJOIN_RX ? 2 * DEPTH : DEPTH);
   }
 
   public boolean fstatRxEmpty()
   {
+    // bit 8, 9, 10 or 11 (for SM_0 .. SM_3) of FSTAT
     return rx.size() == 0;
   }
 
@@ -92,23 +99,38 @@ public class FIFO
       rx.add(value);
   }
 
-  public void txJoin()
+  public int rxDMARead()
   {
-    if (txCapacity > 4)
-      throw new InternalError("tx already joind");
-    tx.clear();
-    txCapacity = 8;
+    if (!fstatRxEmpty())
+      return rx.remove();
+    else
+      throw new IllegalStateException("RX FIFO empty");
+  }
+
+  public void setJoinTX(final boolean join)
+  {
+    if (join == regSHIFTCTRL_FJOIN_TX)
+      return;
+    if (join)
+      regSHIFTCTRL_FJOIN_RX = false;
     rx.clear();
-    rxCapacity = 0;
+    tx.clear();
+  }
+
+  public int getTXLevel()
+  {
+    return tx.size();
   }
 
   public boolean fstatTxFull()
   {
-    return tx.size() >= txCapacity;
+    // bit 16, 17, 18 or 19 (for SM_0 .. SM_3) of FSTAT
+    return tx.size() >= (regSHIFTCTRL_FJOIN_TX ? 2 * DEPTH : DEPTH);
   }
 
   public boolean fstatTxEmpty()
   {
+    // bit 24, 25, 26 or 27 (for SM_0 .. SM_3) of FSTAT
     return tx.size() == 0;
   }
 
@@ -117,6 +139,14 @@ public class FIFO
     if (!fstatTxEmpty())
       return rx.remove();
     return 0;
+  }
+
+  public void txDMAWrite(final int value)
+  {
+    if (!fstatTxFull())
+      tx.add(value);
+    else
+      throw new IllegalStateException("TX FIFO full");
   }
 }
 

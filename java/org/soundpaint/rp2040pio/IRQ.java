@@ -29,11 +29,11 @@ package org.soundpaint.rp2040pio;
  */
 public class IRQ
 {
-  private int regIRQ;
-  private int regIRQ0_INTE;
-  private int regIRQ0_INTF;
-  private int regIRQ1_INTE;
-  private int regIRQ1_INTF;
+  private int regIRQ; // bits 0..7 of IRQ
+  private int regIRQ0_INTE; // bits 0..11 of IRQ0_INTE
+  private int regIRQ0_INTF; // bits 0..11 of IRQ0_INTF
+  private int regIRQ1_INTE; // bits 0..11 of IRQ1_INTE
+  private int regIRQ1_INTF; // bits 0..11 of IRQ1_INTF
 
   public IRQ()
   {

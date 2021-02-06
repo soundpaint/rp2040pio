@@ -67,6 +67,21 @@ public class PIO
     }
   }
 
+  public int getDBG_CFGINFO_IMEM_SIZE()
+  {
+    return Memory.SIZE;
+  }
+
+  public int getDBG_CFGINFO_SM_COUNT()
+  {
+    return SM_COUNT;
+  }
+
+  public int getDBG_CFGINFO_FIFO_DEPTH()
+  {
+    return FIFO.DEPTH;
+  }
+
   public Memory getMemory()
   {
     return memory;

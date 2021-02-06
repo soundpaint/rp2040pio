@@ -76,6 +76,8 @@ public class GPIO
   }
 
   private final Terminal[] terminals;
+  private int regINPUT_SYNC_BYPASS; // bits 0..31 of INPUT_SYNC_BYPASS
+                                    // (contents currently ignored)
 
   public GPIO()
   {
@@ -185,6 +187,16 @@ public class GPIO
       setDirection((base + count) & 0x1f,
                    directionFromValue((pinDirs >>> count) & 0x1));
     }
+  }
+
+  public void setInputSyncByPass(final int bits)
+  {
+    regINPUT_SYNC_BYPASS = bits;
+  }
+
+  public int getInputSyncByPass()
+  {
+    return regINPUT_SYNC_BYPASS;
   }
 }
 

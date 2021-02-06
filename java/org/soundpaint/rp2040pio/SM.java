@@ -52,9 +52,12 @@ public class SM
 
   public enum IOMapping
   {
-    SET((sm) -> sm.status.setBase, (sm) -> sm.status.setCount),
-    OUT((sm) -> sm.status.outBase, (sm) -> sm.status.outCount),
-    SIDE_SET((sm) -> sm.status.sideSetBase, (sm) -> sm.status.sideSetCount);
+    SET((sm) -> sm.status.regPINCTRL_SET_BASE,
+        (sm) -> sm.status.regPINCTRL_SET_COUNT),
+    OUT((sm) -> sm.status.regPINCTRL_OUT_BASE,
+        (sm) -> sm.status.regPINCTRL_OUT_COUNT),
+    SIDE_SET((sm) -> sm.status.regPINCTRL_SIDESET_BASE,
+             (sm) -> sm.status.regPINCTRL_SIDESET_COUNT);
 
     private final Function<SM, Integer> baseGetter;
     private final Function<SM, Integer> countGetter;
@@ -83,75 +86,41 @@ public class SM
     public boolean clockEnabled;
     public int regX;
     public int regY;
-    public int regPC;
     public int isrValue;
     public int isrShiftCount;
     public int osrValue;
     public int osrShiftCount;
-    public int setCount;
-    public int setBase;
-    public int outCount;
-    public int outBase;
-    public int sideSetCount;
-    public int sideSetBase;
-    public int inBase;
-    public boolean sideSetEnable;
-    public PIO.PinDir sideSetPinDir;
-    public int jmpPin;
-    public PIO.ShiftDir inShiftDir;
-    public PIO.ShiftDir outShiftDir;
-    public int pushThresh;
-    public boolean autoPush;
-    public int pullThresh;
-    public boolean autoPull;
     public int pendingDelay;
     public int pendingInstruction;
-    public int wrapTop;
-    public int wrapBottom;
-
-    public Bit jmpPin()
-    {
-      return gpio.getBit(jmpPin);
-    }
-
-    public boolean osrEmpty()
-    {
-      return osrShiftCount == 0;
-    }
+    public int regPINCTRL_SIDESET_COUNT; // bits 29..31 of SMx_PINCTRL
+    public int regPINCTRL_SIDESET_BASE; // bits 10..14 of SMx_PINCTRL
+    public int regPINCTRL_SET_COUNT; // bits 26..28 of SMx_PINCTRL
+    public int regPINCTRL_SET_BASE; // bits 5..9 of SMx_PINCTRL
+    public int regPINCTRL_OUT_COUNT; // bits 20..25 of SMx_PINCTRL
+    public int regPINCTRL_OUT_BASE; // bits 0..4 of SMx_PINCTRL
+    public int regPINCTRL_IN_BASE; // bits 15..19 of SMx_PINCTRL
+    public int regADDR; // bits 0..4 of SMx_ADDR
+    public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
+    public PIO.PinDir regEXECCTRL_SIDE_PINDIR; // bit 29 of SMx_EXECCTRL
+    public int regEXECCTRL_JMP_PIN; // bits 24..28 of SMx_EXECCTRL
+    public int regEXECCTRL_WRAP_TOP; // bits 12..16 of SMx_EXECCTRL
+    public int regEXECCTRL_WRAP_BOTTOM; // bits 7..11 of SMx_EXECCTRL
+    public boolean regEXECCTRL_STATUS_SEL; // bit 4 of SMx_EXECCTRL
+    public int regEXECCTRL_STATUS_N; // bits 0..3 of SMx_EXECCTRL
+    public PIO.ShiftDir regSHIFTCTRL_IN_SHIFTDIR; // bit 18 of SMx_SHIFTCTRL
+    public PIO.ShiftDir regSHIFTCTRL_OUT_SHIFTDIR; // bit 19 of SMx_SHIFTCTRL
+    public int regSHIFTCTRL_PUSH_THRESH; // bits 20..24 of SMx_SHIFTCTRL
+    public boolean regSHIFTCTRL_AUTOPUSH; // bit 16 of SMx_SHIFTCTRL
+    public int regSHIFTCTRL_PULL_THRESH; // bits 25..29 of SMx_SHIFTCTRL
+    public boolean regSHIFTCTRL_AUTOPULL; // bit 17 of SMx_SHIFTCTRL
 
     public Status()
     {
       regX = 0;
       regY = 0;
-      regPC = 0;
       isrValue = 0;
       osrValue = 0;
-      setCount = 0;
-      setBase = 0;
-      outCount = 0;
-      outBase = 0;
-      sideSetCount = 0;
-      sideSetBase = 0;
-      inBase = 0;
-      sideSetEnable = false;
-      sideSetPinDir = PIO.PinDir.GPIO_LEVELS;
-      jmpPin = 0;
-      inShiftDir = PIO.ShiftDir.SHIFT_LEFT;
-      outShiftDir = PIO.ShiftDir.SHIFT_LEFT;
-      pushThresh = 0;
-      autoPush = false;
-      pullThresh = 0;
-      autoPull = false;
-      wrapTop = -1;
-      wrapBottom = -1;
       reset();
-    }
-
-    public boolean getStatusSel()
-    {
-      // TODO
-      throw new InternalError("not yet implemented");
-      // as defined by EXECCTRL_STATUS_SEL
     }
 
     private void reset()
@@ -162,6 +131,48 @@ public class SM
       pendingInstruction = -1;
       enabled = false;
       clockEnabled = false;
+      regADDR = 0;
+      regEXECCTRL_WRAP_TOP = 0x1f;
+      regEXECCTRL_WRAP_BOTTOM = 0x00;
+      regEXECCTRL_STATUS_SEL = false;
+      regEXECCTRL_STATUS_N = 0;
+      regEXECCTRL_SIDE_EN = false;
+      regEXECCTRL_SIDE_PINDIR = PIO.PinDir.GPIO_LEVELS;
+      regEXECCTRL_JMP_PIN = 0;
+      regSHIFTCTRL_PUSH_THRESH = 0;
+      regSHIFTCTRL_PULL_THRESH = 0;
+      regSHIFTCTRL_AUTOPUSH = false;
+      regSHIFTCTRL_AUTOPULL = false;
+      regSHIFTCTRL_IN_SHIFTDIR = PIO.ShiftDir.SHIFT_LEFT;
+      regSHIFTCTRL_OUT_SHIFTDIR = PIO.ShiftDir.SHIFT_LEFT;
+      regPINCTRL_SET_COUNT = 0x5;
+      regPINCTRL_SET_BASE = 0;
+      regPINCTRL_OUT_COUNT = 0;
+      regPINCTRL_OUT_BASE = 0;
+      regPINCTRL_SIDESET_COUNT = 0;
+      regPINCTRL_SIDESET_BASE = 0;
+      regPINCTRL_IN_BASE = 0;
+    }
+
+    public Bit jmpPin()
+    {
+      return gpio.getBit(regEXECCTRL_JMP_PIN);
+    }
+
+    public boolean osrEmpty()
+    {
+      return osrShiftCount == 0;
+    }
+
+    public int getFIFOStatus()
+    {
+      final boolean fulfilled;
+      if (regEXECCTRL_STATUS_SEL) {
+        fulfilled = fifo.getRXLevel() < regEXECCTRL_STATUS_N;
+      } else {
+        fulfilled = fifo.getTXLevel() < regEXECCTRL_STATUS_N;
+      }
+      return fulfilled ? ~0 : 0;
     }
 
     private boolean consumePendingDelay()
@@ -280,8 +291,8 @@ public class SM
    */
   public boolean rxPush(final boolean ifFull, final boolean block)
   {
-    final boolean isrFull = status.isrShiftCount >= status.pushThresh;
-    if (!ifFull || (isrFull && status.autoPush)) {
+    final boolean isrFull = status.isrShiftCount >= status.regSHIFTCTRL_PUSH_THRESH;
+    if (!ifFull || (isrFull && status.regSHIFTCTRL_AUTOPUSH)) {
       final boolean fifoFull = fifo.fstatRxFull();
       if (fifoFull) {
         return block; // stall on block
@@ -305,8 +316,8 @@ public class SM
      * following code, as 3.5.4.2 ("Autopull Details") of RP2040
      * datasheet suggests?  Also, stall behaviour may be wrong?
      */
-    final boolean osrEmpty = status.osrShiftCount >= status.pullThresh;
-    if (!ifEmpty || (osrEmpty && status.autoPull)) {
+    final boolean osrEmpty = status.osrShiftCount >= status.regSHIFTCTRL_PULL_THRESH;
+    if (!ifEmpty || (osrEmpty && status.regSHIFTCTRL_AUTOPULL)) {
       final boolean fifoEmpty = fifo.fstatTxEmpty();
       if (fifoEmpty) {
         if (!block) {
@@ -340,7 +351,7 @@ public class SM
   public boolean shiftISRLeft(final int bitCount, final int data)
   {
     // TODO: Clarify: Shift ISR always or only if not (isrFull &&
-    // status.autoPush)?
+    // status.regSHIFTCTRL_AUTOPUSH)?
     status.isrValue <<= bitCount;
     status.isrValue |= data & SHIFT_MASK[bitCount];
     status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
@@ -350,7 +361,7 @@ public class SM
   public boolean shiftISRRight(final int bitCount, final int data)
   {
     // TODO: Clarify: Shift ISR always or only if not (isrFull &&
-    // status.autoPush)?
+    // status.regSHIFTCTRL_AUTOPUSH)?
     status.isrValue >>>= bitCount;
     status.isrValue |= (data & SHIFT_MASK[bitCount]) << (32 - bitCount);
     status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
@@ -368,7 +379,7 @@ public class SM
                               final IntConsumer destination)
   {
     // TODO: Clarify: Shift OSR always or only if not (isrEmpty &&
-    // status.autoPush)?
+    // status.regSHIFTCTRL_AUTOPUSH)?
     final int data =
       (status.osrValue & ~SHIFT_MASK[32 - bitCount]) >>> (32 - bitCount);
     status.osrValue <<= bitCount;
@@ -381,18 +392,12 @@ public class SM
                                final IntConsumer destination)
   {
     // TODO: Clarify: Shift OSR always or only if not (osrEmpty &&
-    // status.autoPush)?
+    // status.regSHIFTCTRL_AUTOPUSH)?
     final int data = status.osrValue & SHIFT_MASK[bitCount];
     status.osrValue >>>= bitCount;
     status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
     destination.accept(data);
     return txPull(true, true);
-  }
-
-  private int mapPin(final int index)
-  {
-    // TODO
-    throw new InternalError("not yet implemented");
   }
 
   public int getNum()
@@ -408,7 +413,7 @@ public class SM
     if (count > 5) {
       throw new IllegalArgumentException("set count > 5: " + count);
     }
-    status.setCount = count;
+    status.regPINCTRL_SET_COUNT = count;
   }
 
   public void setSetBase(final int base)
@@ -419,7 +424,7 @@ public class SM
     if (base > 31) {
       throw new IllegalArgumentException("set base > 31: " + base);
     }
-    status.setBase = base;
+    status.regPINCTRL_SET_BASE = base;
   }
 
   public void setOutCount(final int count)
@@ -430,7 +435,7 @@ public class SM
     if (count > 5) {
       throw new IllegalArgumentException("out count > 5: " + count);
     }
-    status.outCount = count;
+    status.regPINCTRL_OUT_COUNT = count;
   }
 
   public void setOutBase(final int base)
@@ -441,7 +446,7 @@ public class SM
     if (base > 31) {
       throw new IllegalArgumentException("out base > 31: " + base);
     }
-    status.outBase = base;
+    status.regPINCTRL_OUT_BASE = base;
   }
 
   public void setSideSetCount(final int count)
@@ -452,7 +457,7 @@ public class SM
     if (count > 5) {
       throw new IllegalArgumentException("side set count > 5: " + count);
     }
-    status.sideSetCount = count;
+    status.regPINCTRL_SIDESET_COUNT = count;
   }
 
   public void setSideSetBase(final int base)
@@ -463,7 +468,7 @@ public class SM
     if (base > 31) {
       throw new IllegalArgumentException("side set base > 31: " + base);
     }
-    status.sideSetBase = base;
+    status.regPINCTRL_SIDESET_BASE = base;
   }
 
   public void setInBase(final int base)
@@ -474,17 +479,17 @@ public class SM
     if (base > 31) {
       throw new IllegalArgumentException("in base > 31: " + base);
     }
-    status.inBase = base;
+    status.regPINCTRL_IN_BASE = base;
   }
 
   public int getPins()
   {
-    return gpio.getPins(status.inBase, 32);
+    return gpio.getPins(status.regPINCTRL_IN_BASE, 32);
   }
 
   public void setSideSetEnable(final boolean enable)
   {
-    status.sideSetEnable = enable;
+    status.regEXECCTRL_SIDE_EN = enable;
   }
 
   public void setSideSetPinDir(final PIO.PinDir pinDir)
@@ -492,7 +497,7 @@ public class SM
     if (pinDir == null) {
       throw new NullPointerException("pinDir");
     }
-    status.sideSetPinDir = pinDir;
+    status.regEXECCTRL_SIDE_PINDIR = pinDir;
   }
 
   public void setJmpPin(final int pin)
@@ -503,7 +508,7 @@ public class SM
     if (pin > 31) {
       throw new IllegalArgumentException("exec ctrl jmp pin > 31: " + pin);
     }
-    status.jmpPin = pin;
+    status.regEXECCTRL_JMP_PIN = pin;
   }
 
   public void setInShiftDir(final PIO.ShiftDir shiftDir)
@@ -511,12 +516,12 @@ public class SM
     if (shiftDir == null) {
       throw new NullPointerException("shiftDir");
     }
-    status.inShiftDir = shiftDir;
+    status.regSHIFTCTRL_IN_SHIFTDIR = shiftDir;
   }
 
   public PIO.ShiftDir getInShiftDir()
   {
-    return status.inShiftDir;
+    return status.regSHIFTCTRL_IN_SHIFTDIR;
   }
 
   public void setOutShiftDir(final PIO.ShiftDir shiftDir)
@@ -524,12 +529,12 @@ public class SM
     if (shiftDir == null) {
       throw new NullPointerException("shiftDir");
     }
-    status.outShiftDir = shiftDir;
+    status.regSHIFTCTRL_OUT_SHIFTDIR = shiftDir;
   }
 
   public PIO.ShiftDir getOutShiftDir()
   {
-    return status.outShiftDir;
+    return status.regSHIFTCTRL_OUT_SHIFTDIR;
   }
 
   public void setPushThresh(final int thresh)
@@ -542,12 +547,12 @@ public class SM
       throw new IllegalArgumentException("shift ctrl push threshold > 31: " +
                                          thresh);
     }
-    status.pushThresh = thresh;
+    status.regSHIFTCTRL_PUSH_THRESH = thresh;
   }
 
   public void setAutoPush(final boolean auto)
   {
-    status.autoPush = auto;
+    status.regSHIFTCTRL_AUTOPUSH = auto;
   }
 
   public void setPullThresh(final int thresh)
@@ -560,12 +565,12 @@ public class SM
       throw new IllegalArgumentException("shift ctrl pull threshold > 31: " +
                                          thresh);
     }
-    status.pullThresh = thresh;
+    status.regSHIFTCTRL_PULL_THRESH = thresh;
   }
 
   public void setAutoPull(final boolean auto)
   {
-    status.autoPull = auto;
+    status.regSHIFTCTRL_AUTOPULL = auto;
   }
 
   public int getX() { return status.regX; }
@@ -600,7 +605,7 @@ public class SM
     if (value > 31) {
       throw new IllegalArgumentException("wrap top value > 31: " + value);
     }
-    status.wrapTop = value;
+    status.regEXECCTRL_WRAP_TOP = value;
   }
 
   public void setWrapBottom(final int value)
@@ -611,13 +616,13 @@ public class SM
     if (value > 31) {
       throw new IllegalArgumentException("wrap bottom value > 31: " + value);
     }
-    status.wrapBottom = value;
+    status.regEXECCTRL_WRAP_BOTTOM = value;
   }
 
   public void deactivateWrap()
   {
-    status.wrapTop = -1;
-    status.wrapBottom = -1;
+    status.regEXECCTRL_WRAP_TOP = 0x1f;
+    status.regEXECCTRL_WRAP_BOTTOM = 0x00;
   }
 
   public void setPC(final int value)
@@ -628,18 +633,15 @@ public class SM
     if (value > 31) {
       throw new IllegalArgumentException("pc value > 31: " + value);
     }
-    status.regPC = value;
+    status.regADDR = value;
   }
 
   private void updatePC()
   {
-    if (status.regPC == status.wrapTop) {
-      if (status.wrapBottom < 0) {
-        throw new InternalError("inconsistent wrap configuration");
-      }
-      status.regPC = status.wrapBottom;
+    if (status.regADDR == status.regEXECCTRL_WRAP_TOP) {
+      status.regADDR = status.regEXECCTRL_WRAP_BOTTOM;
     } else {
-      status.regPC = (status.regPC + 1) & 0x1f;
+      status.regADDR = (status.regADDR + 1) & 0x1f;
     }
   }
 
@@ -650,7 +652,7 @@ public class SM
       status.pendingInstruction = -1;
       return (short)pendingInstruction;
     }
-    return memory.get(status.regPC);
+    return memory.get(status.regADDR);
   }
 
   public void insertInstruction(final int instruction)

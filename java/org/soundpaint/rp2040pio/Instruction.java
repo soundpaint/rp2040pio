@@ -114,13 +114,13 @@ public abstract class Instruction
   {
     final SM.Status smStatus = sm.getStatus();
     final int delayAndSideSet = (opCode >>> 0x8) & 0x1f;
-    final int delayMask = DELAY_MASK[smStatus.sideSetCount];
+    final int delayMask = DELAY_MASK[smStatus.regPINCTRL_SIDESET_COUNT];
     this.opCode = opCode;
     delay = delayAndSideSet & delayMask;
     final int enableRemoved =
-      smStatus.sideSetEnable ? delayAndSideSet & 0xf : delayAndSideSet;
-    if (smStatus.sideSetCount >= 1) {
-      sideSet = enableRemoved >>> (5 - smStatus.sideSetCount);
+      smStatus.regEXECCTRL_SIDE_EN ? delayAndSideSet & 0xf : delayAndSideSet;
+    if (smStatus.regPINCTRL_SIDESET_COUNT >= 1) {
+      sideSet = enableRemoved >>> (5 - smStatus.regPINCTRL_SIDESET_COUNT);
     } else {
       sideSet = -1;
     }
@@ -238,7 +238,7 @@ public abstract class Instruction
     {
       final SM.Status smStatus = sm.getStatus();
       final boolean doJump = condition.fulfilled(smStatus);
-      if (doJump) smStatus.regPC = address;
+      if (doJump) smStatus.regADDR = address;
       return doJump ? ResultState.JUMP : ResultState.COMPLETE;
     }
 
@@ -661,7 +661,8 @@ public abstract class Instruction
       Y(0b010, "y", (sm) -> sm.getY()),
       NULL(0b011, "null", (sm) -> 0),
       RESERVED_4(0b100, "???", null),
-      STATUS(0b101, "status", (sm) -> (sm.getStatus().getStatusSel() ? ~0 : 0)),
+      STATUS(0b101, "status",
+             (sm) -> (sm.getStatus().getFIFOStatus())),
       ISR(0b110, "isr", (sm) -> sm.getISRValue()),
       OSR(0b111, "osr", (sm) -> sm.getOSRValue());
 

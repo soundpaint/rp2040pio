@@ -32,8 +32,8 @@ import java.util.List;
  */
 public class PLL implements Clock.TransitionListener
 {
-  private int divIntegerBits;
-  private int divFractionalBits;
+  private int regCLKDIV_INT; // bits 16..31 of SMx_CLKDIV
+  private int regCLKDIV_FRAC; // bits 8..15 of SMx_CLKDIV
   private int countIntegerBits;
   private int countFractionalBits;
   private long wallClock;
@@ -63,7 +63,7 @@ public class PLL implements Clock.TransitionListener
 
   public int getDivIntegerBits()
   {
-    return divIntegerBits;
+    return regCLKDIV_INT;
   }
 
   public void setDivIntegerBits(final int divIntegerBits)
@@ -76,12 +76,12 @@ public class PLL implements Clock.TransitionListener
       throw new IllegalArgumentException("div integer bits > 65535: " +
                                          divIntegerBits);
     }
-    this.divIntegerBits = divIntegerBits;
+    this.regCLKDIV_INT = divIntegerBits;
   }
 
   public int getDivFractionalBits()
   {
-    return divFractionalBits;
+    return regCLKDIV_FRAC;
   }
 
   public void setDivFractionalBits(final int divFractionalBits)
@@ -94,7 +94,7 @@ public class PLL implements Clock.TransitionListener
       throw new IllegalArgumentException("div fractional bits > 255: " +
                                          divFractionalBits);
     }
-    this.divFractionalBits = divFractionalBits;
+    this.regCLKDIV_FRAC = divFractionalBits;
   }
 
   public void addTransitionListener(final Clock.TransitionListener listener)
@@ -132,8 +132,8 @@ public class PLL implements Clock.TransitionListener
   {
     wallClock++;
     if (countIntegerBits == 1) {
-      countIntegerBits += divIntegerBits;
-      countFractionalBits += divFractionalBits;
+      countIntegerBits += regCLKDIV_INT;
+      countFractionalBits += regCLKDIV_FRAC;
       if (countFractionalBits >= 0x10000) {
         countFractionalBits -= 0x10000;
         countIntegerBits++;
