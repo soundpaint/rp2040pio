@@ -161,7 +161,7 @@ public abstract class Instruction
     return
       (index & 0x10) != 0 ?
       (index & 0x3) + "_rel" :
-      Integer.toString(index & 0x7);
+      String.format("%01x", index & 0x7);
   }
 
   @Override
@@ -261,7 +261,7 @@ public abstract class Instruction
       final String conditionDisplay = condition.toString();
       return
         (!conditionDisplay.isEmpty() ? conditionDisplay + ", " : "") +
-        address;
+        String.format("%02x", address);
     }
   }
 
@@ -352,7 +352,9 @@ public abstract class Instruction
     {
       final int maskedIndex;
       final String num =
-        src == Source.IRQ ? getIRQNumDisplay(index) : Integer.toString(index);
+        src == Source.IRQ ?
+        getIRQNumDisplay(index) :
+        String.format("%02x", index);
       return polarity + " " + src + " " + num;
     }
   }
@@ -443,7 +445,7 @@ public abstract class Instruction
     @Override
     public String getParamsDisplay()
     {
-      return src + ", " + bitCount;
+      return src + ", " + String.format("%02x", bitCount);
     }
   }
 
@@ -557,7 +559,7 @@ public abstract class Instruction
     @Override
     public String getParamsDisplay()
     {
-      return dst + ", " + bitCount;
+      return dst + ", " + String.format("%02x", bitCount);
     }
   }
 
@@ -990,7 +992,7 @@ public abstract class Instruction
     @Override
     public String getParamsDisplay()
     {
-      return dst + ", " + data;
+      return dst + ", " + String.format("%02x", data);
     }
   }
 }
