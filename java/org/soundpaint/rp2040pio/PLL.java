@@ -97,6 +97,19 @@ public class PLL implements Clock.TransitionListener
     this.regCLKDIV_FRAC = divFractionalBits;
   }
 
+  public void setCLKDIV(final int clkdiv)
+  {
+    setDivIntegerBits(clkdiv >>> 16);
+    setDivFractionalBits((clkdiv >>> 8) & 0xff);
+  }
+
+  public int getCLKDIV()
+  {
+    return
+      (getDivIntegerBits() << 16) |
+      (getDivFractionalBits() << 8);
+  }
+
   public void addTransitionListener(final Clock.TransitionListener listener)
   {
     listeners.add(listener);

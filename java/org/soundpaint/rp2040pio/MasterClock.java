@@ -35,6 +35,13 @@ public class MasterClock implements Clock
   private final List<TransitionListener> listeners;
   private long wallClock;
 
+  private static final MasterClock DEFAULT_INSTANCE = new MasterClock();
+
+  public static MasterClock getDefaultInstance()
+  {
+    return DEFAULT_INSTANCE;
+  }
+
   public MasterClock()
   {
     listeners = new ArrayList<TransitionListener>();

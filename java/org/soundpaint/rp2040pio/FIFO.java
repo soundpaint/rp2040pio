@@ -76,6 +76,11 @@ public class FIFO
     tx.clear();
   }
 
+  public boolean getJoinRX()
+  {
+    return regSHIFTCTRL_FJOIN_RX;
+  }
+
   public int getRXLevel()
   {
     return rx.size();
@@ -115,6 +120,11 @@ public class FIFO
       regSHIFTCTRL_FJOIN_RX = false;
     rx.clear();
     tx.clear();
+  }
+
+  public boolean getJoinTX()
+  {
+    return regSHIFTCTRL_FJOIN_TX;
   }
 
   public int getTXLevel()

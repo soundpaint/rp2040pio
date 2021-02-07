@@ -121,6 +121,40 @@ public class Memory
     System.arraycopy(code, 0, this.code, 0, SIZE);
     System.out.println("loaded " + address + " instructions into PIO");
   }
+
+  public void removeProgram(final Program program, final int loadedOffset)
+  {
+    /*
+     * TODO: "removeProgram" is neccessary for tracking memory
+     * allocation: "canAddProgram" and "addProgram" have to decide
+     * whether the acquired region of memory is still available or
+     * already used.  That is, "removeProgram" should mark the freed
+     * region of memory as available for other programs.
+     */
+    if (program == null) {
+      throw new NullPointerException("program");
+    }
+    if (loadedOffset < 0) {
+      throw new IllegalArgumentException("loadedOffset < 0: " + loadedOffset);
+    }
+    if (loadedOffset >= SIZE) {
+      throw new IllegalArgumentException("loadedOffset >= " + SIZE +
+                                         ": " + loadedOffset);
+    }
+    final int length = program.length;
+    if (length < 0) {
+      throw new IllegalArgumentException("program length < 0: " + length);
+    }
+    if (length <= SIZE) {
+      throw new IllegalArgumentException("program length >= " + SIZE +
+                                         ": " + length);
+    }
+    int address = loadedOffset;
+    for (int count = 0; count < length; count++) {
+      code[address++] = 0; // TODO: Or prefer a "MOV y,y" aka "NOP"?
+      if (address >= SIZE) address %= SIZE;
+    }
+  }
 }
 
 /*

@@ -40,13 +40,10 @@ public class Monitor
   private final Clock clock;
   private final PIO pio;
 
-  public Monitor(final Clock clock)
+  public Monitor()
   {
-    if (clock == null) {
-      throw new NullPointerException("clock");
-    }
-    this.clock = clock;
-    pio = new PIO(clock);
+    clock = PIO.MASTER_CLOCK;
+    pio = PIO.PIO0;
     clock.addTransitionListener(new Clock.TransitionListener()
       {
         @Override

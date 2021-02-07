@@ -34,6 +34,7 @@ public class PIO
 {
   private static final int SM_COUNT = 4;
 
+  private final int index;
   private final List<Decoder.DecodeException> caughtExceptions;
   private final GPIO gpio;
   private final Memory memory;
@@ -41,13 +42,72 @@ public class PIO
   private final SM[] sms;
 
   public enum PinDir {
-    GPIO_LEVELS,
-    GPIO_DIRECTIONS
+    GPIO_LEVELS(0, "levels"),
+    GPIO_DIRECTIONS(1, "directions");
+
+    private final int value;
+    private final String label;
+
+    private PinDir(final int value, final String label)
+    {
+      this.value = value;
+      this.label = label;
+    }
+
+    public int getValue() { return value; }
+
+    public static PinDir fromValue(final int value)
+    {
+      if (value == 0)
+        return GPIO_LEVELS;
+      if (value == 1)
+        return GPIO_DIRECTIONS;
+      throw new IllegalArgumentException("value neither 0 nor 1");
+    }
+
+    public static PinDir fromValue(final int value, final PinDir defaultValue)
+    {
+      if (value == 0)
+        return GPIO_LEVELS;
+      if (value == 1)
+        return GPIO_DIRECTIONS;
+      return defaultValue;
+    }
   };
 
   public enum ShiftDir {
-    SHIFT_LEFT,
-    SHIFT_RIGHT
+    SHIFT_LEFT(0, "shift left"),
+    SHIFT_RIGHT(1, "shift right");
+
+    private final int value;
+    private final String label;
+
+    private ShiftDir(final int value, final String label)
+    {
+      this.value = value;
+      this.label = label;
+    }
+
+    public int getValue() { return value; }
+
+    public static ShiftDir fromValue(final int value)
+    {
+      if (value == 0)
+        return SHIFT_LEFT;
+      if (value == 1)
+        return SHIFT_RIGHT;
+      throw new IllegalArgumentException("value neither 0 nor 1");
+    }
+
+    public static ShiftDir fromValue(final int value,
+                                     final ShiftDir defaultValue)
+    {
+      if (value == 0)
+        return SHIFT_LEFT;
+      if (value == 1)
+        return SHIFT_RIGHT;
+      return defaultValue;
+    }
   };
 
   private PIO()
@@ -55,8 +115,18 @@ public class PIO
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIO(final Clock clock)
+  public PIO(final int index, final Clock clock)
   {
+    if (clock == null) {
+      throw new NullPointerException("clock");
+    }
+    if (index < 0) {
+      throw new IllegalArgumentException("PIO index < 0: " + index);
+    }
+    if (index > 1) {
+      throw new IllegalArgumentException("PIO index > 1: " + index);
+    }
+    this.index = index;
     caughtExceptions = new ArrayList<Decoder.DecodeException>();
     gpio = new GPIO();
     memory = new Memory();
@@ -207,6 +277,74 @@ public class PIO
     if (caughtExceptions.size() > 0) {
       throw new Decoder.MultiDecodeException(List.copyOf(caughtExceptions));
     }
+  }
+
+  // -------- Functions for compatibility with the Pico SDK --------
+
+  public static final MasterClock MASTER_CLOCK =
+    MasterClock.getDefaultInstance();
+  public static final PIO PIO0 = new PIO(0, MASTER_CLOCK);
+  public static final PIO PIO1 = new PIO(1, MASTER_CLOCK);
+
+  public void smSetConfig(final int smNum, final SMConfig smConfig)
+  {
+    final SM sm = getSM(smNum);
+    sm.setCLKDIV(smConfig.getClkDiv());
+    sm.setEXECCTRL(smConfig.getExecCtrl());
+    sm.setSHIFTCTRL(smConfig.getShiftCtrl());
+    sm.setPINCTRL(smConfig.getPinCtrl());
+  }
+
+  public void smSetOutPins(final int smNum,
+                           final int outBase, final int outCount)
+  {
+    final SM sm = getSM(smNum);
+    sm.setOutBase(outBase);
+    sm.setOutCount(outCount);
+  }
+
+  public void smSetSetPins(final int smNum,
+                           final int setBase, final int setCount)
+  {
+    final SM sm = getSM(smNum);
+    sm.setSetBase(setBase);
+    sm.setSetCount(setCount);
+  }
+
+  public void smSetInPins(final int smNum, final int inBase)
+  {
+    final SM sm = getSM(smNum);
+    sm.setInBase(inBase);
+  }
+
+  public void smSetSideSetPins(final int smNum, final int sideSetBase)
+  {
+    final SM sm = getSM(smNum);
+    sm.setSideSetBase(sideSetBase);
+  }
+
+  public int getIndex()
+  {
+    return index;
+  }
+
+  public void gpioInit(final int pin)
+  {
+    gpio.init(pin);
+  }
+
+  /*
+   * TODO:
+   *
+   * Add here those SDK functions that are still missing.
+   * Next missing function is "pio_get_dreq()".
+   * See:
+   * https://raspberrypi.github.io/pico-sdk-doxygen/group__hardware__pio.html
+   */
+
+  public void removeProgram(final Program program, final int loadedOffset)
+  {
+    memory.removeProgram(program, loadedOffset);
   }
 }
 

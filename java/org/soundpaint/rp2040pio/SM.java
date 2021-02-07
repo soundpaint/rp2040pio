@@ -93,12 +93,12 @@ public class SM
     public int pendingDelay;
     public int pendingInstruction;
     public int regPINCTRL_SIDESET_COUNT; // bits 29..31 of SMx_PINCTRL
-    public int regPINCTRL_SIDESET_BASE; // bits 10..14 of SMx_PINCTRL
     public int regPINCTRL_SET_COUNT; // bits 26..28 of SMx_PINCTRL
-    public int regPINCTRL_SET_BASE; // bits 5..9 of SMx_PINCTRL
     public int regPINCTRL_OUT_COUNT; // bits 20..25 of SMx_PINCTRL
-    public int regPINCTRL_OUT_BASE; // bits 0..4 of SMx_PINCTRL
     public int regPINCTRL_IN_BASE; // bits 15..19 of SMx_PINCTRL
+    public int regPINCTRL_SIDESET_BASE; // bits 10..14 of SMx_PINCTRL
+    public int regPINCTRL_SET_BASE; // bits 5..9 of SMx_PINCTRL
+    public int regPINCTRL_OUT_BASE; // bits 0..4 of SMx_PINCTRL
     public int regADDR; // bits 0..4 of SMx_ADDR
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
     public PIO.PinDir regEXECCTRL_SIDE_PINDIR; // bit 29 of SMx_EXECCTRL
@@ -109,10 +109,10 @@ public class SM
     public int regEXECCTRL_STATUS_N; // bits 0..3 of SMx_EXECCTRL
     public PIO.ShiftDir regSHIFTCTRL_IN_SHIFTDIR; // bit 18 of SMx_SHIFTCTRL
     public PIO.ShiftDir regSHIFTCTRL_OUT_SHIFTDIR; // bit 19 of SMx_SHIFTCTRL
-    public int regSHIFTCTRL_PUSH_THRESH; // bits 20..24 of SMx_SHIFTCTRL
-    public boolean regSHIFTCTRL_AUTOPUSH; // bit 16 of SMx_SHIFTCTRL
     public int regSHIFTCTRL_PULL_THRESH; // bits 25..29 of SMx_SHIFTCTRL
+    public int regSHIFTCTRL_PUSH_THRESH; // bits 20..24 of SMx_SHIFTCTRL
     public boolean regSHIFTCTRL_AUTOPULL; // bit 17 of SMx_SHIFTCTRL
+    public boolean regSHIFTCTRL_AUTOPUSH; // bit 16 of SMx_SHIFTCTRL
 
     public Status()
     {
@@ -139,19 +139,19 @@ public class SM
       regEXECCTRL_SIDE_EN = false;
       regEXECCTRL_SIDE_PINDIR = PIO.PinDir.GPIO_LEVELS;
       regEXECCTRL_JMP_PIN = 0;
-      regSHIFTCTRL_PUSH_THRESH = 0;
       regSHIFTCTRL_PULL_THRESH = 0;
-      regSHIFTCTRL_AUTOPUSH = false;
+      regSHIFTCTRL_PUSH_THRESH = 0;
       regSHIFTCTRL_AUTOPULL = false;
+      regSHIFTCTRL_AUTOPUSH = false;
       regSHIFTCTRL_IN_SHIFTDIR = PIO.ShiftDir.SHIFT_LEFT;
       regSHIFTCTRL_OUT_SHIFTDIR = PIO.ShiftDir.SHIFT_LEFT;
-      regPINCTRL_SET_COUNT = 0x5;
-      regPINCTRL_SET_BASE = 0;
-      regPINCTRL_OUT_COUNT = 0;
-      regPINCTRL_OUT_BASE = 0;
       regPINCTRL_SIDESET_COUNT = 0;
-      regPINCTRL_SIDESET_BASE = 0;
+      regPINCTRL_SET_COUNT = 0x5;
+      regPINCTRL_OUT_COUNT = 0;
       regPINCTRL_IN_BASE = 0;
+      regPINCTRL_SIDESET_BASE = 0;
+      regPINCTRL_SET_BASE = 0;
+      regPINCTRL_OUT_BASE = 0;
     }
 
     public Bit jmpPin()
@@ -242,6 +242,83 @@ public class SM
           status.clockEnabled = false;
         }
       });
+  }
+
+  public void setCLKDIV(final int clkdiv)
+  {
+    pll.setCLKDIV(clkdiv);
+  }
+
+  public int getCLKDIV()
+  {
+    return pll.getCLKDIV();
+  }
+
+  public void setEXECCTRL(final int execctrl)
+  {
+    status.regEXECCTRL_SIDE_EN = ((execctrl >>> 30) & 0x1) != 0x0;
+    status.regEXECCTRL_SIDE_PINDIR =
+      PIO.PinDir.fromValue((execctrl >>> 29) & 0x1);
+    status.regEXECCTRL_JMP_PIN = (execctrl >>> 24) & 0x1f;
+    status.regEXECCTRL_WRAP_TOP = (execctrl >>> 12) & 0x1f;
+    status.regEXECCTRL_WRAP_BOTTOM = (execctrl >>> 7) & 0x1f;
+    status.regEXECCTRL_STATUS_SEL = ((execctrl >>> 4) & 0x1) != 0x0;
+    status.regEXECCTRL_STATUS_N = execctrl & 0xf;
+  }
+
+  public int getEXECCTRL()
+  {
+    return
+      (status.regEXECCTRL_SIDE_EN ? 1 : 0) << 30 |
+      status.regEXECCTRL_SIDE_PINDIR.getValue() << 29 |
+      status.regEXECCTRL_JMP_PIN << 24 |
+      status.regEXECCTRL_WRAP_TOP << 12 |
+      status.regEXECCTRL_WRAP_BOTTOM << 7 |
+      (status.regEXECCTRL_STATUS_SEL ? 1 : 0) << 4 |
+      status.regEXECCTRL_STATUS_N;
+  }
+
+  public void setSHIFTCTRL(final int shiftctrl)
+  {
+    fifo.setJoinRX(((shiftctrl >>> 31) & 0x1) != 0x0);
+    fifo.setJoinTX(((shiftctrl >>> 30) & 0x1) != 0x0);
+    status.regSHIFTCTRL_PULL_THRESH = (shiftctrl >>> 25) & 0x1f;
+    status.regSHIFTCTRL_PUSH_THRESH = (shiftctrl >>> 20) & 0x1f;
+    status.regSHIFTCTRL_AUTOPULL = ((shiftctrl >>> 17) & 0x1) != 0x0;
+    status.regSHIFTCTRL_AUTOPUSH = ((shiftctrl >>> 16) & 0x1) != 0x0;
+  }
+
+  public int getSHIFTCTRL()
+  {
+    return
+      (fifo.getJoinRX() ? 1 : 0) << 31 |
+      (fifo.getJoinTX() ? 1 : 0) << 30 |
+      status.regSHIFTCTRL_PULL_THRESH << 25 |
+      status.regSHIFTCTRL_PUSH_THRESH << 20 |
+      (status.regSHIFTCTRL_AUTOPULL ? 1 : 0) << 17 |
+      (status.regSHIFTCTRL_AUTOPUSH ? 1 : 0) << 16;
+  }
+
+  public void setPINCTRL(final int pinctrl)
+  {
+    status.regPINCTRL_SIDESET_COUNT = (pinctrl >>> 29) & 0x7;
+    status.regPINCTRL_SET_COUNT = (pinctrl >>> 26) & 0x7;
+    status.regPINCTRL_OUT_COUNT = (pinctrl >>> 20) & 0x1f;
+    status.regPINCTRL_SIDESET_BASE = (pinctrl >>> 10) & 0x1f;
+    status.regPINCTRL_SET_BASE = (pinctrl >>> 5) & 0x1f;
+    status.regPINCTRL_OUT_BASE = pinctrl & 0x1f;
+  }
+
+  public int getPINCTRL()
+  {
+    return
+      status.regPINCTRL_SIDESET_COUNT << 29 |
+      status.regPINCTRL_SET_COUNT << 26 |
+      status.regPINCTRL_OUT_COUNT << 20 |
+      status.regPINCTRL_IN_BASE << 15 |
+      status.regPINCTRL_SIDESET_BASE << 10 |
+      status.regPINCTRL_SET_BASE << 5 |
+      status.regPINCTRL_OUT_BASE;
   }
 
   public void clockRaisingEdge() throws Decoder.DecodeException

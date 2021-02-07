@@ -1,5 +1,5 @@
 /*
- * @(#)Main.java 1.00 21/01/31
+ * @(#)Program.java 1.00 21/02/06
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,28 +24,16 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.io.IOException;
-
-public class Main
+/**
+ * This class is for compatibility with the Raspberry Pi Pico SDK.
+ * It represents C struct pio_program_t and all functions that
+ * manipulate this struct.
+ */
+public class Program
 {
-  public Main()
-  {
-  }
-
-  public void run() throws IOException
-  {
-    final Monitor monitor = new Monitor();
-    final String programResourcePath = "/examples/squarewave.hex";
-    //final String programResourcePath = "/examples/ws2812.hex";
-    monitor.loadProgram(programResourcePath);
-    monitor.setSideSetCount(1);
-    monitor.dumpProgram();
-  }
-
-  public static void main(final String argv[]) throws IOException
-  {
-    new Main().run();
-  }
+  public short[] instructions;
+  public int length;
+  public int origin;
 }
 
 /*

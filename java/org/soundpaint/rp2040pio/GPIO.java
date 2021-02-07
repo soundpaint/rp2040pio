@@ -90,6 +90,22 @@ public class GPIO
     }
   }
 
+  /**
+   * Set GPIOx_CTRL_FUNCSEL to F6 (for PIO0) or F7 (for PIO1), see
+   * Sect. 2.19.2. "Function Select" of RP2040 datasheet for details.
+   *
+   * Since for now, this emulator considers the PIO only and not any
+   * other functional block of the RP2040, we currently ignore FUNCSEL
+   * and just do nothing except for checking validity of the port
+   * number.
+   */
+  public void init(final int port)
+  {
+    if ((port < 0) || (port >= terminals.length)) {
+      throw new IllegalArgumentException("port out of range: " + port);
+    }
+  }
+
   public void setBit(final int port, final Bit value)
   {
     if (value == null) {
