@@ -82,10 +82,10 @@ public class SMConfig
     if (outCount < 0) {
       throw new IllegalArgumentException("outCount < 0: " + outCount);
     }
-    if (outCount > 31) {
-      throw new IllegalArgumentException("outCount > 31: " + outCount);
+    if (outCount > 32) {
+      throw new IllegalArgumentException("outCount > 32: " + outCount);
     }
-    pinCtrl &= 0xfe0fffe0;
+    pinCtrl &= 0xfc0fffe0;
     pinCtrl |= outBase; // PINCTRL_OUT_BASE
     pinCtrl |= outCount << 20; // PINCTRL_OUT_COUNT
   }

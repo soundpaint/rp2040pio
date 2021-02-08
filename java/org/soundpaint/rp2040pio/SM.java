@@ -303,7 +303,7 @@ public class SM
   {
     status.regPINCTRL_SIDESET_COUNT = (pinctrl >>> 29) & 0x7;
     status.regPINCTRL_SET_COUNT = (pinctrl >>> 26) & 0x7;
-    status.regPINCTRL_OUT_COUNT = (pinctrl >>> 20) & 0x1f;
+    status.regPINCTRL_OUT_COUNT = (pinctrl >>> 20) & 0x3f;
     status.regPINCTRL_SIDESET_BASE = (pinctrl >>> 10) & 0x1f;
     status.regPINCTRL_SET_BASE = (pinctrl >>> 5) & 0x1f;
     status.regPINCTRL_OUT_BASE = pinctrl & 0x1f;
@@ -514,8 +514,8 @@ public class SM
     if (count < 0) {
       throw new IllegalArgumentException("out count < 0: " + count);
     }
-    if (count > 5) {
-      throw new IllegalArgumentException("out count > 5: " + count);
+    if (count > 32) {
+      throw new IllegalArgumentException("out count > 32: " + count);
     }
     status.regPINCTRL_OUT_COUNT = count;
   }
