@@ -386,6 +386,42 @@ public class PIO
     final SM sm = getSM(smNum);
     return sm.get();
   }
+
+  public boolean smIsRXFIFOFull(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.isRXFIFOFull();
+  }
+
+  public boolean smIsRXFIFOEmpty(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.isRXFIFOEmpty();
+  }
+
+  public int smGetRXFIFOLevel(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.getRXFIFOLevel();
+  }
+
+  public boolean smIsTXFIFOFull(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.isTXFIFOFull();
+  }
+
+  public boolean smIsTXFIFOEmpty(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.isTXFIFOEmpty();
+  }
+
+  public int smGetTXFIFOLevel(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.getTXFIFOLevel();
+  }
 }
 
 /*

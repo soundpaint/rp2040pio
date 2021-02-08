@@ -717,6 +717,36 @@ public class SM
     return fifo.rxDMARead();
   }
 
+  public boolean isRXFIFOFull()
+  {
+    return fifo.fstatRxFull();
+  }
+
+  public boolean isRXFIFOEmpty()
+  {
+    return fifo.fstatRxEmpty();
+  }
+
+  public int getRXFIFOLevel()
+  {
+    return fifo.getRXLevel();
+  }
+
+  public boolean isTXFIFOFull()
+  {
+    return fifo.fstatTxFull();
+  }
+
+  public boolean isTXFIFOEmpty()
+  {
+    return fifo.fstatTxEmpty();
+  }
+
+  public int getTXFIFOLevel()
+  {
+    return fifo.getTXLevel();
+  }
+
   public int getPC()
   {
     return status.regADDR;
