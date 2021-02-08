@@ -82,7 +82,6 @@ public class SM
 
   public class Status
   {
-    public boolean enabled;
     public boolean clockEnabled;
     public int regX;
     public int regY;
@@ -92,13 +91,7 @@ public class SM
     public int osrShiftCount;
     public int pendingDelay;
     public int pendingInstruction;
-    public int regPINCTRL_SIDESET_COUNT; // bits 29..31 of SMx_PINCTRL
-    public int regPINCTRL_SET_COUNT; // bits 26..28 of SMx_PINCTRL
-    public int regPINCTRL_OUT_COUNT; // bits 20..25 of SMx_PINCTRL
-    public int regPINCTRL_IN_BASE; // bits 15..19 of SMx_PINCTRL
-    public int regPINCTRL_SIDESET_BASE; // bits 10..14 of SMx_PINCTRL
-    public int regPINCTRL_SET_BASE; // bits 5..9 of SMx_PINCTRL
-    public int regPINCTRL_OUT_BASE; // bits 0..4 of SMx_PINCTRL
+    public boolean enabled; // one of bits 0..3 of CTRL_SM_ENABLE
     public int regADDR; // bits 0..4 of SMx_ADDR
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
     public PIO.PinDir regEXECCTRL_SIDE_PINDIR; // bit 29 of SMx_EXECCTRL
@@ -107,44 +100,51 @@ public class SM
     public int regEXECCTRL_WRAP_BOTTOM; // bits 7..11 of SMx_EXECCTRL
     public boolean regEXECCTRL_STATUS_SEL; // bit 4 of SMx_EXECCTRL
     public int regEXECCTRL_STATUS_N; // bits 0..3 of SMx_EXECCTRL
-    public PIO.ShiftDir regSHIFTCTRL_IN_SHIFTDIR; // bit 18 of SMx_SHIFTCTRL
-    public PIO.ShiftDir regSHIFTCTRL_OUT_SHIFTDIR; // bit 19 of SMx_SHIFTCTRL
     public int regSHIFTCTRL_PULL_THRESH; // bits 25..29 of SMx_SHIFTCTRL
     public int regSHIFTCTRL_PUSH_THRESH; // bits 20..24 of SMx_SHIFTCTRL
+    public PIO.ShiftDir regSHIFTCTRL_IN_SHIFTDIR; // bit 18 of SMx_SHIFTCTRL
     public boolean regSHIFTCTRL_AUTOPULL; // bit 17 of SMx_SHIFTCTRL
+    public PIO.ShiftDir regSHIFTCTRL_OUT_SHIFTDIR; // bit 19 of SMx_SHIFTCTRL
     public boolean regSHIFTCTRL_AUTOPUSH; // bit 16 of SMx_SHIFTCTRL
+    public int regPINCTRL_SIDESET_COUNT; // bits 29..31 of SMx_PINCTRL
+    public int regPINCTRL_SET_COUNT; // bits 26..28 of SMx_PINCTRL
+    public int regPINCTRL_OUT_COUNT; // bits 20..25 of SMx_PINCTRL
+    public int regPINCTRL_IN_BASE; // bits 15..19 of SMx_PINCTRL
+    public int regPINCTRL_SIDESET_BASE; // bits 10..14 of SMx_PINCTRL
+    public int regPINCTRL_SET_BASE; // bits 5..9 of SMx_PINCTRL
+    public int regPINCTRL_OUT_BASE; // bits 0..4 of SMx_PINCTRL
 
     public Status()
     {
-      regX = 0;
-      regY = 0;
-      isrValue = 0;
-      osrValue = 0;
       reset();
     }
 
     private void reset()
     {
+      clockEnabled = false;
+      regX = 0;
+      regY = 0;
+      isrValue = 0;
       isrShiftCount = 0;
+      osrValue = 0;
       osrShiftCount = 32;
       pendingDelay = 0;
       pendingInstruction = -1;
       enabled = false;
-      clockEnabled = false;
       regADDR = 0;
-      regEXECCTRL_WRAP_TOP = 0x1f;
-      regEXECCTRL_WRAP_BOTTOM = 0x00;
       regEXECCTRL_STATUS_SEL = false;
       regEXECCTRL_STATUS_N = 0;
       regEXECCTRL_SIDE_EN = false;
       regEXECCTRL_SIDE_PINDIR = PIO.PinDir.GPIO_LEVELS;
       regEXECCTRL_JMP_PIN = 0;
+      regEXECCTRL_WRAP_TOP = 0x1f;
+      regEXECCTRL_WRAP_BOTTOM = 0x00;
       regSHIFTCTRL_PULL_THRESH = 0;
       regSHIFTCTRL_PUSH_THRESH = 0;
-      regSHIFTCTRL_AUTOPULL = false;
-      regSHIFTCTRL_AUTOPUSH = false;
       regSHIFTCTRL_IN_SHIFTDIR = PIO.ShiftDir.SHIFT_LEFT;
+      regSHIFTCTRL_AUTOPULL = false;
       regSHIFTCTRL_OUT_SHIFTDIR = PIO.ShiftDir.SHIFT_LEFT;
+      regSHIFTCTRL_AUTOPUSH = false;
       regPINCTRL_SIDESET_COUNT = 0;
       regPINCTRL_SET_COUNT = 0x5;
       regPINCTRL_OUT_COUNT = 0;
