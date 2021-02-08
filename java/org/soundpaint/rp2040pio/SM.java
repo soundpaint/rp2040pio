@@ -343,6 +343,11 @@ public class SM
     return status;
   }
 
+  public GPIO getGPIO()
+  {
+    return gpio;
+  }
+
   public Bit getGPIO(final int index)
   {
     return gpio.getBit(index);
