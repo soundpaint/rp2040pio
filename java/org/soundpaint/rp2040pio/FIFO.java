@@ -25,7 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.Collections;
 
 /**
  * A pair of an RX FIFO and a TX FIFO, each having a capacity of DEPTH
@@ -38,15 +38,17 @@ public class FIFO
 {
   public static final int DEPTH = 4;
 
+  private static final Integer[] INTEGER_PROTOTYPE_ARRAY = new Integer[0];
+
   /**
    * RX queue from state machine to system.
    */
-  private final Queue<Integer> rx;
+  private final ArrayDeque<Integer> rx;
 
   /**
    * TX queue from system to state machine.
    */
-  private final Queue<Integer> tx;
+  private final ArrayDeque<Integer> tx;
 
   private boolean regSHIFTCTRL_FJOIN_RX; // bit 31 of SHIFTCTRL
   private boolean regSHIFTCTRL_FJOIN_TX; // bit 30 of SHIFTCTRL
@@ -58,7 +60,7 @@ public class FIFO
     reset();
   }
 
-  public void reset()
+  public synchronized void reset()
   {
     rx.clear();
     tx.clear();
@@ -66,7 +68,7 @@ public class FIFO
     regSHIFTCTRL_FJOIN_TX = false;
   }
 
-  public void setJoinRX(final boolean join)
+  public synchronized void setJoinRX(final boolean join)
   {
     if (join == regSHIFTCTRL_FJOIN_RX)
       return;
@@ -98,21 +100,21 @@ public class FIFO
     return rx.size() == 0;
   }
 
-  public void rxPush(final int value)
+  public synchronized void rxPush(final int value)
   {
     if (!fstatRxFull())
       rx.add(value);
   }
 
-  public int rxDMARead()
+  public synchronized int rxDMARead()
   {
     if (!fstatRxEmpty())
       return rx.remove();
     else
-      throw new IllegalStateException("RX FIFO empty");
+      return 0;
   }
 
-  public void setJoinTX(final boolean join)
+  public synchronized void setJoinTX(final boolean join)
   {
     if (join == regSHIFTCTRL_FJOIN_TX)
       return;
@@ -144,19 +146,24 @@ public class FIFO
     return tx.size() == 0;
   }
 
-  public int txPull()
+  public synchronized int txPull()
   {
     if (!fstatTxEmpty())
       return rx.remove();
     return 0;
   }
 
-  public void txDMAWrite(final int value)
+  public synchronized void txDMAWrite(final int value)
   {
-    if (!fstatTxFull())
+    if (!fstatTxFull()) {
       tx.add(value);
-    else
-      throw new IllegalStateException("TX FIFO full");
+    } else {
+      // overwrite most recent value
+      final Integer[] values = tx.toArray(INTEGER_PROTOTYPE_ARRAY);
+      values[0] = value;
+      tx.clear();
+      Collections.addAll(tx, values);
+    }
   }
 }
 
