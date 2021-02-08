@@ -160,8 +160,7 @@ public class GPIO
     }
     int pins = 0;
     for (int pin = 0; pin < count; pin++) {
-      pins = (pins << 0x1) |
-        getBit((base + count) & 0x1f).getValue();
+      pins = (pins << 0x1) | getBit((base + pin) & 0x1f).getValue();
     }
     return pins;
   }
@@ -181,7 +180,7 @@ public class GPIO
       throw new IllegalArgumentException("GPIO pin count > 31: " + count);
     }
     for (int pin = 0; pin < count; pin++) {
-      setBit((base + count) & 0x1f, bitFromValue((pins >>> count) & 0x1));
+      setBit((base + pin) & 0x1f, bitFromValue((pins >>> pin) & 0x1));
     }
   }
 
@@ -200,8 +199,8 @@ public class GPIO
       throw new IllegalArgumentException("GPIO pin count > 31: " + count);
     }
     for (int pin = 0; pin < count; pin++) {
-      setDirection((base + count) & 0x1f,
-                   directionFromValue((pinDirs >>> count) & 0x1));
+      setDirection((base + pin) & 0x1f,
+                   directionFromValue((pinDirs >>> pin) & 0x1));
     }
   }
 
