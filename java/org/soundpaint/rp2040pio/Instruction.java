@@ -273,7 +273,10 @@ public abstract class Instruction
     private enum Source
     {
       GPIO_(0b00, "gpio", (wait) -> wait.sm.getGPIO(wait.index)),
-      PIN(0b01, "pin", (wait) -> wait.sm.getStatus().jmpPin()),
+      PIN(0b01, "pin", (wait) -> {
+          final SM sm = wait.sm;
+          return sm.getGPIO().getBit(sm.getStatus().regPINCTRL_IN_BASE);
+        }),
       IRQ(0b10, "irq", (wait) -> {
           final int irqNum = getIRQNum(wait.sm.getNum(), wait.index);
           final Bit bit = wait.sm.getIRQ(irqNum);
