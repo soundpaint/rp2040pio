@@ -707,6 +707,21 @@ public class SM
     status.regEXECCTRL_WRAP_BOTTOM = 0x00;
   }
 
+  public void put(final int data)
+  {
+    fifo.txDMAWrite(data);
+  }
+
+  public int get()
+  {
+    return fifo.rxDMARead();
+  }
+
+  public int getPC()
+  {
+    return status.regADDR;
+  }
+
   public void setPC(final int value)
   {
     if (value < 0) {
@@ -786,14 +801,9 @@ public class SM
     pll.setDivFractionalBits(divFractionalBits);
   }
 
-  public void enable()
+  public void setEnabled(final boolean enabled)
   {
-    status.enabled = true;
-  }
-
-  public void disable()
-  {
-    status.enabled = false;
+    status.enabled = enabled;
   }
 
   public void dumpMemory()

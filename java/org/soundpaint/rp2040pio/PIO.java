@@ -346,6 +346,46 @@ public class PIO
   {
     memory.removeProgram(program, loadedOffset);
   }
+
+  public void smInit(final int smNum, final int initialPC,
+                     final SMConfig config)
+  {
+    smSetConfig(smNum, config);
+    final SM sm = getSM(smNum);
+    sm.setPC(initialPC);
+  }
+
+  public void smSetEnabled(final int smNum, final boolean enabled)
+  {
+    final SM sm = getSM(smNum);
+    sm.setEnabled(enabled);
+  }
+
+  public int smGetPC(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.getPC();
+  }
+
+  public void smSetWrap(final int smNum, final int wrapTarget,
+                        final int wrap)
+  {
+    final SM sm = getSM(smNum);
+    sm.setWrapTop(wrap);
+    sm.setWrapBottom(wrapTarget);
+  }
+
+  public void smPut(final int smNum, final int data)
+  {
+    final SM sm = getSM(smNum);
+    sm.put(data);
+  }
+
+  public int smGet(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.get();
+  }
 }
 
 /*
