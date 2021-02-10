@@ -57,10 +57,11 @@ public class Monitor
     System.out.println(about);
   }
 
-  public void loadProgram(final String programResourcePath)
+  public void addProgram(final String programResourcePath)
     throws IOException
   {
-    pio.getMemory().loadFromHexResource(programResourcePath);
+    final Program program = Program.fromHexResource(programResourcePath);
+    pio.addProgram(program);
   }
 
   public void dumpProgram()

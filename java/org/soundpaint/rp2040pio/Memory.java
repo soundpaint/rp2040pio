@@ -24,12 +24,6 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.net.URL;
-
 /**
  * 32 32-Bit Words of Shared Instruction Memory
  */
@@ -58,102 +52,6 @@ public class Memory
       throw new IllegalArgumentException("address out of range: " + address);
     }
     return code[address];
-  }
-
-  public void loadFromBinResource(final String resourcePath)
-    throws IOException
-  {
-    final InputStream in = Main.class.getResourceAsStream(resourcePath);
-    if (in == null) {
-      throw new IOException("failed loading code: resource not found: " +
-                            resourcePath);
-    }
-    final int available = in.available();
-    if (available > SIZE * 2) {
-      throw new IOException("failed loading code: size too large: " +
-                            available + " > " + SIZE * 2);
-    }
-    if ((available & 0x3) != 0) {
-      throw new IOException("failed loading code: " +
-                            "size must be multiple of 4: " + available);
-    }
-    final short[] code = new short[SIZE];
-    for (int address = 0; address < available / 4; address ++) {
-      short value = 0;
-      for (int byteCount = 0; byteCount < 2; byteCount++) {
-        value <<= 0x8;
-        value |= (in.read() & 0xff);
-      }
-      code[address] = value;
-    }
-    System.arraycopy(code, 0, this.code, 0, SIZE);
-    System.out.println("loaded " + (available / 4) + " instructions into PIO");
-  }
-
-  public void loadFromHexResource(final String resourcePath)
-    throws IOException
-  {
-    final InputStream in = Main.class.getResourceAsStream(resourcePath);
-    if (in == null) {
-      throw new IOException("failed loading code: resource not found: " +
-                            resourcePath);
-    }
-    final BufferedReader reader
-      = new BufferedReader(new InputStreamReader(in));
-    int address = 0;
-    final short[] code = new short[SIZE];
-    String line;
-    while ((line = reader.readLine()) != null) {
-      if (line.startsWith("#")) continue;
-      if (address >= SIZE) {
-        throw new IOException("failed loading code: size too large: " +
-                              "get more than " + SIZE + " words");
-      }
-      try {
-        final short value = (short)(Integer.parseInt(line, 16));
-        code[address++] = value;
-      } catch (final NumberFormatException e) {
-        throw new IOException("failed loading code: parse error: " +
-                              "not a valid 16 bit hex word: " + line);
-      }
-    }
-    reader.close();
-    System.arraycopy(code, 0, this.code, 0, SIZE);
-    System.out.println("loaded " + address + " instructions into PIO");
-  }
-
-  public void removeProgram(final Program program, final int loadedOffset)
-  {
-    /*
-     * TODO: "removeProgram" is neccessary for tracking memory
-     * allocation: "canAddProgram" and "addProgram" have to decide
-     * whether the acquired region of memory is still available or
-     * already used.  That is, "removeProgram" should mark the freed
-     * region of memory as available for other programs.
-     */
-    if (program == null) {
-      throw new NullPointerException("program");
-    }
-    if (loadedOffset < 0) {
-      throw new IllegalArgumentException("loadedOffset < 0: " + loadedOffset);
-    }
-    if (loadedOffset >= SIZE) {
-      throw new IllegalArgumentException("loadedOffset >= " + SIZE +
-                                         ": " + loadedOffset);
-    }
-    final int length = program.length;
-    if (length < 0) {
-      throw new IllegalArgumentException("program length < 0: " + length);
-    }
-    if (length <= SIZE) {
-      throw new IllegalArgumentException("program length >= " + SIZE +
-                                         ": " + length);
-    }
-    int address = loadedOffset;
-    for (int count = 0; count < length; count++) {
-      code[address++] = 0; // TODO: Or prefer a "MOV y,y" aka "NOP"?
-      if (address >= SIZE) address %= SIZE;
-    }
   }
 }
 

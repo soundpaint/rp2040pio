@@ -286,6 +286,13 @@ public class PIO
   public static final PIO PIO0 = new PIO(0, MASTER_CLOCK);
   public static final PIO PIO1 = new PIO(1, MASTER_CLOCK);
 
+  /**
+   * Tracking allocation of instruction memory is not a feature of the
+   * RP2040 itself, but a feature of the SDK.  This is, why we do not
+   * put this stuff into the memory class.
+   */
+  private Integer memoryAllocation = 0x0;
+
   public void smSetConfig(final int smNum, final SMConfig smConfig)
   {
     final SM sm = getSM(smNum);
@@ -336,15 +343,191 @@ public class PIO
   /*
    * TODO:
    *
-   * Add here those SDK functions that are still missing.
+   * Add below those SDK functions that are still missing.
    * Next missing function is "pio_get_dreq()".
    * See:
    * https://raspberrypi.github.io/pico-sdk-doxygen/group__hardware__pio.html
    */
 
+  /**
+   * Tries to allocate memory for the specified allocation mask and
+   * origin.  Returns address (0..31) where the allocation is
+   * performed.
+   * @param allocationMask Bit mask of instruction addresses (0..31)
+   * to allocate.
+   * @param origin Address where to allocate, of -1, if any address is
+   * acceptable.
+   * @param checkOnly If true, allocation is only checked for, but not
+   * performed.  Also, if allocation is not possible, -1 is returned
+   * rather than throwing an exception.
+   */
+  private int allocateMemory(final int allocationMask, final int origin,
+                             final boolean checkOnly)
+  {
+    synchronized(memoryAllocation) {
+      if (origin >= 0) {
+        if ((memoryAllocation & ~allocationMask) == 0x0) {
+          if (!checkOnly) memoryAllocation |= allocationMask;
+          return origin;
+        }
+        if (checkOnly) return -1;
+        final String message =
+          String.format("allocation at %02x failed", origin);
+        throw new RuntimeException(message);
+      }
+      for (int offset = 0; offset < 32; offset++) {
+        final int allocationMaskForOffset =
+          (allocationMask << offset) | (allocationMask << (offset - 32));
+        if ((memoryAllocation & ~allocationMaskForOffset) == 0x0) {
+          if (!checkOnly) memoryAllocation |= allocationMask;
+          return offset;
+        }
+      }
+    }
+    if (checkOnly) return -1;
+    final String message =
+      String.format("allocation at %02x failed", origin);
+    throw new RuntimeException(message);
+  }
+
+  public boolean canAddProgram(final Program program)
+  {
+    if (program == null) {
+      throw new NullPointerException("program");
+    }
+    final int allocationMask = program.getAllocationMask();
+    final int origin = program.getOrigin();
+    return allocateMemory(allocationMask, origin, true) >= 0;
+  }
+
+  public boolean canAddProgramAtOffset(final Program program, final int offset)
+  {
+    if (program == null) {
+      throw new NullPointerException("program");
+    }
+    if (offset < 0) {
+      throw new IllegalArgumentException("offset < 0: " + offset);
+    }
+    if (offset > 31) {
+      throw new IllegalArgumentException("offset > 31: " + offset);
+    }
+    final int origin = program.getOrigin();
+    if (origin >= 0) {
+      // do not allocate program with fixed origin at different offset
+      if (origin != offset) return false;
+    }
+    final int allocationMask = program.getAllocationMask();
+    final int allocationMaskForOffset =
+      origin >= 0 ?
+      allocationMask :
+      (allocationMask << offset) | (allocationMask << (offset - 32));
+    return allocateMemory(allocationMaskForOffset, offset, true) >= 0;
+  }
+
+  private void writeProgram(final Program program, final int address)
+  {
+    final int length = program.getLength();
+    for (int index = 0; index < length; index++) {
+      final short instruction = program.getInstruction(index);
+      final int memoryAddress = (address + index) & 0x1f;
+      memory.set(memoryAddress, instruction);
+    }
+  }
+
+  public int addProgram(final Program program)
+  {
+    if (program == null) {
+      throw new NullPointerException("program");
+    }
+    final int allocationMask = program.getAllocationMask();
+    final int origin = program.getOrigin();
+    final int address = allocateMemory(allocationMask, origin, false);
+    writeProgram(program, address);
+    return address;
+  }
+
+  public int addProgramAtOffset(final Program program, final int offset)
+  {
+    if (program == null) {
+      throw new NullPointerException("program");
+    }
+    if (offset < 0) {
+      throw new IllegalArgumentException("offset < 0: " + offset);
+    }
+    if (offset > 31) {
+      throw new IllegalArgumentException("offset > 31: " + offset);
+    }
+    final int origin = program.getOrigin();
+    if (origin >= 0) {
+      // do not allocate program with fixed origin at different offset
+      if (origin != offset) {
+        final String message =
+          String.format("allocation at %02x failed for program %s: " +
+                        "conflicting origin: %02x",
+                        offset, program, origin);
+        throw new RuntimeException(message);
+      }
+    }
+    final int allocationMask = program.getAllocationMask();
+    final int allocationMaskForOffset =
+      origin >= 0 ?
+      allocationMask :
+      (allocationMask << offset) | (allocationMask << (offset - 32));
+    final int address = allocateMemory(allocationMaskForOffset, offset, false);
+    writeProgram(program, address);
+    return address;
+  }
+
   public void removeProgram(final Program program, final int loadedOffset)
   {
-    memory.removeProgram(program, loadedOffset);
+    if (loadedOffset < 0) {
+      throw new IllegalArgumentException("loaded offset < 0: " + loadedOffset);
+    }
+    if (loadedOffset > 31) {
+      throw new IllegalArgumentException("loaded offset > 31: " + loadedOffset);
+    }
+    final int origin = program.getOrigin();
+    if (origin >= 0) {
+      // can not remove program from offset it is not designed for
+      if (origin != loadedOffset) {
+        final String message =
+          String.format("can not remove program %s from offset %02x: " +
+                        "program has conflicting origin: %02x",
+                        program, loadedOffset, origin);
+        throw new RuntimeException(message);
+      }
+    }
+    final int allocationMask = program.getAllocationMask();
+    final int allocationMaskForOffset =
+      origin >= 0 ?
+      allocationMask :
+      (allocationMask << loadedOffset) |
+      (allocationMask << (loadedOffset - 32));
+    synchronized(memoryAllocation) {
+      if ((memoryAllocation &= ~allocationMaskForOffset) !=
+          allocationMaskForOffset) {
+        final String message =
+          String.format("deallocation at %02x failed for program %s: " +
+                        "allocation bits corrupted",
+                        loadedOffset, program);
+        throw new RuntimeException(message);
+      }
+      memoryAllocation &= ~allocationMaskForOffset;
+      for (int index = 0; index < program.getLength(); index++) {
+        final int address = (loadedOffset + index) & 0x1f;
+        memory.set(address, (short)0);
+      }
+    }
+  }
+
+  public void clearInstructionMemory()
+  {
+    synchronized(memoryAllocation) {
+      memoryAllocation = 0;
+      for (int index = 0; index < Memory.SIZE; index++) {
+        memory.set(index, (short)0);
+      }
+    }
   }
 
   public void smInit(final int smNum, final int initialPC,
@@ -359,6 +542,17 @@ public class PIO
   {
     final SM sm = getSM(smNum);
     sm.setEnabled(enabled);
+  }
+
+  public void smSetEnabledMask(final int smNum,
+                               final int mask, final boolean enabled)
+  {
+    final SM sm = getSM(smNum);
+    for (int bitCount = 0; bitCount < SM_COUNT; bitCount++) {
+      if (mask >>> bitCount != 0x0) {
+        smSetEnabled(bitCount, enabled);
+      }
+    }
   }
 
   public int smGetPC(final int smNum)
@@ -421,6 +615,39 @@ public class PIO
   {
     final SM sm = getSM(smNum);
     return sm.getTXFIFOLevel();
+  }
+
+  public void smSetClkDiv(final int smNum, final float div)
+  {
+    if (div < 0.0f) {
+      throw new IllegalArgumentException("div < 0: " + div);
+    }
+    if (div >= 65536.0f) {
+      throw new IllegalArgumentException("div >= 65536: " + div);
+    }
+    final int divInt = (int)div;
+    final int divFrac = (int)((div - divInt) * 256.0);
+    smSetClkDivIntFrac(smNum, divInt, divFrac);
+  }
+
+  public void smSetClkDivIntFrac(final int smNum,
+                                 final int divInt, final int divFrac)
+  {
+    final SM sm = getSM(smNum);
+    sm.setClockDivIntegerBits(divInt);
+    sm.setClockDivFractionalBits(divFrac);
+  }
+
+  public void smClearFIFOs(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    sm.clearFIFOs();
+  }
+
+  public void smSetPins(final int smNum, final int values)
+  {
+    final SM sm = getSM(smNum);
+    SM.IOMapping.SET.setPins(sm, values);
   }
 }
 

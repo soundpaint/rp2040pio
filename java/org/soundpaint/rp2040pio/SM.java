@@ -368,6 +368,11 @@ public class SM
     irq.set(index);
   }
 
+  public void clearFIFOs()
+  {
+    fifo.clear();
+  }
+
   /**
    * @return True if operation stall due to full FIFO.
    */

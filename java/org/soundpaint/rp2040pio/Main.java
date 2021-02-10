@@ -37,7 +37,7 @@ public class Main
     final Monitor monitor = new Monitor();
     final String programResourcePath = "/examples/squarewave.hex";
     //final String programResourcePath = "/examples/ws2812.hex";
-    monitor.loadProgram(programResourcePath);
+    monitor.addProgram(programResourcePath);
     monitor.setSideSetCount(1);
     monitor.dumpProgram();
   }

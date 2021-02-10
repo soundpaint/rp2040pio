@@ -62,10 +62,15 @@ public class FIFO
 
   public synchronized void reset()
   {
-    rx.clear();
-    tx.clear();
+    clear();
     regSHIFTCTRL_FJOIN_RX = false;
     regSHIFTCTRL_FJOIN_TX = false;
+  }
+
+  public synchronized void clear()
+  {
+    rx.clear();
+    tx.clear();
   }
 
   public synchronized void setJoinRX(final boolean join)
