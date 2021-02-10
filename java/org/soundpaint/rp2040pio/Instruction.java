@@ -38,6 +38,8 @@ public abstract class Instruction
   protected final SM sm;
   private int delay;
   private int sideSet;
+  private int sideSetCount;
+  private boolean sideSetEnabled;
   private int opCode;
 
   public enum ResultState
@@ -73,7 +75,14 @@ public abstract class Instruction
     delay = 0;
   }
 
-  abstract ResultState execute();
+  abstract ResultState executeOperation();
+
+  public ResultState execute()
+  {
+    final ResultState resultState = executeOperation();
+    if (sideSetEnabled) executeSideSet();
+    return resultState;
+  }
 
   private short[] DELAY_MASK = {
     0x1f, 0x0f, 0x07, 0x03, 0x01, 0x00
@@ -94,9 +103,19 @@ public abstract class Instruction
     return delay > 0 ? "[" + delay + "]" : "";
   }
 
-  public int getSideSet()
+  private void executeSideSet()
   {
-    return sideSet;
+    final SM.Status status = sm.getStatus();
+    final GPIO gpio = sm.getGPIO();
+    final int base = status.regPINCTRL_SIDESET_BASE;
+    final PIO.PinDir pinDir = status.regEXECCTRL_SIDE_PINDIR;
+    if (pinDir == PIO.PinDir.GPIO_LEVELS) {
+      gpio.setPins(sideSet, status.regPINCTRL_SIDESET_BASE,
+                   sideSetCount);
+    } else {
+      gpio.setPinDirs(sideSet, status.regPINCTRL_SIDESET_BASE,
+                      sideSetCount);
+    }
   }
 
   public int getOpCode()
@@ -117,13 +136,17 @@ public abstract class Instruction
     final int delayMask = DELAY_MASK[smStatus.regPINCTRL_SIDESET_COUNT];
     this.opCode = opCode;
     delay = delayAndSideSet & delayMask;
-    final int enableRemoved =
+    final int delayBitCount = 5 - smStatus.regPINCTRL_SIDESET_COUNT;
+    final boolean haveSideSetEnableBit =
+      smStatus.regEXECCTRL_SIDE_EN && (smStatus.regPINCTRL_SIDESET_COUNT > 0);
+    sideSetEnabled =
+      !haveSideSetEnableBit || (delayAndSideSet & 0x10) != 0x0;
+    sideSetCount =
+      smStatus.regPINCTRL_SIDESET_COUNT -
+      (haveSideSetEnableBit ? 1 : 0);
+    final int delayAndSideSetWithoutSideEn =
       smStatus.regEXECCTRL_SIDE_EN ? delayAndSideSet & 0xf : delayAndSideSet;
-    if (smStatus.regPINCTRL_SIDESET_COUNT >= 1) {
-      sideSet = enableRemoved >>> (5 - smStatus.regPINCTRL_SIDESET_COUNT);
-    } else {
-      sideSet = -1;
-    }
+    sideSet = delayAndSideSetWithoutSideEn >>> delayBitCount;
     decodeLSB(opCode & 0xff);
     return this;
   }
@@ -234,7 +257,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       final SM.Status smStatus = sm.getStatus();
       final boolean doJump = condition.fulfilled(smStatus);
@@ -325,7 +348,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       final boolean doStall = src.getBit(this) != polarity;
       return doStall ? ResultState.STALL : ResultState.COMPLETE;
@@ -415,7 +438,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       final boolean stall;
       if (sm.getInShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
@@ -530,7 +553,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       final boolean stall;
       if (sm.getOutShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
@@ -577,7 +600,7 @@ public abstract class Instruction
     private boolean block;
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       return sm.rxPush(ifFull, block) ?
         ResultState.STALL :
@@ -619,7 +642,7 @@ public abstract class Instruction
     private boolean block;
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       return sm.txPull(ifEmpty, block) ?
         ResultState.STALL :
@@ -800,7 +823,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       dst.write(sm, op.apply(src.read(sm)));
       return
@@ -855,7 +878,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       final boolean stall;
       final int irqNum = getIRQNum(sm.getNum(), index);
@@ -966,7 +989,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState execute()
+    public ResultState executeOperation()
     {
       dst.write(sm, data);
       return ResultState.COMPLETE;
