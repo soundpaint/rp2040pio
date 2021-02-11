@@ -293,6 +293,13 @@ public class PIO
    */
   private Integer memoryAllocation = 0x0;
 
+  /**
+   * Tracking claim of state machines is not a feature of the RP2040
+   * itself, but a feature of the SDK.  This is, why we do not put
+   * this stuff into the state machine class.
+   */
+  private Integer stateMachineClaimed = 0x0;
+
   public void smSetConfig(final int smNum, final SMConfig smConfig)
   {
     final SM sm = getSM(smNum);
@@ -426,6 +433,15 @@ public class PIO
 
   private void writeProgram(final Program program, final int address)
   {
+    if (program == null) {
+      throw new NullPointerException("program");
+    }
+    if (address < 0) {
+      throw new IllegalArgumentException("address < 0: " + address);
+    }
+    if (address > 31) {
+      throw new IllegalArgumentException("address > 31: " + address);
+    }
     final int length = program.getLength();
     for (int index = 0; index < length; index++) {
       final short instruction = program.getInstruction(index);
@@ -480,6 +496,9 @@ public class PIO
 
   public void removeProgram(final Program program, final int loadedOffset)
   {
+    if (program == null) {
+      throw new NullPointerException("program");
+    }
     if (loadedOffset < 0) {
       throw new IllegalArgumentException("loaded offset < 0: " + loadedOffset);
     }
@@ -547,10 +566,42 @@ public class PIO
   public void smSetEnabledMask(final int smNum,
                                final int mask, final boolean enabled)
   {
+    if (mask < 0) {
+      throw new IllegalArgumentException("mask < 0: " + mask);
+    }
+    if (mask > (0x1 << SM_COUNT) - 1) {
+      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
+                                         ": " + mask);
+    }
     final SM sm = getSM(smNum);
+    // TODO: Turn the loop into an atomic operation (cp. smClaimMask()).
     for (int bitCount = 0; bitCount < SM_COUNT; bitCount++) {
       if (mask >>> bitCount != 0x0) {
         smSetEnabled(bitCount, enabled);
+      }
+    }
+  }
+
+  public void smClkDivRestart(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    sm.resetCLKDIV();
+  }
+
+  public void smClkDivRestartMask(final int mask)
+  {
+    if (mask < 0) {
+      throw new IllegalArgumentException("mask < 0: " + mask);
+    }
+    if (mask > (0x1 << SM_COUNT) - 1) {
+      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
+                                         ": " + mask);
+    }
+    // TODO: Turn the loop into an atomic operation (cp. smClaimMask()).
+    for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+      if (mask >>> smNum != 0x0) {
+        final SM sm = getSM(smNum);
+        sm.resetCLKDIV();
       }
     }
   }
@@ -648,6 +699,85 @@ public class PIO
   {
     final SM sm = getSM(smNum);
     SM.IOMapping.SET.setPins(sm, values);
+  }
+
+  public void smClaim(final int smNum)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    smClaimMask(0x1 << smNum);
+  }
+
+  private String listMaskBits(final int mask) {
+    final StringBuffer s = new StringBuffer();
+    for (int count = 0; count < 32; count++) {
+      if ((mask & (0x1 << count)) != 0x0) {
+        if (s.length() > 0) s.append(", ");
+        s.append(count);
+      }
+    }
+    return s.toString();
+  }
+
+  public void smClaimMask(final int mask)
+  {
+    if (mask < 0) {
+      throw new IllegalArgumentException("mask < 0: " + mask);
+    }
+    if (mask > (0x1 << SM_COUNT) - 1) {
+      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
+                                         ": " + mask);
+    }
+    synchronized(stateMachineClaimed) {
+      if ((stateMachineClaimed & mask) != 0x0) {
+        final String message =
+          String.format("claim failed: state machine(s) already in use: %s",
+                        listMaskBits(mask));
+        throw new RuntimeException(message);
+      }
+      stateMachineClaimed |= mask;
+    }
+  }
+
+  public void smUnclaim(final int smNum)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    final int mask = 0x1 << smNum;
+    synchronized(stateMachineClaimed) {
+      stateMachineClaimed &= ~mask;
+    }
+  }
+
+  public int smClaimUnused(final boolean required)
+  {
+    synchronized(stateMachineClaimed) {
+      final int unclaimed = ~stateMachineClaimed & ((0x1 << SM_COUNT) - 1);
+      if (unclaimed == 0x0) {
+        if (required) {
+          final String message =
+            "claim failed: all state machines already in use";
+          throw new RuntimeException(message);
+        }
+        return -1;
+      }
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+        if ((unclaimed & (0x1 << smNum)) != 0x0) {
+          return smNum;
+        }
+      }
+      throw new InternalError("unexpected fall-through");
+    }
   }
 }
 

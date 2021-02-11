@@ -82,7 +82,6 @@ public class SM
 
   public class Status
   {
-    public boolean clockEnabled;
     public int regX;
     public int regY;
     public int isrValue;
@@ -121,7 +120,6 @@ public class SM
 
     private void reset()
     {
-      clockEnabled = false;
       regX = 0;
       regY = 0;
       isrValue = 0;
@@ -229,19 +227,6 @@ public class SM
     decoder = new Decoder(this);
     fifo = new FIFO();
     pll = new PLL(clock);
-    pll.addTransitionListener(new Clock.TransitionListener()
-      {
-        @Override
-        public void raisingEdge(final long wallClock)
-        {
-          status.clockEnabled = true;
-        }
-        @Override
-        public void fallingEdge(final long wallClock)
-        {
-          status.clockEnabled = false;
-        }
-      });
   }
 
   public void setCLKDIV(final int clkdiv)
@@ -252,6 +237,11 @@ public class SM
   public int getCLKDIV()
   {
     return pll.getCLKDIV();
+  }
+
+  public void resetCLKDIV()
+  {
+    pll.reset();
   }
 
   public void setEXECCTRL(final int execctrl)
@@ -323,7 +313,7 @@ public class SM
 
   public void clockRaisingEdge() throws Decoder.DecodeException
   {
-    if (status.enabled && status.clockEnabled) {
+    if (status.enabled && pll.getClockEnable()) {
       execute();
     }
   }

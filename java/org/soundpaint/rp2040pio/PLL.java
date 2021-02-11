@@ -36,8 +36,7 @@ public class PLL implements Clock.TransitionListener
   private int regCLKDIV_FRAC; // bits 8..15 of SMx_CLKDIV
   private int countIntegerBits;
   private int countFractionalBits;
-  private long wallClock;
-  private List<Clock.TransitionListener> listeners;
+  private boolean clockEnable;
 
   private PLL()
   {
@@ -49,16 +48,15 @@ public class PLL implements Clock.TransitionListener
     if (clock == null) {
       throw new NullPointerException("clock");
     }
-    listeners = new ArrayList<Clock.TransitionListener>();
     reset();
     clock.addTransitionListener(this);
   }
 
   public void reset()
   {
-    wallClock = -1;
-    countIntegerBits = 0;
-    countFractionalBits = 0;
+    countIntegerBits = 0x0001;
+    countFractionalBits = 0x00;
+    clockEnable = false;
   }
 
   public int getDivIntegerBits()
@@ -110,50 +108,30 @@ public class PLL implements Clock.TransitionListener
       (getDivFractionalBits() << 8);
   }
 
-  public void addTransitionListener(final Clock.TransitionListener listener)
+  public boolean getClockEnable()
   {
-    listeners.add(listener);
-  }
-
-  public boolean removeTransitionListener(final Clock.TransitionListener
-                                          listener)
-  {
-    return listeners.remove(listener);
-  }
-
-  public long getWallClock()
-  {
-    return wallClock;
-  }
-
-  private void announceRaisingEdge()
-  {
-    for (final Clock.TransitionListener listener : listeners) {
-      listener.raisingEdge(wallClock);
-    }
-  }
-
-  private void announceFallingEdge()
-  {
-    for (final Clock.TransitionListener listener : listeners) {
-      listener.fallingEdge(wallClock);
-    }
+    return clockEnable;
   }
 
   @Override
-  public void raisingEdge(final long inputWallClock)
+  public void raisingEdge(final long wallClock)
   {
-    wallClock++;
-    if (countIntegerBits == 1) {
+    /*
+     * TODO: Clarify: Sect. 3.5.5. "Clock Dividers", Fig. 46: "clock
+     * divider ... emits an enable pulse when it reaches 1"
+     *
+     * -- Really "1", not "0"?
+     */
+    if (countIntegerBits <= 1) {
       countIntegerBits += regCLKDIV_INT;
       countFractionalBits += regCLKDIV_FRAC;
       if (countFractionalBits >= 0x10000) {
         countFractionalBits -= 0x10000;
         countIntegerBits++;
       }
-      announceRaisingEdge();
+      clockEnable = true;
     } else {
-      announceFallingEdge();
+      clockEnable = false;
     }
     countIntegerBits--;
   }
