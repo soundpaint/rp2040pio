@@ -56,25 +56,6 @@ public class Decoder
     public int getOpCode() { return opCode; }
   }
 
-  public static class MultiDecodeException extends Exception
-  {
-    private static final long serialVersionUID = 1631236078957230846L;
-
-    private final List<DecodeException> causes;
-
-    private MultiDecodeException()
-    {
-      throw new UnsupportedOperationException("unsupported empty constructor");
-    }
-
-    public MultiDecodeException(final List<DecodeException> causes)
-    {
-      super("decode failed: unsupported op-code(s) found");
-      this.causes = causes;
-    }
-    public List<DecodeException> getCauses() { return causes; }
-  }
-
   private final SM sm;
   private final Instructions instructions;
 

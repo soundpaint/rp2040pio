@@ -38,18 +38,9 @@ public class PLL implements Clock.TransitionListener
   private int countFractionalBits;
   private boolean clockEnable;
 
-  private PLL()
+  public PLL()
   {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
-
-  public PLL(final Clock clock)
-  {
-    if (clock == null) {
-      throw new NullPointerException("clock");
-    }
     reset();
-    clock.addTransitionListener(this);
   }
 
   public void reset()

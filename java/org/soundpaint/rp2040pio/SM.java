@@ -90,7 +90,6 @@ public class SM
     public int osrShiftCount;
     public int pendingDelay;
     public int pendingInstruction;
-    public boolean enabled; // one of bits 0..3 of CTRL_SM_ENABLE
     public int regADDR; // bits 0..4 of SMx_ADDR
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
     public PIO.PinDir regEXECCTRL_SIDE_PINDIR; // bit 29 of SMx_EXECCTRL
@@ -128,7 +127,6 @@ public class SM
       osrShiftCount = 32;
       pendingDelay = 0;
       pendingInstruction = -1;
-      enabled = false;
       regADDR = 0;
       regEXECCTRL_STATUS_SEL = false;
       regEXECCTRL_STATUS_N = 0;
@@ -198,17 +196,13 @@ public class SM
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public SM(final int num, final Clock clock,
-            final GPIO gpio, final Memory memory, final IRQ irq)
+  public SM(final int num, final GPIO gpio, final Memory memory, final IRQ irq)
   {
     if (num < 0) {
       throw new IllegalArgumentException("SM num < 0: " + num);
     }
     if (num > 3) {
       throw new IllegalArgumentException("SM num > 3: " + num);
-    }
-    if (clock == null) {
-      throw new NullPointerException("clock");
     }
     if (gpio == null) {
       throw new NullPointerException("gpio");
@@ -226,7 +220,7 @@ public class SM
     status = new Status();
     decoder = new Decoder(this);
     fifo = new FIFO();
-    pll = new PLL(clock);
+    pll = new PLL();
   }
 
   public void setCLKDIV(final int clkdiv)
@@ -311,11 +305,19 @@ public class SM
       status.regPINCTRL_OUT_BASE;
   }
 
-  public void clockRaisingEdge() throws Decoder.DecodeException
+  public void clockRaisingEdge(final long wallClock)
+    throws Decoder.DecodeException
   {
-    if (status.enabled && pll.getClockEnable()) {
+    pll.raisingEdge(wallClock);
+    if (pll.getClockEnable()) {
       execute();
     }
+  }
+
+  public void clockFallingEdge(final long wallClock)
+    throws Decoder.DecodeException
+  {
+    pll.fallingEdge(wallClock);
   }
 
   public void restart()
@@ -824,11 +826,6 @@ public class SM
   public void setClockDivFractionalBits(final int divFractionalBits)
   {
     pll.setDivFractionalBits(divFractionalBits);
-  }
-
-  public void setEnabled(final boolean enabled)
-  {
-    status.enabled = enabled;
   }
 
   public void dumpMemory()

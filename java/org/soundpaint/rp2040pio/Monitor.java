@@ -37,23 +37,11 @@ public class Monitor
     "© 2021 by J. Reuter\n" +
     "Karlsruhe, Germany\n";
 
-  private final Clock clock;
   private final PIO pio;
 
   public Monitor()
   {
-    clock = PIO.MASTER_CLOCK;
     pio = PIO.PIO0;
-    clock.addTransitionListener(new Clock.TransitionListener()
-      {
-        @Override
-        public void raisingEdge(final long wallClock)
-        {
-          clockRaisingEdge();
-        }
-        @Override
-        public void fallingEdge(final long wallClock) {}
-      });
     System.out.println(about);
   }
 
@@ -72,17 +60,6 @@ public class Monitor
   public void setSideSetCount(final int count)
   {
     pio.setSideSetCount(count);
-  }
-
-  public void clockRaisingEdge()
-  {
-    try {
-      pio.clockRaisingEdge();
-    } catch (final Decoder.MultiDecodeException e) {
-      for (final Decoder.DecodeException cause : e.getCauses()) {
-        System.err.println(cause);
-      }
-    }
   }
 }
 

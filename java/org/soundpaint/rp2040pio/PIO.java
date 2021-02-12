@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Peripheral I/O Unit
  */
-public class PIO
+public class PIO implements Clock.TransitionListener
 {
   private static final int SM_COUNT = 4;
 
@@ -40,6 +40,7 @@ public class PIO
   private final Memory memory;
   private final IRQ irq;
   private final SM[] sms;
+  private int smEnabled; // bits 0..3 of CTRL_SM_ENABLE
 
   public enum PinDir {
     GPIO_LEVELS(0, "levels"),
@@ -127,14 +128,16 @@ public class PIO
       throw new IllegalArgumentException("PIO index > 1: " + index);
     }
     this.index = index;
+    clock.addTransitionListener(this);
     caughtExceptions = new ArrayList<Decoder.DecodeException>();
     gpio = new GPIO();
     memory = new Memory();
     irq = new IRQ();
     sms = new SM[SM_COUNT];
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-      sms[smNum] = new SM(smNum, clock, gpio, memory, irq);
+      sms[smNum] = new SM(smNum, gpio, memory, irq);
     }
+    smEnabled = 0x0;
   }
 
   public int getDBG_CFGINFO_IMEM_SIZE()
@@ -264,18 +267,46 @@ public class PIO
     }
   }
 
-  public void clockRaisingEdge() throws Decoder.MultiDecodeException
+  /**
+   * Returns a copy of the list of all exceptions that have been
+   * collected during the most recent clock cycle.
+   */
+  public List<Decoder.DecodeException> getExceptions()
+  {
+    return List.copyOf(caughtExceptions);
+  }
+
+  @Override
+  public void raisingEdge(final long wallClock)
   {
     caughtExceptions.clear();
-    for (final SM sm : sms) {
-      try {
-        sm.clockRaisingEdge();
-      } catch (final Decoder.DecodeException e) {
-        caughtExceptions.add(e);
+    synchronized(sms) {
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+        if (smIsEnabled(smNum)) {
+          try {
+            final SM sm = getSM(smNum);
+            sm.clockRaisingEdge(wallClock);
+          } catch (final Decoder.DecodeException e) {
+            caughtExceptions.add(e);
+          }
+        }
       }
     }
-    if (caughtExceptions.size() > 0) {
-      throw new Decoder.MultiDecodeException(List.copyOf(caughtExceptions));
+  }
+
+  @Override
+  public void fallingEdge(final long wallClock) {
+    synchronized(sms) {
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+        if (smIsEnabled(smNum)) {
+          try {
+            final SM sm = getSM(smNum);
+            sm.clockFallingEdge(wallClock);
+          } catch (final Decoder.DecodeException e) {
+            caughtExceptions.add(e);
+          }
+        }
+      }
     }
   }
 
@@ -557,14 +588,31 @@ public class PIO
     sm.setPC(initialPC);
   }
 
-  public void smSetEnabled(final int smNum, final boolean enabled)
+  private boolean smIsEnabled(final int smNum)
   {
-    final SM sm = getSM(smNum);
-    sm.setEnabled(enabled);
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    return (smEnabled & (0x1 << smNum)) != 0x0;
   }
 
-  public void smSetEnabledMask(final int smNum,
-                               final int mask, final boolean enabled)
+  public void smSetEnabled(final int smNum, final boolean enabled)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    smSetEnabledMask(0x1 << smNum, enabled);
+  }
+
+  public void smSetEnabledMask(final int mask, final boolean enabled)
   {
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
@@ -573,11 +621,27 @@ public class PIO
       throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
                                          ": " + mask);
     }
-    final SM sm = getSM(smNum);
-    // TODO: Turn the loop into an atomic operation (cp. smClaimMask()).
-    for (int bitCount = 0; bitCount < SM_COUNT; bitCount++) {
-      if (mask >>> bitCount != 0x0) {
-        smSetEnabled(bitCount, enabled);
+    synchronized(sms) {
+      if (enabled) {
+        final int maskAlreadyEnabled = smEnabled & ~mask;
+        if (maskAlreadyEnabled == 0x0) {
+          smEnabled |= mask;
+        } else {
+          final String message =
+            String.format("state machine(s) already enabled: %s",
+                          listMaskBits(maskAlreadyEnabled));
+          throw new RuntimeException(message);
+        }
+      } else {
+        final int maskReadyToDisable = smEnabled & mask;
+        if (maskReadyToDisable == mask) {
+          smEnabled &= ~maskReadyToDisable;
+        } else {
+          final String message =
+            String.format("state machine(s) already disabled: %s",
+                          listMaskBits(~maskReadyToDisable & mask));
+          throw new RuntimeException(message);
+        }
       }
     }
   }
