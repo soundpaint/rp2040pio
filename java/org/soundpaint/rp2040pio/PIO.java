@@ -331,6 +331,12 @@ public class PIO implements Clock.TransitionListener
    */
   private Integer stateMachineClaimed = 0x0;
 
+  /**
+   * Used for resetting the clocks of multiple state machines as an
+   * atomic operation.
+   */
+  private Object CLKDIV_LOCK = new Object();
+
   public void smSetConfig(final int smNum, final SMConfig smConfig)
   {
     final SM sm = getSM(smNum);
@@ -648,8 +654,14 @@ public class PIO implements Clock.TransitionListener
 
   public void smClkDivRestart(final int smNum)
   {
-    final SM sm = getSM(smNum);
-    sm.resetCLKDIV();
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    smClkDivRestartMask(0x1 << smNum);
   }
 
   public void smClkDivRestartMask(final int mask)
@@ -661,11 +673,12 @@ public class PIO implements Clock.TransitionListener
       throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
                                          ": " + mask);
     }
-    // TODO: Turn the loop into an atomic operation (cp. smClaimMask()).
-    for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-      if (mask >>> smNum != 0x0) {
-        final SM sm = getSM(smNum);
-        sm.resetCLKDIV();
+    synchronized(CLKDIV_LOCK) {
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+        if (mask >>> smNum != 0x0) {
+          final SM sm = getSM(smNum);
+          sm.resetCLKDIV();
+        }
       }
     }
   }
