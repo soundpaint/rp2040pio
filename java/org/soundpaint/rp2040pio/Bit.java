@@ -28,16 +28,18 @@ package org.soundpaint.rp2040pio;
  * Representation of a single bit value.
  */
 public enum Bit {
-  LOW(0, "0"),
-  HIGH(1, "1");
+  LOW(0, '0'),
+  HIGH(1, '1');
 
   private final int value;
-  private final String label;
+  private final char charLabel;
+  private final String stringLabel;
 
-  private Bit(final int value, final String label)
+  private Bit(final int value, final char charLabel)
   {
     this.value = value;
-    this.label = label;
+    this.charLabel = charLabel;
+    this.stringLabel = String.valueOf(charLabel);
   }
 
   public int getValue() { return value; }
@@ -60,10 +62,15 @@ public enum Bit {
     return defaultValue;
   }
 
+  public char toChar()
+  {
+    return charLabel;
+  }
+
   @Override
   public String toString()
   {
-    return label;
+    return stringLabel;
   }
 };
 

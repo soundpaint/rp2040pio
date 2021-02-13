@@ -73,6 +73,15 @@ public class GPIO
   {
     private Direction direction;
     private Bit value;
+
+    public char toChar()
+    {
+      if (direction == Direction.IN) {
+        return value == Bit.HIGH ? '¹' : '⁰';
+      } else {
+        return value == Bit.HIGH ? '₁' : '₀';
+      }
+    }
   }
 
   private final Terminal[] terminals;
@@ -212,6 +221,16 @@ public class GPIO
   public int getInputSyncByPass()
   {
     return regINPUT_SYNC_BYPASS;
+  }
+
+  public String asBitArrayDisplay()
+  {
+    final StringBuffer s = new StringBuffer();
+    for (final Terminal terminal : terminals) {
+      s.append(terminal.toChar());
+      if ((s.length() + 1) % 9 == 0) s.append(' ');
+    }
+    return s.toString();
   }
 }
 

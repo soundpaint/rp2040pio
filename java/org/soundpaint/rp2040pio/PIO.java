@@ -118,14 +118,14 @@ public class PIO implements Clock.TransitionListener
 
   public PIO(final int index, final Clock clock)
   {
-    if (clock == null) {
-      throw new NullPointerException("clock");
-    }
     if (index < 0) {
       throw new IllegalArgumentException("PIO index < 0: " + index);
     }
     if (index > 1) {
       throw new IllegalArgumentException("PIO index > 1: " + index);
+    }
+    if (clock == null) {
+      throw new NullPointerException("clock");
     }
     this.index = index;
     clock.addTransitionListener(this);
@@ -153,6 +153,11 @@ public class PIO implements Clock.TransitionListener
   public int getDBG_CFGINFO_FIFO_DEPTH()
   {
     return FIFO.DEPTH;
+  }
+
+  public GPIO getGPIO()
+  {
+    return gpio;
   }
 
   public Memory getMemory()
@@ -331,12 +336,6 @@ public class PIO implements Clock.TransitionListener
    */
   private Integer stateMachineClaimed = 0x0;
 
-  /**
-   * Used for resetting the clocks of multiple state machines as an
-   * atomic operation.
-   */
-  private Object CLKDIV_LOCK = new Object();
-
   public void smSetConfig(final int smNum, final SMConfig smConfig)
   {
     final SM sm = getSM(smNum);
@@ -384,14 +383,23 @@ public class PIO implements Clock.TransitionListener
     gpio.init(pin);
   }
 
-  /*
-   * TODO:
-   *
-   * Add below those SDK functions that are still missing.
-   * Next missing function is "pio_get_dreq()".
-   * See:
-   * https://raspberrypi.github.io/pico-sdk-doxygen/group__hardware__pio.html
+  /**
+   * Given one of the 8 DMA channels (RX and TX for each state
+   * machine) between DMA and this PIO, return the corresponding DREQ
+   * number, as specified in Table 120, Sect. 2.5 ("DMA") of the
+   * RP2040 data sheet.
    */
+  public int getDREQ(final int smNum, final boolean isTX)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    return (getIndex() << 3) | (isTX ? 0 : SM_COUNT) | smNum;
+  }
 
   /**
    * Tries to allocate memory for the specified allocation mask and
@@ -652,6 +660,37 @@ public class PIO implements Clock.TransitionListener
     }
   }
 
+  public void smRestart(final int smNum)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    smRestartMask(0x1 << smNum);
+  }
+
+  public void smRestartMask(final int mask)
+  {
+    if (mask < 0) {
+      throw new IllegalArgumentException("mask < 0: " + mask);
+    }
+    if (mask > (0x1 << SM_COUNT) - 1) {
+      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
+                                         ": " + mask);
+    }
+    synchronized(sms) {
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+        if (mask >>> smNum != 0x0) {
+          final SM sm = getSM(smNum);
+          sm.restart();
+        }
+      }
+    }
+  }
+
   public void smClkDivRestart(final int smNum)
   {
     if (smNum < 0) {
@@ -673,7 +712,7 @@ public class PIO implements Clock.TransitionListener
       throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
                                          ": " + mask);
     }
-    synchronized(CLKDIV_LOCK) {
+    synchronized(sms) {
       for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         if (mask >>> smNum != 0x0) {
           final SM sm = getSM(smNum);
@@ -683,10 +722,49 @@ public class PIO implements Clock.TransitionListener
     }
   }
 
+  public void smEnableMaskInSync(final int mask)
+  {
+    if (mask < 0) {
+      throw new IllegalArgumentException("mask < 0: " + mask);
+    }
+    if (mask > (0x1 << SM_COUNT) - 1) {
+      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
+                                         ": " + mask);
+    }
+    synchronized(sms) {
+      smEnabled &= ~mask;
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+        if (mask >>> smNum != 0x0) {
+          final SM sm = getSM(smNum);
+          sm.resetCLKDIV();
+        }
+      }
+      smEnabled |= mask;
+    }
+  }
+
   public int smGetPC(final int smNum)
   {
     final SM sm = getSM(smNum);
     return sm.getPC();
+  }
+
+  public void smExec(final int smNum, final short instr)
+  {
+    final SM sm = getSM(smNum);
+    sm.insertDMAInstruction(instr & 0xffff);
+  }
+
+  public boolean smIsExecStalled(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.isExecStalled();
+  }
+
+  public void smExecWaitBlocking(final int smNum, final int instr)
+  {
+    final SM sm = getSM(smNum);
+    sm.smExecWaitBlocking(instr);
   }
 
   public void smSetWrap(final int smNum, final int wrapTarget,
@@ -744,6 +822,14 @@ public class PIO implements Clock.TransitionListener
     final SM sm = getSM(smNum);
     return sm.getTXFIFOLevel();
   }
+
+  /*
+   * TODO:
+   *
+   * Add below those SDK functions that are still missing.
+   * See:
+   * https://raspberrypi.github.io/pico-sdk-doxygen/group__hardware__pio.html
+   */
 
   public void smSetClkDiv(final int smNum, final float div)
   {

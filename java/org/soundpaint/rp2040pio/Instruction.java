@@ -109,12 +109,14 @@ public abstract class Instruction
     final GPIO gpio = sm.getGPIO();
     final int base = status.regPINCTRL_SIDESET_BASE;
     final PIO.PinDir pinDir = status.regEXECCTRL_SIDE_PINDIR;
-    if (pinDir == PIO.PinDir.GPIO_LEVELS) {
-      gpio.setPins(sideSet, status.regPINCTRL_SIDESET_BASE,
-                   sideSetCount);
-    } else {
-      gpio.setPinDirs(sideSet, status.regPINCTRL_SIDESET_BASE,
-                      sideSetCount);
+    if (sideSetCount > 0) {
+      if (pinDir == PIO.PinDir.GPIO_LEVELS) {
+        gpio.setPins(sideSet, status.regPINCTRL_SIDESET_BASE,
+                     sideSetCount);
+      } else {
+        gpio.setPinDirs(sideSet, status.regPINCTRL_SIDESET_BASE,
+                        sideSetCount);
+      }
     }
   }
 
@@ -510,7 +512,7 @@ public abstract class Instruction
           return null;
         }),
       EXEC(0b111, "exec", (sm, data) -> {
-          sm.insertInstruction(data);
+          sm.insertExecInstruction(data);
           return null;
         });
 
@@ -735,7 +737,7 @@ public abstract class Instruction
         }),
       RESERVED_3(0b011, "???", null),
       EXEC(0b100, "exec", (sm, data) -> {
-          sm.insertInstruction(data);
+          sm.insertExecInstruction(data);
           return null;
         }),
       PC(0b101, "pc", (sm, data) -> {

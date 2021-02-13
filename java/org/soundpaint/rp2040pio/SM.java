@@ -89,7 +89,8 @@ public class SM
     public int osrValue;
     public int osrShiftCount;
     public int pendingDelay;
-    public int pendingInstruction;
+    public int pendingDMAInstruction;
+    public int pendingExecInstruction;
     public int regADDR; // bits 0..4 of SMx_ADDR
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
     public PIO.PinDir regEXECCTRL_SIDE_PINDIR; // bit 29 of SMx_EXECCTRL
@@ -126,7 +127,8 @@ public class SM
       osrValue = 0;
       osrShiftCount = 32;
       pendingDelay = 0;
-      pendingInstruction = -1;
+      pendingDMAInstruction = -1;
+      pendingExecInstruction = -1;
       regADDR = 0;
       regEXECCTRL_STATUS_SEL = false;
       regEXECCTRL_STATUS_N = 0;
@@ -322,6 +324,8 @@ public class SM
 
   public void restart()
   {
+    // TODO: What about the program counter?  Always reset to 0x00?
+    // Or is the .origin value of a compiled program somewhere stored?
     status.reset();
   }
 
@@ -771,18 +775,23 @@ public class SM
 
   private short fetch()
   {
-    final int pendingInstruction = status.pendingInstruction;
-    if (pendingInstruction >= 0) {
-      status.pendingInstruction = -1;
-      return (short)pendingInstruction;
+    final int pendingDMAInstruction = status.pendingDMAInstruction;
+    if (pendingDMAInstruction >= 0) {
+      status.pendingDMAInstruction = -1;
+      return (short)pendingDMAInstruction;
+    }
+    final int pendingExecInstruction = status.pendingExecInstruction;
+    if (pendingExecInstruction >= 0) {
+      status.pendingExecInstruction = -1;
+      return (short)pendingExecInstruction;
     }
     return memory.get(status.regADDR);
   }
 
-  public void insertInstruction(final int instruction)
+  public void insertDMAInstruction(final int instruction)
   {
-    if (status.pendingInstruction >= 0) {
-      throw new InternalError("already have pending instruction");
+    if (status.pendingDMAInstruction >= 0) {
+      throw new InternalError("already have pending DMA instruction");
     }
     if (instruction < 0) {
       throw new IllegalArgumentException("instruction < 0: " + instruction);
@@ -790,11 +799,41 @@ public class SM
     if (instruction > 65535) {
       throw new IllegalArgumentException("instruction > 65535: " + instruction);
     }
-    status.pendingInstruction = instruction;
+    status.pendingDMAInstruction = instruction;
+  }
+
+  public void insertExecInstruction(final int instruction)
+  {
+    if (status.pendingExecInstruction >= 0) {
+      throw new InternalError("already have pending EXEC instruction");
+    }
+    if (instruction < 0) {
+      throw new IllegalArgumentException("instruction < 0: " + instruction);
+    }
+    if (instruction > 65535) {
+      throw new IllegalArgumentException("instruction > 65535: " + instruction);
+    }
+    status.pendingExecInstruction = instruction;
+  }
+
+  public boolean isExecStalled()
+  {
+    // TODO: Need more clarification before being implemented.
+    throw new InternalError("not yet implemented");
+  }
+
+  public void smExecWaitBlocking(final int instruction)
+  {
+    insertDMAInstruction(instruction);
+    // TODO: Need more clarification before being implemented.
+    throw new InternalError("not yet implemented");
   }
 
   public void execute() throws Decoder.DecodeException
   {
+    // TODO: Clarify: Has execution of inserted instructions higher
+    // priority over consuming pending delays of previous
+    // instructions?
     if (status.consumePendingDelay())
       return;
     final short word = fetch();
