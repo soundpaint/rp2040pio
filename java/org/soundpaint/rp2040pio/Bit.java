@@ -44,6 +44,11 @@ public enum Bit {
 
   public int getValue() { return value; }
 
+  public static Bit fromValue(final boolean value)
+  {
+    return value ? HIGH : LOW;
+  }
+
   public static Bit fromValue(final int value)
   {
     if (value == 0)

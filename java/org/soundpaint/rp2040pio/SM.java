@@ -82,6 +82,9 @@ public class SM
 
   public class Status
   {
+    public Instruction instruction;
+    public Instruction.ResultState resultState;
+    public boolean delayConsumed;
     public int regX;
     public int regY;
     public int isrValue;
@@ -120,6 +123,9 @@ public class SM
 
     private void reset()
     {
+      instruction = null;
+      resultState = null;
+      delayConsumed = false;
       regX = 0;
       regY = 0;
       isrValue = 0;
@@ -224,6 +230,10 @@ public class SM
     fifo = new FIFO();
     pll = new PLL();
   }
+
+  public FIFO getFIFO() { return fifo; }
+
+  public PLL getPLL() { return pll; }
 
   public void setCLKDIV(final int clkdiv)
   {
@@ -834,17 +844,35 @@ public class SM
     // TODO: Clarify: Has execution of inserted instructions higher
     // priority over consuming pending delays of previous
     // instructions?
-    if (status.consumePendingDelay())
+    if (status.consumePendingDelay()) {
+      status.delayConsumed = true;
       return;
+    }
+    status.delayConsumed = false;
     final short word = fetch();
-    final Instruction instruction = decoder.decode(word);
-    final Instruction.ResultState resultState = instruction.execute();
-    if (resultState == Instruction.ResultState.COMPLETE) {
+    status.instruction = decoder.decode(word);
+    status.resultState = status.instruction.execute();
+    if (status.resultState == Instruction.ResultState.COMPLETE) {
       updatePC();
     }
-    if (resultState != Instruction.ResultState.STALL) {
-      status.setPendingDelay(instruction.getDelay());
+    if (status.resultState != Instruction.ResultState.STALL) {
+      status.setPendingDelay(status.instruction.getDelay());
     }
+  }
+
+  public boolean isStalled()
+  {
+    return status.resultState == Instruction.ResultState.STALL;
+  }
+
+  public boolean isDelayed()
+  {
+    return status.delayConsumed;
+  }
+
+  public Instruction getCurrentInstruction()
+  {
+    return status.instruction;
   }
 
   public int getClockDivIntegerBits()

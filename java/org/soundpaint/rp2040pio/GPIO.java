@@ -74,6 +74,12 @@ public class GPIO
     private Direction direction;
     private Bit value;
 
+    public void reset()
+    {
+      direction = Direction.IN;
+      value = Bit.LOW;
+    }
+
     public char toChar()
     {
       if (direction == Direction.IN) {
@@ -92,10 +98,17 @@ public class GPIO
   {
     terminals = new Terminal[32];
     for (int port = 0; port < terminals.length; port++) {
-      final Terminal terminal = new Terminal();
+      terminals[port] = new Terminal();
+    }
+    reset();
+  }
+
+  public void reset()
+  {
+    for (int port = 0; port < terminals.length; port++) {
+      final Terminal terminal = terminals[port];
       terminal.direction = Direction.IN;
       terminal.value = Bit.LOW;
-      terminals[port] = terminal;
     }
   }
 

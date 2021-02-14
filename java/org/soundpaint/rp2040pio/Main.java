@@ -28,18 +28,43 @@ import java.io.IOException;
 
 public class Main
 {
+  private final PIO pio;
+
   public Main()
   {
+    pio = PIO.PIO0;
   }
 
   public void run() throws IOException
   {
-    final Monitor monitor = new Monitor();
     final String programResourcePath = "/examples/squarewave.hex";
     //final String programResourcePath = "/examples/ws2812.hex";
-    monitor.addProgram(programResourcePath);
-    monitor.setSideSetCount(1);
-    monitor.dumpProgram();
+    //final Monitor monitor = new Monitor();
+    //monitor.addProgram(programResourcePath);
+    //monitor.setSideSetCount(1);
+    //monitor.dumpProgram();
+    final TimingDiagram diagram = new TimingDiagram(pio);
+    diagram.addProgram(programResourcePath);
+    diagram.addSignal(new DiagramConfig.BitSignal("SM0_CLK_ENABLE",
+                                                  () -> Bit.fromValue(pio.getSM(0).getPLL().getClockEnable())));
+    diagram.addSignal(new DiagramConfig.ValuedSignal<Bit>("GPIO 0",
+                                                          () -> pio.getGPIO().getBit(0)));
+    diagram.addSignal(new DiagramConfig.BitSignal("GPIO 0",
+                                                  () -> pio.getGPIO().getBit(0)));
+    diagram.addSignal(new DiagramConfig.ValuedSignal<Bit>("GPIO 1",
+                                                          () -> pio.getGPIO().getBit(1)));
+    diagram.addSignal(new DiagramConfig.ValuedSignal<Bit>("GPIO 10",
+                                                          () -> pio.getGPIO().getBit(10)));
+    diagram.addSignal(new DiagramConfig.ValuedSignal<Integer>("SM0_PC",
+                                                              () -> pio.getSM(0).getPC()));
+    final DiagramConfig.ValuedSignal<Instruction> instructionSignal =
+      new DiagramConfig.ValuedSignal<Instruction>("SM0_INSTR",
+                                                  () -> pio.getSM(0).getCurrentInstruction(),
+                                                  () -> !pio.getSM(0).isStalled() && !pio.getSM(0).isDelayed());
+    instructionSignal.setRenderer((instruction) -> instruction.getMnemonic().toUpperCase());
+    diagram.addSignal(instructionSignal);
+    //diagram.setSideSetCount(1);
+    diagram.create();
   }
 
   public static void main(final String argv[]) throws IOException

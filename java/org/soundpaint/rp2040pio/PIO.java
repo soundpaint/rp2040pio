@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class PIO implements Clock.TransitionListener
 {
-  private static final int SM_COUNT = 4;
+  public static final int SM_COUNT = 4;
 
   private final int index;
   private final List<Decoder.DecodeException> caughtExceptions;
