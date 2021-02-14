@@ -103,3 +103,28 @@ and more.
 
 Maybe, I will also provide a graphical user interface that depicts the
 internal state of the PIO in a graphical and more vivid manner.
+
+* Support for interaction with the PIO's outer world.  In particular:
+
+  * Support specifying when and which logical values will be put onto
+    the GPIO pins from an external source.
+
+  * Support specifying when and which values will be shifted into the
+    TX FIFO or shifted out from the RX FIFO via DMA access onto the
+    PIO.
+
+  * Support specifying when and which operations are triggered by
+    DMA access onto the PIO memory-mapped registers.
+
+  * Support specifying when and which instructions are inserted by
+    DMA access onto the PIO memory-mapped SMx_INSTR registers.
+
+  * Support specifying when an interrupt is requested by DMA access
+    onto the PIO memory-mapped interrupt registers.
+
+* Generate a warning whenever a race condition is detected.  In
+  particular, generate a warning when multiple state machines
+  concurrently access the same resource, like writing simultaneously
+  to the same GPIO pin.  Warnings can be reported in the monitor
+  program while debugging a program, as well as marked on the timing
+  diagram.
