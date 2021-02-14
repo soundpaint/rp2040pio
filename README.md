@@ -19,13 +19,13 @@ original?  There are a number of good reasons for doing so:
   of the PIO that are not accessible when running on real RP2040
   hardware, such as:
 
-* * the contents of PIO registers X, Y, ISR and OSR,
+  * the contents of PIO registers X, Y, ISR and OSR,
 
-* * the current value of the ISR / OSR shift count or
+  * the current value of the ISR / OSR shift count or
 
-* * the number of an instruction's pending delays.
+  * the number of an instruction's pending delays.
 
-    In contrast, the emulator has access to the PIO's complete internal
+  In contrast, the emulator has access to the PIO's complete internal
   logical state (otherwise, the emulation could not correctly work).
 
 * To debug your PIO program in the context of your IDE: The emulator
