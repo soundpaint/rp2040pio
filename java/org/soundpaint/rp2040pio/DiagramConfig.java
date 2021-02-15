@@ -35,6 +35,34 @@ import java.util.function.Supplier;
  */
 public class DiagramConfig implements Iterable<DiagramConfig.Signal>
 {
+  /**
+   * Holds a copy of all info of a specific Instruction during a
+   * specific cycle that is relevant for the timing diagram.
+   */
+  public static class InstructionInfo
+  {
+    private final String mnemonic;
+    private final String fullStatement;
+
+    private InstructionInfo()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    public InstructionInfo(final Instruction instruction)
+    {
+      if (instruction == null) {
+        throw new NullPointerException("instruction");
+      }
+      this.mnemonic = instruction.getMnemonic();
+      this.fullStatement = instruction.toString().replaceAll("\\s{2,}", " ");
+    }
+
+    public String getMnemonic() { return mnemonic; }
+
+    public String toString() { return fullStatement; }
+  }
+
   public static interface Signal
   {
     void reset();
@@ -44,7 +72,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     boolean isValued();
     int notChangedSince();
     String getRenderedValue();
-    String getRenderedPreviousValue();
+    String getPreviousRenderedValue();
+    String getToolTipText();
+    String getPreviousToolTipText();
   }
 
   private abstract static class AbstractSignal<T> implements Signal
@@ -54,6 +84,7 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     private T value;
     private int notChangedSince;
     private Function<T, String> renderer;
+    private Function<T, String> toolTipTexter;
 
     private AbstractSignal()
     {
@@ -67,6 +98,7 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
       }
       this.label = label;
       this.renderer = null;
+      this.toolTipTexter = null;
       reset();
     }
 
@@ -139,9 +171,41 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     }
 
     @Override
-    public String getRenderedPreviousValue()
+    public String getPreviousRenderedValue()
     {
       return renderValue(previousValue);
+    }
+
+    /**
+     * Setting the tooltip texter to &lt;code&gt;null&lt;/code&gt;
+     * results in reverting to the default behavior of not providing
+     * any tooltip text.
+     */
+    public void setToolTipTexter(final Function<T, String> toolTipTexter)
+    {
+      this.toolTipTexter = toolTipTexter;
+    }
+
+    protected String toolTipTextForValue(final T value)
+    {
+      if (value == null)
+        return null;
+      else if (toolTipTexter != null)
+        return toolTipTexter.apply(value);
+      else
+        return null;
+    }
+
+    @Override
+    public String getToolTipText()
+    {
+      return toolTipTextForValue(value);
+    }
+
+    @Override
+    public String getPreviousToolTipText()
+    {
+      return toolTipTextForValue(previousValue);
     }
   }
 
@@ -168,6 +232,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
 
     @Override
     protected String renderValue(final Void value) { return null; }
+
+    @Override
+    protected String toolTipTextForValue(final Void value) { return null; }
   }
 
   public static class ValuedSignal<T> extends AbstractSignal<T>
@@ -233,6 +300,45 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     {
       return getPreviousValue() == Bit.HIGH;
     }
+  }
+
+  public static class InstructionSignal extends ValuedSignal<InstructionInfo>
+  {
+    private InstructionSignal(final String label,
+                              final Supplier<InstructionInfo> valueGetter)
+    {
+      super(label, valueGetter);
+    }
+
+    private InstructionSignal(final String label,
+                              final Supplier<InstructionInfo> valueGetter,
+                              final Supplier<Boolean> changeInfoGetter)
+    {
+      super(label, valueGetter, changeInfoGetter);
+    }
+  }
+
+  public static InstructionSignal
+    createInstructionSignal(final String label, final PIO pio, final int smNum)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > PIO.SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (PIO.SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    final Supplier<InstructionInfo> valueGetter =
+      () -> new InstructionInfo(pio.getSM(smNum).getCurrentInstruction());
+    final Supplier<Boolean> changeInfoGetter =
+      () -> !pio.getSM(smNum).isStalled() && !pio.getSM(smNum).isDelayed();
+    final InstructionSignal instructionSignal =
+      new InstructionSignal(label, valueGetter, changeInfoGetter);
+    instructionSignal.setRenderer((instructionInfo) ->
+                                  instructionInfo.getMnemonic().toUpperCase());
+    instructionSignal.setToolTipTexter((instructionInfo) ->
+                                       instructionInfo.toString());
+    return instructionSignal;
   }
 
   private final List<Signal> signals;

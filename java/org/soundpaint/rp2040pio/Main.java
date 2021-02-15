@@ -55,13 +55,10 @@ public class Main
                                                           () -> pio.getGPIO().getBit(1)));
     diagram.addSignal(new DiagramConfig.ValuedSignal<Bit>("GPIO 10",
                                                           () -> pio.getGPIO().getBit(10)));
-    diagram.addSignal(new DiagramConfig.ValuedSignal<Integer>("SM0_PC",
-                                                              () -> pio.getSM(0).getPC()));
-    final DiagramConfig.ValuedSignal<Instruction> instructionSignal =
-      new DiagramConfig.ValuedSignal<Instruction>("SM0_INSTR",
-                                                  () -> pio.getSM(0).getCurrentInstruction(),
-                                                  () -> !pio.getSM(0).isStalled() && !pio.getSM(0).isDelayed());
-    instructionSignal.setRenderer((instruction) -> instruction.getMnemonic().toUpperCase());
+    diagram.addSignal(new DiagramConfig.ValuedSignal<String>("SM0_PC",
+                                                             () -> String.format("%02x", pio.getSM(0).getPC())));
+    DiagramConfig.InstructionSignal instructionSignal =
+      DiagramConfig.createInstructionSignal("SM0_INSTR", pio, 0);
     diagram.addSignal(instructionSignal);
     //diagram.setSideSetCount(1);
     diagram.create();

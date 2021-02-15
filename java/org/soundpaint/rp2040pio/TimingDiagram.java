@@ -28,15 +28,19 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Stroke;
-import java.awt.FontMetrics;
 import java.awt.TexturePaint;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -85,6 +89,39 @@ public class TimingDiagram
   private final DiagramConfig diagramConfig;
   private final JFrame frame;
   private final JPanel panel;
+  private final List<ToolTip> toolTips;
+
+  private static class ToolTip
+  {
+    private final int x0;
+    private final int y0;
+    private final int x1;
+    private final int y1;
+    private final String text;
+
+    private ToolTip()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    public ToolTip(final int x0, final int y0, final int x1, final int y1,
+                   final String text)
+    {
+      if (text == null) {
+        throw new NullPointerException("text");
+      }
+      this.x0 = x0;
+      this.y0 = y0;
+      this.x1 = x1;
+      this.y1 = y1;
+      this.text = text;
+    }
+  }
+
+  private TimingDiagram()
+  {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
 
   public TimingDiagram(final PIO pio)
   {
@@ -94,12 +131,38 @@ public class TimingDiagram
     frame = new JFrame("Timing Diagram");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.getContentPane().add(panel = new JPanel() {
+        @Override
         public void paint(final Graphics g)
         {
           super.paint(g);
           paintDiagram(this, (Graphics2D)g, getWidth(), getHeight());
         }
+        @Override
+        public String getToolTipText(final MouseEvent event) {
+          return getDiagramToolTipText(event);
+        }
       });
+    panel.setToolTipText("");
+    toolTips = new ArrayList<ToolTip>();
+  }
+
+  private void addToolTip(final int x0, final int y0,
+                          final int x1, final int y1,
+                          final String text)
+  {
+    toolTips.add(new ToolTip(x0, y0, x1, y1, text));
+  }
+
+  private String getDiagramToolTipText(final MouseEvent event)
+  {
+    final Point p = event.getPoint();
+    for (final ToolTip toolTip: toolTips) {
+      if ((p.x >= toolTip.x0) && (p.x <= toolTip.x1) &&
+          (p.y >= toolTip.y0) && (p.y <= toolTip.y1)) {
+        return toolTip.text;
+      }
+    }
+    return null;
   }
 
   public void addSignal(final DiagramConfig.Signal signal)
@@ -180,11 +243,8 @@ public class TimingDiagram
                                 final DiagramConfig.ValuedSignal<?> signal,
                                 final int cycles)
   {
-    final Object signalValue = signal.getRenderedPreviousValue();
-    if (signalValue == null) {
-      return;
-    } else {
-      final String label = String.valueOf(signalValue);
+    final String label = signal.getPreviousRenderedValue();
+    if (label != null) {
       final FontMetrics fm = panel.getFontMetrics(panel.getFont());
       final int width = fm.stringWidth(label);
       final double xLabelStart =
@@ -193,27 +253,45 @@ public class TimingDiagram
       g.setFont(VALUE_FONT);
       g.drawString(label, (float)xLabelStart, (float)yTextBottom);
     }
+    final String toolTipText = signal.getPreviousToolTipText();
+    if (toolTipText != null) {
+      addToolTip((int)(xStart - cycles * CLOCK_CYCLE_WIDTH),
+                 (int)(yBottom - VALUED_SIGNAL_HEIGHT),
+                 (int)xStart - 1, (int)yBottom,
+                 toolTipText);
+    }
   }
 
   private void paintValuedSignalCycle(final JPanel panel, final Graphics2D g,
                                       final double xStart, final double yBottom,
                                       final DiagramConfig.ValuedSignal<?> signal,
-                                      final boolean lastCycle)
+                                      final boolean leftBorder,
+                                      final boolean rightBorder)
   {
-    final int notChangedSince = signal.notChangedSince();
+    // draw only previous event if completed, since current event may
+    // be still ongoing such that centered display of text is not yet
+    // reached
+    final int notChangedSince =
+      signal.notChangedSince(); // safe prior to signal update
     signal.update();
+
+    // paint label for past value, if completed
+    if (leftBorder) {
+      // left border => no past value available
+    } else if (signal.changed()) {
+      // signal changed => go for printing label of past value
+      paintValuedLabel(panel, g, xStart, yBottom, signal,
+                       notChangedSince + 1);
+    } else if (rightBorder) {
+      // right border => print label even for incomplete value
+      paintValuedLabel(panel, g, xStart, yBottom, signal,
+                       notChangedSince);
+    }
+
+    // draw lines for current value
     final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + CLOCK_CYCLE_WIDTH;
-    if (xStart > LEFT_MARGIN) {
-      if (signal.changed()) {
-        paintValuedLabel(panel, g, xStart, yBottom, signal,
-                         notChangedSince + 1);
-      } else if (lastCycle) {
-        paintValuedLabel(panel, g, xStart, yBottom, signal,
-                         notChangedSince);
-      }
-    }
     if (signal.changed()) {
       g.draw(new Line2D.Double(xStart, yTop, xStable, yBottom));
       g.draw(new Line2D.Double(xStart, yBottom, xStable, yTop));
@@ -237,7 +315,8 @@ public class TimingDiagram
   private void paintSignalCycle(final JPanel panel, final Graphics2D g,
                                 final double xStart, final double yBottom,
                                 final DiagramConfig.Signal signal,
-                                final boolean lastCycle)
+                                final boolean leftBorder,
+                                final boolean rightBorder)
   {
     if (signal instanceof DiagramConfig.ClockSignal) {
       paintClockCycle(panel, g, xStart, yBottom);
@@ -246,9 +325,25 @@ public class TimingDiagram
                           (DiagramConfig.BitSignal)signal);
     } else if (signal instanceof DiagramConfig.ValuedSignal<?>) {
       paintValuedSignalCycle(panel, g, xStart, yBottom,
-                             (DiagramConfig.ValuedSignal<?>)signal, lastCycle);
+                             (DiagramConfig.ValuedSignal<?>)signal,
+                             leftBorder, rightBorder);
     } else {
       throw new InternalError("unexpected signal type: " + signal);
+    }
+  }
+
+  private void paintSignalsCycle(final JPanel panel, final Graphics2D g,
+                                 final double xStart, final boolean leftBorder,
+                                 final boolean rightBorder)
+  {
+    g.setColor(Color.BLACK);
+    g.setStroke(PLAIN_STROKE);
+    double y = TOP_MARGIN;
+    for (final DiagramConfig.Signal signal : diagramConfig) {
+      final double height =
+        signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+      paintSignalCycle(panel, g, xStart, y += height, signal,
+                       leftBorder, rightBorder);
     }
   }
 
@@ -274,21 +369,9 @@ public class TimingDiagram
     }
   }
 
-  private void paintSignalsCycle(final JPanel panel, final Graphics2D g,
-                                 final double x, final boolean lastCycle)
-  {
-    g.setColor(Color.BLACK);
-    g.setStroke(PLAIN_STROKE);
-    double y = TOP_MARGIN;
-    for (final DiagramConfig.Signal signal : diagramConfig) {
-      final double height =
-        signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-      paintSignalCycle(panel, g, x, y += height, signal, lastCycle);
-    }
-  }
-
   private void resetEmulation()
   {
+    pio.smSetEnabledMask((1 << PIO.SM_COUNT) - 1, false, true);
     pio.smRestartMask(PIO.SM_COUNT - 1);
     final GPIO gpio = pio.getGPIO();
     gpio.reset();
@@ -300,6 +383,7 @@ public class TimingDiagram
   private void paintDiagram(final JPanel panel, final Graphics2D g,
                             final int width, final int height)
   {
+    toolTips.clear();
     final MasterClock clock = MasterClock.getDefaultInstance();
     final SM sm0 = pio.getSM(0);
     g.setStroke(PLAIN_STROKE);
@@ -307,19 +391,22 @@ public class TimingDiagram
     final int stopCycle =
       (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / CLOCK_CYCLE_WIDTH);
     resetEmulation();
-    pio.smSetEnabledMask(PIO.SM_COUNT - 1, true);
+    // TODO: Enabling SM should be part of configuration and
+    // replayed, whenever the simulation is restarted.
+    pio.smSetEnabledMask(1, true);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
-      clock.cycle();
+      clock.cyclePhase0();
       for (final Decoder.DecodeException e : pio.getExceptions()) {
         System.err.println(e);
       }
       final double x = LEFT_MARGIN + cycle * CLOCK_CYCLE_WIDTH;
       paintGridLine(g, x, height);
-      final boolean lastCycle = cycle + 1 == stopCycle;
-      paintSignalsCycle(panel, g, x, lastCycle);
+      final boolean leftBorder = cycle == 0;
+      final boolean rightBorder = cycle + 1 == stopCycle;
+      paintSignalsCycle(panel, g, x, leftBorder, rightBorder);
+      clock.cyclePhase1();
     }
     paintGridLine(g, LEFT_MARGIN + stopCycle * CLOCK_CYCLE_WIDTH, height);
-    pio.smSetEnabledMask(PIO.SM_COUNT - 1, false);
   }
 
   public void addProgram(final String programResourcePath)

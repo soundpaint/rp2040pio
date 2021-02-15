@@ -616,6 +616,12 @@ public class PIO implements Clock.TransitionListener
 
   public void smSetEnabled(final int smNum, final boolean enabled)
   {
+    smSetEnabled(smNum, enabled, false);
+  }
+
+  public void smSetEnabled(final int smNum, final boolean enabled,
+                           final boolean disableStatusCheck)
+  {
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
     }
@@ -623,10 +629,16 @@ public class PIO implements Clock.TransitionListener
       throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
                                          ": " + smNum);
     }
-    smSetEnabledMask(0x1 << smNum, enabled);
+    smSetEnabledMask(0x1 << smNum, enabled, disableStatusCheck);
   }
 
   public void smSetEnabledMask(final int mask, final boolean enabled)
+  {
+    smSetEnabledMask(mask, enabled, false);
+  }
+
+  public void smSetEnabledMask(final int mask, final boolean enabled,
+                               final boolean disableStatusCheck)
   {
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
@@ -638,7 +650,7 @@ public class PIO implements Clock.TransitionListener
     synchronized(sms) {
       if (enabled) {
         final int maskAlreadyEnabled = smEnabled & ~mask;
-        if (maskAlreadyEnabled == 0x0) {
+        if (disableStatusCheck || (maskAlreadyEnabled == 0x0)) {
           smEnabled |= mask;
         } else {
           final String message =
@@ -648,7 +660,7 @@ public class PIO implements Clock.TransitionListener
         }
       } else {
         final int maskReadyToDisable = smEnabled & mask;
-        if (maskReadyToDisable == mask) {
+        if (disableStatusCheck || (maskReadyToDisable == mask)) {
           smEnabled &= ~maskReadyToDisable;
         } else {
           final String message =

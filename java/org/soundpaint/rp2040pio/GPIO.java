@@ -130,6 +130,8 @@ public class GPIO
 
   public void setBit(final int port, final Bit value)
   {
+    // TODO: Clarify what happens when writing to a GPIO with pin
+    // direction set to IN.
     if (value == null) {
       throw new NullPointerException("value");
     }
@@ -141,6 +143,8 @@ public class GPIO
 
   public Bit getBit(final int port)
   {
+    // TODO: Clarify what happens when reading from a GPIO with pin
+    // direction set to OUT.
     if ((port < 0) || (port >= terminals.length)) {
       throw new IllegalArgumentException("port out of range: " + port);
     }

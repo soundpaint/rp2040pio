@@ -84,7 +84,7 @@ public class SM
   {
     public Instruction instruction;
     public Instruction.ResultState resultState;
-    public boolean delayConsumed;
+    public boolean isConsumingDelay;
     public int regX;
     public int regY;
     public int isrValue;
@@ -125,7 +125,7 @@ public class SM
     {
       instruction = null;
       resultState = null;
-      delayConsumed = false;
+      isConsumingDelay = false;
       regX = 0;
       regY = 0;
       isrValue = 0;
@@ -322,7 +322,7 @@ public class SM
   {
     pll.raisingEdge(wallClock);
     if (pll.getClockEnable()) {
-      execute();
+      fetchAndDecode();
     }
   }
 
@@ -330,6 +330,9 @@ public class SM
     throws Decoder.DecodeException
   {
     pll.fallingEdge(wallClock);
+    if (pll.getClockEnable()) {
+      execute();
+    }
   }
 
   public void restart()
@@ -839,18 +842,24 @@ public class SM
     throw new InternalError("not yet implemented");
   }
 
-  public void execute() throws Decoder.DecodeException
+  public void fetchAndDecode() throws Decoder.DecodeException
   {
     // TODO: Clarify: Has execution of inserted instructions higher
     // priority over consuming pending delays of previous
     // instructions?
     if (status.consumePendingDelay()) {
-      status.delayConsumed = true;
+      status.isConsumingDelay = true;
       return;
     }
-    status.delayConsumed = false;
+    status.isConsumingDelay = false;
     final short word = fetch();
     status.instruction = decoder.decode(word);
+  }
+
+  public void execute()
+  {
+    if (status.isConsumingDelay)
+      return;
     status.resultState = status.instruction.execute();
     if (status.resultState == Instruction.ResultState.COMPLETE) {
       updatePC();
@@ -867,7 +876,7 @@ public class SM
 
   public boolean isDelayed()
   {
-    return status.delayConsumed;
+    return status.isConsumingDelay;
   }
 
   public Instruction getCurrentInstruction()
@@ -908,6 +917,12 @@ public class SM
       }
       System.out.printf("%02x: %04x %s%n", address, word, opCode);
     }
+  }
+
+  @Override
+  public String toString()
+  {
+    return "SM" + num + "{PC=" + getPC() + "}";
   }
 }
 

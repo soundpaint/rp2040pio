@@ -128,3 +128,19 @@ internal state of the PIO in a graphical and more vivid manner.
   to the same GPIO pin.  Warnings can be reported in the monitor
   program while debugging a program, as well as marked on the timing
   diagram.
+
+* Generate a warning upon FIFO overflow / underflow.
+
+* Generate a warning when reading from or writing to a GPIO pin that
+  has pin direction that conflicts with the type of access.
+
+* When generating a timing diagram, support alternative backends such
+  as PDF or SVG.
+
+* If an alternative backend for timing diagrams provides tooltips, add
+  tooltips with additional info such as showing the complete
+  instruction (with all of its parameters) when hovering over the
+  instruction mnemonic in the timing diagram.
+
+* Also add tooltips with descriptive / explanatory text for all
+  warnings, where appropriate.

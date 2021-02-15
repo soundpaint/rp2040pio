@@ -32,10 +32,16 @@ import java.util.List;
  */
 public class MasterClock implements Clock
 {
-  private final List<TransitionListener> listeners;
-  private long wallClock;
+  private enum Phase
+  {
+    PHASE_0, PHASE_1
+  };
 
   private static final MasterClock DEFAULT_INSTANCE = new MasterClock();
+
+  private final List<TransitionListener> listeners;
+  private long wallClock;
+  private Phase phase;
 
   public static MasterClock getDefaultInstance()
   {
@@ -51,6 +57,7 @@ public class MasterClock implements Clock
   public void reset()
   {
     wallClock = -1;
+    phase = null;
   }
 
   @Override
@@ -85,11 +92,29 @@ public class MasterClock implements Clock
     }
   }
 
-  public void cycle()
+  public void cyclePhase0()
   {
+    if (phase == Phase.PHASE_0) {
+      throw new InternalError("already in phase 0");
+    }
+    phase = Phase.PHASE_0;
     announceRaisingEdge();
+  }
+
+  public void cyclePhase1()
+  {
+    if (phase == Phase.PHASE_1) {
+      throw new InternalError("already in phase 1");
+    }
+    phase = Phase.PHASE_1;
     announceFallingEdge();
     wallClock++;
+  }
+
+  public void cycle()
+  {
+    cyclePhase0();
+    cyclePhase1();
   }
 }
 
