@@ -127,7 +127,6 @@ public class TimingDiagram
   {
     this.pio = pio;
     diagramConfig = new DiagramConfig();
-    diagramConfig.addSignal(new DiagramConfig.ClockSignal());
     frame = new JFrame("Timing Diagram");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.getContentPane().add(panel = new JPanel() {
@@ -206,8 +205,10 @@ public class TimingDiagram
   }
 
   private void paintClockCycle(final JPanel panel, final Graphics2D g,
-                               final double xStart, final double yBottom)
+                               final double xStart, final double yBottom,
+                               final boolean rightBorder)
   {
+    if (rightBorder) return;
     final double xFallingEdge = xStart + 0.5 * CLOCK_CYCLE_WIDTH;
     final double xStop = xStart + CLOCK_CYCLE_WIDTH;
     final double yTop = yBottom - BIT_SIGNAL_HEIGHT;
@@ -220,8 +221,10 @@ public class TimingDiagram
 
   private void paintBitSignalCycle(final JPanel panel, final Graphics2D g,
                                    final double xStart, final double yBottom,
-                                   final DiagramConfig.BitSignal signal)
+                                   final DiagramConfig.BitSignal signal,
+                                   final boolean rightBorder)
   {
+    if (rightBorder) return;
     signal.update();
     final double y =
       yBottom - (signal.asBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
@@ -275,20 +278,15 @@ public class TimingDiagram
       signal.notChangedSince(); // safe prior to signal update
     signal.update();
 
-    // paint label for past value, if completed
-    if (leftBorder) {
-      // left border => no past value available
-    } else if (signal.changed()) {
-      // signal changed => go for printing label of past value
+    if (!leftBorder && (signal.changed() || rightBorder)) {
+      // signal changed => go for printing label of completed value;
+      // right border => print label as preview for incomplete value
       paintValuedLabel(panel, g, xStart, yBottom, signal,
                        notChangedSince + 1);
-    } else if (rightBorder) {
-      // right border => print label even for incomplete value
-      paintValuedLabel(panel, g, xStart, yBottom, signal,
-                       notChangedSince);
     }
 
     // draw lines for current value
+    if (rightBorder) return;
     final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + CLOCK_CYCLE_WIDTH;
@@ -319,10 +317,10 @@ public class TimingDiagram
                                 final boolean rightBorder)
   {
     if (signal instanceof DiagramConfig.ClockSignal) {
-      paintClockCycle(panel, g, xStart, yBottom);
+      paintClockCycle(panel, g, xStart, yBottom, rightBorder);
     } else if (signal instanceof DiagramConfig.BitSignal) {
       paintBitSignalCycle(panel, g, xStart, yBottom,
-                          (DiagramConfig.BitSignal)signal);
+                          (DiagramConfig.BitSignal)signal, rightBorder);
     } else if (signal instanceof DiagramConfig.ValuedSignal<?>) {
       paintValuedSignalCycle(panel, g, xStart, yBottom,
                              (DiagramConfig.ValuedSignal<?>)signal,
@@ -389,7 +387,7 @@ public class TimingDiagram
     g.setStroke(PLAIN_STROKE);
     paintLabels(panel, g);
     final int stopCycle =
-      (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / CLOCK_CYCLE_WIDTH);
+      (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / CLOCK_CYCLE_WIDTH + 1);
     resetEmulation();
     // TODO: Enabling SM should be part of configuration and
     // replayed, whenever the simulation is restarted.
@@ -400,9 +398,9 @@ public class TimingDiagram
         System.err.println(e);
       }
       final double x = LEFT_MARGIN + cycle * CLOCK_CYCLE_WIDTH;
-      paintGridLine(g, x, height);
       final boolean leftBorder = cycle == 0;
       final boolean rightBorder = cycle + 1 == stopCycle;
+      paintGridLine(g, x, height);
       paintSignalsCycle(panel, g, x, leftBorder, rightBorder);
       clock.cyclePhase1();
     }

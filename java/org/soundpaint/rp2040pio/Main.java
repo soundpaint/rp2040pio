@@ -29,10 +29,12 @@ import java.io.IOException;
 public class Main
 {
   private final PIO pio;
+  private final GPIO gpio;
 
   public Main()
   {
     pio = PIO.PIO0;
+    gpio = pio.getGPIO();
   }
 
   public void run() throws IOException
@@ -45,21 +47,22 @@ public class Main
     //monitor.dumpProgram();
     final TimingDiagram diagram = new TimingDiagram(pio);
     diagram.addProgram(programResourcePath);
-    diagram.addSignal(new DiagramConfig.BitSignal("SM0_CLK_ENABLE",
-                                                  () -> Bit.fromValue(pio.getSM(0).getPLL().getClockEnable())));
-    diagram.addSignal(new DiagramConfig.ValuedSignal<Bit>("GPIO 0",
-                                                          () -> pio.getGPIO().getBit(0)));
-    diagram.addSignal(new DiagramConfig.BitSignal("GPIO 0",
-                                                  () -> pio.getGPIO().getBit(0)));
-    diagram.addSignal(new DiagramConfig.ValuedSignal<Bit>("GPIO 1",
-                                                          () -> pio.getGPIO().getBit(1)));
-    diagram.addSignal(new DiagramConfig.ValuedSignal<Bit>("GPIO 10",
-                                                          () -> pio.getGPIO().getBit(10)));
-    diagram.addSignal(new DiagramConfig.ValuedSignal<String>("SM0_PC",
-                                                             () -> String.format("%02x", pio.getSM(0).getPC())));
-    DiagramConfig.InstructionSignal instructionSignal =
-      DiagramConfig.createInstructionSignal("SM0_INSTR", pio, 0);
-    diagram.addSignal(instructionSignal);
+    diagram.addSignal(DiagramConfig.createClockSignal("clock"));
+    diagram.addSignal(new
+                      DiagramConfig.BitSignal("SM0_CLK_ENABLE",
+                                              () ->
+                                              Bit.fromValue(pio.getSM(0).
+                                                            getPLL().
+                                                            getClockEnable())));
+    diagram.addSignal(DiagramConfig.createGPIOBitSignal(null, gpio, 0));
+    diagram.addSignal(DiagramConfig.createGPIOValueSignal(null, gpio, 0));
+    diagram.addSignal(DiagramConfig.createGPIOValueSignal(null, gpio, 1));
+    diagram.addSignal(DiagramConfig.createGPIOValueSignal(null, gpio, 10));
+    diagram.addSignal(DiagramConfig.createPCStateSignal(null, pio, 0, false));
+    diagram.addSignal(DiagramConfig.createPCStateSignal(null, pio, 0, true));
+    diagram.addSignal(DiagramConfig.createInstructionSignal(null, pio, 0, false, true));
+    diagram.addSignal(DiagramConfig.createInstructionSignal(null, pio, 0, true, false));
+    diagram.addSignal(DiagramConfig.createInstructionSignal(null, pio, 0, true, true));
     //diagram.setSideSetCount(1);
     diagram.create();
   }

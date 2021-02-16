@@ -84,7 +84,7 @@ public class SM
   {
     public Instruction instruction;
     public Instruction.ResultState resultState;
-    public boolean isConsumingDelay;
+    public boolean isDelayCycle;
     public int regX;
     public int regY;
     public int isrValue;
@@ -125,7 +125,7 @@ public class SM
     {
       instruction = null;
       resultState = null;
-      isConsumingDelay = false;
+      isDelayCycle = false;
       regX = 0;
       regY = 0;
       isrValue = 0;
@@ -848,20 +848,24 @@ public class SM
     // priority over consuming pending delays of previous
     // instructions?
     if (status.consumePendingDelay()) {
-      status.isConsumingDelay = true;
+      status.isDelayCycle = true;
       return;
     }
-    status.isConsumingDelay = false;
+    status.isDelayCycle = false;
     final short word = fetch();
     status.instruction = decoder.decode(word);
   }
 
   public void execute()
   {
-    if (status.isConsumingDelay)
+    if (status.isDelayCycle)
       return;
     status.resultState = status.instruction.execute();
     if (status.resultState == Instruction.ResultState.COMPLETE) {
+      // Sect. 3.4.2.2: "Delay cycles ... take place after ... the
+      // program counter is updated" (though this specifically refers
+      // to JMP instruction). => Update PC immediately, before
+      // executing delay.
       updatePC();
     }
     if (status.resultState != Instruction.ResultState.STALL) {
@@ -874,9 +878,9 @@ public class SM
     return status.resultState == Instruction.ResultState.STALL;
   }
 
-  public boolean isDelayed()
+  public boolean isDelayCycle()
   {
-    return status.isConsumingDelay;
+    return status.isDelayCycle;
   }
 
   public Instruction getCurrentInstruction()

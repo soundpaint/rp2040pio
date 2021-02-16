@@ -43,24 +43,56 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
   {
     private final String mnemonic;
     private final String fullStatement;
+    private final boolean isDelayCycle;
+    private final int delay;
 
     private InstructionInfo()
     {
       throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public InstructionInfo(final Instruction instruction)
+    public InstructionInfo(final SM sm, final boolean hideDelayCycle,
+                           final boolean showAddress)
     {
+      // instruction & state machine will change, hence save snapshot
+      // of relevant info
+      final Instruction instruction = sm.getCurrentInstruction();
       if (instruction == null) {
         throw new NullPointerException("instruction");
       }
-      this.mnemonic = instruction.getMnemonic();
-      this.fullStatement = instruction.toString().replaceAll("\\s{2,}", " ");
+      final String addressLabel = showAddress ? sm.getPC() + ": " : "";
+      mnemonic = instruction.getMnemonic().toUpperCase();
+      fullStatement =
+        addressLabel + instruction.toString().replaceAll("\\s{2,}", " ");
+      isDelayCycle = !hideDelayCycle && sm.isDelayCycle();
+      delay = instruction.getDelay();
     }
 
-    public String getMnemonic() { return mnemonic; }
+    @Override
+    public boolean equals(final Object obj)
+    {
+      if (!(obj instanceof InstructionInfo)) return false;
+      final InstructionInfo other = (InstructionInfo)obj;
+      if (isDelayCycle && other.isDelayCycle) return true;
+      return this == other;
+    }
 
-    public String toString() { return fullStatement; }
+    @Override
+    public int hashCode()
+    {
+      return isDelayCycle ? 0 : super.hashCode();
+    }
+
+    public String getToolTipText()
+    {
+      return isDelayCycle ? "[delay]" : fullStatement;
+    }
+
+    @Override
+    public String toString()
+    {
+      return isDelayCycle ? "[" + delay + "]" : mnemonic;
+    }
   }
 
   public static interface Signal
@@ -132,7 +164,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     {
       this.previousValue = this.value;
       this.value = value;
-      if ((value != previousValue) || enforceChanged) {
+      if (enforceChanged ||
+          ((value == null) && (previousValue != null)) ||
+          ((value != null) && !value.equals(previousValue))) {
         notChangedSince = 0;
       } else {
         notChangedSince++;
@@ -302,24 +336,14 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     }
   }
 
-  public static class InstructionSignal extends ValuedSignal<InstructionInfo>
+  public static DiagramConfig.ClockSignal createClockSignal(final String label)
   {
-    private InstructionSignal(final String label,
-                              final Supplier<InstructionInfo> valueGetter)
-    {
-      super(label, valueGetter);
-    }
-
-    private InstructionSignal(final String label,
-                              final Supplier<InstructionInfo> valueGetter,
-                              final Supplier<Boolean> changeInfoGetter)
-    {
-      super(label, valueGetter, changeInfoGetter);
-    }
+    return new DiagramConfig.ClockSignal(label);
   }
 
-  public static InstructionSignal
-    createInstructionSignal(final String label, final PIO pio, final int smNum)
+  public static ValuedSignal<String>
+    createPCStateSignal(final String label, final PIO pio, final int smNum,
+                        final boolean hideDelayCycles)
   {
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
@@ -328,17 +352,70 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
       throw new IllegalArgumentException("smNum > " + (PIO.SM_COUNT - 1) +
                                          ": " + smNum);
     }
+    final SM sm = pio.getSM(smNum);
+    final String signalLabel = label != null ? label : "SM" + smNum + "_PC";
+    final Supplier<String> valueGetter = () -> {
+      if (hideDelayCycles && sm.isDelayCycle())
+        return null;
+      else
+        return String.format("%02x", sm.getPC());
+    };
+    return new DiagramConfig.ValuedSignal<String>(signalLabel, valueGetter);
+  }
+
+  public static ValuedSignal<InstructionInfo>
+    createInstructionSignal(final String label, final PIO pio, final int smNum,
+                            final boolean hideDelayCycles,
+                            final boolean showAddress)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > PIO.SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (PIO.SM_COUNT - 1) +
+                                         ": " + smNum);
+    }
+    final String signalLabel = label != null ? label : "SM" + smNum + "_INSTR";
     final Supplier<InstructionInfo> valueGetter =
-      () -> new InstructionInfo(pio.getSM(smNum).getCurrentInstruction());
+      () -> new InstructionInfo(pio.getSM(smNum), hideDelayCycles, showAddress);
     final Supplier<Boolean> changeInfoGetter =
-      () -> !pio.getSM(smNum).isStalled() && !pio.getSM(smNum).isDelayed();
-    final InstructionSignal instructionSignal =
-      new InstructionSignal(label, valueGetter, changeInfoGetter);
+      () -> !pio.getSM(smNum).isStalled() && !pio.getSM(smNum).isDelayCycle();
+    final ValuedSignal<InstructionInfo> instructionSignal =
+      new ValuedSignal<InstructionInfo>(signalLabel,
+                                        valueGetter/*, changeInfoGetter*/);
     instructionSignal.setRenderer((instructionInfo) ->
-                                  instructionInfo.getMnemonic().toUpperCase());
+                                  instructionInfo.toString());
     instructionSignal.setToolTipTexter((instructionInfo) ->
-                                       instructionInfo.toString());
+                                       instructionInfo.getToolTipText());
     return instructionSignal;
+  }
+
+  public static ValuedSignal<Bit>
+    createGPIOValueSignal(final String label, final GPIO gpio, final int pin)
+  {
+    if (pin < 0) {
+      throw new IllegalArgumentException("pin < 0: " + pin);
+    }
+    if (pin > 31) {
+      throw new IllegalArgumentException("pin > 31: " + pin);
+    }
+    final String signalLabel = label != null ? label : "GPIO " + pin;
+    return
+      new DiagramConfig.ValuedSignal<Bit>(signalLabel, () -> gpio.getBit(pin));
+  }
+
+  public static BitSignal
+    createGPIOBitSignal(final String label, final GPIO gpio, final int pin)
+  {
+    if (pin < 0) {
+      throw new IllegalArgumentException("pin < 0: " + pin);
+    }
+    if (pin > 31) {
+      throw new IllegalArgumentException("pin > 31: " + pin);
+    }
+    final String signalLabel = label != null ? label : "GPIO " + pin;
+    return
+      new DiagramConfig.BitSignal(signalLabel, () -> gpio.getBit(pin));
   }
 
   private final List<Signal> signals;
