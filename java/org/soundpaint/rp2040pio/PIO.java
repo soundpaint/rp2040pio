@@ -192,10 +192,11 @@ public class PIO implements Clock.TransitionListener
   public void setSideSetBase(final int base)
   {
     if (base < 0) {
-      throw new IllegalArgumentException("side set base < 0");
+      throw new IllegalArgumentException("side set base < 0: " + base);
     }
-    if (base > 31) {
-      throw new IllegalArgumentException("side set base > 31");
+    if (base > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("side set base > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + base);
     }
     for (final SM sm : sms) {
       sm.setSideSetBase(base);
@@ -220,10 +221,11 @@ public class PIO implements Clock.TransitionListener
   public void setJmpPin(final int pin)
   {
     if (pin < 0) {
-      throw new IllegalArgumentException("exec ctrl jmp pin < 0");
+      throw new IllegalArgumentException("exec ctrl jmp pin < 0: " + pin);
     }
-    if (pin > 31) {
-      throw new IllegalArgumentException("exec ctrl jmp pin > 31");
+    if (pin > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("exec ctrl jmp pin > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
     }
     for (final SM sm : sms) {
       sm.setJmpPin(pin);
@@ -427,9 +429,10 @@ public class PIO implements Clock.TransitionListener
           String.format("allocation at %02x failed", origin);
         throw new RuntimeException(message);
       }
-      for (int offset = 0; offset < 32; offset++) {
+      for (int offset = 0; offset < Memory.SIZE; offset++) {
         final int allocationMaskForOffset =
-          (allocationMask << offset) | (allocationMask << (offset - 32));
+          (allocationMask << offset) |
+          (allocationMask << (offset - Memory.SIZE));
         if ((memoryAllocation & ~allocationMaskForOffset) == 0x0) {
           if (!checkOnly) memoryAllocation |= allocationMask;
           return offset;
@@ -460,8 +463,9 @@ public class PIO implements Clock.TransitionListener
     if (offset < 0) {
       throw new IllegalArgumentException("offset < 0: " + offset);
     }
-    if (offset > 31) {
-      throw new IllegalArgumentException("offset > 31: " + offset);
+    if (offset > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("offset > " +
+                                         (Memory.SIZE - 1) + ": " + offset);
     }
     final int origin = program.getOrigin();
     if (origin >= 0) {
@@ -472,7 +476,7 @@ public class PIO implements Clock.TransitionListener
     final int allocationMaskForOffset =
       origin >= 0 ?
       allocationMask :
-      (allocationMask << offset) | (allocationMask << (offset - 32));
+      (allocationMask << offset) | (allocationMask << (offset - Memory.SIZE));
     return allocateMemory(allocationMaskForOffset, offset, true) >= 0;
   }
 
@@ -484,8 +488,9 @@ public class PIO implements Clock.TransitionListener
     if (address < 0) {
       throw new IllegalArgumentException("address < 0: " + address);
     }
-    if (address > 31) {
-      throw new IllegalArgumentException("address > 31: " + address);
+    if (address > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("address > " +
+                                         (Memory.SIZE - 1) + ": " + address);
     }
     final int length = program.getLength();
     for (int index = 0; index < length; index++) {
@@ -515,8 +520,9 @@ public class PIO implements Clock.TransitionListener
     if (offset < 0) {
       throw new IllegalArgumentException("offset < 0: " + offset);
     }
-    if (offset > 31) {
-      throw new IllegalArgumentException("offset > 31: " + offset);
+    if (offset > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("offset > " +
+                                         (Memory.SIZE - 1) + ": " + offset);
     }
     final int origin = program.getOrigin();
     if (origin >= 0) {
@@ -533,7 +539,7 @@ public class PIO implements Clock.TransitionListener
     final int allocationMaskForOffset =
       origin >= 0 ?
       allocationMask :
-      (allocationMask << offset) | (allocationMask << (offset - 32));
+      (allocationMask << offset) | (allocationMask << (offset - Memory.SIZE));
     final int address = allocateMemory(allocationMaskForOffset, offset, false);
     writeProgram(program, address);
     return address;
@@ -547,8 +553,10 @@ public class PIO implements Clock.TransitionListener
     if (loadedOffset < 0) {
       throw new IllegalArgumentException("loaded offset < 0: " + loadedOffset);
     }
-    if (loadedOffset > 31) {
-      throw new IllegalArgumentException("loaded offset > 31: " + loadedOffset);
+    if (loadedOffset > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("loaded offset > " +
+                                         (Memory.SIZE - 1) + ": " +
+                                         loadedOffset);
     }
     final int origin = program.getOrigin();
     if (origin >= 0) {
@@ -566,7 +574,7 @@ public class PIO implements Clock.TransitionListener
       origin >= 0 ?
       allocationMask :
       (allocationMask << loadedOffset) |
-      (allocationMask << (loadedOffset - 32));
+      (allocationMask << (loadedOffset - Memory.SIZE));
     synchronized(memoryAllocation) {
       if ((memoryAllocation &= ~allocationMaskForOffset) !=
           allocationMaskForOffset) {

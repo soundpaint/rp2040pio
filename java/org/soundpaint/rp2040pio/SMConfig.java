@@ -76,14 +76,16 @@ public class SMConfig
     if (outBase < 0) {
       throw new IllegalArgumentException("outBase < 0: " + outBase);
     }
-    if (outBase > 31) {
-      throw new IllegalArgumentException("outBase > 31: " + outBase);
+    if (outBase > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("outBase > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + outBase);
     }
     if (outCount < 0) {
       throw new IllegalArgumentException("outCount < 0: " + outCount);
     }
-    if (outCount > 32) {
-      throw new IllegalArgumentException("outCount > 32: " + outCount);
+    if (outCount > GPIO.GPIO_NUM) {
+      throw new IllegalArgumentException("outCount > " +
+                                         GPIO.GPIO_NUM + ": " + outCount);
     }
     pinCtrl &= 0xfc0fffe0;
     pinCtrl |= outBase; // PINCTRL_OUT_BASE
@@ -95,14 +97,15 @@ public class SMConfig
     if (setBase < 0) {
       throw new IllegalArgumentException("setBase < 0: " + setBase);
     }
-    if (setBase > 31) {
-      throw new IllegalArgumentException("setBase > 31: " + setBase);
+    if (setBase > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("setBase > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + setBase);
     }
     if (setCount < 0) {
       throw new IllegalArgumentException("setCount < 0: " + setCount);
     }
     if (setCount > 7) {
-      throw new IllegalArgumentException("setCount > 31: " + setCount);
+      throw new IllegalArgumentException("setCount > 7: " + setCount);
     }
     pinCtrl &= 0xe3fffc1f;
     pinCtrl |= setBase << 5; // PINCTRL_SET_BASE
@@ -114,8 +117,9 @@ public class SMConfig
     if (inBase < 0) {
       throw new IllegalArgumentException("inBase < 0: " + inBase);
     }
-    if (inBase > 31) {
-      throw new IllegalArgumentException("inBase > 31: " + inBase);
+    if (inBase > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("inBase > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + inBase);
     }
     pinCtrl &= 0xfff07fff;
     pinCtrl |= inBase << 15; // PINCTRL_IN_BASE
@@ -126,8 +130,10 @@ public class SMConfig
     if (sideSetBase < 0) {
       throw new IllegalArgumentException("sideSetBase < 0: " + sideSetBase);
     }
-    if (sideSetBase > 31) {
-      throw new IllegalArgumentException("sideSetBase > 31: " + sideSetBase);
+    if (sideSetBase > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("sideSetBase > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " +
+                                         sideSetBase);
     }
     pinCtrl &= 0xffff83ff;
     pinCtrl |= sideSetBase << 10; // PINCTRL_SIDESET_BASE
@@ -140,7 +146,7 @@ public class SMConfig
       throw new IllegalArgumentException("bitCount < 0: " + bitCount);
     }
     if (bitCount > 7) {
-      throw new IllegalArgumentException("bitCount > 31: " + bitCount);
+      throw new IllegalArgumentException("bitCount > 7: " + bitCount);
     }
     pinCtrl &= 0x1fffffff;
     pinCtrl |= bitCount << 29; // PINCTRL_SIDESET_COUNT
@@ -186,14 +192,16 @@ public class SMConfig
     if (wrapTarget < 0) {
       throw new IllegalArgumentException("wrap target < 0: " + wrapTarget);
     }
-    if (wrapTarget > 31) {
-      throw new IllegalArgumentException("wrap target > 31: " + wrapTarget);
+    if (wrapTarget > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("wrap target > " +
+                                         (Memory.SIZE - 1) + ": " + wrapTarget);
     }
     if (wrap < 0) {
       throw new IllegalArgumentException("wrap < 0: " + wrap);
     }
-    if (wrap > 31) {
-      throw new IllegalArgumentException("wrap > 31: " + wrap);
+    if (wrap > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("wrap > " +
+                                         (Memory.SIZE - 1) + ": " + wrap);
     }
     execCtrl &= 0xfffe007f;
     execCtrl |= wrapTarget << 7; // EXECCTRL_WRAP_BOTTOM
@@ -205,8 +213,9 @@ public class SMConfig
     if (pin < 0) {
       throw new IllegalArgumentException("jmp pin < 0: " + pin);
     }
-    if (pin > 31) {
-      throw new IllegalArgumentException("jmp pin > 31: " + pin);
+    if (pin > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("jmp pin > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
     }
     execCtrl &= 0xe0ffffff;
     execCtrl |= pin << 24; // EXECCTRL_JMP_PIN
@@ -261,8 +270,9 @@ public class SMConfig
       throw new IllegalArgumentException("enable pin index < 0: " +
                                          enablePinIndex);
     }
-    if (enablePinIndex > 31) {
-      throw new IllegalArgumentException("enable pin index > 31: " +
+    if (enablePinIndex > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("enable pin index > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " +
                                          enablePinIndex);
     }
     execCtrl &= 0xff01ffff;

@@ -1,5 +1,5 @@
+# ; program "squarewave"
 # ; periodically turns off / on GPIO0
-# .program squarewave
 e081
 e101
 e000

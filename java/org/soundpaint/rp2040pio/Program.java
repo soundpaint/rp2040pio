@@ -25,9 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 import java.util.Arrays;
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.IOException;
 
 /**
@@ -74,33 +72,7 @@ public class Program
   public static Program fromHexResource(final String resourcePath)
     throws IOException
   {
-    final InputStream in = Main.class.getResourceAsStream(resourcePath);
-    if (in == null) {
-      throw new IOException("failed loading code: resource not found: " +
-                            resourcePath);
-    }
-    final BufferedReader reader
-      = new BufferedReader(new InputStreamReader(in));
-    int address = 0;
-    final short[] code = new short[Memory.SIZE];
-    String line;
-    while ((line = reader.readLine()) != null) {
-      if (line.startsWith("#")) continue;
-      if (address >= Memory.SIZE) {
-        throw new IOException("failed loading code: size too large: " +
-                              "get more than " + Memory.SIZE + " words");
-      }
-      try {
-        final short value = (short)(Integer.parseInt(line, 16));
-        code[address++] = value;
-      } catch (final NumberFormatException e) {
-        throw new IOException("failed loading code: parse error: " +
-                              "not a valid 16 bit hex word: " + line);
-      }
-    }
-    reader.close();
-    System.out.println("loaded " + address + " PIO SM instructions");
-    return new Program(code, -1);
+    return ProgramParser.parse(resourcePath);
   }
 
   private Program()
@@ -122,20 +94,22 @@ public class Program
       throw new NullPointerException("instructions");
     }
     final int length = instructions.length;
-    if (length > 32) {
-      throw new IllegalArgumentException("instructions length > 32: " + length);
+    if (length > Memory.SIZE) {
+      throw new IllegalArgumentException("instructions length > " +
+                                         Memory.SIZE + ": " + length);
     }
     if (origin < -1) {
       throw new IllegalArgumentException("origin < -1: " + origin);
     }
-    if (origin > 31) {
-      throw new IllegalArgumentException("origin > 31: " + origin);
+    if (origin > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("origin > " + (Memory.SIZE - 1) +
+                                         ": " + origin);
     }
     this.instructions = Arrays.copyOf(instructions, length);
     this.origin = origin;
     final int mask = (0x1 << length) - 1;
     allocationMask =
-      origin >= 0 ? mask << origin | (mask << (origin - 32)) : mask;
+      origin >= 0 ? mask << origin | (mask << (origin - Memory.SIZE)) : mask;
   }
 
   public int getLength()

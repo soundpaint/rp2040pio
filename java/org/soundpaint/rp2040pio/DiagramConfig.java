@@ -396,8 +396,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (pin < 0) {
       throw new IllegalArgumentException("pin < 0: " + pin);
     }
-    if (pin > 31) {
-      throw new IllegalArgumentException("pin > 31: " + pin);
+    if (pin > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("pin > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
     }
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return
@@ -410,8 +411,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (pin < 0) {
       throw new IllegalArgumentException("pin < 0: " + pin);
     }
-    if (pin > 31) {
-      throw new IllegalArgumentException("pin > 31: " + pin);
+    if (pin > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("pin > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
     }
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return

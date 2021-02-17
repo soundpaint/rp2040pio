@@ -90,13 +90,15 @@ public class GPIO
     }
   }
 
+  public static final int GPIO_NUM = 32;
+
   private final Terminal[] terminals;
   private int regINPUT_SYNC_BYPASS; // bits 0..31 of INPUT_SYNC_BYPASS
                                     // (contents currently ignored)
 
   public GPIO()
   {
-    terminals = new Terminal[32];
+    terminals = new Terminal[GPIO_NUM];
     for (int port = 0; port < terminals.length; port++) {
       terminals[port] = new Terminal();
     }
@@ -175,14 +177,16 @@ public class GPIO
     if (base < 0) {
       throw new IllegalArgumentException("GPIO pin base < 0: " + base);
     }
-    if (base > 31) {
-      throw new IllegalArgumentException("GPIO pin base > 31: " + base);
+    if (base > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("GPIO pin base > " +
+                                         (GPIO_NUM - 1) + ": " + base);
     }
     if (count < 0) {
       throw new IllegalArgumentException("GPIO pin count < 0: " + count);
     }
-    if (count > 31) {
-      throw new IllegalArgumentException("GPIO pin count > 31: " + count);
+    if (count > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("GPIO pin count > " +
+                                         (GPIO_NUM - 1) + ": " + count);
     }
     int pins = 0;
     for (int pin = 0; pin < count; pin++) {
@@ -196,14 +200,16 @@ public class GPIO
     if (base < 0) {
       throw new IllegalArgumentException("GPIO pin base < 0: " + base);
     }
-    if (base > 31) {
-      throw new IllegalArgumentException("GPIO pin base > 31: " + base);
+    if (base > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("GPIO pin base > " +
+                                         (GPIO_NUM - 1) + ": " + base);
     }
     if (count < 0) {
       throw new IllegalArgumentException("GPIO pin count < 0: " + count);
     }
-    if (count > 31) {
-      throw new IllegalArgumentException("GPIO pin count > 31: " + count);
+    if (count > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("GPIO pin count > " +
+                                         (GPIO_NUM - 1) + ": " + count);
     }
     for (int pin = 0; pin < count; pin++) {
       setBit((base + pin) & 0x1f, bitFromValue((pins >>> pin) & 0x1));
@@ -215,14 +221,16 @@ public class GPIO
     if (base < 0) {
       throw new IllegalArgumentException("GPIO pin base < 0: " + base);
     }
-    if (base > 31) {
-      throw new IllegalArgumentException("GPIO pin base > 31: " + base);
+    if (base > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("GPIO pin base > " +
+                                         (GPIO_NUM - 1) + ": " + base);
     }
     if (count < 0) {
       throw new IllegalArgumentException("GPIO pin count < 0: " + count);
     }
-    if (count > 31) {
-      throw new IllegalArgumentException("GPIO pin count > 31: " + count);
+    if (count > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("GPIO pin count > " +
+                                         (GPIO_NUM - 1) + ": " + count);
     }
     for (int pin = 0; pin < count; pin++) {
       setDirection((base + pin) & 0x1f,

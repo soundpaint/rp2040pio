@@ -517,8 +517,9 @@ public class SM
     if (base < 0) {
       throw new IllegalArgumentException("set base < 0: " + base);
     }
-    if (base > 31) {
-      throw new IllegalArgumentException("set base > 31: " + base);
+    if (base > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("set base > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + base);
     }
     status.regPINCTRL_SET_BASE = base;
   }
@@ -528,8 +529,9 @@ public class SM
     if (count < 0) {
       throw new IllegalArgumentException("out count < 0: " + count);
     }
-    if (count > 32) {
-      throw new IllegalArgumentException("out count > 32: " + count);
+    if (count > GPIO.GPIO_NUM) {
+      throw new IllegalArgumentException("out count > " +
+                                         GPIO.GPIO_NUM + ": " + count);
     }
     status.regPINCTRL_OUT_COUNT = count;
   }
@@ -539,8 +541,9 @@ public class SM
     if (base < 0) {
       throw new IllegalArgumentException("out base < 0: " + base);
     }
-    if (base > 31) {
-      throw new IllegalArgumentException("out base > 31: " + base);
+    if (base > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("out base > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + base);
     }
     status.regPINCTRL_OUT_BASE = base;
   }
@@ -561,8 +564,9 @@ public class SM
     if (base < 0) {
       throw new IllegalArgumentException("side set base < 0: " + base);
     }
-    if (base > 31) {
-      throw new IllegalArgumentException("side set base > 31: " + base);
+    if (base > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("side set base > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + base);
     }
     status.regPINCTRL_SIDESET_BASE = base;
   }
@@ -572,15 +576,16 @@ public class SM
     if (base < 0) {
       throw new IllegalArgumentException("in base < 0: " + base);
     }
-    if (base > 31) {
-      throw new IllegalArgumentException("in base > 31: " + base);
+    if (base > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("in base > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + base);
     }
     status.regPINCTRL_IN_BASE = base;
   }
 
   public int getPins()
   {
-    return gpio.getPins(status.regPINCTRL_IN_BASE, 32);
+    return gpio.getPins(status.regPINCTRL_IN_BASE, GPIO.GPIO_NUM);
   }
 
   public void setSideSetEnable(final boolean enable)
@@ -601,8 +606,9 @@ public class SM
     if (pin < 0) {
       throw new IllegalArgumentException("exec ctrl jmp pin < 0: " + pin);
     }
-    if (pin > 31) {
-      throw new IllegalArgumentException("exec ctrl jmp pin > 31: " + pin);
+    if (pin > GPIO.GPIO_NUM - 1) {
+      throw new IllegalArgumentException("exec ctrl jmp pin > " +
+                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
     }
     status.regEXECCTRL_JMP_PIN = pin;
   }
@@ -698,8 +704,9 @@ public class SM
     if (value < 0) {
       throw new IllegalArgumentException("wrap top value < 0: " + value);
     }
-    if (value > 31) {
-      throw new IllegalArgumentException("wrap top value > 31: " + value);
+    if (value > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("wrap top value > " +
+                                         (Memory.SIZE - 1) + ": " + value);
     }
     status.regEXECCTRL_WRAP_TOP = value;
   }
@@ -709,8 +716,9 @@ public class SM
     if (value < 0) {
       throw new IllegalArgumentException("wrap bottom value < 0: " + value);
     }
-    if (value > 31) {
-      throw new IllegalArgumentException("wrap bottom value > 31: " + value);
+    if (value > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("wrap bottom value > " +
+                                         (Memory.SIZE - 1) + ": " + value);
     }
     status.regEXECCTRL_WRAP_BOTTOM = value;
   }
@@ -771,8 +779,9 @@ public class SM
     if (value < 0) {
       throw new IllegalArgumentException("pc value < 0: " + value);
     }
-    if (value > 31) {
-      throw new IllegalArgumentException("pc value > 31: " + value);
+    if (value > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("pc value > " +
+                                         (Memory.SIZE - 1) + ": " + value);
     }
     status.regADDR = value;
   }
