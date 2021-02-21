@@ -849,57 +849,67 @@ public class SM
 
   public void insertDMAInstruction(final int instruction)
   {
-    if (status.pendingDMAInstruction >= 0) {
-      throw new InternalError("already have pending DMA instruction");
+    synchronized(memory.FETCH_LOCK) {
+      if (status.pendingDMAInstruction >= 0) {
+        System.out.println("WARNING: " +
+                           "discarding already pending DMA instruction");
+      }
+      if (instruction < 0) {
+        throw new IllegalArgumentException("instruction < 0: " + instruction);
+      }
+      if (instruction > 65535) {
+        throw new IllegalArgumentException("instruction > 65535: " +
+                                           instruction);
+      }
+      status.pendingDMAInstruction = instruction;
     }
-    if (instruction < 0) {
-      throw new IllegalArgumentException("instruction < 0: " + instruction);
-    }
-    if (instruction > 65535) {
-      throw new IllegalArgumentException("instruction > 65535: " + instruction);
-    }
-    status.pendingDMAInstruction = instruction;
   }
 
   public void insertExecInstruction(final int instruction)
   {
-    if (status.pendingExecInstruction >= 0) {
-      throw new InternalError("already have pending EXEC instruction");
+    synchronized(memory.FETCH_LOCK) {
+      if (status.pendingExecInstruction >= 0) {
+        throw new InternalError("already have pending EXEC instruction");
+      }
+      if (instruction < 0) {
+        throw new IllegalArgumentException("instruction < 0: " + instruction);
+      }
+      if (instruction > 65535) {
+        throw new IllegalArgumentException("instruction > 65535: " +
+                                           instruction);
+      }
+      status.pendingExecInstruction = instruction;
     }
-    if (instruction < 0) {
-      throw new IllegalArgumentException("instruction < 0: " + instruction);
-    }
-    if (instruction > 65535) {
-      throw new IllegalArgumentException("instruction > 65535: " + instruction);
-    }
-    status.pendingExecInstruction = instruction;
   }
 
   public boolean isExecStalled()
   {
-    // TODO: Need more clarification before being implemented.
-    throw new InternalError("not yet implemented");
+    synchronized(memory.FETCH_LOCK) {
+      // TODO: Need more clarification before being implemented.
+      throw new InternalError("not yet implemented");
+    }
   }
 
   public void smExecWaitBlocking(final int instruction)
   {
-    insertDMAInstruction(instruction);
-    // TODO: Need more clarification before being implemented.
-    throw new InternalError("not yet implemented");
+    synchronized(memory.FETCH_LOCK) {
+      insertDMAInstruction(instruction);
+      // TODO: Need more clarification before being implemented.
+      throw new InternalError("not yet implemented");
+    }
   }
 
   public void fetchAndDecode() throws Decoder.DecodeException
   {
-    // TODO: Clarify: Has execution of inserted instructions higher
-    // priority over consuming pending delays of previous
-    // instructions?
-    if (status.consumePendingDelay()) {
-      status.isDelayCycle = true;
-      return;
+    synchronized(memory.FETCH_LOCK) {
+      if ((status.pendingDMAInstruction < 0) && status.consumePendingDelay()) {
+        status.isDelayCycle = true;
+        return;
+      }
+      status.isDelayCycle = false;
+      final short word = fetch();
+      status.instruction = decoder.decode(word);
     }
-    status.isDelayCycle = false;
-    final short word = fetch();
-    status.instruction = decoder.decode(word);
   }
 
   public void execute()

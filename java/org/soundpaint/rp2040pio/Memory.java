@@ -31,10 +31,12 @@ public class Memory
 {
   public static final int SIZE = 32;
 
+  public final Object FETCH_LOCK;
   private final short[] code;
 
   public Memory()
   {
+    FETCH_LOCK = new Object();
     code = new short[SIZE];
   }
 
