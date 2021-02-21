@@ -1,5 +1,5 @@
 /*
- * @(#)Program.java 1.00 21/02/06
+ * @(#)ProgramParser.java 1.00 21/02/16
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -28,37 +28,37 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.util.function.Function;
 
 public class ProgramParser
 {
+  private static final String DIRECTIVE_PROGRAM = ".program";
   private static final String DIRECTIVE_ORIGIN = ".origin";
+  private static final String DIRECTIVE_WRAP = ".wrap";
+  private static final String DIRECTIVE_WRAP_TARGET = ".wrap_target";
+  private static final String DIRECTIVE_SIDE_SET = ".side_set";
+  private static final String DIRECTIVE_WORD = ".word";
+  private static final String ARG_OPT = "opt";
+  private static final String ARG_PINDIRS = "pindirs";
 
   private final String resourcePath;
   private final BufferedReader reader;
-  private final short[] code;
+  private final short[] instructions;
+  private boolean firstInstructionParsed;
   private int lineIndex;
   private int address;
+  private String id;
+  private boolean idParsed;
   private int origin;
-
-  private static class ParseException extends IOException
-  {
-    private static final long serialVersionUID = 378126510396027655L;
-
-    private ParseException()
-    {
-      throw new UnsupportedOperationException("unsupported empty constructor");
-    }
-
-    private ParseException(final String message)
-    {
-      super(message);
-    }
-
-    private ParseException(final String message, final Throwable cause)
-    {
-      super(message, cause);
-    }
-  }
+  private boolean originParsed;
+  private int wrap;
+  private boolean wrapParsed;
+  private int wrapTarget;
+  private boolean wrapTargetParsed;
+  private int sideSetCount;
+  private boolean sideSetCountParsed;
+  private boolean sideSetOptParsed;
+  private boolean sideSetPinDirsParsed;
 
   private ProgramParser()
   {
@@ -72,16 +72,20 @@ public class ProgramParser
       throw new NullPointerException("resourcePath");
     }
     this.resourcePath = resourcePath;
+    address = -1;
     final InputStream in = Main.class.getResourceAsStream(resourcePath);
     if (in == null) {
-      throw new IOException("failed loading code: resource not found: " +
-                            resourcePath);
+      throw parseException("resource not found: " + resourcePath);
     }
     reader = new BufferedReader(new InputStreamReader(in));
-    code = new short[Memory.SIZE];
+    instructions = new short[Memory.SIZE];
     lineIndex = 0;
     address = 0;
+    id = "";
     origin = -1;
+    wrap = Memory.SIZE - 1;
+    wrapTarget = 0;
+    sideSetCount = 0;
   }
 
   private ParseException parseException(final String message)
@@ -92,52 +96,84 @@ public class ProgramParser
   private ParseException parseException(final String message,
                                         final Throwable cause)
   {
-    final String fullMessage =
-      String.format("parse exception in %s, line %d: %s",
-                    resourcePath, lineIndex, message);
-    return cause != null ?
-      new ParseException(fullMessage, cause) :
-      new ParseException(fullMessage);
+    return ParseException.create(message, resourcePath, lineIndex, cause);
   }
 
   private int parseDecimalInt(final String decInt) throws ParseException
   {
     try {
-      final int value = Integer.parseInt(decInt);
-      return value;
+      return Integer.parseInt(decInt);
     } catch (final NumberFormatException e) {
       throw parseException("expected decimal integer: " + decInt, e);
     }
   }
 
-  private int parseHexInt(final String hexInt) throws ParseException
+  private void parseInstruction(final String word,
+                                final Function<String, Integer> wordParser)
+    throws ParseException
   {
-    try {
-      final int value = Integer.parseInt(hexInt, 16);
-      return value;
-    } catch (final NumberFormatException e) {
-      throw parseException("expected hexadecimal integer: " + hexInt, e);
+    if (!idParsed) {
+      throw parseException(DIRECTIVE_SIDE_SET +
+                           ": instruction is only valid after a " +
+                           DIRECTIVE_PROGRAM + " directive");
     }
-  }
-
-  private void parseCodeWord(final String line) throws ParseException
-  {
     if (address >= Memory.SIZE) {
-      throw parseException("failed loading code: size too large: " +
+      throw parseException("program too large: " +
                            "get more than " + Memory.SIZE + " words");
     }
-    final int value = parseHexInt(line);
+    final int value;
+    try {
+      value = wordParser.apply(word);
+    } catch (final NumberFormatException e) {
+      throw parseException("invalid 16 bit word: " + word, e);
+    }
     if (value < 0x0000) {
-      throw parseException("code word < 0x0000:" + value);
+      throw parseException("instruction word < 0x0000:" + value);
     }
     if (value > 0xffff) {
-      throw parseException("code word > 0xffff:" + value);
+      throw parseException("instruction word > 0xffff:" + value);
     }
-    code[address++] = (short)value;
+    instructions[address++] = (short)value;
+    firstInstructionParsed = true;
   }
 
-  private void parseOrigin(final String unparsed) throws ParseException
+  private void checkProgramId(final String id) throws ParseException
   {
+    final String tail = id.replaceFirst("[_A-Za-z][_A-Za-z0-9]*", "");
+    if (!tail.isEmpty()) {
+      final int position = id.indexOf(tail.charAt(0));
+      throw parseException(DIRECTIVE_PROGRAM +
+                           ": id contains invalid character at position " +
+                           position + ": " +
+                           String.format("%n  %s%n%" + (position + 2) + "s^",
+                                         id, ""));
+    }
+  }
+
+  private void parseProgramDrct(final String unparsed) throws ParseException
+  {
+    if (idParsed) {
+      throw parseException(DIRECTIVE_PROGRAM + " already declared");
+    }
+    final String id = unparsed.trim();
+    if (id.isEmpty()) {
+      throw parseException(DIRECTIVE_PROGRAM + ": id expected");
+    }
+    checkProgramId(id);
+    this.id = id;
+    idParsed = true;
+  }
+
+  private void parseOriginDrct(final String unparsed) throws ParseException
+  {
+    if (originParsed) {
+      throw parseException(DIRECTIVE_ORIGIN + " already declared");
+    }
+    if (!idParsed) {
+      throw parseException(DIRECTIVE_ORIGIN +
+                           ": this directive is only valid after a " +
+                           DIRECTIVE_PROGRAM + " directive");
+    }
     final int origin = parseDecimalInt(unparsed);
     if (origin < -1) {
       throw parseException(DIRECTIVE_ORIGIN + ": origin < -1: " + origin);
@@ -147,12 +183,133 @@ public class ProgramParser
                            ": origin > " + (Memory.SIZE - 1) + ": " + origin);
     }
     this.origin = origin;
+    originParsed = true;
+  }
+
+  private void parseWrapDrct(final String unparsed) throws ParseException
+  {
+    if (wrapParsed) {
+      throw parseException(DIRECTIVE_WRAP + " already declared");
+    }
+    if (!idParsed) {
+      throw parseException(DIRECTIVE_WRAP +
+                           ": this directive is only valid after a " +
+                           DIRECTIVE_PROGRAM + " directive");
+    }
+    final int wrap = parseDecimalInt(unparsed);
+    if (wrap < 0) {
+      throw parseException(DIRECTIVE_WRAP + ": wrap < 0: " + wrap);
+    }
+    if (wrap > Memory.SIZE - 1) {
+      throw parseException(DIRECTIVE_WRAP +
+                           ": wrap > " + (Memory.SIZE - 1) + ": " + wrap);
+    }
+    this.wrap = wrap;
+    wrapParsed = true;
+  }
+
+  private void parseWrapTargetDrct(final String unparsed) throws ParseException
+  {
+    if (wrapTargetParsed) {
+      throw parseException(DIRECTIVE_WRAP_TARGET + " already declared");
+    }
+    if (!idParsed) {
+      throw parseException(DIRECTIVE_WRAP_TARGET +
+                           ": this directive is only valid after a " +
+                           DIRECTIVE_PROGRAM + " directive");
+    }
+    final int wrapTarget = parseDecimalInt(unparsed);
+    if (wrapTarget < 0) {
+      throw parseException(DIRECTIVE_WRAP_TARGET + ": wrap_target < 0: " +
+                           wrapTarget);
+    }
+    if (wrapTarget > Memory.SIZE - 1) {
+      throw parseException(DIRECTIVE_WRAP_TARGET +
+                           ": wrap_target > " + (Memory.SIZE - 1) + ": " +
+                           wrapTarget);
+    }
+    this.wrapTarget = wrapTarget;
+    wrapTargetParsed = true;
+  }
+
+  private void parseSideSetArg(final String arg) throws ParseException
+  {
+    if (ARG_OPT.equals(arg)) {
+      if (sideSetOptParsed) {
+        throw parseException(DIRECTIVE_SIDE_SET + " " + ARG_OPT +
+                             " already declared");
+      }
+      sideSetOptParsed = true;
+    }
+    if (ARG_PINDIRS.equals(arg)) {
+      if (sideSetPinDirsParsed) {
+        throw parseException(DIRECTIVE_SIDE_SET + " " + ARG_PINDIRS +
+                             " already declared");
+      }
+      sideSetPinDirsParsed = true;
+    }
+  }
+
+  private void parseSideSetDrct(final String unparsed) throws ParseException
+  {
+    if (sideSetCountParsed) {
+      throw parseException(DIRECTIVE_SIDE_SET + " already declared");
+    }
+    if (!idParsed) {
+      throw parseException(DIRECTIVE_SIDE_SET +
+                           ": this directive is only valid after a " +
+                           DIRECTIVE_PROGRAM + " directive");
+    }
+    if (firstInstructionParsed) {
+      throw parseException(DIRECTIVE_SIDE_SET +
+                           ": this directive is only valid before the " +
+                           "first instruction");
+    }
+    final String[] tokens = unparsed.split("[\\p{javaWhitespace}]*");
+    if (tokens.length == 0) {
+      throw parseException(DIRECTIVE_SIDE_SET + ": <count> expected");
+    }
+    final int sideSetCount = parseDecimalInt(tokens[0]);
+    if (sideSetCount < 0) {
+      throw parseException(DIRECTIVE_SIDE_SET + ": side_set count < 0: " +
+                           sideSetCount);
+    }
+    if (sideSetCount > 5) {
+      throw parseException(DIRECTIVE_SIDE_SET +
+                           ": side_set count > 5: " + sideSetCount);
+    }
+    if (tokens.length >= 2) {
+      parseSideSetArg(tokens[1].trim());
+    }
+    if (tokens.length >= 3) {
+      parseSideSetArg(tokens[2].trim());
+    }
+    if (tokens.length >= 4) {
+      throw parseException(DIRECTIVE_SIDE_SET +
+                           ": unexpected extra argument: " + tokens[3]);
+    }
+    if (sideSetOptParsed && ((sideSetCount > 4))) {
+      throw parseException("max. side-set count is 4, if opt is set");
+    }
+    this.sideSetCount = sideSetCount;
+    sideSetCountParsed = true;
   }
 
   private void parseDirective(final String directive) throws ParseException
   {
-    if (directive.startsWith(DIRECTIVE_ORIGIN)) {
-      parseOrigin(directive.substring(DIRECTIVE_ORIGIN.length()));
+    if (directive.startsWith(DIRECTIVE_PROGRAM)) {
+      parseProgramDrct(directive.substring(DIRECTIVE_PROGRAM.length()));
+    } else if (directive.startsWith(DIRECTIVE_ORIGIN)) {
+      parseOriginDrct(directive.substring(DIRECTIVE_ORIGIN.length()));
+    } else if (directive.startsWith(DIRECTIVE_WRAP)) {
+      parseWrapDrct(directive.substring(DIRECTIVE_WRAP.length()));
+    } else if (directive.startsWith(DIRECTIVE_WRAP_TARGET)) {
+      parseWrapTargetDrct(directive.substring(DIRECTIVE_WRAP_TARGET.length()));
+    } else if (directive.startsWith(DIRECTIVE_SIDE_SET)) {
+      parseSideSetDrct(directive.substring(DIRECTIVE_SIDE_SET.length()));
+    } else if (directive.startsWith(DIRECTIVE_WORD)) {
+      parseInstruction(directive.substring(DIRECTIVE_WORD.length()),
+                       (unparsed) -> Integer.parseInt(unparsed));
     } else {
       throw parseException("unsupported directive: " + directive);
     }
@@ -177,15 +334,32 @@ public class ProgramParser
       if (trimmedLine.startsWith("#")) {
         parseComment(trimmedLine.substring(1).trim());
       } else if (!trimmedLine.isEmpty()) {
-        parseCodeWord(trimmedLine);
+        parseInstruction(trimmedLine,
+                         (unparsed) -> Integer.parseInt(unparsed, 16));
       } else {
         // ignore empty lines
       }
     }
     reader.close();
-    final Program program = new Program(code, origin);
+    if (address == 0) {
+      throw parseException("program does not contain any instruction");
+    }
+    if (!idParsed) {
+      throw parseException("missing directive " + DIRECTIVE_PROGRAM);
+    }
+    if (!wrapTargetParsed) {
+      wrapTarget = origin >= 0 ? origin : 0;
+    }
+    if (!wrapParsed) {
+      wrapTarget =
+        origin >= 0 ? ((origin + address - 1) % Memory.SIZE) : address - 1;
+    }
+    final Program program =
+      new Program(id, origin, wrap, wrapTarget, sideSetCount,
+                  sideSetOptParsed, sideSetPinDirsParsed, instructions);
     final String message =
-      "loaded " + address + " PIO SM instructions" +
+      "loaded program \"" + id + "\" with " +
+      address + " PIO SM instructions" +
       (origin >= 0 ? " @" + origin : "");
     System.out.println(message);
     return program;

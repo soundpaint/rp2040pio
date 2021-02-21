@@ -35,39 +35,15 @@ import java.io.IOException;
  */
 public class Program
 {
+  private final String id;
   private final int origin;
+  private final int wrap;
+  private final int wrapTarget;
+  private final int sideSetCount;
+  private final boolean sideSetOpt;
+  private final boolean sideSetPinDirs;
   private final short[] instructions;
   private final int allocationMask;
-
-  public static Program fromBinResource(final String resourcePath)
-    throws IOException
-  {
-    final InputStream in = Main.class.getResourceAsStream(resourcePath);
-    if (in == null) {
-      throw new IOException("failed loading code: resource not found: " +
-                            resourcePath);
-    }
-    final int available = in.available();
-    if (available > Memory.SIZE * 2) {
-      throw new IOException("failed loading code: size too large: " +
-                            available + " > " + Memory.SIZE * 2);
-    }
-    if ((available & 0x3) != 0) {
-      throw new IOException("failed loading code: " +
-                            "size must be multiple of 4: " + available);
-    }
-    final short[] code = new short[Memory.SIZE];
-    for (int address = 0; address < available / 4; address ++) {
-      short value = 0;
-      for (int byteCount = 0; byteCount < 2; byteCount++) {
-        value <<= 0x8;
-        value |= (in.read() & 0xff);
-      }
-      code[address] = value;
-    }
-    System.out.println("loaded " + (available / 4) + " PIO SM instructions");
-    return new Program(code, -1);
-  }
 
   public static Program fromHexResource(final String resourcePath)
     throws IOException
@@ -81,22 +57,23 @@ public class Program
   }
 
   /**
-   * @param instructions Array with all instructions of the program.
-   * If the array is null or the length of the array is greater than
-   * 32, an exception is thrown.
    * @param origin Either the fixed origin of the program (values
    * 0..31), or -1, if the program is relocatable, such that it does
    * not matter where it will be loaded into memory.
+   * @param instructions Array with all instructions of the program.
+   * If the array is null or the length of the array is greater than
+   * 32, an exception is thrown.
    */
-  public Program(final short[] instructions, final int origin)
+  public Program(final String id, final int origin, final int wrap,
+                 final int wrapTarget, final int sideSetCount,
+                 final boolean sideSetOpt, final boolean sideSetPinDirs,
+                 final short[] instructions)
   {
-    if (instructions == null) {
-      throw new NullPointerException("instructions");
+    if (id == null) {
+      throw new NullPointerException("id");
     }
-    final int length = instructions.length;
-    if (length > Memory.SIZE) {
-      throw new IllegalArgumentException("instructions length > " +
-                                         Memory.SIZE + ": " + length);
+    if (id.isEmpty()) {
+      throw new IllegalArgumentException("invalid program id: <empty>");
     }
     if (origin < -1) {
       throw new IllegalArgumentException("origin < -1: " + origin);
@@ -105,11 +82,54 @@ public class Program
       throw new IllegalArgumentException("origin > " + (Memory.SIZE - 1) +
                                          ": " + origin);
     }
+    if (wrap < 0) {
+      throw new IllegalArgumentException("wrap < 0: " + wrap);
+    }
+    if (wrap > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("wrap > " + (Memory.SIZE - 1) +
+                                         ": " + wrap);
+    }
+    if (wrapTarget < 0) {
+      throw new IllegalArgumentException("wrap_target < 0: " + wrapTarget);
+    }
+    if (wrapTarget > Memory.SIZE - 1) {
+      throw new IllegalArgumentException("wrap_target > " + (Memory.SIZE - 1) +
+                                         ": " + wrapTarget);
+    }
+    if (sideSetCount < 0) {
+      throw new IllegalArgumentException("side_set count < 0: " + sideSetCount);
+    }
+    if (sideSetCount > 5) {
+      throw new IllegalArgumentException("side_set count > 5: " + sideSetCount);
+    }
+    if (sideSetOpt && ((sideSetCount > 4))) {
+      throw new IllegalArgumentException("max. side-set count is 4, " +
+                                         "if opt is set");
+    }
+    if (instructions == null) {
+      throw new NullPointerException("instructions");
+    }
+    final int length = instructions.length;
+    if (length > Memory.SIZE) {
+      throw new IllegalArgumentException("instructions length > " +
+                                         Memory.SIZE + ": " + length);
+    }
+    this.id = id;
     this.instructions = Arrays.copyOf(instructions, length);
     this.origin = origin;
+    this.wrap = wrap;
+    this.wrapTarget = wrapTarget;
+    this.sideSetCount = sideSetCount;
+    this.sideSetOpt = sideSetOpt;
+    this.sideSetPinDirs = sideSetPinDirs;
     final int mask = (0x1 << length) - 1;
     allocationMask =
       origin >= 0 ? mask << origin | (mask << (origin - Memory.SIZE)) : mask;
+  }
+
+  public String getId()
+  {
+    return id;
   }
 
   public int getLength()
@@ -146,6 +166,16 @@ public class Program
   public int getAllocationMask()
   {
     return allocationMask;
+  }
+
+  public SMConfig getDefaultConfig(final int offset)
+  {
+    final SMConfig smConfig = SMConfig.getDefault();
+    smConfig.setWrap(wrapTarget, wrap);
+    if (sideSetCount > 0) {
+      smConfig.setSideSet(sideSetCount, sideSetOpt, sideSetPinDirs);
+    }
+    return smConfig;
   }
 
   @Override

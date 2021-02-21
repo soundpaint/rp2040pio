@@ -44,7 +44,7 @@ public class SMConfig
   private int shiftCtrl;
   private int pinCtrl;
 
-  public static SMConfig getDefaultSMConfig()
+  public static SMConfig getDefault()
   {
     return new SMConfig();
   }
