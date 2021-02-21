@@ -44,11 +44,6 @@ public class SMConfig
   private int shiftCtrl;
   private int pinCtrl;
 
-  public static SMConfig getDefault()
-  {
-    return new SMConfig();
-  }
-
   private SMConfig()
   {
     reset();
@@ -70,6 +65,8 @@ public class SMConfig
   public int getExecCtrl() { return execCtrl; }
   public int getShiftCtrl() { return shiftCtrl; }
   public int getPinCtrl() { return pinCtrl; }
+
+  // ---- Functions for compatibility with the Pico SDK, SM Config Group ----
 
   public void setOutPins(final int outBase, final int outCount)
   {
@@ -295,6 +292,11 @@ public class SMConfig
     execCtrl &= 0xffffffe0;
     execCtrl |= statusSel.ordinal() << 4; // EXECCTRL_STATUS_SEL
     execCtrl |= statusN; // EXECCTRL_STATUS_N
+  }
+
+  public static SMConfig getDefault()
+  {
+    return new SMConfig();
   }
 }
 

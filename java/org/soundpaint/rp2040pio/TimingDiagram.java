@@ -369,8 +369,8 @@ public class TimingDiagram
 
   private void resetEmulation()
   {
-    pio.smSetEnabledMask((1 << PIO.SM_COUNT) - 1, false, true);
-    pio.smRestartMask(PIO.SM_COUNT - 1);
+    pio.setSmMaskEnabled((1 << PIO.SM_COUNT) - 1, false, true);
+    pio.restartSmMask(PIO.SM_COUNT - 1);
     final GPIO gpio = pio.getGPIO();
     gpio.reset();
     for (final DiagramConfig.Signal signal : diagramConfig) {
@@ -391,7 +391,7 @@ public class TimingDiagram
     resetEmulation();
     // TODO: Enabling SM should be part of configuration and
     // replayed, whenever the simulation is restarted.
-    pio.smSetEnabledMask(1, true);
+    pio.setSmMaskEnabled(1, true);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
       clock.cyclePhase0();
       for (final Decoder.DecodeException e : pio.getExceptions()) {

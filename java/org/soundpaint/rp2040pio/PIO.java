@@ -317,34 +317,11 @@ public class PIO implements Clock.TransitionListener
     }
   }
 
-  // -------- Functions for compatibility with the Pico SDK --------
+  // ---- Functions for compatibility with the Pico SDK, SM Config Group ----
 
-  public static final MasterClock MASTER_CLOCK =
-    MasterClock.getDefaultInstance();
-  public static final PIO PIO0 = new PIO(0, MASTER_CLOCK);
-  public static final PIO PIO1 = new PIO(1, MASTER_CLOCK);
-
-  /**
-   * Tracking allocation of instruction memory is not a feature of the
-   * RP2040 itself, but a feature of the SDK.  This is, why we do not
-   * put this stuff into the memory class.
-   */
-  private Integer memoryAllocation = 0x0;
-
-  /**
-   * Tracking claim of state machines is not a feature of the RP2040
-   * itself, but a feature of the SDK.  This is, why we do not put
-   * this stuff into the state machine class.
-   */
-  private Integer stateMachineClaimed = 0x0;
-
-  public void smSetConfig(final int smNum, final SMConfig smConfig)
+  public static SMConfig getDefaultSmConfig()
   {
-    final SM sm = getSM(smNum);
-    sm.setCLKDIV(smConfig.getClkDiv());
-    sm.setEXECCTRL(smConfig.getExecCtrl());
-    sm.setSHIFTCTRL(smConfig.getShiftCtrl());
-    sm.setPINCTRL(smConfig.getPinCtrl());
+    return SMConfig.getDefault();
   }
 
   public void smSetOutPins(final int smNum,
@@ -373,6 +350,36 @@ public class PIO implements Clock.TransitionListener
   {
     final SM sm = getSM(smNum);
     sm.setSideSetBase(sideSetBase);
+  }
+
+  // ---- Functions for compatibility with the Pico SDK, PIO Group ----
+
+  public static final MasterClock MASTER_CLOCK =
+    MasterClock.getDefaultInstance();
+  public static final PIO PIO0 = new PIO(0, MASTER_CLOCK);
+  public static final PIO PIO1 = new PIO(1, MASTER_CLOCK);
+
+  /**
+   * Tracking allocation of instruction memory is not a feature of the
+   * RP2040 itself, but a feature of the SDK.  This is, why we do not
+   * put this stuff into the memory class.
+   */
+  private Integer memoryAllocation = 0x0;
+
+  /**
+   * Tracking claim of state machines is not a feature of the RP2040
+   * itself, but a feature of the SDK.  This is, why we do not put
+   * this stuff into the state machine class.
+   */
+  private Integer stateMachineClaimed = 0x0;
+
+  public void smSetConfig(final int smNum, final SMConfig smConfig)
+  {
+    final SM sm = getSM(smNum);
+    sm.setCLKDIV(smConfig.getClkDiv());
+    sm.setEXECCTRL(smConfig.getExecCtrl());
+    sm.setSHIFTCTRL(smConfig.getShiftCtrl());
+    sm.setPINCTRL(smConfig.getPinCtrl());
   }
 
   public int getIndex()
@@ -627,8 +634,13 @@ public class PIO implements Clock.TransitionListener
     smSetEnabled(smNum, enabled, false);
   }
 
-  public void smSetEnabled(final int smNum, final boolean enabled,
-                           final boolean disableStatusCheck)
+  /**
+   * TODO / FIXME: Eliminate the (disableStatusCheck == true) special
+   * case as soon as TimingDiagram can correctly enable only those SMs
+   * that it actually needs.
+   */
+  private void smSetEnabled(final int smNum, final boolean enabled,
+                            final boolean disableStatusCheck)
   {
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
@@ -637,15 +649,21 @@ public class PIO implements Clock.TransitionListener
       throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
                                          ": " + smNum);
     }
-    smSetEnabledMask(0x1 << smNum, enabled, disableStatusCheck);
+    setSmMaskEnabled(0x1 << smNum, enabled, disableStatusCheck);
   }
 
-  public void smSetEnabledMask(final int mask, final boolean enabled)
+  public void setSmMaskEnabled(final int mask, final boolean enabled)
   {
-    smSetEnabledMask(mask, enabled, false);
+    setSmMaskEnabled(mask, enabled, false);
   }
 
-  public void smSetEnabledMask(final int mask, final boolean enabled,
+  /**
+   * TODO / FIXME: Make this method private again (or even eliminate
+   * the (disableStatusCheck == true) special case) as soon as
+   * TimingDiagram can correctly disable only those SMs that it has
+   * enabled before.
+   */
+  public void setSmMaskEnabled(final int mask, final boolean enabled,
                                final boolean disableStatusCheck)
   {
     if (mask < 0) {
@@ -689,10 +707,10 @@ public class PIO implements Clock.TransitionListener
       throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
                                          ": " + smNum);
     }
-    smRestartMask(0x1 << smNum);
+    restartSmMask(0x1 << smNum);
   }
 
-  public void smRestartMask(final int mask)
+  public void restartSmMask(final int mask)
   {
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
@@ -720,10 +738,10 @@ public class PIO implements Clock.TransitionListener
       throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
                                          ": " + smNum);
     }
-    smClkDivRestartMask(0x1 << smNum);
+    clkDivRestartSmMask(0x1 << smNum);
   }
 
-  public void smClkDivRestartMask(final int mask)
+  public void clkDivRestartSmMask(final int mask)
   {
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
@@ -742,7 +760,7 @@ public class PIO implements Clock.TransitionListener
     }
   }
 
-  public void smEnableMaskInSync(final int mask)
+  public void enableSmMaskInSync(final int mask)
   {
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
@@ -843,13 +861,23 @@ public class PIO implements Clock.TransitionListener
     return sm.getTXFIFOLevel();
   }
 
-  /*
-   * TODO:
-   *
-   * Add below those SDK functions that are still missing.
-   * See:
-   * https://raspberrypi.github.io/pico-sdk-doxygen/group__hardware__pio.html
-   */
+  public void smPutBlocking(final int smNum, final int data)
+  {
+    final SM sm = getSM(smNum);
+    sm.putBlocking(data);
+  }
+
+  public int smGetBlocking(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    return sm.getBlocking();
+  }
+
+  public void smDrainTXFIFO(final int smNum)
+  {
+    final SM sm = getSM(smNum);
+    sm.drainTXFIFO();
+  }
 
   public void smSetClkDiv(final int smNum, final float div)
   {
@@ -878,10 +906,32 @@ public class PIO implements Clock.TransitionListener
     sm.clearFIFOs();
   }
 
-  public void smSetPins(final int smNum, final int values)
+  public void smSetPins(final int smNum, final int pinValues)
   {
     final SM sm = getSM(smNum);
-    SM.IOMapping.SET.setPins(sm, values);
+    SM.IOMapping.SET.setPins(sm, pinValues);
+  }
+
+  public void smSetPinsWithMask(final int smNum, final int pinValues,
+                                final int pinMask)
+  {
+    final SM sm = getSM(smNum);
+    sm.setPinsWithMask(pinValues, pinMask);
+  }
+
+  public void smSetPinDirsWithMask(final int smNum, final int pinDirs,
+                                   final int pinMask)
+  {
+    final SM sm = getSM(smNum);
+    sm.setPinDirsWithMask(pinDirs, pinMask);
+  }
+
+  public void smSetConsecutivePinDirs(final int smNum,
+                                      final int pinBase, final int pinCount,
+                                      final boolean isOut)
+  {
+    final SM sm = getSM(smNum);
+    sm.setConsecutivePinDirs(pinBase, pinCount, isOut);
   }
 
   public void smClaim(final int smNum)
@@ -893,7 +943,7 @@ public class PIO implements Clock.TransitionListener
       throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
                                          ": " + smNum);
     }
-    smClaimMask(0x1 << smNum);
+    claimSmMask(0x1 << smNum);
   }
 
   private String listMaskBits(final int mask) {
@@ -907,7 +957,7 @@ public class PIO implements Clock.TransitionListener
     return s.toString();
   }
 
-  public void smClaimMask(final int mask)
+  public void claimSmMask(final int mask)
   {
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
@@ -942,7 +992,7 @@ public class PIO implements Clock.TransitionListener
     }
   }
 
-  public int smClaimUnused(final boolean required)
+  public int claimUnusedSm(final boolean required)
   {
     synchronized(stateMachineClaimed) {
       final int unclaimed = ~stateMachineClaimed & ((0x1 << SM_COUNT) - 1);

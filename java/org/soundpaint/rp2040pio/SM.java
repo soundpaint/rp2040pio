@@ -769,6 +769,43 @@ public class SM
     return fifo.getTXLevel();
   }
 
+  public void putBlocking(final int data)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  public int getBlocking()
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  public void drainTXFIFO()
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  public void setPinsWithMask(final int pinValues, final int pinMask)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  public void setPinDirsWithMask(final int pinDirs, final int pinMask)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
+  public void setConsecutivePinDirs(final int pinBase, final int pinCount,
+                                    final boolean isOut)
+  {
+    // TODO
+    throw new InternalError("not yet implemented");
+  }
+
   public int getPC()
   {
     return status.regADDR;
