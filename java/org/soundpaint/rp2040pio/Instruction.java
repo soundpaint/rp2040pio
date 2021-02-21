@@ -854,15 +854,24 @@ public abstract class Instruction
       }
     }
 
+    private boolean isNop()
+    {
+      return
+        (src == Source.Y) &&
+        (dst == Destination.Y) &&
+        (op == Operation.NONE);
+    }
+
     @Override
     public String getMnemonic()
     {
-      return "mov";
+      return isNop() ? "nop" : "mov";
     }
 
     @Override
     public String getParamsDisplay()
     {
+      if (isNop()) return "";
       final String strOp = op.toString();
       return dst + ", " + (!strOp.isEmpty() ? strOp + " " : "") + src;
     }
