@@ -771,14 +771,30 @@ public class SM
 
   public void putBlocking(final int data)
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    synchronized(fifo) {
+      while (isTXFIFOFull()) {
+        try {
+          fifo.wait();
+        } catch (final InterruptedException e) {
+          // running check isTXFIFOFull() anyway => ignore
+        }
+      }
+      put(data);
+    }
   }
 
   public int getBlocking()
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    synchronized(fifo) {
+      while (isRXFIFOEmpty()) {
+        try {
+          fifo.wait();
+        } catch (final InterruptedException e) {
+          // running check isRXFIFOEmpty() anyway => ignore
+        }
+      }
+      return get();
+    }
   }
 
   public void drainTXFIFO()
@@ -845,7 +861,7 @@ public class SM
       return (short)pendingExecInstruction;
     }
     // notify blocking methods that condition may have changed
-    memory.FETCH_LOCK.notify();
+    memory.FETCH_LOCK.notifyAll();
     return memory.get(status.regADDR);
   }
 

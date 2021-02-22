@@ -71,6 +71,7 @@ public class FIFO
   {
     rx.clear();
     tx.clear();
+    notifyAll();
   }
 
   public synchronized void setJoinRX(final boolean join)
@@ -81,6 +82,7 @@ public class FIFO
       regSHIFTCTRL_FJOIN_TX = false;
     rx.clear();
     tx.clear();
+    notifyAll();
   }
 
   public boolean getJoinRX()
@@ -88,18 +90,18 @@ public class FIFO
     return regSHIFTCTRL_FJOIN_RX;
   }
 
-  public int getRXLevel()
+  public synchronized int getRXLevel()
   {
     return rx.size();
   }
 
-  public boolean fstatRxFull()
+  public synchronized boolean fstatRxFull()
   {
     // bit 0, 1, 2 or 3 (for SM_0 .. SM_3) of FSTAT
     return rx.size() >= (regSHIFTCTRL_FJOIN_RX ? 2 * DEPTH : DEPTH);
   }
 
-  public boolean fstatRxEmpty()
+  public synchronized boolean fstatRxEmpty()
   {
     // bit 8, 9, 10 or 11 (for SM_0 .. SM_3) of FSTAT
     return rx.size() == 0;
@@ -107,16 +109,22 @@ public class FIFO
 
   public synchronized void rxPush(final int value)
   {
-    if (!fstatRxFull())
+    if (!fstatRxFull()) {
       rx.add(value);
+      notifyAll();
+    }
   }
 
   public synchronized int rxDMARead()
   {
-    if (!fstatRxEmpty())
-      return rx.remove();
-    else
-      return 0;
+    final int value;
+    if (!fstatRxEmpty()) {
+      value = rx.remove();
+      notifyAll();
+    } else {
+      value = 0;
+    }
+    return value;
   }
 
   public synchronized void setJoinTX(final boolean join)
@@ -127,6 +135,7 @@ public class FIFO
       regSHIFTCTRL_FJOIN_RX = false;
     rx.clear();
     tx.clear();
+    notifyAll();
   }
 
   public boolean getJoinTX()
@@ -134,18 +143,18 @@ public class FIFO
     return regSHIFTCTRL_FJOIN_TX;
   }
 
-  public int getTXLevel()
+  public synchronized int getTXLevel()
   {
     return tx.size();
   }
 
-  public boolean fstatTxFull()
+  public synchronized boolean fstatTxFull()
   {
     // bit 16, 17, 18 or 19 (for SM_0 .. SM_3) of FSTAT
     return tx.size() >= (regSHIFTCTRL_FJOIN_TX ? 2 * DEPTH : DEPTH);
   }
 
-  public boolean fstatTxEmpty()
+  public synchronized boolean fstatTxEmpty()
   {
     // bit 24, 25, 26 or 27 (for SM_0 .. SM_3) of FSTAT
     return tx.size() == 0;
@@ -153,9 +162,9 @@ public class FIFO
 
   public synchronized int txPull()
   {
-    if (!fstatTxEmpty())
-      return rx.remove();
-    return 0;
+    final int value = !fstatTxEmpty() ? rx.remove() : 0;
+    notifyAll();
+    return value;
   }
 
   public synchronized void txDMAWrite(final int value)
@@ -169,6 +178,7 @@ public class FIFO
       tx.clear();
       Collections.addAll(tx, values);
     }
+    notifyAll();
   }
 }
 
