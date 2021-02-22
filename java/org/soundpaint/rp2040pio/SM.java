@@ -844,6 +844,8 @@ public class SM
       status.pendingExecInstruction = -1;
       return (short)pendingExecInstruction;
     }
+    // notify blocking methods that condition may have changed
+    memory.FETCH_LOCK.notify();
     return memory.get(status.regADDR);
   }
 
@@ -885,8 +887,7 @@ public class SM
   public boolean isExecStalled()
   {
     synchronized(memory.FETCH_LOCK) {
-      // TODO: Need more clarification before being implemented.
-      throw new InternalError("not yet implemented");
+      return (status.pendingDMAInstruction >= 0) && isStalled();
     }
   }
 
@@ -894,8 +895,13 @@ public class SM
   {
     synchronized(memory.FETCH_LOCK) {
       insertDMAInstruction(instruction);
-      // TODO: Need more clarification before being implemented.
-      throw new InternalError("not yet implemented");
+      while (isExecStalled()) {
+        try {
+          memory.FETCH_LOCK.wait();
+        } catch (final InterruptedException e) {
+          // running check isExecStalled() anyway => ignore
+        }
+      }
     }
   }
 
