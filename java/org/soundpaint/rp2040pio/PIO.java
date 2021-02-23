@@ -354,6 +354,8 @@ public class PIO implements Clock.TransitionListener
 
   // ---- Functions for compatibility with the Pico SDK, PIO Group ----
 
+  public static final int SM0_PINCTRL_SET_COUNT_LSB = 26;
+  public static final int SM0_PINCTRL_SET_BASE_LSB = 5;
   public static final MasterClock MASTER_CLOCK =
     MasterClock.getDefaultInstance();
   public static final PIO PIO0 = new PIO(0, MASTER_CLOCK);

@@ -803,23 +803,101 @@ public class SM
     throw new InternalError("not yet implemented");
   }
 
-  public void setPinsWithMask(final int pinValues, final int pinMask)
+  /**
+   * Functionally equivalent replacement for GNU GCC's built-in
+   * function __builtin_ctz().
+   *
+   * @return The number of trailing 0-bits in x, starting at
+   * the least significant bit position. If x is 0, the result is
+   * undefined.
+   */
+  private int ctz(final int x)
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    int count = 0;
+    int shifted = x;
+    while (((shifted & 0x1) == 0x0) && (count < 32)) {
+      shifted >>>= 1;
+      count++;
+    }
+    return count;
   }
 
-  public void setPinDirsWithMask(final int pinDirs, final int pinMask)
+  private int encodeSet(final Instruction.Set.Destination dst, final int data)
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    final Instruction.Set instruction = new Instruction.Set(this);
+    instruction.setDestination(dst);
+    instruction.setData(data);
+    return instruction.encode();
+  }
+
+  public void setPinsWithMask(final int pinValues, int pinMask)
+  {
+    final int pinCtrlSaved = getPINCTRL();
+    while (pinMask != 0x0) {
+      final int base = ctz(pinMask);
+      setPINCTRL((1 << PIO.SM0_PINCTRL_SET_COUNT_LSB) |
+                 (base << PIO.SM0_PINCTRL_SET_BASE_LSB));
+      final int instruction = encodeSet(Instruction.Set.Destination.PINS,
+                                        (pinValues >>> base) & 0x1);
+      insertDMAInstruction(instruction);
+      // TODO: Wait for completion of inserted instruction?
+      pinMask &= pinMask - 1;
+    }
+    setPINCTRL(pinCtrlSaved);
+  }
+
+  public void setPinDirsWithMask(final int pinDirs, int pinMask)
+  {
+    final int pinCtrlSaved = getPINCTRL();
+    while (pinMask != 0x0) {
+      final int base = ctz(pinMask);
+      setPINCTRL((1 << PIO.SM0_PINCTRL_SET_COUNT_LSB) |
+                 (base << PIO.SM0_PINCTRL_SET_BASE_LSB));
+      final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
+                                        (pinDirs >>> base) & 0x1);
+      insertDMAInstruction(instruction);
+      // TODO: Wait for completion of inserted instruction?
+      pinMask &= pinMask - 1;
+    }
+    setPINCTRL(pinCtrlSaved);
   }
 
   public void setConsecutivePinDirs(final int pinBase, final int pinCount,
                                     final boolean isOut)
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    if (pinBase < 0) {
+      throw new IllegalArgumentException("pin base < 0: " + pinBase);
+    }
+    if (pinBase > 31) {
+      throw new IllegalArgumentException("pin base > 31: " + pinBase);
+    }
+    if (pinCount < 0) {
+      throw new IllegalArgumentException("pin count < 0: " + pinCount);
+    }
+    if (pinCount > 31) {
+      throw new IllegalArgumentException("pin count > 31: " + pinCount);
+    }
+    final int pinCtrlSaved = getPINCTRL();
+    final int pinDirVal = isOut ? 0x1f : 0x0;
+    int pin = pinBase;
+    int count = pinCount;
+    while (count > 5) {
+      setPINCTRL((5 << PIO.SM0_PINCTRL_SET_COUNT_LSB) |
+                 (pin << PIO.SM0_PINCTRL_SET_BASE_LSB));
+      final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
+                                        pinDirVal);
+      insertDMAInstruction(instruction);
+      // TODO: Wait for completion of inserted instruction?
+      count -= 5;
+      pin = (pin + 5) & 0x1f;
+    }
+    setPINCTRL((count << PIO.SM0_PINCTRL_SET_COUNT_LSB) |
+               (pin << PIO.SM0_PINCTRL_SET_BASE_LSB));
+    final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
+                                      pinDirVal);
+    insertDMAInstruction(instruction);
+    // TODO: Wait for completion of inserted instruction?
+    setPINCTRL(pinCtrlSaved);
   }
 
   public int getPC()

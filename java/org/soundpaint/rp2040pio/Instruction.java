@@ -940,7 +940,7 @@ public abstract class Instruction
     private static final Map<Integer, Destination> code2dst =
       new HashMap<Integer, Destination>();
 
-    private enum Destination
+    public enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
           SM.IOMapping.SET.setPins(sm, data);
@@ -1004,6 +1004,34 @@ public abstract class Instruction
     {
       dst.write(sm, data);
       return ResultState.COMPLETE;
+    }
+
+    public void setDestination(final Destination dst)
+    {
+      if (dst == null) {
+        throw new NullPointerException("dst");
+      }
+      this.dst = dst;
+    }
+
+    public void setData(final int data)
+    {
+      if ((data < 0x0) || (data > 0x1f)) {
+        final String message =
+          String.format("data out of range: %08x", data);
+        throw new IllegalArgumentException(message);
+      }
+      this.data = data;
+    }
+
+    public int encode()
+    {
+      final int delayAndSideSet = 0; // TODO
+      return
+        0xe000 |
+        ((delayAndSideSet & 0x1f) << 8) |
+        (dst.ordinal() << 5) |
+        (data & 0x1f);
     }
 
     @Override
