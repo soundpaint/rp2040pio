@@ -84,10 +84,6 @@ public abstract class Instruction
     return resultState;
   }
 
-  private short[] DELAY_MASK = {
-    0x1f, 0x0f, 0x07, 0x03, 0x01, 0x00
-  };
-
   public SM getSM()
   {
     return sm;
@@ -135,7 +131,7 @@ public abstract class Instruction
   {
     final SM.Status smStatus = sm.getStatus();
     final int delayAndSideSet = (opCode >>> 0x8) & 0x1f;
-    final int delayMask = DELAY_MASK[smStatus.regPINCTRL_SIDESET_COUNT];
+    final int delayMask = (0x1 << (5 - smStatus.regPINCTRL_SIDESET_COUNT)) - 1;
     this.opCode = opCode;
     delay = delayAndSideSet & delayMask;
     final int delayBitCount = 5 - smStatus.regPINCTRL_SIDESET_COUNT;
@@ -151,6 +147,19 @@ public abstract class Instruction
     sideSet = delayAndSideSetWithoutSideEn >>> delayBitCount;
     decodeLSB(opCode & 0xff);
     return this;
+  }
+
+  protected int getDelayAndSideSetBits()
+  {
+    final SM.Status smStatus = sm.getStatus();
+    final int delayBitCount = 5 - smStatus.regPINCTRL_SIDESET_COUNT;
+    final boolean haveSideSetEnableBit =
+      smStatus.regEXECCTRL_SIDE_EN && (smStatus.regPINCTRL_SIDESET_COUNT > 0);
+    final int delayAndSideSet =
+      (haveSideSetEnableBit && (sideSet > 0) ? 0x10 : 0x00) |
+      (sideSet << delayBitCount) |
+      delay;
+    return (delayAndSideSet & 0x1f) << 8;
   }
 
   /**
@@ -482,7 +491,7 @@ public abstract class Instruction
     private static final Map<Integer, Destination> code2dst =
       new HashMap<Integer, Destination>();
 
-    private enum Destination
+    public enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
           SM.IOMapping.OUT.setPins(sm, data);
@@ -552,6 +561,34 @@ public abstract class Instruction
 
       // force class initializer to be called such that map is filled
       dst = Destination.PINS;
+    }
+
+    public void setDestination(final Destination dst)
+    {
+      if (dst == null) {
+        throw new NullPointerException("dst");
+      }
+      this.dst = dst;
+    }
+
+    public void setBitCount(final int bitCount)
+    {
+      if (bitCount < 0) {
+        throw new IllegalArgumentException("bit count < 0: " + bitCount);
+      }
+      if (bitCount > 32) {
+        throw new IllegalArgumentException("bit count > 32: " + bitCount);
+      }
+      this.bitCount = bitCount;
+    }
+
+    public int encode()
+    {
+      return
+        0x6000 |
+        getDelayAndSideSetBits() |
+        (dst.ordinal() << 5) |
+        (bitCount & 0x1f);
     }
 
     @Override
@@ -642,6 +679,25 @@ public abstract class Instruction
 
     private boolean ifEmpty;
     private boolean block;
+
+    public void setIfEmpty(final boolean ifEmpty)
+    {
+      this.ifEmpty = ifEmpty;
+    }
+
+    public void setBlock(final boolean block)
+    {
+      this.block = block;
+    }
+
+    public int encode()
+    {
+      return
+        0x8080 |
+        getDelayAndSideSetBits() |
+        (ifEmpty ? 0x1 << 6 : 0) |
+        (block ? 0x1 << 5 : 0);
+    }
 
     @Override
     public ResultState executeOperation()
@@ -1016,20 +1072,20 @@ public abstract class Instruction
 
     public void setData(final int data)
     {
-      if ((data < 0x0) || (data > 0x1f)) {
-        final String message =
-          String.format("data out of range: %08x", data);
-        throw new IllegalArgumentException(message);
+      if (data < 0) {
+        throw new IllegalArgumentException("data < 0: " + data);
+      }
+      if (data > 31) {
+        throw new IllegalArgumentException("data > 31: " + data);
       }
       this.data = data;
     }
 
     public int encode()
     {
-      final int delayAndSideSet = 0; // TODO
       return
         0xe000 |
-        ((delayAndSideSet & 0x1f) << 8) |
+        getDelayAndSideSetBits() |
         (dst.ordinal() << 5) |
         (data & 0x1f);
     }

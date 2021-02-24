@@ -47,6 +47,17 @@ import javax.swing.JPanel;
 /**
  * Framework for displaying a timing diagram resulting from an
  * emulation run.
+ *
+ * TODO: Ellipsis, see e.g. Fig. 55.
+ *
+ * TODO: Labelled external data via GPIO or DMA (e.g. data bits "D0",
+ * "D1", "D2", ...).
+ *
+ * Syntax:
+ * CLK=SIGNAL
+ * DMA.SIGNAL_NAME=(SIGNAL|BIT)
+ * SMx.SIGNAL_NAME=(SIGNAL|BIT)
+ * GPIOx=(SIGNAL|BIT)
  */
 public class TimingDiagram
 {

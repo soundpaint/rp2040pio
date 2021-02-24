@@ -797,10 +797,42 @@ public class SM
     }
   }
 
+  private int encodeOut(final Instruction.Out.Destination dst,
+                        final int bitCount)
+  {
+    if (dst == null) {
+      throw new NullPointerException("dst");
+    }
+    if (bitCount < 0) {
+      throw new IllegalArgumentException("bitCount < 0: " + bitCount);
+    }
+    if (bitCount > 32) {
+      throw new IllegalArgumentException("bitCount > 32: " + bitCount);
+    }
+    final Instruction.Out instruction = new Instruction.Out(this);
+    instruction.setDestination(dst);
+    instruction.setBitCount(bitCount);
+    return instruction.encode();
+  }
+
+  private int encodePull(final boolean ifEmpty, final boolean block)
+  {
+    final Instruction.Pull instruction = new Instruction.Pull(this);
+    instruction.setIfEmpty(ifEmpty);
+    instruction.setBlock(block);
+    return instruction.encode();
+  }
+
   public void drainTXFIFO()
   {
-    // TODO
-    throw new InternalError("not yet implemented");
+    final int instruction =
+      status.regSHIFTCTRL_AUTOPULL ?
+      encodeOut(Instruction.Out.Destination.NULL, 32) :
+      encodePull(false, false);
+    while (!isTXFIFOEmpty()) {
+      insertDMAInstruction(instruction);
+      // TODO: Wait for completion of inserted instruction?
+    }
   }
 
   /**
@@ -824,6 +856,15 @@ public class SM
 
   private int encodeSet(final Instruction.Set.Destination dst, final int data)
   {
+    if (dst == null) {
+      throw new NullPointerException("dst");
+    }
+    if (data < 0) {
+      throw new IllegalArgumentException("data < 0: " + data);
+    }
+    if (data > 31) {
+      throw new IllegalArgumentException("data > 31: " + data);
+    }
     final Instruction.Set instruction = new Instruction.Set(this);
     instruction.setDestination(dst);
     instruction.setData(data);
