@@ -216,6 +216,29 @@ public class GPIO
     }
   }
 
+  public int getPinDirs(final int base, final int count)
+  {
+    if (base < 0) {
+      throw new IllegalArgumentException("GPIO pin base < 0: " + base);
+    }
+    if (base > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("GPIO pin base > " +
+                                         (GPIO_NUM - 1) + ": " + base);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("GPIO pin count < 0: " + count);
+    }
+    if (count > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("GPIO pin count > " +
+                                         (GPIO_NUM - 1) + ": " + count);
+    }
+    int pinDirs = 0;
+    for (int pin = 0; pin < count; pin++) {
+      pinDirs = (pinDirs << 0x1) | getDirection((base + pin) & 0x1f).getValue();
+    }
+    return pinDirs;
+  }
+
   public void setPinDirs(final int pinDirs, final int base, final int count)
   {
     if (base < 0) {

@@ -52,6 +52,10 @@ public class FIFO
 
   private boolean regSHIFTCTRL_FJOIN_RX; // bit 31 of SHIFTCTRL
   private boolean regSHIFTCTRL_FJOIN_TX; // bit 30 of SHIFTCTRL
+  private boolean regFDEBUG_TXSTALL; // one of bits 27:24 of FDEBUG
+  private boolean regFDEBUG_TXOVER; // one of bits 19:16 of FDEBUG
+  private boolean regFDEBUG_RXUNDER; // one of bits 11:8 of FDEBUG
+  private boolean regFDEBUG_RXSTALL; // one of bits 3:0 of FDEBUG
 
   public FIFO()
   {
@@ -65,6 +69,10 @@ public class FIFO
     clear();
     regSHIFTCTRL_FJOIN_RX = false;
     regSHIFTCTRL_FJOIN_TX = false;
+    regFDEBUG_TXSTALL = false;
+    regFDEBUG_TXOVER = false;
+    regFDEBUG_RXUNDER = false;
+    regFDEBUG_RXSTALL = false;
   }
 
   public synchronized void clear()
@@ -107,12 +115,21 @@ public class FIFO
     return rx.size() == 0;
   }
 
-  public synchronized void rxPush(final int value)
+  /**
+   * @return &lt;code&gt;true&lt;/code&gt; if the operation succeeded.
+   */
+  public synchronized boolean rxPush(final int value, final boolean stallIfFull)
   {
     if (!fstatRxFull()) {
       rx.add(value);
       notifyAll();
+      return true;
     }
+    if (stallIfFull) {
+      regFDEBUG_RXSTALL = true;
+    }
+    notifyAll();
+    return false;
   }
 
   public synchronized int rxDMARead()
@@ -122,9 +139,30 @@ public class FIFO
       value = rx.remove();
       notifyAll();
     } else {
+      regFDEBUG_RXUNDER = true;
       value = 0;
     }
     return value;
+  }
+
+  public boolean isRXUnder()
+  {
+    return regFDEBUG_RXUNDER;
+  }
+
+  public void clearRXUnder()
+  {
+    regFDEBUG_RXUNDER = false;
+  }
+
+  public boolean isRXStall()
+  {
+    return regFDEBUG_RXSTALL;
+  }
+
+  public void clearRXStall()
+  {
+    regFDEBUG_RXSTALL = false;
   }
 
   public synchronized void setJoinTX(final boolean join)
@@ -160,9 +198,17 @@ public class FIFO
     return tx.size() == 0;
   }
 
-  public synchronized int txPull()
+  public synchronized int txPull(final boolean stallIfEmpty)
   {
-    final int value = !fstatTxEmpty() ? rx.remove() : 0;
+    final int value;
+    if (!fstatTxEmpty()) {
+      value = rx.remove();
+    } else {
+      value = 0;
+      if (stallIfEmpty) {
+        regFDEBUG_TXSTALL = true;
+      }
+    }
     notifyAll();
     return value;
   }
@@ -177,8 +223,29 @@ public class FIFO
       values[0] = value;
       tx.clear();
       Collections.addAll(tx, values);
+      regFDEBUG_TXOVER = true;
     }
     notifyAll();
+  }
+
+  public boolean isTXOver()
+  {
+    return regFDEBUG_TXOVER;
+  }
+
+  public void clearTXOver()
+  {
+    regFDEBUG_TXOVER = false;
+  }
+
+  public boolean isTXStall()
+  {
+    return regFDEBUG_TXSTALL;
+  }
+
+  public void clearTXStall()
+  {
+    regFDEBUG_TXSTALL = false;
   }
 }
 

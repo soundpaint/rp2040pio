@@ -383,20 +383,20 @@ public class SM
   }
 
   /**
-   * @return True if operation stall due to full FIFO.
+   * @return &lt;code&gt;true&lt;/code&gt; if operation stall due to
+   * full FIFO.
    */
   public boolean rxPush(final boolean ifFull, final boolean block)
   {
     final boolean isrFull = status.isrShiftCount >= status.regSHIFTCTRL_PUSH_THRESH;
     if (!ifFull || (isrFull && status.regSHIFTCTRL_AUTOPUSH)) {
-      final boolean fifoFull = fifo.fstatRxFull();
-      if (fifoFull) {
-        return block; // stall on block
-      } else {
-        fifo.rxPush(status.isrValue);
+      final boolean succeeded = fifo.rxPush(status.isrValue, block);
+      if (succeeded) {
         status.isrValue = 0;
         status.isrShiftCount = 0;
         return false;
+      } else {
+        return block;
       }
     }
     return false;
@@ -414,17 +414,19 @@ public class SM
      */
     final boolean osrEmpty = status.osrShiftCount >= status.regSHIFTCTRL_PULL_THRESH;
     if (!ifEmpty || (osrEmpty && status.regSHIFTCTRL_AUTOPULL)) {
-      final boolean fifoEmpty = fifo.fstatTxEmpty();
-      if (fifoEmpty) {
-        if (!block) {
-          status.osrValue = status.regX;
+      synchronized(fifo) {
+        final boolean fifoEmpty = fifo.fstatTxEmpty();
+        if (fifoEmpty) {
+          if (!block) {
+            status.osrValue = status.regX;
+            status.osrShiftCount = 0;
+          }
+          return block; // stall on block
+        } else {
+          status.osrValue = fifo.txPull(block);
           status.osrShiftCount = 0;
+          return false;
         }
-        return block; // stall on block
-      } else {
-        status.osrValue = fifo.txPull();
-        status.osrShiftCount = 0;
-        return false;
       }
     } else {
       return false;
@@ -731,12 +733,23 @@ public class SM
 
   public void put(final int data)
   {
-    fifo.txDMAWrite(data);
+    synchronized(fifo) {
+      fifo.txDMAWrite(data);
+      if (isTXFIFOFull()) {
+        irq.setINTR_SMX_TXNFULL(num);
+      }
+    }
   }
 
   public int get()
   {
-    return fifo.rxDMARead();
+    synchronized(fifo) {
+      final int value = fifo.rxDMARead();
+      if (isRXFIFOEmpty()) {
+        irq.setINTR_SMX_RXNEMPTY(num);
+      }
+      return value;
+    }
   }
 
   public boolean isRXFIFOFull()
@@ -982,6 +995,16 @@ public class SM
     // notify blocking methods that condition may have changed
     memory.FETCH_LOCK.notifyAll();
     return memory.get(status.regADDR);
+  }
+
+  public int getInstruction()
+  {
+    /*
+     * TODO / FIXME: getOpCode() works only for instructions created
+     * from a call to decode(), but will return 0 for synthesized
+     * ones.
+     */
+    return status.instruction.getOpCode();
   }
 
   public void insertDMAInstruction(final int instruction)

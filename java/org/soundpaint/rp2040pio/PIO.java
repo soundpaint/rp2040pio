@@ -176,6 +176,46 @@ public class PIO implements Clock.TransitionListener
     return sms[index];
   }
 
+  public IRQ getIRQ()
+  {
+    return irq;
+  }
+
+  public int getSM_ENABLED()
+  {
+    return smEnabled;
+  }
+
+  public void setSM_ENABLED(final int smEnabled)
+  {
+    if (smEnabled < 0) {
+      throw new IllegalArgumentException("SM_ENABLED < 0: " + smEnabled);
+    }
+    if (smEnabled > 15) {
+      throw new IllegalArgumentException("SM_ENABLED > 15:" + smEnabled);
+    }
+    this.smEnabled = smEnabled;
+  }
+
+  public void setCtrl(final int ctrl)
+  {
+    synchronized(sms) {
+      final int smEnabled = ctrl & 0xf;
+      this.smEnabled = smEnabled;
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+        final boolean clkDivRestart = ((ctrl >> (8 + smNum)) & 0x1) != 0x0;
+        final boolean smRestart = ((ctrl >> (4 + smNum)) & 0x1) != 0x0;
+        final SM sm = getSM(smNum);
+        if (clkDivRestart) {
+          sm.resetCLKDIV();
+        }
+        if (smRestart) {
+          sm.restart();
+        }
+      }
+    }
+  }
+
   public void setSideSetCount(final int count)
   {
     if (count < 0) {
