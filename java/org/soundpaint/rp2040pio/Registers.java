@@ -114,6 +114,8 @@ public class Registers
   public static final int IRQ1_INTF = 0x13c;
   public static final int IRQ1_INTS = 0x140;
 
+  public static final int SM_SIZE = SM1_CLKDIV - SM0_CLKDIV;
+
   private final PIO pio;
 
   private Registers()
@@ -129,9 +131,34 @@ public class Registers
     this.pio = pio;
   }
 
+  public int getIndex()
+  {
+    return pio.getIndex();
+  }
+
+  public PIO getPIO() { return pio; }
+
+  public void gpioInit(final int pin)
+  {
+    if (pin < 0) {
+      throw new IllegalArgumentException("pin < 0: " + pin);
+    }
+    if (pin > 31) {
+      throw new IllegalArgumentException("pin > 31: " + pin);
+    }
+    final GPIO.Function function =
+      getIndex() == 1 ? GPIO.Function.PIO1 : GPIO.Function.PIO0;
+    pio.getGPIO().setFunction(pin, function);
+  }
+
+  /*
+   * TODO: In all of the following methods, use constants declared in
+   * class Constants for bit shifting & masking.
+   */
+
   private void writeFDebug(final int value)
   {
-    for (int smNum = 0; smNum < PIO.SM_COUNT; smNum++) {
+    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
       final SM sm = pio.getSM(smNum);
       final FIFO fifo = sm.getFIFO();
       if (((value >>> (24 + smNum)) & 0x1) != 0x0) {
@@ -149,7 +176,7 @@ public class Registers
     }
   }
 
-  public void write(final int address, final int value)
+  public synchronized void write(final int address, final int value)
   {
     if (address < 0) {
       throw new IllegalArgumentException("address < 0: " + address);
@@ -237,19 +264,19 @@ public class Registers
     case SM1_CLKDIV:
     case SM2_CLKDIV:
     case SM3_CLKDIV:
-      pio.getSM((address - SM0_CLKDIV) / 24).setCLKDIV(value);
+      pio.getSM((address - SM0_CLKDIV) / SM_SIZE).setCLKDIV(value);
       break;
     case SM0_EXECCTRL:
     case SM1_EXECCTRL:
     case SM2_EXECCTRL:
     case SM3_EXECCTRL:
-      pio.getSM((address - SM0_EXECCTRL) / 24).setEXECCTRL(value);
+      pio.getSM((address - SM0_EXECCTRL) / SM_SIZE).setEXECCTRL(value);
       break;
     case SM0_SHIFTCTRL:
     case SM1_SHIFTCTRL:
     case SM2_SHIFTCTRL:
     case SM3_SHIFTCTRL:
-      pio.getSM((address - SM0_SHIFTCTRL) / 24).setSHIFTCTRL(value);
+      pio.getSM((address - SM0_SHIFTCTRL) / SM_SIZE).setSHIFTCTRL(value);
       break;
     case SM0_ADDR:
     case SM1_ADDR:
@@ -260,13 +287,13 @@ public class Registers
     case SM1_INSTR:
     case SM2_INSTR:
     case SM3_INSTR:
-      pio.getSM((address - SM0_INSTR) / 24).insertDMAInstruction(value);
+      pio.getSM((address - SM0_INSTR) / SM_SIZE).insertDMAInstruction(value);
       break;
     case SM0_PINCTRL:
     case SM1_PINCTRL:
     case SM2_PINCTRL:
     case SM3_PINCTRL:
-      pio.getSM((address - SM0_PINCTRL) / 24).setPINCTRL(value);
+      pio.getSM((address - SM0_PINCTRL) / SM_SIZE).setPINCTRL(value);
       break;
     case INTR:
       break; // read-only address
@@ -311,10 +338,10 @@ public class Registers
       ((pio.getSM(0).isRXFIFOFull() ? 0x1 : 0x0) << 0);
   }
 
-  public int readFDebug()
+  private int readFDebug()
   {
     int value = 0;
-    for (int smNum = 0; smNum < PIO.SM_COUNT; smNum++) {
+    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
       final SM sm = pio.getSM(smNum);
       final FIFO fifo = sm.getFIFO();
       if (fifo.isTXStall()) {
@@ -333,7 +360,7 @@ public class Registers
     return value;
   }
 
-  public int readFLevel()
+  private int readFLevel()
   {
     return
       (pio.getSM(3).getRXFIFOLevel() << 28) |
@@ -346,15 +373,15 @@ public class Registers
       pio.getSM(0).getTXFIFOLevel();
   }
 
-  public int getCfgInfo()
+  private int getCfgInfo()
   {
     return
-      Memory.SIZE << 16 |
-      PIO.SM_COUNT << 8 |
-      FIFO.DEPTH;
+      Constants.MEMORY_SIZE << 16 |
+      Constants.SM_COUNT << 8 |
+      Constants.FIFO_DEPTH;
   }
 
-  public int read(final int address)
+  public synchronized int read(final int address)
   {
     if (address < 0) {
       throw new IllegalArgumentException("address < 0: " + address);
@@ -435,32 +462,32 @@ public class Registers
     case SM1_CLKDIV:
     case SM2_CLKDIV:
     case SM3_CLKDIV:
-      return pio.getSM((address - SM0_CLKDIV) / 24).getCLKDIV();
+      return pio.getSM((address - SM0_CLKDIV) / SM_SIZE).getCLKDIV();
     case SM0_EXECCTRL:
     case SM1_EXECCTRL:
     case SM2_EXECCTRL:
     case SM3_EXECCTRL:
-      return pio.getSM((address - SM0_EXECCTRL) / 24).getEXECCTRL();
+      return pio.getSM((address - SM0_EXECCTRL) / SM_SIZE).getEXECCTRL();
     case SM0_SHIFTCTRL:
     case SM1_SHIFTCTRL:
     case SM2_SHIFTCTRL:
     case SM3_SHIFTCTRL:
-      return pio.getSM((address - SM0_SHIFTCTRL) / 24).getSHIFTCTRL();
+      return pio.getSM((address - SM0_SHIFTCTRL) / SM_SIZE).getSHIFTCTRL();
     case SM0_ADDR:
     case SM1_ADDR:
     case SM2_ADDR:
     case SM3_ADDR:
-      return pio.getSM((address - SM0_ADDR) / 24).getPC();
+      return pio.getSM((address - SM0_ADDR) / SM_SIZE).getPC();
     case SM0_INSTR:
     case SM1_INSTR:
     case SM2_INSTR:
     case SM3_INSTR:
-      return pio.getSM((address - SM0_INSTR) / 24).getInstruction();
+      return pio.getSM((address - SM0_INSTR) / SM_SIZE).getInstruction();
     case SM0_PINCTRL:
     case SM1_PINCTRL:
     case SM2_PINCTRL:
     case SM3_PINCTRL:
-      return pio.getSM((address - SM0_PINCTRL) / 24).getPINCTRL();
+      return pio.getSM((address - SM0_PINCTRL) / SM_SIZE).getPINCTRL();
     case INTR:
       return pio.getIRQ().readINTR();
     case IRQ0_INTE:

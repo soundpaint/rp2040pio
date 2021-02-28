@@ -114,9 +114,9 @@ public class IRQ
     if (smNum < 0) {
       throw new IllegalArgumentException("SM number < 0: " + smNum);
     }
-    if (smNum >= PIO.SM_COUNT) {
+    if (smNum >= Constants.SM_COUNT) {
       final String message =
-        String.format("SM number >= %d: %d", PIO.SM_COUNT, smNum);
+        String.format("SM number >= %d: %d", Constants.SM_COUNT, smNum);
       throw new IllegalArgumentException(message);
     }
     regINTR &= ~(0x1 << (smNum + 4));
@@ -127,9 +127,9 @@ public class IRQ
     if (smNum < 0) {
       throw new IllegalArgumentException("SM number < 0: " + smNum);
     }
-    if (smNum >= PIO.SM_COUNT) {
+    if (smNum >= Constants.SM_COUNT) {
       final String message =
-        String.format("SM number >= %d: %d", PIO.SM_COUNT, smNum);
+        String.format("SM number >= %d: %d", Constants.SM_COUNT, smNum);
       throw new IllegalArgumentException(message);
     }
     regINTR |= 0x1 << (smNum + 4);
@@ -140,9 +140,9 @@ public class IRQ
     if (smNum < 0) {
       throw new IllegalArgumentException("SM number < 0: " + smNum);
     }
-    if (smNum >= PIO.SM_COUNT) {
+    if (smNum >= Constants.SM_COUNT) {
       final String message =
-        String.format("SM number >= %d: %d", PIO.SM_COUNT, smNum);
+        String.format("SM number >= %d: %d", Constants.SM_COUNT, smNum);
       throw new IllegalArgumentException(message);
     }
     regINTR &= ~(0x1 << smNum);
@@ -153,9 +153,9 @@ public class IRQ
     if (smNum < 0) {
       throw new IllegalArgumentException("SM number < 0: " + smNum);
     }
-    if (smNum >= PIO.SM_COUNT) {
+    if (smNum >= Constants.SM_COUNT) {
       final String message =
-        String.format("SM number >= %d: %d", PIO.SM_COUNT, smNum);
+        String.format("SM number >= %d: %d", Constants.SM_COUNT, smNum);
       throw new IllegalArgumentException(message);
     }
     regINTR |= 0x1 << smNum;

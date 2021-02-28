@@ -33,7 +33,7 @@ public class Main
 
   public Main()
   {
-    pio = PIO.PIO0;
+    pio = new PIO(0, MasterClock.getDefaultInstance()); //PIO.PIO0;
     gpio = pio.getGPIO();
   }
 

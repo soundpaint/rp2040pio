@@ -43,6 +43,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import org.soundpaint.rp2040pio.sdk.Program;
+import org.soundpaint.rp2040pio.sdk.ProgramParser;
+import org.soundpaint.rp2040pio.sdk.PIOSDK;
 
 /**
  * Framework for displaying a timing diagram resulting from an
@@ -97,6 +100,7 @@ public class TimingDiagram
     new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
 
   private final PIO pio;
+  private final PIOSDK pioSdk;
   private final DiagramConfig diagramConfig;
   private final JFrame frame;
   private final JPanel panel;
@@ -137,6 +141,7 @@ public class TimingDiagram
   public TimingDiagram(final PIO pio)
   {
     this.pio = pio;
+    pioSdk = new PIOSDK(new Registers(pio));
     diagramConfig = new DiagramConfig();
     frame = new JFrame("Timing Diagram");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -380,8 +385,8 @@ public class TimingDiagram
 
   private void resetEmulation()
   {
-    pio.setSmMaskEnabled((1 << PIO.SM_COUNT) - 1, false, true);
-    pio.restartSmMask(PIO.SM_COUNT - 1);
+    pioSdk.setSmMaskEnabled((1 << Constants.SM_COUNT) - 1, false);
+    pioSdk.restartSmMask(Constants.SM_COUNT - 1);
     final GPIO gpio = pio.getGPIO();
     gpio.reset();
     for (final DiagramConfig.Signal signal : diagramConfig) {
@@ -402,7 +407,7 @@ public class TimingDiagram
     resetEmulation();
     // TODO: Enabling SM should be part of configuration and
     // replayed, whenever the simulation is restarted.
-    pio.setSmMaskEnabled(1, true);
+    pioSdk.setSmMaskEnabled(1, true);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
       clock.cyclePhase0();
       for (final Decoder.DecodeException e : pio.getExceptions()) {
@@ -421,8 +426,8 @@ public class TimingDiagram
   public void addProgram(final String programResourcePath)
     throws IOException
   {
-    final Program program = Program.fromHexResource(programResourcePath);
-    pio.addProgram(program);
+    final Program program = ProgramParser.parse(programResourcePath);
+    pioSdk.addProgram(program);
   }
 }
 

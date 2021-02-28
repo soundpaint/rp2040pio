@@ -250,6 +250,11 @@ public class SM
     pll.reset();
   }
 
+  /*
+   * TODO: In all of the following methods, use constants declared in
+   * class Constants for bit shifting & masking.
+   */
+
   public void setEXECCTRL(final int execctrl)
   {
     status.regEXECCTRL_SIDE_EN = ((execctrl >>> 30) & 0x1) != 0x0;
@@ -265,6 +270,7 @@ public class SM
   public int getEXECCTRL()
   {
     return
+      (isExecStalled() ? 1 : 0) << 31 |
       (status.regEXECCTRL_SIDE_EN ? 1 : 0) << 30 |
       status.regEXECCTRL_SIDE_PINDIR.getValue() << 29 |
       status.regEXECCTRL_JMP_PIN << 24 |
@@ -503,53 +509,6 @@ public class SM
     return num;
   }
 
-  public void setSetCount(final int count)
-  {
-    if (count < 0) {
-      throw new IllegalArgumentException("set count < 0: " + count);
-    }
-    if (count > 5) {
-      throw new IllegalArgumentException("set count > 5: " + count);
-    }
-    status.regPINCTRL_SET_COUNT = count;
-  }
-
-  public void setSetBase(final int base)
-  {
-    if (base < 0) {
-      throw new IllegalArgumentException("set base < 0: " + base);
-    }
-    if (base > GPIO.GPIO_NUM - 1) {
-      throw new IllegalArgumentException("set base > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + base);
-    }
-    status.regPINCTRL_SET_BASE = base;
-  }
-
-  public void setOutCount(final int count)
-  {
-    if (count < 0) {
-      throw new IllegalArgumentException("out count < 0: " + count);
-    }
-    if (count > GPIO.GPIO_NUM) {
-      throw new IllegalArgumentException("out count > " +
-                                         GPIO.GPIO_NUM + ": " + count);
-    }
-    status.regPINCTRL_OUT_COUNT = count;
-  }
-
-  public void setOutBase(final int base)
-  {
-    if (base < 0) {
-      throw new IllegalArgumentException("out base < 0: " + base);
-    }
-    if (base > GPIO.GPIO_NUM - 1) {
-      throw new IllegalArgumentException("out base > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + base);
-    }
-    status.regPINCTRL_OUT_BASE = base;
-  }
-
   public void setSideSetCount(final int count)
   {
     if (count < 0) {
@@ -566,9 +525,10 @@ public class SM
     if (base < 0) {
       throw new IllegalArgumentException("side set base < 0: " + base);
     }
-    if (base > GPIO.GPIO_NUM - 1) {
+    if (base > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("side set base > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + base);
+                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         base);
     }
     status.regPINCTRL_SIDESET_BASE = base;
   }
@@ -578,16 +538,17 @@ public class SM
     if (base < 0) {
       throw new IllegalArgumentException("in base < 0: " + base);
     }
-    if (base > GPIO.GPIO_NUM - 1) {
+    if (base > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("in base > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + base);
+                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         base);
     }
     status.regPINCTRL_IN_BASE = base;
   }
 
   public int getPins()
   {
-    return gpio.getPins(status.regPINCTRL_IN_BASE, GPIO.GPIO_NUM);
+    return gpio.getPins(status.regPINCTRL_IN_BASE, Constants.GPIO_NUM);
   }
 
   public void setSideSetEnable(final boolean enable)
@@ -608,9 +569,9 @@ public class SM
     if (pin < 0) {
       throw new IllegalArgumentException("exec ctrl jmp pin < 0: " + pin);
     }
-    if (pin > GPIO.GPIO_NUM - 1) {
+    if (pin > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("exec ctrl jmp pin > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
+                                         (Constants.GPIO_NUM - 1) + ": " + pin);
     }
     status.regEXECCTRL_JMP_PIN = pin;
   }
@@ -706,9 +667,10 @@ public class SM
     if (value < 0) {
       throw new IllegalArgumentException("wrap top value < 0: " + value);
     }
-    if (value > Memory.SIZE - 1) {
+    if (value > Constants.MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("wrap top value > " +
-                                         (Memory.SIZE - 1) + ": " + value);
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         value);
     }
     status.regEXECCTRL_WRAP_TOP = value;
   }
@@ -718,9 +680,10 @@ public class SM
     if (value < 0) {
       throw new IllegalArgumentException("wrap bottom value < 0: " + value);
     }
-    if (value > Memory.SIZE - 1) {
+    if (value > Constants.MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("wrap bottom value > " +
-                                         (Memory.SIZE - 1) + ": " + value);
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         value);
     }
     status.regEXECCTRL_WRAP_BOTTOM = value;
   }
@@ -810,6 +773,26 @@ public class SM
     }
   }
 
+  private int encodeJmp(final Instruction.Jmp.Condition condition,
+                        final int address)
+  {
+    if (condition == null) {
+      throw new NullPointerException("condition");
+    }
+    if (address < 0) {
+      throw new IllegalArgumentException("address < 0: " + address);
+    }
+    if (address > Constants.MEMORY_SIZE - 1) {
+      throw new IllegalArgumentException("address > " +
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         address);
+    }
+    final Instruction.Jmp instruction = new Instruction.Jmp(this);
+    instruction.setCondition(condition);
+    instruction.setAddress(address);
+    return instruction.encode();
+  }
+
   private int encodeOut(final Instruction.Out.Destination dst,
                         final int bitCount)
   {
@@ -848,25 +831,6 @@ public class SM
     }
   }
 
-  /**
-   * Functionally equivalent replacement for GNU GCC's built-in
-   * function __builtin_ctz().
-   *
-   * @return The number of trailing 0-bits in x, starting at
-   * the least significant bit position. If x is 0, the result is
-   * undefined.
-   */
-  private int ctz(final int x)
-  {
-    int count = 0;
-    int shifted = x;
-    while (((shifted & 0x1) == 0x0) && (count < 32)) {
-      shifted >>>= 1;
-      count++;
-    }
-    return count;
-  }
-
   private int encodeSet(final Instruction.Set.Destination dst, final int data)
   {
     if (dst == null) {
@@ -888,9 +852,9 @@ public class SM
   {
     final int pinCtrlSaved = getPINCTRL();
     while (pinMask != 0x0) {
-      final int base = ctz(pinMask);
-      setPINCTRL((1 << PIO.SM0_PINCTRL_SET_COUNT_LSB) |
-                 (base << PIO.SM0_PINCTRL_SET_BASE_LSB));
+      final int base = Constants.ctz(pinMask);
+      setPINCTRL((1 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
+                 (base << Constants.SM0_PINCTRL_SET_BASE_LSB));
       final int instruction = encodeSet(Instruction.Set.Destination.PINS,
                                         (pinValues >>> base) & 0x1);
       insertDMAInstruction(instruction);
@@ -904,9 +868,9 @@ public class SM
   {
     final int pinCtrlSaved = getPINCTRL();
     while (pinMask != 0x0) {
-      final int base = ctz(pinMask);
-      setPINCTRL((1 << PIO.SM0_PINCTRL_SET_COUNT_LSB) |
-                 (base << PIO.SM0_PINCTRL_SET_BASE_LSB));
+      final int base = Constants.ctz(pinMask);
+      setPINCTRL((1 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
+                 (base << Constants.SM0_PINCTRL_SET_BASE_LSB));
       final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
                                         (pinDirs >>> base) & 0x1);
       insertDMAInstruction(instruction);
@@ -936,8 +900,8 @@ public class SM
     int pin = pinBase;
     int count = pinCount;
     while (count > 5) {
-      setPINCTRL((5 << PIO.SM0_PINCTRL_SET_COUNT_LSB) |
-                 (pin << PIO.SM0_PINCTRL_SET_BASE_LSB));
+      setPINCTRL((5 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
+                 (pin << Constants.SM0_PINCTRL_SET_BASE_LSB));
       final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
                                         pinDirVal);
       insertDMAInstruction(instruction);
@@ -945,8 +909,8 @@ public class SM
       count -= 5;
       pin = (pin + 5) & 0x1f;
     }
-    setPINCTRL((count << PIO.SM0_PINCTRL_SET_COUNT_LSB) |
-               (pin << PIO.SM0_PINCTRL_SET_BASE_LSB));
+    setPINCTRL((count << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
+               (pin << Constants.SM0_PINCTRL_SET_BASE_LSB));
     final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
                                       pinDirVal);
     insertDMAInstruction(instruction);
@@ -964,9 +928,10 @@ public class SM
     if (value < 0) {
       throw new IllegalArgumentException("pc value < 0: " + value);
     }
-    if (value > Memory.SIZE - 1) {
+    if (value > Constants.MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("pc value > " +
-                                         (Memory.SIZE - 1) + ": " + value);
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         value);
     }
     status.regADDR = value;
   }
@@ -1130,7 +1095,7 @@ public class SM
 
   public void dumpMemory()
   {
-    for (int address = 0; address < Memory.SIZE; address++) {
+    for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
       final short word = memory.get(address);
       String opCode;
       try {

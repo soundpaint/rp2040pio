@@ -348,9 +348,10 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
     }
-    if (smNum > PIO.SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (PIO.SM_COUNT - 1) +
-                                         ": " + smNum);
+    if (smNum > Constants.SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " +
+                                         (Constants.SM_COUNT - 1) + ": " +
+                                         smNum);
     }
     final SM sm = pio.getSM(smNum);
     final String signalLabel = label != null ? label : "SM" + smNum + "_PC";
@@ -371,9 +372,10 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
     }
-    if (smNum > PIO.SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (PIO.SM_COUNT - 1) +
-                                         ": " + smNum);
+    if (smNum > Constants.SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " +
+                                         (Constants.SM_COUNT - 1) + ": " +
+                                         smNum);
     }
     final String signalLabel = label != null ? label : "SM" + smNum + "_INSTR";
     final Supplier<InstructionInfo> valueGetter =
@@ -396,9 +398,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (pin < 0) {
       throw new IllegalArgumentException("pin < 0: " + pin);
     }
-    if (pin > GPIO.GPIO_NUM - 1) {
+    if (pin > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("pin > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
+                                         (Constants.GPIO_NUM - 1) + ": " + pin);
     }
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return
@@ -411,9 +413,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (pin < 0) {
       throw new IllegalArgumentException("pin < 0: " + pin);
     }
-    if (pin > GPIO.GPIO_NUM - 1) {
+    if (pin > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("pin > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
+                                         (Constants.GPIO_NUM - 1) + ": " + pin);
     }
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return

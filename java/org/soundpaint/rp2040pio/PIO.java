@@ -32,7 +32,10 @@ import java.util.List;
  */
 public class PIO implements Clock.TransitionListener
 {
-  public static final int SM_COUNT = 4;
+  public static final MasterClock MASTER_CLOCK =
+    MasterClock.getDefaultInstance();
+  public static final PIO PIO0 = new PIO(0, MASTER_CLOCK);
+  public static final PIO PIO1 = new PIO(1, MASTER_CLOCK);
 
   private final int index;
   private final List<Decoder.DecodeException> caughtExceptions;
@@ -133,26 +136,31 @@ public class PIO implements Clock.TransitionListener
     gpio = new GPIO();
     memory = new Memory();
     irq = new IRQ();
-    sms = new SM[SM_COUNT];
-    for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+    sms = new SM[Constants.SM_COUNT];
+    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
       sms[smNum] = new SM(smNum, gpio, memory, irq);
     }
     smEnabled = 0x0;
   }
 
+  public int getIndex()
+  {
+    return index;
+  }
+
   public int getDBG_CFGINFO_IMEM_SIZE()
   {
-    return Memory.SIZE;
+    return Constants.MEMORY_SIZE;
   }
 
   public int getDBG_CFGINFO_SM_COUNT()
   {
-    return SM_COUNT;
+    return Constants.SM_COUNT;
   }
 
   public int getDBG_CFGINFO_FIFO_DEPTH()
   {
-    return FIFO.DEPTH;
+    return Constants.FIFO_DEPTH;
   }
 
   public GPIO getGPIO()
@@ -170,8 +178,9 @@ public class PIO implements Clock.TransitionListener
     if (index < 0) {
       throw new IllegalArgumentException("state machine index < 0");
     }
-    if (index > SM_COUNT) {
-      throw new IllegalArgumentException("state machine index > " + SM_COUNT);
+    if (index > Constants.SM_COUNT) {
+      throw new IllegalArgumentException("state machine index > " +
+                                         Constants.SM_COUNT);
     }
     return sms[index];
   }
@@ -202,7 +211,7 @@ public class PIO implements Clock.TransitionListener
     synchronized(sms) {
       final int smEnabled = ctrl & 0xf;
       this.smEnabled = smEnabled;
-      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+      for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
         final boolean clkDivRestart = ((ctrl >> (8 + smNum)) & 0x1) != 0x0;
         final boolean smRestart = ((ctrl >> (4 + smNum)) & 0x1) != 0x0;
         final SM sm = getSM(smNum);
@@ -234,9 +243,10 @@ public class PIO implements Clock.TransitionListener
     if (base < 0) {
       throw new IllegalArgumentException("side set base < 0: " + base);
     }
-    if (base > GPIO.GPIO_NUM - 1) {
+    if (base > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("side set base > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + base);
+                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         base);
     }
     for (final SM sm : sms) {
       sm.setSideSetBase(base);
@@ -263,9 +273,9 @@ public class PIO implements Clock.TransitionListener
     if (pin < 0) {
       throw new IllegalArgumentException("exec ctrl jmp pin < 0: " + pin);
     }
-    if (pin > GPIO.GPIO_NUM - 1) {
+    if (pin > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("exec ctrl jmp pin > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
+                                         (Constants.GPIO_NUM - 1) + ": " + pin);
     }
     for (final SM sm : sms) {
       sm.setJmpPin(pin);
@@ -323,12 +333,25 @@ public class PIO implements Clock.TransitionListener
     return List.copyOf(caughtExceptions);
   }
 
+  private boolean smIsEnabled(final int smNum)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > Constants.SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " +
+                                         (Constants.SM_COUNT - 1) + ": " +
+                                         smNum);
+    }
+    return (smEnabled & (0x1 << smNum)) != 0x0;
+  }
+
   @Override
   public void raisingEdge(final long wallClock)
   {
     caughtExceptions.clear();
     synchronized(sms) {
-      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+      for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
         if (smIsEnabled(smNum)) {
           try {
             final SM sm = getSM(smNum);
@@ -344,7 +367,7 @@ public class PIO implements Clock.TransitionListener
   @Override
   public void fallingEdge(final long wallClock) {
     synchronized(sms) {
-      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
+      for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
         if (smIsEnabled(smNum)) {
           try {
             final SM sm = getSM(smNum);
@@ -354,704 +377,6 @@ public class PIO implements Clock.TransitionListener
           }
         }
       }
-    }
-  }
-
-  // ---- Functions for compatibility with the Pico SDK, SM Config Group ----
-
-  public static SMConfig getDefaultSmConfig()
-  {
-    return SMConfig.getDefault();
-  }
-
-  public void smSetOutPins(final int smNum,
-                           final int outBase, final int outCount)
-  {
-    final SM sm = getSM(smNum);
-    sm.setOutBase(outBase);
-    sm.setOutCount(outCount);
-  }
-
-  public void smSetSetPins(final int smNum,
-                           final int setBase, final int setCount)
-  {
-    final SM sm = getSM(smNum);
-    sm.setSetBase(setBase);
-    sm.setSetCount(setCount);
-  }
-
-  public void smSetInPins(final int smNum, final int inBase)
-  {
-    final SM sm = getSM(smNum);
-    sm.setInBase(inBase);
-  }
-
-  public void smSetSideSetPins(final int smNum, final int sideSetBase)
-  {
-    final SM sm = getSM(smNum);
-    sm.setSideSetBase(sideSetBase);
-  }
-
-  // ---- Functions for compatibility with the Pico SDK, PIO Group ----
-
-  public static final int SM0_PINCTRL_SET_COUNT_LSB = 26;
-  public static final int SM0_PINCTRL_SET_BASE_LSB = 5;
-  public static final MasterClock MASTER_CLOCK =
-    MasterClock.getDefaultInstance();
-  public static final PIO PIO0 = new PIO(0, MASTER_CLOCK);
-  public static final PIO PIO1 = new PIO(1, MASTER_CLOCK);
-
-  /**
-   * Tracking allocation of instruction memory is not a feature of the
-   * RP2040 itself, but a feature of the SDK.  This is, why we do not
-   * put this stuff into the memory class.
-   */
-  private Integer memoryAllocation = 0x0;
-
-  /**
-   * Tracking claim of state machines is not a feature of the RP2040
-   * itself, but a feature of the SDK.  This is, why we do not put
-   * this stuff into the state machine class.
-   */
-  private Integer stateMachineClaimed = 0x0;
-
-  public void smSetConfig(final int smNum, final SMConfig smConfig)
-  {
-    final SM sm = getSM(smNum);
-    sm.setCLKDIV(smConfig.getClkDiv());
-    sm.setEXECCTRL(smConfig.getExecCtrl());
-    sm.setSHIFTCTRL(smConfig.getShiftCtrl());
-    sm.setPINCTRL(smConfig.getPinCtrl());
-  }
-
-  public int getIndex()
-  {
-    return index;
-  }
-
-  public void gpioInit(final int pin)
-  {
-    gpio.init(pin);
-  }
-
-  /**
-   * Given one of the 8 DMA channels (RX and TX for each state
-   * machine) between DMA and this PIO, return the corresponding DREQ
-   * number, as specified in Table 120, Sect. 2.5 ("DMA") of the
-   * RP2040 data sheet.
-   */
-  public int getDREQ(final int smNum, final boolean isTX)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
-    }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
-                                         ": " + smNum);
-    }
-    return (getIndex() << 3) | (isTX ? 0 : SM_COUNT) | smNum;
-  }
-
-  /**
-   * Tries to allocate memory for the specified allocation mask and
-   * origin.  Returns address (0..31) where the allocation is
-   * performed.
-   * @param allocationMask Bit mask of instruction addresses (0..31)
-   * to allocate.
-   * @param origin Address where to allocate, of -1, if any address is
-   * acceptable.
-   * @param checkOnly If true, allocation is only checked for, but not
-   * performed.  Also, if allocation is not possible, -1 is returned
-   * rather than throwing an exception.
-   */
-  private int allocateMemory(final int allocationMask, final int origin,
-                             final boolean checkOnly)
-  {
-    synchronized(memoryAllocation) {
-      if (origin >= 0) {
-        if ((memoryAllocation & ~allocationMask) == 0x0) {
-          if (!checkOnly) memoryAllocation |= allocationMask;
-          return origin;
-        }
-        if (checkOnly) return -1;
-        final String message =
-          String.format("allocation at %02x failed", origin);
-        throw new RuntimeException(message);
-      }
-      for (int offset = 0; offset < Memory.SIZE; offset++) {
-        final int allocationMaskForOffset =
-          (allocationMask << offset) |
-          (allocationMask << (offset - Memory.SIZE));
-        if ((memoryAllocation & ~allocationMaskForOffset) == 0x0) {
-          if (!checkOnly) memoryAllocation |= allocationMask;
-          return offset;
-        }
-      }
-    }
-    if (checkOnly) return -1;
-    final String message =
-      String.format("allocation at %02x failed", origin);
-    throw new RuntimeException(message);
-  }
-
-  public boolean canAddProgram(final Program program)
-  {
-    if (program == null) {
-      throw new NullPointerException("program");
-    }
-    final int allocationMask = program.getAllocationMask();
-    final int origin = program.getOrigin();
-    return allocateMemory(allocationMask, origin, true) >= 0;
-  }
-
-  public boolean canAddProgramAtOffset(final Program program, final int offset)
-  {
-    if (program == null) {
-      throw new NullPointerException("program");
-    }
-    if (offset < 0) {
-      throw new IllegalArgumentException("offset < 0: " + offset);
-    }
-    if (offset > Memory.SIZE - 1) {
-      throw new IllegalArgumentException("offset > " +
-                                         (Memory.SIZE - 1) + ": " + offset);
-    }
-    final int origin = program.getOrigin();
-    if (origin >= 0) {
-      // do not allocate program with fixed origin at different offset
-      if (origin != offset) return false;
-    }
-    final int allocationMask = program.getAllocationMask();
-    final int allocationMaskForOffset =
-      origin >= 0 ?
-      allocationMask :
-      (allocationMask << offset) | (allocationMask << (offset - Memory.SIZE));
-    return allocateMemory(allocationMaskForOffset, offset, true) >= 0;
-  }
-
-  private void writeProgram(final Program program, final int address)
-  {
-    if (program == null) {
-      throw new NullPointerException("program");
-    }
-    if (address < 0) {
-      throw new IllegalArgumentException("address < 0: " + address);
-    }
-    if (address > Memory.SIZE - 1) {
-      throw new IllegalArgumentException("address > " +
-                                         (Memory.SIZE - 1) + ": " + address);
-    }
-    final int length = program.getLength();
-    for (int index = 0; index < length; index++) {
-      final short instruction = program.getInstruction(index);
-      final int memoryAddress = (address + index) & 0x1f;
-      memory.set(memoryAddress, instruction);
-    }
-  }
-
-  public int addProgram(final Program program)
-  {
-    if (program == null) {
-      throw new NullPointerException("program");
-    }
-    final int allocationMask = program.getAllocationMask();
-    final int origin = program.getOrigin();
-    final int address = allocateMemory(allocationMask, origin, false);
-    writeProgram(program, address);
-    return address;
-  }
-
-  public int addProgramAtOffset(final Program program, final int offset)
-  {
-    if (program == null) {
-      throw new NullPointerException("program");
-    }
-    if (offset < 0) {
-      throw new IllegalArgumentException("offset < 0: " + offset);
-    }
-    if (offset > Memory.SIZE - 1) {
-      throw new IllegalArgumentException("offset > " +
-                                         (Memory.SIZE - 1) + ": " + offset);
-    }
-    final int origin = program.getOrigin();
-    if (origin >= 0) {
-      // do not allocate program with fixed origin at different offset
-      if (origin != offset) {
-        final String message =
-          String.format("allocation at %02x failed for program %s: " +
-                        "conflicting origin: %02x",
-                        offset, program, origin);
-        throw new RuntimeException(message);
-      }
-    }
-    final int allocationMask = program.getAllocationMask();
-    final int allocationMaskForOffset =
-      origin >= 0 ?
-      allocationMask :
-      (allocationMask << offset) | (allocationMask << (offset - Memory.SIZE));
-    final int address = allocateMemory(allocationMaskForOffset, offset, false);
-    writeProgram(program, address);
-    return address;
-  }
-
-  public void removeProgram(final Program program, final int loadedOffset)
-  {
-    if (program == null) {
-      throw new NullPointerException("program");
-    }
-    if (loadedOffset < 0) {
-      throw new IllegalArgumentException("loaded offset < 0: " + loadedOffset);
-    }
-    if (loadedOffset > Memory.SIZE - 1) {
-      throw new IllegalArgumentException("loaded offset > " +
-                                         (Memory.SIZE - 1) + ": " +
-                                         loadedOffset);
-    }
-    final int origin = program.getOrigin();
-    if (origin >= 0) {
-      // can not remove program from offset it is not designed for
-      if (origin != loadedOffset) {
-        final String message =
-          String.format("can not remove program %s from offset %02x: " +
-                        "program has conflicting origin: %02x",
-                        program, loadedOffset, origin);
-        throw new RuntimeException(message);
-      }
-    }
-    final int allocationMask = program.getAllocationMask();
-    final int allocationMaskForOffset =
-      origin >= 0 ?
-      allocationMask :
-      (allocationMask << loadedOffset) |
-      (allocationMask << (loadedOffset - Memory.SIZE));
-    synchronized(memoryAllocation) {
-      if ((memoryAllocation &= ~allocationMaskForOffset) !=
-          allocationMaskForOffset) {
-        final String message =
-          String.format("deallocation at %02x failed for program %s: " +
-                        "allocation bits corrupted",
-                        loadedOffset, program);
-        throw new RuntimeException(message);
-      }
-      memoryAllocation &= ~allocationMaskForOffset;
-      for (int index = 0; index < program.getLength(); index++) {
-        final int address = (loadedOffset + index) & 0x1f;
-        memory.set(address, (short)0);
-      }
-    }
-  }
-
-  public void clearInstructionMemory()
-  {
-    synchronized(memoryAllocation) {
-      memoryAllocation = 0;
-      for (int index = 0; index < Memory.SIZE; index++) {
-        memory.set(index, (short)0);
-      }
-    }
-  }
-
-  public void smInit(final int smNum, final int initialPC,
-                     final SMConfig config)
-  {
-    smSetConfig(smNum, config);
-    final SM sm = getSM(smNum);
-    sm.setPC(initialPC);
-  }
-
-  private boolean smIsEnabled(final int smNum)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
-    }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
-                                         ": " + smNum);
-    }
-    return (smEnabled & (0x1 << smNum)) != 0x0;
-  }
-
-  public void smSetEnabled(final int smNum, final boolean enabled)
-  {
-    smSetEnabled(smNum, enabled, false);
-  }
-
-  /**
-   * TODO / FIXME: Eliminate the (disableStatusCheck == true) special
-   * case as soon as TimingDiagram can correctly enable only those SMs
-   * that it actually needs.
-   */
-  private void smSetEnabled(final int smNum, final boolean enabled,
-                            final boolean disableStatusCheck)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
-    }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
-                                         ": " + smNum);
-    }
-    setSmMaskEnabled(0x1 << smNum, enabled, disableStatusCheck);
-  }
-
-  public void setSmMaskEnabled(final int mask, final boolean enabled)
-  {
-    setSmMaskEnabled(mask, enabled, false);
-  }
-
-  /**
-   * TODO / FIXME: Make this method private again (or even eliminate
-   * the (disableStatusCheck == true) special case) as soon as
-   * TimingDiagram can correctly disable only those SMs that it has
-   * enabled before.
-   */
-  public void setSmMaskEnabled(final int mask, final boolean enabled,
-                               final boolean disableStatusCheck)
-  {
-    if (mask < 0) {
-      throw new IllegalArgumentException("mask < 0: " + mask);
-    }
-    if (mask > (0x1 << SM_COUNT) - 1) {
-      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
-                                         ": " + mask);
-    }
-    synchronized(sms) {
-      if (enabled) {
-        final int maskAlreadyEnabled = smEnabled & ~mask;
-        if (disableStatusCheck || (maskAlreadyEnabled == 0x0)) {
-          smEnabled |= mask;
-        } else {
-          final String message =
-            String.format("state machine(s) already enabled: %s",
-                          listMaskBits(maskAlreadyEnabled));
-          throw new RuntimeException(message);
-        }
-      } else {
-        final int maskReadyToDisable = smEnabled & mask;
-        if (disableStatusCheck || (maskReadyToDisable == mask)) {
-          smEnabled &= ~maskReadyToDisable;
-        } else {
-          final String message =
-            String.format("state machine(s) already disabled: %s",
-                          listMaskBits(~maskReadyToDisable & mask));
-          throw new RuntimeException(message);
-        }
-      }
-    }
-  }
-
-  public void smRestart(final int smNum)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
-    }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
-                                         ": " + smNum);
-    }
-    restartSmMask(0x1 << smNum);
-  }
-
-  public void restartSmMask(final int mask)
-  {
-    if (mask < 0) {
-      throw new IllegalArgumentException("mask < 0: " + mask);
-    }
-    if (mask > (0x1 << SM_COUNT) - 1) {
-      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
-                                         ": " + mask);
-    }
-    synchronized(sms) {
-      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-        if (mask >>> smNum != 0x0) {
-          final SM sm = getSM(smNum);
-          sm.restart();
-        }
-      }
-    }
-  }
-
-  public void smClkDivRestart(final int smNum)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
-    }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
-                                         ": " + smNum);
-    }
-    clkDivRestartSmMask(0x1 << smNum);
-  }
-
-  public void clkDivRestartSmMask(final int mask)
-  {
-    if (mask < 0) {
-      throw new IllegalArgumentException("mask < 0: " + mask);
-    }
-    if (mask > (0x1 << SM_COUNT) - 1) {
-      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
-                                         ": " + mask);
-    }
-    synchronized(sms) {
-      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-        if (mask >>> smNum != 0x0) {
-          final SM sm = getSM(smNum);
-          sm.resetCLKDIV();
-        }
-      }
-    }
-  }
-
-  public void enableSmMaskInSync(final int mask)
-  {
-    if (mask < 0) {
-      throw new IllegalArgumentException("mask < 0: " + mask);
-    }
-    if (mask > (0x1 << SM_COUNT) - 1) {
-      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
-                                         ": " + mask);
-    }
-    synchronized(sms) {
-      smEnabled &= ~mask;
-      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-        if (mask >>> smNum != 0x0) {
-          final SM sm = getSM(smNum);
-          sm.resetCLKDIV();
-        }
-      }
-      smEnabled |= mask;
-    }
-  }
-
-  public int smGetPC(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.getPC();
-  }
-
-  public void smExec(final int smNum, final short instr)
-  {
-    final SM sm = getSM(smNum);
-    sm.insertDMAInstruction(instr & 0xffff);
-  }
-
-  public boolean smIsExecStalled(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.isExecStalled();
-  }
-
-  public void smExecWaitBlocking(final int smNum, final int instr)
-  {
-    final SM sm = getSM(smNum);
-    sm.smExecWaitBlocking(instr);
-  }
-
-  public void smSetWrap(final int smNum, final int wrapTarget,
-                        final int wrap)
-  {
-    final SM sm = getSM(smNum);
-    sm.setWrapTop(wrap);
-    sm.setWrapBottom(wrapTarget);
-  }
-
-  public void smPut(final int smNum, final int data)
-  {
-    final SM sm = getSM(smNum);
-    sm.put(data);
-  }
-
-  public int smGet(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.get();
-  }
-
-  public boolean smIsRXFIFOFull(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.isRXFIFOFull();
-  }
-
-  public boolean smIsRXFIFOEmpty(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.isRXFIFOEmpty();
-  }
-
-  public int smGetRXFIFOLevel(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.getRXFIFOLevel();
-  }
-
-  public boolean smIsTXFIFOFull(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.isTXFIFOFull();
-  }
-
-  public boolean smIsTXFIFOEmpty(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.isTXFIFOEmpty();
-  }
-
-  public int smGetTXFIFOLevel(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.getTXFIFOLevel();
-  }
-
-  public void smPutBlocking(final int smNum, final int data)
-  {
-    final SM sm = getSM(smNum);
-    sm.putBlocking(data);
-  }
-
-  public int smGetBlocking(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    return sm.getBlocking();
-  }
-
-  public void smDrainTXFIFO(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    sm.drainTXFIFO();
-  }
-
-  public void smSetClkDiv(final int smNum, final float div)
-  {
-    if (div < 0.0f) {
-      throw new IllegalArgumentException("div < 0: " + div);
-    }
-    if (div >= 65536.0f) {
-      throw new IllegalArgumentException("div >= 65536: " + div);
-    }
-    final int divInt = (int)div;
-    final int divFrac = (int)((div - divInt) * 256.0);
-    smSetClkDivIntFrac(smNum, divInt, divFrac);
-  }
-
-  public void smSetClkDivIntFrac(final int smNum,
-                                 final int divInt, final int divFrac)
-  {
-    final SM sm = getSM(smNum);
-    sm.setClockDivIntegerBits(divInt);
-    sm.setClockDivFractionalBits(divFrac);
-  }
-
-  public void smClearFIFOs(final int smNum)
-  {
-    final SM sm = getSM(smNum);
-    sm.clearFIFOs();
-  }
-
-  public void smSetPins(final int smNum, final int pinValues)
-  {
-    final SM sm = getSM(smNum);
-    SM.IOMapping.SET.setPins(sm, pinValues);
-  }
-
-  public void smSetPinsWithMask(final int smNum, final int pinValues,
-                                final int pinMask)
-  {
-    final SM sm = getSM(smNum);
-    sm.setPinsWithMask(pinValues, pinMask);
-  }
-
-  public void smSetPinDirsWithMask(final int smNum, final int pinDirs,
-                                   final int pinMask)
-  {
-    final SM sm = getSM(smNum);
-    sm.setPinDirsWithMask(pinDirs, pinMask);
-  }
-
-  public void smSetConsecutivePinDirs(final int smNum,
-                                      final int pinBase, final int pinCount,
-                                      final boolean isOut)
-  {
-    final SM sm = getSM(smNum);
-    sm.setConsecutivePinDirs(pinBase, pinCount, isOut);
-  }
-
-  public void smClaim(final int smNum)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
-    }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
-                                         ": " + smNum);
-    }
-    claimSmMask(0x1 << smNum);
-  }
-
-  private String listMaskBits(final int mask) {
-    final StringBuffer s = new StringBuffer();
-    for (int count = 0; count < 32; count++) {
-      if ((mask & (0x1 << count)) != 0x0) {
-        if (s.length() > 0) s.append(", ");
-        s.append(count);
-      }
-    }
-    return s.toString();
-  }
-
-  public void claimSmMask(final int mask)
-  {
-    if (mask < 0) {
-      throw new IllegalArgumentException("mask < 0: " + mask);
-    }
-    if (mask > (0x1 << SM_COUNT) - 1) {
-      throw new IllegalArgumentException("mask > " + ((0x1 << SM_COUNT) - 1) +
-                                         ": " + mask);
-    }
-    synchronized(stateMachineClaimed) {
-      if ((stateMachineClaimed & mask) != 0x0) {
-        final String message =
-          String.format("claim failed: state machine(s) already in use: %s",
-                        listMaskBits(mask));
-        throw new RuntimeException(message);
-      }
-      stateMachineClaimed |= mask;
-    }
-  }
-
-  public void smUnclaim(final int smNum)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
-    }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) +
-                                         ": " + smNum);
-    }
-    final int mask = 0x1 << smNum;
-    synchronized(stateMachineClaimed) {
-      stateMachineClaimed &= ~mask;
-    }
-  }
-
-  public int claimUnusedSm(final boolean required)
-  {
-    synchronized(stateMachineClaimed) {
-      final int unclaimed = ~stateMachineClaimed & ((0x1 << SM_COUNT) - 1);
-      if (unclaimed == 0x0) {
-        if (required) {
-          final String message =
-            "claim failed: all state machines already in use";
-          throw new RuntimeException(message);
-        }
-        return -1;
-      }
-      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-        if ((unclaimed & (0x1 << smNum)) != 0x0) {
-          return smNum;
-        }
-      }
-      throw new InternalError("unexpected fall-through");
     }
   }
 }

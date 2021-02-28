@@ -22,13 +22,15 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio;
+package org.soundpaint.rp2040pio.sdk;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.function.Function;
+import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.ParseException;
 
 public class ProgramParser
 {
@@ -73,17 +75,17 @@ public class ProgramParser
     }
     this.resourcePath = resourcePath;
     address = -1;
-    final InputStream in = Main.class.getResourceAsStream(resourcePath);
+    final InputStream in = Constants.class.getResourceAsStream(resourcePath);
     if (in == null) {
       throw parseException("resource not found: " + resourcePath);
     }
     reader = new BufferedReader(new InputStreamReader(in));
-    instructions = new short[Memory.SIZE];
+    instructions = new short[Constants.MEMORY_SIZE];
     lineIndex = 0;
     address = 0;
     id = "";
     origin = -1;
-    wrap = Memory.SIZE - 1;
+    wrap = Constants.MEMORY_SIZE - 1;
     wrapTarget = 0;
     sideSetCount = 0;
   }
@@ -117,9 +119,9 @@ public class ProgramParser
                            ": instruction is only valid after a " +
                            DIRECTIVE_PROGRAM + " directive");
     }
-    if (address >= Memory.SIZE) {
+    if (address >= Constants.MEMORY_SIZE) {
       throw parseException("program too large: " +
-                           "get more than " + Memory.SIZE + " words");
+                           "get more than " + Constants.MEMORY_SIZE + " words");
     }
     final int value;
     try {
@@ -178,9 +180,10 @@ public class ProgramParser
     if (origin < -1) {
       throw parseException(DIRECTIVE_ORIGIN + ": origin < -1: " + origin);
     }
-    if (origin > Memory.SIZE - 1) {
+    if (origin > Constants.MEMORY_SIZE - 1) {
       throw parseException(DIRECTIVE_ORIGIN +
-                           ": origin > " + (Memory.SIZE - 1) + ": " + origin);
+                           ": origin > " + (Constants.MEMORY_SIZE - 1) + ": " +
+                           origin);
     }
     this.origin = origin;
     originParsed = true;
@@ -200,9 +203,10 @@ public class ProgramParser
     if (wrap < 0) {
       throw parseException(DIRECTIVE_WRAP + ": wrap < 0: " + wrap);
     }
-    if (wrap > Memory.SIZE - 1) {
+    if (wrap > Constants.MEMORY_SIZE - 1) {
       throw parseException(DIRECTIVE_WRAP +
-                           ": wrap > " + (Memory.SIZE - 1) + ": " + wrap);
+                           ": wrap > " + (Constants.MEMORY_SIZE - 1) + ": " +
+                           wrap);
     }
     this.wrap = wrap;
     wrapParsed = true;
@@ -223,9 +227,10 @@ public class ProgramParser
       throw parseException(DIRECTIVE_WRAP_TARGET + ": wrap_target < 0: " +
                            wrapTarget);
     }
-    if (wrapTarget > Memory.SIZE - 1) {
+    if (wrapTarget > Constants.MEMORY_SIZE - 1) {
       throw parseException(DIRECTIVE_WRAP_TARGET +
-                           ": wrap_target > " + (Memory.SIZE - 1) + ": " +
+                           ": wrap_target > " +
+                           (Constants.MEMORY_SIZE - 1) + ": " +
                            wrapTarget);
     }
     this.wrapTarget = wrapTarget;
@@ -352,7 +357,9 @@ public class ProgramParser
     }
     if (!wrapParsed) {
       wrapTarget =
-        origin >= 0 ? ((origin + address - 1) % Memory.SIZE) : address - 1;
+        origin >= 0 ?
+        ((origin + address - 1) % Constants.MEMORY_SIZE) :
+        address - 1;
     }
     final Program program =
       new Program(id, origin, wrap, wrapTarget, sideSetCount,

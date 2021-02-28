@@ -22,7 +22,9 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio;
+package org.soundpaint.rp2040pio.sdk;
+
+import org.soundpaint.rp2040pio.Constants;
 
 /**
  * This class is for compatibility with the Raspberry Pi Pico SDK.
@@ -73,20 +75,22 @@ public class SMConfig
     if (outBase < 0) {
       throw new IllegalArgumentException("outBase < 0: " + outBase);
     }
-    if (outBase > GPIO.GPIO_NUM - 1) {
+    if (outBase > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("outBase > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + outBase);
+                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         outBase);
     }
     if (outCount < 0) {
       throw new IllegalArgumentException("outCount < 0: " + outCount);
     }
-    if (outCount > GPIO.GPIO_NUM) {
+    if (outCount > Constants.GPIO_NUM) {
       throw new IllegalArgumentException("outCount > " +
-                                         GPIO.GPIO_NUM + ": " + outCount);
+                                         Constants.GPIO_NUM + ": " + outCount);
     }
-    pinCtrl &= 0xfc0fffe0;
-    pinCtrl |= outBase; // PINCTRL_OUT_BASE
-    pinCtrl |= outCount << 20; // PINCTRL_OUT_COUNT
+    pinCtrl &= ~(Constants.SM0_PINCTRL_OUT_COUNT_BITS |
+                 Constants.SM0_PINCTRL_OUT_BASE_BITS);
+    pinCtrl |= outCount << Constants.SM0_PINCTRL_OUT_COUNT_LSB;
+    pinCtrl |= outBase << Constants.SM0_PINCTRL_OUT_BASE_LSB;
   }
 
   public void setSetPins(final int setBase, final int setCount)
@@ -94,19 +98,21 @@ public class SMConfig
     if (setBase < 0) {
       throw new IllegalArgumentException("setBase < 0: " + setBase);
     }
-    if (setBase > GPIO.GPIO_NUM - 1) {
+    if (setBase > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("setBase > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + setBase);
+                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         setBase);
     }
     if (setCount < 0) {
       throw new IllegalArgumentException("setCount < 0: " + setCount);
     }
-    if (setCount > 7) {
-      throw new IllegalArgumentException("setCount > 7: " + setCount);
+    if (setCount > 5) {
+      throw new IllegalArgumentException("setCount > 5: " + setCount);
     }
-    pinCtrl &= 0xe3fffc1f;
-    pinCtrl |= setBase << 5; // PINCTRL_SET_BASE
-    pinCtrl |= setCount << 26; // PINCTRL_SET_COUNT
+    pinCtrl &= ~(Constants.SM0_PINCTRL_SET_COUNT_BITS |
+                 Constants.SM0_PINCTRL_SET_BASE_BITS);
+    pinCtrl |= setCount << Constants.SM0_PINCTRL_SET_COUNT_LSB;
+    pinCtrl |= setBase << Constants.SM0_PINCTRL_SET_BASE_LSB;
   }
 
   public void setInPins(final int inBase)
@@ -114,12 +120,13 @@ public class SMConfig
     if (inBase < 0) {
       throw new IllegalArgumentException("inBase < 0: " + inBase);
     }
-    if (inBase > GPIO.GPIO_NUM - 1) {
+    if (inBase > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("inBase > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + inBase);
+                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         inBase);
     }
-    pinCtrl &= 0xfff07fff;
-    pinCtrl |= inBase << 15; // PINCTRL_IN_BASE
+    pinCtrl &= ~Constants.SM0_PINCTRL_IN_BASE_BITS;
+    pinCtrl |= inBase << Constants.SM0_PINCTRL_IN_BASE_LSB;
   }
 
   public void setSideSetPins(final int sideSetBase)
@@ -127,13 +134,13 @@ public class SMConfig
     if (sideSetBase < 0) {
       throw new IllegalArgumentException("sideSetBase < 0: " + sideSetBase);
     }
-    if (sideSetBase > GPIO.GPIO_NUM - 1) {
+    if (sideSetBase > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("sideSetBase > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " +
+                                         (Constants.GPIO_NUM - 1) + ": " +
                                          sideSetBase);
     }
-    pinCtrl &= 0xffff83ff;
-    pinCtrl |= sideSetBase << 10; // PINCTRL_SIDESET_BASE
+    pinCtrl &= ~Constants.SM0_PINCTRL_SIDESET_BASE_BITS;
+    pinCtrl |= sideSetBase << Constants.SM0_PINCTRL_SIDESET_BASE_LSB;
   }
 
   public void setSideSet(final int bitCount,
@@ -189,20 +196,23 @@ public class SMConfig
     if (wrapTarget < 0) {
       throw new IllegalArgumentException("wrap target < 0: " + wrapTarget);
     }
-    if (wrapTarget > Memory.SIZE - 1) {
+    if (wrapTarget > Constants.MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("wrap target > " +
-                                         (Memory.SIZE - 1) + ": " + wrapTarget);
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         wrapTarget);
     }
     if (wrap < 0) {
       throw new IllegalArgumentException("wrap < 0: " + wrap);
     }
-    if (wrap > Memory.SIZE - 1) {
+    if (wrap > Constants.MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("wrap > " +
-                                         (Memory.SIZE - 1) + ": " + wrap);
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         wrap);
     }
-    execCtrl &= 0xfffe007f;
-    execCtrl |= wrapTarget << 7; // EXECCTRL_WRAP_BOTTOM
-    execCtrl |= wrap << 12; // EXECCTRL_WRAP_TOP
+    execCtrl &= ~(Constants.SM0_EXECCTRL_WRAP_TOP_BITS |
+                  Constants.SM0_EXECCTRL_WRAP_BOTTOM_BITS);
+    execCtrl |= wrap << Constants.SM0_EXECCTRL_WRAP_TOP_LSB;
+    execCtrl |= wrapTarget << Constants.SM0_EXECCTRL_WRAP_BOTTOM_LSB;
   }
 
   public void setJmpPin(final int pin)
@@ -210,9 +220,9 @@ public class SMConfig
     if (pin < 0) {
       throw new IllegalArgumentException("jmp pin < 0: " + pin);
     }
-    if (pin > GPIO.GPIO_NUM - 1) {
+    if (pin > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("jmp pin > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " + pin);
+                                         (Constants.GPIO_NUM - 1) + ": " + pin);
     }
     execCtrl &= 0xe0ffffff;
     execCtrl |= pin << 24; // EXECCTRL_JMP_PIN
@@ -267,9 +277,9 @@ public class SMConfig
       throw new IllegalArgumentException("enable pin index < 0: " +
                                          enablePinIndex);
     }
-    if (enablePinIndex > GPIO.GPIO_NUM - 1) {
+    if (enablePinIndex > Constants.GPIO_NUM - 1) {
       throw new IllegalArgumentException("enable pin index > " +
-                                         (GPIO.GPIO_NUM - 1) + ": " +
+                                         (Constants.GPIO_NUM - 1) + ": " +
                                          enablePinIndex);
     }
     execCtrl &= 0xff01ffff;

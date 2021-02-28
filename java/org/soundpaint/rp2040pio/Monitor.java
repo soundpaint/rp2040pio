@@ -25,6 +25,9 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
+import org.soundpaint.rp2040pio.sdk.PIOSDK;
+import org.soundpaint.rp2040pio.sdk.Program;
+import org.soundpaint.rp2040pio.sdk.ProgramParser;
 
 /**
  * Program Execution Monitor And Control
@@ -38,18 +41,20 @@ public class Monitor
     "Karlsruhe, Germany\n";
 
   private final PIO pio;
+  private final PIOSDK pioSdk;
 
   public Monitor()
   {
     pio = PIO.PIO0;
+    pioSdk = new PIOSDK(new Registers(pio));
     System.out.println(about);
   }
 
   public void addProgram(final String programResourcePath)
     throws IOException
   {
-    final Program program = Program.fromHexResource(programResourcePath);
-    pio.addProgram(program);
+    final Program program = ProgramParser.parse(programResourcePath);
+    pioSdk.addProgram(program);
   }
 
   public void dumpProgram()

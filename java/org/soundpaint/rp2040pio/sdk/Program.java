@@ -22,11 +22,11 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio;
+package org.soundpaint.rp2040pio.sdk;
 
 import java.util.Arrays;
 import java.io.InputStream;
-import java.io.IOException;
+import org.soundpaint.rp2040pio.Constants;
 
 /**
  * This class is for compatibility with the Raspberry Pi Pico SDK.
@@ -44,12 +44,6 @@ public class Program
   private final boolean sideSetPinDirs;
   private final short[] instructions;
   private final int allocationMask;
-
-  public static Program fromHexResource(final String resourcePath)
-    throws IOException
-  {
-    return ProgramParser.parse(resourcePath);
-  }
 
   private Program()
   {
@@ -78,23 +72,26 @@ public class Program
     if (origin < -1) {
       throw new IllegalArgumentException("origin < -1: " + origin);
     }
-    if (origin > Memory.SIZE - 1) {
-      throw new IllegalArgumentException("origin > " + (Memory.SIZE - 1) +
-                                         ": " + origin);
+    if (origin > Constants.MEMORY_SIZE - 1) {
+      throw new IllegalArgumentException("origin > " +
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         origin);
     }
     if (wrap < 0) {
       throw new IllegalArgumentException("wrap < 0: " + wrap);
     }
-    if (wrap > Memory.SIZE - 1) {
-      throw new IllegalArgumentException("wrap > " + (Memory.SIZE - 1) +
-                                         ": " + wrap);
+    if (wrap > Constants.MEMORY_SIZE - 1) {
+      throw new IllegalArgumentException("wrap > " +
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         wrap);
     }
     if (wrapTarget < 0) {
       throw new IllegalArgumentException("wrap_target < 0: " + wrapTarget);
     }
-    if (wrapTarget > Memory.SIZE - 1) {
-      throw new IllegalArgumentException("wrap_target > " + (Memory.SIZE - 1) +
-                                         ": " + wrapTarget);
+    if (wrapTarget > Constants.MEMORY_SIZE - 1) {
+      throw new IllegalArgumentException("wrap_target > " +
+                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         wrapTarget);
     }
     if (sideSetCount < 0) {
       throw new IllegalArgumentException("side_set count < 0: " + sideSetCount);
@@ -110,9 +107,10 @@ public class Program
       throw new NullPointerException("instructions");
     }
     final int length = instructions.length;
-    if (length > Memory.SIZE) {
+    if (length > Constants.MEMORY_SIZE) {
       throw new IllegalArgumentException("instructions length > " +
-                                         Memory.SIZE + ": " + length);
+                                         Constants.MEMORY_SIZE + ": " +
+                                         length);
     }
     this.id = id;
     this.instructions = Arrays.copyOf(instructions, length);
@@ -124,7 +122,9 @@ public class Program
     this.sideSetPinDirs = sideSetPinDirs;
     final int mask = (0x1 << length) - 1;
     allocationMask =
-      origin >= 0 ? mask << origin | (mask << (origin - Memory.SIZE)) : mask;
+      origin >= 0 ?
+      mask << origin | (mask << (origin - Constants.MEMORY_SIZE)) :
+      mask;
   }
 
   public String getId()

@@ -36,8 +36,6 @@ import java.util.Collections;
  */
 public class FIFO
 {
-  public static final int DEPTH = 4;
-
   private static final Integer[] INTEGER_PROTOTYPE_ARRAY = new Integer[0];
 
   /**
@@ -106,7 +104,10 @@ public class FIFO
   public synchronized boolean fstatRxFull()
   {
     // bit 0, 1, 2 or 3 (for SM_0 .. SM_3) of FSTAT
-    return rx.size() >= (regSHIFTCTRL_FJOIN_RX ? 2 * DEPTH : DEPTH);
+    return rx.size() >=
+      (regSHIFTCTRL_FJOIN_RX ?
+       2 * Constants.FIFO_DEPTH :
+       Constants.FIFO_DEPTH);
   }
 
   public synchronized boolean fstatRxEmpty()
@@ -189,7 +190,10 @@ public class FIFO
   public synchronized boolean fstatTxFull()
   {
     // bit 16, 17, 18 or 19 (for SM_0 .. SM_3) of FSTAT
-    return tx.size() >= (regSHIFTCTRL_FJOIN_TX ? 2 * DEPTH : DEPTH);
+    return tx.size() >=
+      (regSHIFTCTRL_FJOIN_TX ?
+       2 * Constants.FIFO_DEPTH :
+       Constants.FIFO_DEPTH);
   }
 
   public synchronized boolean fstatTxEmpty()
