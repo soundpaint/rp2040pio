@@ -383,11 +383,6 @@ public class SM
     irq.set(index);
   }
 
-  public void clearFIFOs()
-  {
-    fifo.clear();
-  }
-
   /**
    * @return &lt;code&gt;true&lt;/code&gt; if operation stall due to
    * full FIFO.
@@ -520,68 +515,9 @@ public class SM
     status.regPINCTRL_SIDESET_COUNT = count;
   }
 
-  public void setSideSetBase(final int base)
-  {
-    if (base < 0) {
-      throw new IllegalArgumentException("side set base < 0: " + base);
-    }
-    if (base > Constants.GPIO_NUM - 1) {
-      throw new IllegalArgumentException("side set base > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
-                                         base);
-    }
-    status.regPINCTRL_SIDESET_BASE = base;
-  }
-
-  public void setInBase(final int base)
-  {
-    if (base < 0) {
-      throw new IllegalArgumentException("in base < 0: " + base);
-    }
-    if (base > Constants.GPIO_NUM - 1) {
-      throw new IllegalArgumentException("in base > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
-                                         base);
-    }
-    status.regPINCTRL_IN_BASE = base;
-  }
-
   public int getPins()
   {
     return gpio.getPins(status.regPINCTRL_IN_BASE, Constants.GPIO_NUM);
-  }
-
-  public void setSideSetEnable(final boolean enable)
-  {
-    status.regEXECCTRL_SIDE_EN = enable;
-  }
-
-  public void setSideSetPinDir(final PIO.PinDir pinDir)
-  {
-    if (pinDir == null) {
-      throw new NullPointerException("pinDir");
-    }
-    status.regEXECCTRL_SIDE_PINDIR = pinDir;
-  }
-
-  public void setJmpPin(final int pin)
-  {
-    if (pin < 0) {
-      throw new IllegalArgumentException("exec ctrl jmp pin < 0: " + pin);
-    }
-    if (pin > Constants.GPIO_NUM - 1) {
-      throw new IllegalArgumentException("exec ctrl jmp pin > " +
-                                         (Constants.GPIO_NUM - 1) + ": " + pin);
-    }
-    status.regEXECCTRL_JMP_PIN = pin;
-  }
-
-  public void setInShiftDir(final PIO.ShiftDir shiftDir)
-  {
-    if (shiftDir == null) {
-      throw new NullPointerException("shiftDir");
-    }
-    status.regSHIFTCTRL_IN_SHIFTDIR = shiftDir;
   }
 
   public PIO.ShiftDir getInShiftDir()
@@ -589,53 +525,9 @@ public class SM
     return status.regSHIFTCTRL_IN_SHIFTDIR;
   }
 
-  public void setOutShiftDir(final PIO.ShiftDir shiftDir)
-  {
-    if (shiftDir == null) {
-      throw new NullPointerException("shiftDir");
-    }
-    status.regSHIFTCTRL_OUT_SHIFTDIR = shiftDir;
-  }
-
   public PIO.ShiftDir getOutShiftDir()
   {
     return status.regSHIFTCTRL_OUT_SHIFTDIR;
-  }
-
-  public void setPushThresh(final int thresh)
-  {
-    if (thresh < 0) {
-      throw new IllegalArgumentException("shift ctrl push threshold < 0: " +
-                                         thresh);
-    }
-    if (thresh > 31) {
-      throw new IllegalArgumentException("shift ctrl push threshold > 31: " +
-                                         thresh);
-    }
-    status.regSHIFTCTRL_PUSH_THRESH = thresh;
-  }
-
-  public void setAutoPush(final boolean auto)
-  {
-    status.regSHIFTCTRL_AUTOPUSH = auto;
-  }
-
-  public void setPullThresh(final int thresh)
-  {
-    if (thresh < 0) {
-      throw new IllegalArgumentException("shift ctrl pull threshold < 0: " +
-                                         thresh);
-    }
-    if (thresh > 31) {
-      throw new IllegalArgumentException("shift ctrl pull threshold > 31: " +
-                                         thresh);
-    }
-    status.regSHIFTCTRL_PULL_THRESH = thresh;
-  }
-
-  public void setAutoPull(final boolean auto)
-  {
-    status.regSHIFTCTRL_AUTOPULL = auto;
   }
 
   public int getX() { return status.regX; }
@@ -660,38 +552,6 @@ public class SM
   private void decY()
   {
     status.regY--;
-  }
-
-  public void setWrapTop(final int value)
-  {
-    if (value < 0) {
-      throw new IllegalArgumentException("wrap top value < 0: " + value);
-    }
-    if (value > Constants.MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("wrap top value > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
-                                         value);
-    }
-    status.regEXECCTRL_WRAP_TOP = value;
-  }
-
-  public void setWrapBottom(final int value)
-  {
-    if (value < 0) {
-      throw new IllegalArgumentException("wrap bottom value < 0: " + value);
-    }
-    if (value > Constants.MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("wrap bottom value > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
-                                         value);
-    }
-    status.regEXECCTRL_WRAP_BOTTOM = value;
-  }
-
-  public void deactivateWrap()
-  {
-    status.regEXECCTRL_WRAP_TOP = 0x1f;
-    status.regEXECCTRL_WRAP_BOTTOM = 0x00;
   }
 
   public void put(final int data)
@@ -745,34 +605,6 @@ public class SM
     return fifo.getTXLevel();
   }
 
-  public void putBlocking(final int data)
-  {
-    synchronized(fifo) {
-      while (isTXFIFOFull()) {
-        try {
-          fifo.wait();
-        } catch (final InterruptedException e) {
-          // running check isTXFIFOFull() anyway => ignore
-        }
-      }
-      put(data);
-    }
-  }
-
-  public int getBlocking()
-  {
-    synchronized(fifo) {
-      while (isRXFIFOEmpty()) {
-        try {
-          fifo.wait();
-        } catch (final InterruptedException e) {
-          // running check isRXFIFOEmpty() anyway => ignore
-        }
-      }
-      return get();
-    }
-  }
-
   private int encodeJmp(final Instruction.Jmp.Condition condition,
                         final int address)
   {
@@ -819,18 +651,6 @@ public class SM
     return instruction.encode();
   }
 
-  public void drainTXFIFO()
-  {
-    final int instruction =
-      status.regSHIFTCTRL_AUTOPULL ?
-      encodeOut(Instruction.Out.Destination.NULL, 32) :
-      encodePull(false, false);
-    while (!isTXFIFOEmpty()) {
-      insertDMAInstruction(instruction);
-      // TODO: Wait for completion of inserted instruction?
-    }
-  }
-
   private int encodeSet(final Instruction.Set.Destination dst, final int data)
   {
     if (dst == null) {
@@ -846,76 +666,6 @@ public class SM
     instruction.setDestination(dst);
     instruction.setData(data);
     return instruction.encode();
-  }
-
-  public void setPinsWithMask(final int pinValues, int pinMask)
-  {
-    final int pinCtrlSaved = getPINCTRL();
-    while (pinMask != 0x0) {
-      final int base = Constants.ctz(pinMask);
-      setPINCTRL((1 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-                 (base << Constants.SM0_PINCTRL_SET_BASE_LSB));
-      final int instruction = encodeSet(Instruction.Set.Destination.PINS,
-                                        (pinValues >>> base) & 0x1);
-      insertDMAInstruction(instruction);
-      // TODO: Wait for completion of inserted instruction?
-      pinMask &= pinMask - 1;
-    }
-    setPINCTRL(pinCtrlSaved);
-  }
-
-  public void setPinDirsWithMask(final int pinDirs, int pinMask)
-  {
-    final int pinCtrlSaved = getPINCTRL();
-    while (pinMask != 0x0) {
-      final int base = Constants.ctz(pinMask);
-      setPINCTRL((1 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-                 (base << Constants.SM0_PINCTRL_SET_BASE_LSB));
-      final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
-                                        (pinDirs >>> base) & 0x1);
-      insertDMAInstruction(instruction);
-      // TODO: Wait for completion of inserted instruction?
-      pinMask &= pinMask - 1;
-    }
-    setPINCTRL(pinCtrlSaved);
-  }
-
-  public void setConsecutivePinDirs(final int pinBase, final int pinCount,
-                                    final boolean isOut)
-  {
-    if (pinBase < 0) {
-      throw new IllegalArgumentException("pin base < 0: " + pinBase);
-    }
-    if (pinBase > 31) {
-      throw new IllegalArgumentException("pin base > 31: " + pinBase);
-    }
-    if (pinCount < 0) {
-      throw new IllegalArgumentException("pin count < 0: " + pinCount);
-    }
-    if (pinCount > 31) {
-      throw new IllegalArgumentException("pin count > 31: " + pinCount);
-    }
-    final int pinCtrlSaved = getPINCTRL();
-    final int pinDirVal = isOut ? 0x1f : 0x0;
-    int pin = pinBase;
-    int count = pinCount;
-    while (count > 5) {
-      setPINCTRL((5 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-                 (pin << Constants.SM0_PINCTRL_SET_BASE_LSB));
-      final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
-                                        pinDirVal);
-      insertDMAInstruction(instruction);
-      // TODO: Wait for completion of inserted instruction?
-      count -= 5;
-      pin = (pin + 5) & 0x1f;
-    }
-    setPINCTRL((count << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-               (pin << Constants.SM0_PINCTRL_SET_BASE_LSB));
-    final int instruction = encodeSet(Instruction.Set.Destination.PINDIRS,
-                                      pinDirVal);
-    insertDMAInstruction(instruction);
-    // TODO: Wait for completion of inserted instruction?
-    setPINCTRL(pinCtrlSaved);
   }
 
   public int getPC()
@@ -1014,20 +764,6 @@ public class SM
     }
   }
 
-  public void smExecWaitBlocking(final int instruction)
-  {
-    synchronized(memory.FETCH_LOCK) {
-      insertDMAInstruction(instruction);
-      while (isExecStalled()) {
-        try {
-          memory.FETCH_LOCK.wait();
-        } catch (final InterruptedException e) {
-          // running check isExecStalled() anyway => ignore
-        }
-      }
-    }
-  }
-
   public void fetchAndDecode() throws Decoder.DecodeException
   {
     synchronized(memory.FETCH_LOCK) {
@@ -1071,26 +807,6 @@ public class SM
   public Instruction getCurrentInstruction()
   {
     return status.instruction;
-  }
-
-  public int getClockDivIntegerBits()
-  {
-    return pll.getDivIntegerBits();
-  }
-
-  public void setClockDivIntegerBits(final int divIntegerBits)
-  {
-    pll.setDivIntegerBits(divIntegerBits);
-  }
-
-  public int getClockDivFractionalBits()
-  {
-    return pll.getDivFractionalBits();
-  }
-
-  public void setClockDivFractionalBits(final int divFractionalBits)
-  {
-    pll.setDivFractionalBits(divFractionalBits);
   }
 
   public void dumpMemory()
