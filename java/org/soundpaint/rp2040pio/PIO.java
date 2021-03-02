@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Peripheral I/O Unit
  */
-public class PIO implements Clock.TransitionListener
+public class PIO implements Constants, Clock.TransitionListener
 {
   public static final MasterClock MASTER_CLOCK =
     MasterClock.getDefaultInstance();
@@ -136,8 +136,8 @@ public class PIO implements Clock.TransitionListener
     gpio = new GPIO();
     memory = new Memory();
     irq = new IRQ();
-    sms = new SM[Constants.SM_COUNT];
-    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+    sms = new SM[SM_COUNT];
+    for (int smNum = 0; smNum < SM_COUNT; smNum++) {
       sms[smNum] = new SM(smNum, gpio, memory, irq);
     }
     smEnabled = 0x0;
@@ -150,17 +150,17 @@ public class PIO implements Clock.TransitionListener
 
   public int getDBG_CFGINFO_IMEM_SIZE()
   {
-    return Constants.MEMORY_SIZE;
+    return MEMORY_SIZE;
   }
 
   public int getDBG_CFGINFO_SM_COUNT()
   {
-    return Constants.SM_COUNT;
+    return SM_COUNT;
   }
 
   public int getDBG_CFGINFO_FIFO_DEPTH()
   {
-    return Constants.FIFO_DEPTH;
+    return FIFO_DEPTH;
   }
 
   public GPIO getGPIO()
@@ -178,9 +178,8 @@ public class PIO implements Clock.TransitionListener
     if (index < 0) {
       throw new IllegalArgumentException("state machine index < 0");
     }
-    if (index > Constants.SM_COUNT) {
-      throw new IllegalArgumentException("state machine index > " +
-                                         Constants.SM_COUNT);
+    if (index > SM_COUNT) {
+      throw new IllegalArgumentException("state machine index > " + SM_COUNT);
     }
     return sms[index];
   }
@@ -211,7 +210,7 @@ public class PIO implements Clock.TransitionListener
     synchronized(sms) {
       final int smEnabled = ctrl & 0xf;
       this.smEnabled = smEnabled;
-      for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         final boolean clkDivRestart = ((ctrl >> (8 + smNum)) & 0x1) != 0x0;
         final boolean smRestart = ((ctrl >> (4 + smNum)) & 0x1) != 0x0;
         final SM sm = getSM(smNum);
@@ -252,9 +251,9 @@ public class PIO implements Clock.TransitionListener
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
     }
-    if (smNum > Constants.SM_COUNT - 1) {
+    if (smNum > SM_COUNT - 1) {
       throw new IllegalArgumentException("smNum > " +
-                                         (Constants.SM_COUNT - 1) + ": " +
+                                         (SM_COUNT - 1) + ": " +
                                          smNum);
     }
     return (smEnabled & (0x1 << smNum)) != 0x0;
@@ -265,7 +264,7 @@ public class PIO implements Clock.TransitionListener
   {
     caughtExceptions.clear();
     synchronized(sms) {
-      for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         if (smIsEnabled(smNum)) {
           try {
             final SM sm = getSM(smNum);
@@ -281,7 +280,7 @@ public class PIO implements Clock.TransitionListener
   @Override
   public void fallingEdge(final long wallClock) {
     synchronized(sms) {
-      for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         if (smIsEnabled(smNum)) {
           try {
             final SM sm = getSM(smNum);

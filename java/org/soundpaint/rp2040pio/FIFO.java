@@ -34,7 +34,7 @@ import java.util.Collections;
  * 8 words of capacity for that FIFO and leaving no capacity left for
  * the other FIFO.
  */
-public class FIFO
+public class FIFO implements Constants
 {
   private static final Integer[] INTEGER_PROTOTYPE_ARRAY = new Integer[0];
 
@@ -104,10 +104,7 @@ public class FIFO
   public synchronized boolean fstatRxFull()
   {
     // bit 0, 1, 2 or 3 (for SM_0 .. SM_3) of FSTAT
-    return rx.size() >=
-      (regSHIFTCTRL_FJOIN_RX ?
-       2 * Constants.FIFO_DEPTH :
-       Constants.FIFO_DEPTH);
+    return rx.size() >= (regSHIFTCTRL_FJOIN_RX ? 2 : 1) * FIFO_DEPTH;
   }
 
   public synchronized boolean fstatRxEmpty()
@@ -190,10 +187,7 @@ public class FIFO
   public synchronized boolean fstatTxFull()
   {
     // bit 16, 17, 18 or 19 (for SM_0 .. SM_3) of FSTAT
-    return tx.size() >=
-      (regSHIFTCTRL_FJOIN_TX ?
-       2 * Constants.FIFO_DEPTH :
-       Constants.FIFO_DEPTH);
+    return tx.size() >= (regSHIFTCTRL_FJOIN_TX ? 2 : 1 ) * FIFO_DEPTH;
   }
 
   public synchronized boolean fstatTxEmpty()

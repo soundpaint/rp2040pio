@@ -32,7 +32,7 @@ import java.util.function.Function;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.ParseException;
 
-public class ProgramParser
+public class ProgramParser implements Constants
 {
   private static final String DIRECTIVE_PROGRAM = ".program";
   private static final String DIRECTIVE_ORIGIN = ".origin";
@@ -80,12 +80,12 @@ public class ProgramParser
       throw parseException("resource not found: " + resourcePath);
     }
     reader = new BufferedReader(new InputStreamReader(in));
-    instructions = new short[Constants.MEMORY_SIZE];
+    instructions = new short[MEMORY_SIZE];
     lineIndex = 0;
     address = 0;
     id = "";
     origin = -1;
-    wrap = Constants.MEMORY_SIZE - 1;
+    wrap = MEMORY_SIZE - 1;
     wrapTarget = 0;
     sideSetCount = 0;
   }
@@ -115,13 +115,13 @@ public class ProgramParser
     throws ParseException
   {
     if (!idParsed) {
-      throw parseException(DIRECTIVE_SIDE_SET +
-                           ": instruction is only valid after a " +
+      throw parseException(DIRECTIVE_SIDE_SET + ": " +
+                           "instruction is only valid after a " +
                            DIRECTIVE_PROGRAM + " directive");
     }
-    if (address >= Constants.MEMORY_SIZE) {
+    if (address >= MEMORY_SIZE) {
       throw parseException("program too large: " +
-                           "get more than " + Constants.MEMORY_SIZE + " words");
+                           "get more than " + MEMORY_SIZE + " words");
     }
     final int value;
     try {
@@ -130,10 +130,10 @@ public class ProgramParser
       throw parseException("invalid 16 bit word: " + word, e);
     }
     if (value < 0x0000) {
-      throw parseException("instruction word < 0x0000:" + value);
+      throw parseException("instruction word < 0x0000: " + value);
     }
     if (value > 0xffff) {
-      throw parseException("instruction word > 0xffff:" + value);
+      throw parseException("instruction word > 0xffff: " + value);
     }
     instructions[address++] = (short)value;
     firstInstructionParsed = true;
@@ -144,8 +144,8 @@ public class ProgramParser
     final String tail = id.replaceFirst("[_A-Za-z][_A-Za-z0-9]*", "");
     if (!tail.isEmpty()) {
       final int position = id.indexOf(tail.charAt(0));
-      throw parseException(DIRECTIVE_PROGRAM +
-                           ": id contains invalid character at position " +
+      throw parseException(DIRECTIVE_PROGRAM + ": " +
+                           "id contains invalid character at position " +
                            position + ": " +
                            String.format("%n  %s%n%" + (position + 2) + "s^",
                                          id, ""));
@@ -172,18 +172,17 @@ public class ProgramParser
       throw parseException(DIRECTIVE_ORIGIN + " already declared");
     }
     if (!idParsed) {
-      throw parseException(DIRECTIVE_ORIGIN +
-                           ": this directive is only valid after a " +
+      throw parseException(DIRECTIVE_ORIGIN + ": " +
+                           "this directive is only valid after a " +
                            DIRECTIVE_PROGRAM + " directive");
     }
     final int origin = parseDecimalInt(unparsed);
     if (origin < -1) {
       throw parseException(DIRECTIVE_ORIGIN + ": origin < -1: " + origin);
     }
-    if (origin > Constants.MEMORY_SIZE - 1) {
-      throw parseException(DIRECTIVE_ORIGIN +
-                           ": origin > " + (Constants.MEMORY_SIZE - 1) + ": " +
-                           origin);
+    if (origin > MEMORY_SIZE - 1) {
+      throw parseException(DIRECTIVE_ORIGIN + ": " +
+                           "origin > " + (MEMORY_SIZE - 1) + ": " + origin);
     }
     this.origin = origin;
     originParsed = true;
@@ -195,18 +194,17 @@ public class ProgramParser
       throw parseException(DIRECTIVE_WRAP + " already declared");
     }
     if (!idParsed) {
-      throw parseException(DIRECTIVE_WRAP +
-                           ": this directive is only valid after a " +
+      throw parseException(DIRECTIVE_WRAP + ": " +
+                           "this directive is only valid after a " +
                            DIRECTIVE_PROGRAM + " directive");
     }
     final int wrap = parseDecimalInt(unparsed);
     if (wrap < 0) {
       throw parseException(DIRECTIVE_WRAP + ": wrap < 0: " + wrap);
     }
-    if (wrap > Constants.MEMORY_SIZE - 1) {
-      throw parseException(DIRECTIVE_WRAP +
-                           ": wrap > " + (Constants.MEMORY_SIZE - 1) + ": " +
-                           wrap);
+    if (wrap > MEMORY_SIZE - 1) {
+      throw parseException(DIRECTIVE_WRAP + ": " +
+                           "wrap > " + (MEMORY_SIZE - 1) + ": " + wrap);
     }
     this.wrap = wrap;
     wrapParsed = true;
@@ -218,19 +216,18 @@ public class ProgramParser
       throw parseException(DIRECTIVE_WRAP_TARGET + " already declared");
     }
     if (!idParsed) {
-      throw parseException(DIRECTIVE_WRAP_TARGET +
-                           ": this directive is only valid after a " +
+      throw parseException(DIRECTIVE_WRAP_TARGET + ": " +
+                           "this directive is only valid after a " +
                            DIRECTIVE_PROGRAM + " directive");
     }
     final int wrapTarget = parseDecimalInt(unparsed);
     if (wrapTarget < 0) {
-      throw parseException(DIRECTIVE_WRAP_TARGET + ": wrap_target < 0: " +
-                           wrapTarget);
+      throw parseException(DIRECTIVE_WRAP_TARGET + ": " +
+                           "wrap_target < 0: " + wrapTarget);
     }
-    if (wrapTarget > Constants.MEMORY_SIZE - 1) {
-      throw parseException(DIRECTIVE_WRAP_TARGET +
-                           ": wrap_target > " +
-                           (Constants.MEMORY_SIZE - 1) + ": " +
+    if (wrapTarget > MEMORY_SIZE - 1) {
+      throw parseException(DIRECTIVE_WRAP_TARGET + ": " +
+                           "wrap_target > " + (MEMORY_SIZE - 1) + ": " +
                            wrapTarget);
     }
     this.wrapTarget = wrapTarget;
@@ -261,13 +258,13 @@ public class ProgramParser
       throw parseException(DIRECTIVE_SIDE_SET + " already declared");
     }
     if (!idParsed) {
-      throw parseException(DIRECTIVE_SIDE_SET +
-                           ": this directive is only valid after a " +
+      throw parseException(DIRECTIVE_SIDE_SET + ": " +
+                           "this directive is only valid after a " +
                            DIRECTIVE_PROGRAM + " directive");
     }
     if (firstInstructionParsed) {
-      throw parseException(DIRECTIVE_SIDE_SET +
-                           ": this directive is only valid before the " +
+      throw parseException(DIRECTIVE_SIDE_SET + ": " +
+                           "this directive is only valid before the " +
                            "first instruction");
     }
     final String[] tokens = unparsed.split("[\\p{javaWhitespace}]*");
@@ -276,12 +273,12 @@ public class ProgramParser
     }
     final int sideSetCount = parseDecimalInt(tokens[0]);
     if (sideSetCount < 0) {
-      throw parseException(DIRECTIVE_SIDE_SET + ": side_set count < 0: " +
-                           sideSetCount);
+      throw parseException(DIRECTIVE_SIDE_SET + ": " +
+                           "side_set count < 0: " + sideSetCount);
     }
     if (sideSetCount > 5) {
-      throw parseException(DIRECTIVE_SIDE_SET +
-                           ": side_set count > 5: " + sideSetCount);
+      throw parseException(DIRECTIVE_SIDE_SET + ": " +
+                           "side_set count > 5: " + sideSetCount);
     }
     if (tokens.length >= 2) {
       parseSideSetArg(tokens[1].trim());
@@ -290,8 +287,8 @@ public class ProgramParser
       parseSideSetArg(tokens[2].trim());
     }
     if (tokens.length >= 4) {
-      throw parseException(DIRECTIVE_SIDE_SET +
-                           ": unexpected extra argument: " + tokens[3]);
+      throw parseException(DIRECTIVE_SIDE_SET + ": " +
+                           "unexpected extra argument: " + tokens[3]);
     }
     if (sideSetOptParsed && ((sideSetCount > 4))) {
       throw parseException("max. side-set count is 4, if opt is set");
@@ -357,9 +354,7 @@ public class ProgramParser
     }
     if (!wrapParsed) {
       wrapTarget =
-        origin >= 0 ?
-        ((origin + address - 1) % Constants.MEMORY_SIZE) :
-        address - 1;
+        origin >= 0 ? ((origin + address - 1) % MEMORY_SIZE) : address - 1;
     }
     final Program program =
       new Program(id, origin, wrap, wrapTarget, sideSetCount,

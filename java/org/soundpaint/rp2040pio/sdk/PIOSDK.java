@@ -31,7 +31,7 @@ import org.soundpaint.rp2040pio.Registers;
 /**
  * PIO SDK Interface
  */
-public class PIOSDK
+public class PIOSDK implements Constants
 {
   private final Registers registers;
 
@@ -57,9 +57,8 @@ public class PIOSDK
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
     }
-    if (smNum > Constants.SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " +
-                                         (Constants.SM_COUNT - 1) + ": " +
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) + ": " +
                                          smNum);
     }
   }
@@ -76,25 +75,23 @@ public class PIOSDK
     if (outBase < 0) {
       throw new IllegalArgumentException("outBase < 0: " + outBase);
     }
-    if (outBase > Constants.GPIO_NUM - 1) {
-      throw new IllegalArgumentException("outBase > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+    if (outBase > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("outBase > " + (GPIO_NUM - 1) + ": " +
                                          outBase);
     }
     if (outCount < 0) {
       throw new IllegalArgumentException("outCount < 0: " + outCount);
     }
-    if (outCount > Constants.GPIO_NUM) {
-      throw new IllegalArgumentException("outCount > " +
-                                         Constants.GPIO_NUM + ": " + outCount);
+    if (outCount > GPIO_NUM) {
+      throw new IllegalArgumentException("outCount > " + GPIO_NUM + ": " +
+                                         outCount);
     }
     final int address = Registers.SM0_PINCTRL + smNum * Registers.SM_SIZE;
     synchronized(registers) {
       int pinCtrl = registers.read(address);
-      pinCtrl &= ~(Constants.SM0_PINCTRL_OUT_COUNT_BITS |
-                   Constants.SM0_PINCTRL_OUT_BASE_BITS);
-      pinCtrl |= outCount << Constants.SM0_PINCTRL_OUT_COUNT_LSB;
-      pinCtrl |= outBase << Constants.SM0_PINCTRL_OUT_BASE_LSB;
+      pinCtrl &= ~(SM0_PINCTRL_OUT_COUNT_BITS | SM0_PINCTRL_OUT_BASE_BITS);
+      pinCtrl |= outCount << SM0_PINCTRL_OUT_COUNT_LSB;
+      pinCtrl |= outBase << SM0_PINCTRL_OUT_BASE_LSB;
       registers.write(address, pinCtrl);
     }
   }
@@ -106,9 +103,8 @@ public class PIOSDK
     if (setBase < 0) {
       throw new IllegalArgumentException("setBase < 0: " + setBase);
     }
-    if (setBase > Constants.GPIO_NUM - 1) {
-      throw new IllegalArgumentException("setBase > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+    if (setBase > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("setBase > " + (GPIO_NUM - 1) + ": " +
                                          setBase);
     }
     if (setCount < 0) {
@@ -120,10 +116,9 @@ public class PIOSDK
     final int address = Registers.SM0_PINCTRL + smNum * Registers.SM_SIZE;
     synchronized(registers) {
       int pinCtrl = registers.read(address);
-      pinCtrl &= ~(Constants.SM0_PINCTRL_SET_COUNT_BITS |
-                   Constants.SM0_PINCTRL_SET_BASE_BITS);
-      pinCtrl |= setCount << Constants.SM0_PINCTRL_SET_COUNT_LSB;
-      pinCtrl |= setBase << Constants.SM0_PINCTRL_SET_BASE_LSB;
+      pinCtrl &= ~(SM0_PINCTRL_SET_COUNT_BITS | SM0_PINCTRL_SET_BASE_BITS);
+      pinCtrl |= setCount << SM0_PINCTRL_SET_COUNT_LSB;
+      pinCtrl |= setBase << SM0_PINCTRL_SET_BASE_LSB;
       registers.write(address, pinCtrl);
     }
   }
@@ -134,16 +129,15 @@ public class PIOSDK
     if (inBase < 0) {
       throw new IllegalArgumentException("inBase < 0: " + inBase);
     }
-    if (inBase > Constants.GPIO_NUM - 1) {
-      throw new IllegalArgumentException("inBase > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+    if (inBase > GPIO_NUM - 1) {
+      throw new IllegalArgumentException("inBase > " + (GPIO_NUM - 1) + ": " +
                                          inBase);
     }
     final int address = Registers.SM0_PINCTRL + smNum * Registers.SM_SIZE;
     synchronized(registers) {
       int pinCtrl = registers.read(address);
-      pinCtrl &= ~Constants.SM0_PINCTRL_IN_BASE_BITS;
-      pinCtrl |= inBase << Constants.SM0_PINCTRL_IN_BASE_LSB;
+      pinCtrl &= ~SM0_PINCTRL_IN_BASE_BITS;
+      pinCtrl |= inBase << SM0_PINCTRL_IN_BASE_LSB;
       registers.write(address, pinCtrl);
     }
   }
@@ -154,16 +148,16 @@ public class PIOSDK
     if (sideSetBase < 0) {
       throw new IllegalArgumentException("sideSetBase < 0: " + sideSetBase);
     }
-    if (sideSetBase > Constants.GPIO_NUM - 1) {
+    if (sideSetBase > GPIO_NUM - 1) {
       throw new IllegalArgumentException("sideSetBase > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          sideSetBase);
     }
     final int address = Registers.SM0_PINCTRL + smNum * Registers.SM_SIZE;
     synchronized(registers) {
       int pinCtrl = registers.read(address);
-      pinCtrl &= ~Constants.SM0_PINCTRL_SIDESET_BASE_BITS;
-      pinCtrl |= sideSetBase << Constants.SM0_PINCTRL_SIDESET_BASE_LSB;
+      pinCtrl &= ~SM0_PINCTRL_SIDESET_BASE_BITS;
+      pinCtrl |= sideSetBase << SM0_PINCTRL_SIDESET_BASE_LSB;
       registers.write(address, pinCtrl);
     }
   }
@@ -221,7 +215,7 @@ public class PIOSDK
   public int getDREQ(final int smNum, final boolean isTX)
   {
     checkSmNum(smNum);
-    return (getIndex() << 3) | (isTX ? 0 : Constants.SM_COUNT) | smNum;
+    return (getIndex() << 3) | (isTX ? 0 : SM_COUNT) | smNum;
   }
 
   /**
@@ -250,10 +244,10 @@ public class PIOSDK
           String.format("allocation at %02x failed", origin);
         throw new RuntimeException(message);
       }
-      for (int offset = 0; offset < Constants.MEMORY_SIZE; offset++) {
+      for (int offset = 0; offset < MEMORY_SIZE; offset++) {
         final int allocationMaskForOffset =
           (allocationMask << offset) |
-          (allocationMask << (offset - Constants.MEMORY_SIZE));
+          (allocationMask << (offset - MEMORY_SIZE));
         if ((memoryAllocation & ~allocationMaskForOffset) == 0x0) {
           if (!checkOnly) memoryAllocation |= allocationMask;
           return offset;
@@ -284,9 +278,9 @@ public class PIOSDK
     if (offset < 0) {
       throw new IllegalArgumentException("offset < 0: " + offset);
     }
-    if (offset > Constants.MEMORY_SIZE - 1) {
+    if (offset > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("offset > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          offset);
     }
     final int origin = program.getOrigin();
@@ -298,8 +292,7 @@ public class PIOSDK
     final int allocationMaskForOffset =
       origin >= 0 ?
       allocationMask :
-      (allocationMask << offset) |
-      (allocationMask << (offset - Constants.MEMORY_SIZE));
+      (allocationMask << offset) | (allocationMask << (offset - MEMORY_SIZE));
     return allocateMemory(allocationMaskForOffset, offset, true) >= 0;
   }
 
@@ -311,9 +304,9 @@ public class PIOSDK
     if (address < 0) {
       throw new IllegalArgumentException("address < 0: " + address);
     }
-    if (address > Constants.MEMORY_SIZE - 1) {
+    if (address > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("address > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          address);
     }
     final int length = program.getLength();
@@ -357,9 +350,9 @@ public class PIOSDK
     if (offset < 0) {
       throw new IllegalArgumentException("offset < 0: " + offset);
     }
-    if (offset > Constants.MEMORY_SIZE - 1) {
+    if (offset > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("offset > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          offset);
     }
     final int origin = program.getOrigin();
@@ -378,7 +371,7 @@ public class PIOSDK
       origin >= 0 ?
       allocationMask :
       (allocationMask << offset) |
-      (allocationMask << (offset - Constants.MEMORY_SIZE));
+      (allocationMask << (offset - MEMORY_SIZE));
     final int address = allocateMemory(allocationMaskForOffset, offset, false);
     writeProgram(program, address);
     return address;
@@ -392,9 +385,9 @@ public class PIOSDK
     if (loadedOffset < 0) {
       throw new IllegalArgumentException("loaded offset < 0: " + loadedOffset);
     }
-    if (loadedOffset > Constants.MEMORY_SIZE - 1) {
+    if (loadedOffset > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("loaded offset > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          loadedOffset);
     }
     final int origin = program.getOrigin();
@@ -413,7 +406,7 @@ public class PIOSDK
       origin >= 0 ?
       allocationMask :
       (allocationMask << loadedOffset) |
-      (allocationMask << (loadedOffset - Constants.MEMORY_SIZE));
+      (allocationMask << (loadedOffset - MEMORY_SIZE));
     synchronized(memoryAllocation) {
       if ((memoryAllocation &= ~allocationMaskForOffset) !=
           allocationMaskForOffset) {
@@ -438,7 +431,7 @@ public class PIOSDK
     synchronized(memoryAllocation) {
       memoryAllocation = 0;
       synchronized(registers) {
-        for (int memoryAddress = 0; memoryAddress < Constants.MEMORY_SIZE;
+        for (int memoryAddress = 0; memoryAddress < MEMORY_SIZE;
              memoryAddress++) {
           registers.write(Registers.INSTR_MEM0 + 4 * memoryAddress, 0);
         }
@@ -454,10 +447,10 @@ public class PIOSDK
     smSetConfig(smNum, config != null ? config : getDefaultSmConfig());
     smClearFIFOs(smNum);
     final int fDebug =
-      ((0x1 << Constants.FDEBUG_TXSTALL_LSB) |
-       (0x1 << Constants.FDEBUG_TXOVER_LSB) |
-       (0x1 << Constants.FDEBUG_RXUNDER_LSB) |
-       (0x1 << Constants.FDEBUG_RXSTALL_LSB)) << smNum;
+      ((0x1 << FDEBUG_TXSTALL_LSB) |
+       (0x1 << FDEBUG_TXOVER_LSB) |
+       (0x1 << FDEBUG_RXUNDER_LSB) |
+       (0x1 << FDEBUG_RXSTALL_LSB)) << smNum;
     registers.write(Registers.FDEBUG, fDebug);
     smRestart(smNum);
     smClkDivRestart(smNum);
@@ -493,16 +486,14 @@ public class PIOSDK
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
     }
-    if (mask > (0x1 << Constants.SM_COUNT) - 1) {
+    if (mask > (0x1 << SM_COUNT) - 1) {
       throw new IllegalArgumentException("mask > " +
-                                         ((0x1 << Constants.SM_COUNT) - 1) +
-                                         ": " + mask);
+                                         ((0x1 << SM_COUNT) - 1) + ": " +
+                                         mask);
     }
     synchronized(registers) {
       int ctrl = registers.read(Registers.CTRL);
-      ctrl |=
-        (mask << Constants.CTRL_SM_RESTART_LSB) &
-        Constants.CTRL_SM_RESTART_BITS;
+      ctrl |= (mask << CTRL_SM_RESTART_LSB) & CTRL_SM_RESTART_BITS;
       registers.write(Registers.CTRL, ctrl);
     }
   }
@@ -518,16 +509,14 @@ public class PIOSDK
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
     }
-    if (mask > (0x1 << Constants.SM_COUNT) - 1) {
+    if (mask > (0x1 << SM_COUNT) - 1) {
       throw new IllegalArgumentException("mask > " +
-                                         ((0x1 << Constants.SM_COUNT) - 1) +
-                                         ": " + mask);
+                                         ((0x1 << SM_COUNT) - 1) + ": " +
+                                         mask);
     }
     synchronized(registers) {
       int ctrl = registers.read(Registers.CTRL);
-      ctrl |=
-        (mask << Constants.CTRL_CLKDIV_RESTART_LSB) &
-        Constants.CTRL_CLKDIV_RESTART_BITS;
+      ctrl |= (mask << CTRL_CLKDIV_RESTART_LSB) & CTRL_CLKDIV_RESTART_BITS;
       registers.write(Registers.CTRL, ctrl);
     }
   }
@@ -537,18 +526,16 @@ public class PIOSDK
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
     }
-    if (mask > (0x1 << Constants.SM_COUNT) - 1) {
+    if (mask > (0x1 << SM_COUNT) - 1) {
       throw new IllegalArgumentException("mask > " +
-                                         ((0x1 << Constants.SM_COUNT) - 1) +
-                                         ": " + mask);
+                                         ((0x1 << SM_COUNT) - 1) + ": " +
+                                         mask);
     }
     synchronized(registers) {
       int ctrl = registers.read(Registers.CTRL);
       ctrl |=
-        ((mask << Constants.CTRL_CLKDIV_RESTART_LSB) &
-         Constants.CTRL_CLKDIV_RESTART_BITS) |
-        ((mask << Constants.CTRL_SM_ENABLE_LSB) &
-         Constants.CTRL_SM_ENABLE_BITS);
+        ((mask << CTRL_CLKDIV_RESTART_LSB) & CTRL_CLKDIV_RESTART_BITS) |
+        ((mask << CTRL_SM_ENABLE_LSB) & CTRL_SM_ENABLE_BITS);
       registers.write(Registers.CTRL, ctrl);
     }
   }
@@ -572,7 +559,7 @@ public class PIOSDK
     checkSmNum(smNum);
     final int address = Registers.SM0_EXECCTRL + smNum * Registers.SM_SIZE;
     final int execCtrl = registers.read(address);
-    return (execCtrl & Constants.SM0_EXECCTRL_EXEC_STALLED_BITS) != 0x0;
+    return (execCtrl & SM0_EXECCTRL_EXEC_STALLED_BITS) != 0x0;
   }
 
   public void smExecWaitBlocking(final int smNum, final short instr)
@@ -589,26 +576,24 @@ public class PIOSDK
     if (wrapTarget < 0) {
       throw new IllegalArgumentException("wrap target < 0: " + wrapTarget);
     }
-    if (wrapTarget > Constants.MEMORY_SIZE - 1) {
+    if (wrapTarget > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("wrap target > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          wrapTarget);
     }
     if (wrap < 0) {
       throw new IllegalArgumentException("wrap < 0: " + wrap);
     }
-    if (wrap > Constants.MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("wrap > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+    if (wrap > MEMORY_SIZE - 1) {
+      throw new IllegalArgumentException("wrap > " + (MEMORY_SIZE - 1) + ": " +
                                          wrap);
     }
     final int address = Registers.SM0_EXECCTRL + smNum * Registers.SM_SIZE;
     synchronized(registers) {
       int execCtrl = registers.read(address);
-      execCtrl &= ~(Constants.SM0_EXECCTRL_WRAP_TOP_BITS |
-                    Constants.SM0_EXECCTRL_WRAP_BOTTOM_BITS);
-      execCtrl |= wrap << Constants.SM0_EXECCTRL_WRAP_TOP_LSB;
-      execCtrl |= wrapTarget << Constants.SM0_EXECCTRL_WRAP_BOTTOM_LSB;
+      execCtrl &= ~(SM0_EXECCTRL_WRAP_TOP_BITS | SM0_EXECCTRL_WRAP_BOTTOM_BITS);
+      execCtrl |= wrap << SM0_EXECCTRL_WRAP_TOP_LSB;
+      execCtrl |= wrapTarget << SM0_EXECCTRL_WRAP_BOTTOM_LSB;
       registers.write(address, execCtrl);
     }
   }
@@ -631,23 +616,22 @@ public class PIOSDK
   {
     checkSmNum(smNum);
     final int fStat = registers.read(Registers.FSTAT);
-    return (fStat & (0x1 << (Constants.FSTAT_RXFULL_LSB + smNum))) != 0x0;
+    return (fStat & (0x1 << (FSTAT_RXFULL_LSB + smNum))) != 0x0;
   }
 
   public boolean smIsRXFIFOEmpty(final int smNum)
   {
     checkSmNum(smNum);
     final int fStat = registers.read(Registers.FSTAT);
-    return (fStat & (0x1 << (Constants.FSTAT_RXEMPTY_LSB + smNum))) != 0x0;
+    return (fStat & (0x1 << (FSTAT_RXEMPTY_LSB + smNum))) != 0x0;
   }
 
   public int smGetRXFIFOLevel(final int smNum)
   {
     checkSmNum(smNum);
     final int shiftCount =
-      Constants.FLEVEL_RX0_LSB +
-      smNum * (Constants.FLEVEL_RX1_LSB - Constants.FLEVEL_RX0_LSB);
-    final int mask = Constants.FLEVEL_RX0_BITS >> Constants.FLEVEL_RX0_LSB;
+      FLEVEL_RX0_LSB + smNum * (FLEVEL_RX1_LSB - FLEVEL_RX0_LSB);
+    final int mask = FLEVEL_RX0_BITS >> FLEVEL_RX0_LSB;
     return (registers.read(Registers.FLEVEL) >> shiftCount) & mask;
   }
 
@@ -655,23 +639,22 @@ public class PIOSDK
   {
     checkSmNum(smNum);
     final int fStat = registers.read(Registers.FSTAT);
-    return (fStat & (0x1 << (Constants.FSTAT_TXFULL_LSB + smNum))) != 0x0;
+    return (fStat & (0x1 << (FSTAT_TXFULL_LSB + smNum))) != 0x0;
   }
 
   public boolean smIsTXFIFOEmpty(final int smNum)
   {
     checkSmNum(smNum);
     final int fStat = registers.read(Registers.FSTAT);
-    return (fStat & (0x1 << (Constants.FSTAT_TXEMPTY_LSB + smNum))) != 0x0;
+    return (fStat & (0x1 << (FSTAT_TXEMPTY_LSB + smNum))) != 0x0;
   }
 
   public int smGetTXFIFOLevel(final int smNum)
   {
     checkSmNum(smNum);
     final int shiftCount =
-      Constants.FLEVEL_TX0_LSB +
-      smNum * (Constants.FLEVEL_TX1_LSB - Constants.FLEVEL_TX0_LSB);
-    final int mask = Constants.FLEVEL_TX0_BITS >> Constants.FLEVEL_TX0_LSB;
+      FLEVEL_TX0_LSB + smNum * (FLEVEL_TX1_LSB - FLEVEL_TX0_LSB);
+    final int mask = FLEVEL_TX0_BITS >> FLEVEL_TX0_LSB;
     return (registers.read(Registers.FLEVEL) >> shiftCount) & mask;
   }
 
@@ -697,7 +680,7 @@ public class PIOSDK
   {
     final int address = Registers.SM0_SHIFTCTRL + smNum * Registers.SM_SIZE;
     final boolean autoPull =
-      (registers.read(address) & Constants.SM0_SHIFTCTRL_AUTOPULL_BITS) != 0x0;
+      (registers.read(address) & SM0_SHIFTCTRL_AUTOPULL_BITS) != 0x0;
     final int instruction =
       autoPull ? 0x6060 : 0x8080;
     while (smIsTXFIFOEmpty(smNum)) {
@@ -741,8 +724,7 @@ public class PIOSDK
     }
     final int address = Registers.SM0_CLKDIV + smNum * Registers.SM_SIZE;
     final int clkDiv =
-      divInt << Constants.SM0_CLKDIV_INT_LSB |
-      divFrac << Constants.SM0_CLKDIV_FRAC_LSB;
+      divInt << SM0_CLKDIV_INT_LSB | divFrac << SM0_CLKDIV_FRAC_LSB;
     registers.write(address, clkDiv);
   }
 
@@ -753,10 +735,10 @@ public class PIOSDK
     synchronized(registers) {
       int shiftCtrl = registers.read(address);
       // toggle RX join bit to force clearance of both, RX and TX
-      shiftCtrl ^= Constants.SM0_SHIFTCTRL_FJOIN_RX_BITS;
+      shiftCtrl ^= SM0_SHIFTCTRL_FJOIN_RX_BITS;
       registers.write(address, shiftCtrl);
       // toggle once again to restore previous value
-      shiftCtrl ^= Constants.SM0_SHIFTCTRL_FJOIN_RX_BITS;
+      shiftCtrl ^= SM0_SHIFTCTRL_FJOIN_RX_BITS;
       registers.write(address, shiftCtrl);
     }
     /*
@@ -780,8 +762,8 @@ public class PIOSDK
       while (remaining > 0) {
         final int decrement = remaining > 5 ? 5 : remaining;
         registers.write(address,
-                        (decrement << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-                        (base << Constants.SM0_PINCTRL_SET_BASE_LSB));
+                        (decrement << SM0_PINCTRL_SET_COUNT_LSB) |
+                        (base << SM0_PINCTRL_SET_BASE_LSB));
         final int setInstruction =
           0xe000 | (pins & 0x1f); // no sideset/delay => all other bits are 0
         smExec(smNum, (short)setInstruction);
@@ -803,8 +785,8 @@ public class PIOSDK
       while (pinMask > 0) {
         final int base = Constants.ctz(pinMask);
         registers.write(address,
-                        (0x1 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-                        (base << Constants.SM0_PINCTRL_SET_BASE_LSB));
+                        (0x1 << SM0_PINCTRL_SET_COUNT_LSB) |
+                        (base << SM0_PINCTRL_SET_BASE_LSB));
         final int setInstruction =
           0xe000 | ((pinValues >> base) & 0x1); // no sideset/delay =>
         // all other bits are 0
@@ -825,8 +807,8 @@ public class PIOSDK
       while (pinMask > 0) {
         final int base = Constants.ctz(pinMask);
         registers.write(address,
-                        (0x1 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-                        (base << Constants.SM0_PINCTRL_SET_BASE_LSB));
+                        (0x1 << SM0_PINCTRL_SET_COUNT_LSB) |
+                        (base << SM0_PINCTRL_SET_BASE_LSB));
         final int setInstruction =
           0xe080 | ((pinDirs >> base) & 0x1); // no sideset/delay =>
                                               // all other bits are 0
@@ -860,8 +842,8 @@ public class PIOSDK
       final int pinDirValue = isOut ? 0x1f : 0x0;
       while (pinCount > 5) {
         registers.write(address,
-                        (0x5 << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-                        (pinBase << Constants.SM0_PINCTRL_SET_BASE_LSB));
+                        (0x5 << SM0_PINCTRL_SET_COUNT_LSB) |
+                        (pinBase << SM0_PINCTRL_SET_BASE_LSB));
         final int setInstruction =
           0xe080 | pinDirValue; // no sideset/delay => all other bits
                                 // are 0
@@ -870,8 +852,8 @@ public class PIOSDK
         pinBase = (pinBase + 5) & 0x1f;
       }
       registers.write(address,
-                      (pinCount << Constants.SM0_PINCTRL_SET_COUNT_LSB) |
-                      (pinBase << Constants.SM0_PINCTRL_SET_BASE_LSB));
+                      (pinCount << SM0_PINCTRL_SET_COUNT_LSB) |
+                      (pinBase << SM0_PINCTRL_SET_BASE_LSB));
       final int setInstruction =
         0xe080 | pinDirValue; // no sideset/delay => all other bits
                               // are 0
@@ -902,10 +884,10 @@ public class PIOSDK
     if (mask < 0) {
       throw new IllegalArgumentException("mask < 0: " + mask);
     }
-    if (mask > (0x1 << Constants.SM_COUNT) - 1) {
+    if (mask > (0x1 << SM_COUNT) - 1) {
       throw new IllegalArgumentException("mask > " +
-                                         ((0x1 << Constants.SM_COUNT) - 1) +
-                                         ": " + mask);
+                                         ((0x1 << SM_COUNT) - 1) + ": " +
+                                         mask);
     }
     synchronized(stateMachineClaimed) {
       if ((stateMachineClaimed & mask) != 0x0) {
@@ -930,8 +912,7 @@ public class PIOSDK
   public int claimUnusedSm(final boolean required)
   {
     synchronized(stateMachineClaimed) {
-      final int unclaimed =
-        ~stateMachineClaimed & ((0x1 << Constants.SM_COUNT) - 1);
+      final int unclaimed = ~stateMachineClaimed & ((0x1 << SM_COUNT) - 1);
       if (unclaimed == 0x0) {
         if (required) {
           final String message =
@@ -940,7 +921,7 @@ public class PIOSDK
         }
         return -1;
       }
-      for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+      for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         if ((unclaimed & (0x1 << smNum)) != 0x0) {
           return smNum;
         }

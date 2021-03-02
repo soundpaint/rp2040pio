@@ -30,7 +30,7 @@ import java.util.function.IntConsumer;
 /**
  * State Machine
  */
-public class SM
+public class SM implements Constants
 {
   private static final int[] SHIFT_MASK = new int[32];
   static {
@@ -517,7 +517,7 @@ public class SM
 
   public int getPins()
   {
-    return gpio.getPins(status.regPINCTRL_IN_BASE, Constants.GPIO_NUM);
+    return gpio.getPins(status.regPINCTRL_IN_BASE, GPIO_NUM);
   }
 
   public PIO.ShiftDir getInShiftDir()
@@ -614,9 +614,9 @@ public class SM
     if (address < 0) {
       throw new IllegalArgumentException("address < 0: " + address);
     }
-    if (address > Constants.MEMORY_SIZE - 1) {
+    if (address > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("address > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          address);
     }
     final Instruction.Jmp instruction = new Instruction.Jmp(this);
@@ -678,9 +678,9 @@ public class SM
     if (value < 0) {
       throw new IllegalArgumentException("pc value < 0: " + value);
     }
-    if (value > Constants.MEMORY_SIZE - 1) {
+    if (value > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("pc value > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          value);
     }
     status.regADDR = value;
@@ -811,7 +811,7 @@ public class SM
 
   public void dumpMemory()
   {
-    for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
+    for (int address = 0; address < MEMORY_SIZE; address++) {
       final short word = memory.get(address);
       String opCode;
       try {

@@ -27,7 +27,7 @@ package org.soundpaint.rp2040pio;
 /**
  * 32 32-Bit Words of Shared Instruction Memory
  */
-public class Memory
+public class Memory implements Constants
 {
   public final Object FETCH_LOCK;
   private final short[] code;
@@ -35,12 +35,12 @@ public class Memory
   public Memory()
   {
     FETCH_LOCK = new Object();
-    code = new short[Constants.MEMORY_SIZE];
+    code = new short[MEMORY_SIZE];
   }
 
   public void set(final int address, final short value)
   {
-    if ((address < 0) || (address >= Constants.MEMORY_SIZE)) {
+    if ((address < 0) || (address >= MEMORY_SIZE)) {
       throw new IllegalArgumentException("address out of range: " + address);
     }
     code[address] = value;
@@ -48,7 +48,7 @@ public class Memory
 
   public short get(final int address)
   {
-    if ((address < 0) || (address >= Constants.MEMORY_SIZE)) {
+    if ((address < 0) || (address >= MEMORY_SIZE)) {
       throw new IllegalArgumentException("address out of range: " + address);
     }
     return code[address];

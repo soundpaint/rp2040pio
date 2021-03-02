@@ -62,7 +62,7 @@ import org.soundpaint.rp2040pio.sdk.PIOSDK;
  * SMx.SIGNAL_NAME=(SIGNAL|BIT)
  * GPIOx=(SIGNAL|BIT)
  */
-public class TimingDiagram
+public class TimingDiagram implements Constants
 {
   private static final double TOP_MARGIN = 16.0;
   private static final double BOTTOM_MARGIN = 16.0;
@@ -385,8 +385,8 @@ public class TimingDiagram
 
   private void resetEmulation()
   {
-    pioSdk.setSmMaskEnabled((1 << Constants.SM_COUNT) - 1, false);
-    pioSdk.restartSmMask(Constants.SM_COUNT - 1);
+    pioSdk.setSmMaskEnabled((1 << SM_COUNT) - 1, false);
+    pioSdk.restartSmMask(SM_COUNT - 1);
     final GPIO gpio = pio.getGPIO();
     gpio.reset();
     for (final DiagramConfig.Signal signal : diagramConfig) {

@@ -30,7 +30,7 @@ package org.soundpaint.rp2040pio;
  * datasheet.  The facade is in particular intended for use by the
  * SDK.
  */
-public class Registers
+public class Registers implements Constants
 {
   public static final int CTRL = 0x000;
   public static final int FSTAT = 0x004;
@@ -146,8 +146,8 @@ public class Registers
     if (pin > 31) {
       throw new IllegalArgumentException("pin > 31: " + pin);
     }
-    final GPIO.Function function =
-      getIndex() == 1 ? GPIO.Function.PIO1 : GPIO.Function.PIO0;
+    final GPIO_Function function =
+      getIndex() == 1 ? GPIO_Function.PIO1 : GPIO_Function.PIO0;
     pio.getGPIO().setFunction(pin, function);
   }
 
@@ -158,7 +158,7 @@ public class Registers
 
   private void writeFDebug(final int value)
   {
-    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+    for (int smNum = 0; smNum < SM_COUNT; smNum++) {
       final SM sm = pio.getSM(smNum);
       final FIFO fifo = sm.getFIFO();
       if (((value >>> (24 + smNum)) & 0x1) != 0x0) {
@@ -341,7 +341,7 @@ public class Registers
   private int readFDebug()
   {
     int value = 0;
-    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+    for (int smNum = 0; smNum < SM_COUNT; smNum++) {
       final SM sm = pio.getSM(smNum);
       final FIFO fifo = sm.getFIFO();
       if (fifo.isTXStall()) {
@@ -376,9 +376,9 @@ public class Registers
   private int getCfgInfo()
   {
     return
-      Constants.MEMORY_SIZE << 16 |
-      Constants.SM_COUNT << 8 |
-      Constants.FIFO_DEPTH;
+      MEMORY_SIZE << 16 |
+      SM_COUNT << 8 |
+      FIFO_DEPTH;
   }
 
   public synchronized int read(final int address)

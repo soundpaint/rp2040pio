@@ -76,6 +76,37 @@ public interface Constants
   public static final int SM0_PINCTRL_OUT_BASE_LSB = 0;
   public static final int SM0_PINCTRL_OUT_BASE_BITS = 0x0000001f;
 
+  public enum GPIO_Function {
+    XIP(0, "xip"),
+    SPI(1, "spi"),
+    UART(2, "uart"),
+    I2C(3, "i2c"),
+    PWM(4, "pwm"),
+    SIO(5, "sio"),
+    PIO0(6, "pio0"),
+    PIO1(7, "pio1"),
+    GPCK(8, "gpck"),
+    USB(9, "usb"),
+    NULL(15, "null");
+
+    private final int value;
+    private final String label;
+
+    private GPIO_Function(final int value, final String label)
+    {
+      this.value = value;
+      this.label = label;
+    }
+
+    private int getValue() { return value; }
+
+    @Override
+    public String toString()
+    {
+      return label;
+    }
+  };
+
   /**
    * Functionally equivalent replacement for GNU GCC's built-in
    * function __builtin_ctz().

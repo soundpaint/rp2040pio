@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 /**
  * Configuration of a timing diagram.
  */
-public class DiagramConfig implements Iterable<DiagramConfig.Signal>
+public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
 {
   /**
    * Holds a copy of all info of a specific Instruction during a
@@ -348,9 +348,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
     }
-    if (smNum > Constants.SM_COUNT - 1) {
+    if (smNum > SM_COUNT - 1) {
       throw new IllegalArgumentException("smNum > " +
-                                         (Constants.SM_COUNT - 1) + ": " +
+                                         (SM_COUNT - 1) + ": " +
                                          smNum);
     }
     final SM sm = pio.getSM(smNum);
@@ -372,9 +372,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (smNum < 0) {
       throw new IllegalArgumentException("smNum < 0: " + smNum);
     }
-    if (smNum > Constants.SM_COUNT - 1) {
+    if (smNum > SM_COUNT - 1) {
       throw new IllegalArgumentException("smNum > " +
-                                         (Constants.SM_COUNT - 1) + ": " +
+                                         (SM_COUNT - 1) + ": " +
                                          smNum);
     }
     final String signalLabel = label != null ? label : "SM" + smNum + "_INSTR";
@@ -398,9 +398,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (pin < 0) {
       throw new IllegalArgumentException("pin < 0: " + pin);
     }
-    if (pin > Constants.GPIO_NUM - 1) {
+    if (pin > GPIO_NUM - 1) {
       throw new IllegalArgumentException("pin > " +
-                                         (Constants.GPIO_NUM - 1) + ": " + pin);
+                                         (GPIO_NUM - 1) + ": " + pin);
     }
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return
@@ -413,9 +413,9 @@ public class DiagramConfig implements Iterable<DiagramConfig.Signal>
     if (pin < 0) {
       throw new IllegalArgumentException("pin < 0: " + pin);
     }
-    if (pin > Constants.GPIO_NUM - 1) {
+    if (pin > GPIO_NUM - 1) {
       throw new IllegalArgumentException("pin > " +
-                                         (Constants.GPIO_NUM - 1) + ": " + pin);
+                                         (GPIO_NUM - 1) + ": " + pin);
     }
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return

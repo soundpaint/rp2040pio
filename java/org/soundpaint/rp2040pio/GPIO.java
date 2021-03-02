@@ -27,39 +27,8 @@ package org.soundpaint.rp2040pio;
 /**
  * General-Purpose Set of 32 Peripheral I/O Terminals
  */
-public class GPIO
+public class GPIO implements Constants
 {
-  public enum Function {
-    XIP(0, "xip"),
-    SPI(1, "spi"),
-    UART(2, "uart"),
-    I2C(3, "i2c"),
-    PWM(4, "pwm"),
-    SIO(5, "sio"),
-    PIO0(6, "pio0"),
-    PIO1(7, "pio1"),
-    GPCK(8, "gpck"),
-    USB(9, "usb"),
-    NULL(15, "null");
-
-    private final int value;
-    private final String label;
-
-    private Function(final int value, final String label)
-    {
-      this.value = value;
-      this.label = label;
-    }
-
-    private int getValue() { return value; }
-
-    @Override
-    public String toString()
-    {
-      return label;
-    }
-  };
-
   public enum Direction {
     IN(0, "in"),
     OUT(1, "out");
@@ -102,13 +71,13 @@ public class GPIO
 
   private static class Terminal
   {
-    private Function function;
+    private GPIO_Function function;
     private Direction direction;
     private Bit value;
 
     public void reset()
     {
-      function = Function.NULL;
+      function = GPIO_Function.NULL;
       direction = Direction.IN;
       value = Bit.LOW;
     }
@@ -129,7 +98,7 @@ public class GPIO
 
   public GPIO()
   {
-    terminals = new Terminal[Constants.GPIO_NUM];
+    terminals = new Terminal[GPIO_NUM];
     for (int port = 0; port < terminals.length; port++) {
       terminals[port] = new Terminal();
     }
@@ -140,7 +109,7 @@ public class GPIO
   {
     for (int port = 0; port < terminals.length; port++) {
       final Terminal terminal = terminals[port];
-      terminal.function = Function.NULL;
+      terminal.function = GPIO_Function.NULL;
       terminal.direction = Direction.IN;
       terminal.value = Bit.LOW;
     }
@@ -150,7 +119,7 @@ public class GPIO
    * Set GPIOx_CTRL_FUNCSEL to 6 (for PIO0) or 7 (for PIO1), see
    * Sect. 2.19.2. "Function Select" of RP2040 datasheet for details.
    */
-  public void setFunction(final int gpio, final Function fn)
+  public void setFunction(final int gpio, final GPIO_Function fn)
   {
     if ((gpio < 0) || (gpio >= terminals.length)) {
       throw new IllegalArgumentException("gpio port out of range: " + gpio);
@@ -208,17 +177,17 @@ public class GPIO
     if (base < 0) {
       throw new IllegalArgumentException("GPIO pin base < 0: " + base);
     }
-    if (base > Constants.GPIO_NUM - 1) {
+    if (base > GPIO_NUM - 1) {
       throw new IllegalArgumentException("GPIO pin base > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          base);
     }
     if (count < 0) {
       throw new IllegalArgumentException("GPIO pin count < 0: " + count);
     }
-    if (count > Constants.GPIO_NUM - 1) {
+    if (count > GPIO_NUM - 1) {
       throw new IllegalArgumentException("GPIO pin count > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          count);
     }
     int pins = 0;
@@ -233,17 +202,17 @@ public class GPIO
     if (base < 0) {
       throw new IllegalArgumentException("GPIO pin base < 0: " + base);
     }
-    if (base > Constants.GPIO_NUM - 1) {
+    if (base > GPIO_NUM - 1) {
       throw new IllegalArgumentException("GPIO pin base > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          base);
     }
     if (count < 0) {
       throw new IllegalArgumentException("GPIO pin count < 0: " + count);
     }
-    if (count > Constants.GPIO_NUM - 1) {
+    if (count > GPIO_NUM - 1) {
       throw new IllegalArgumentException("GPIO pin count > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          count);
     }
     for (int pin = 0; pin < count; pin++) {
@@ -256,17 +225,17 @@ public class GPIO
     if (base < 0) {
       throw new IllegalArgumentException("GPIO pin base < 0: " + base);
     }
-    if (base > Constants.GPIO_NUM - 1) {
+    if (base > GPIO_NUM - 1) {
       throw new IllegalArgumentException("GPIO pin base > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          base);
     }
     if (count < 0) {
       throw new IllegalArgumentException("GPIO pin count < 0: " + count);
     }
-    if (count > Constants.GPIO_NUM - 1) {
+    if (count > GPIO_NUM - 1) {
       throw new IllegalArgumentException("GPIO pin count > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          count);
     }
     int pinDirs = 0;
@@ -281,17 +250,17 @@ public class GPIO
     if (base < 0) {
       throw new IllegalArgumentException("GPIO pin base < 0: " + base);
     }
-    if (base > Constants.GPIO_NUM - 1) {
+    if (base > GPIO_NUM - 1) {
       throw new IllegalArgumentException("GPIO pin base > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          base);
     }
     if (count < 0) {
       throw new IllegalArgumentException("GPIO pin count < 0: " + count);
     }
-    if (count > Constants.GPIO_NUM - 1) {
+    if (count > GPIO_NUM - 1) {
       throw new IllegalArgumentException("GPIO pin count > " +
-                                         (Constants.GPIO_NUM - 1) + ": " +
+                                         (GPIO_NUM - 1) + ": " +
                                          count);
     }
     for (int pin = 0; pin < count; pin++) {

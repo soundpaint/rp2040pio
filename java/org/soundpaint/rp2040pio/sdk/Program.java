@@ -33,7 +33,7 @@ import org.soundpaint.rp2040pio.Constants;
  * It represents C struct pio_program_t and all functions that
  * manipulate this struct.
  */
-public class Program
+public class Program implements Constants
 {
   private final String id;
   private final int origin;
@@ -72,25 +72,24 @@ public class Program
     if (origin < -1) {
       throw new IllegalArgumentException("origin < -1: " + origin);
     }
-    if (origin > Constants.MEMORY_SIZE - 1) {
+    if (origin > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("origin > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          origin);
     }
     if (wrap < 0) {
       throw new IllegalArgumentException("wrap < 0: " + wrap);
     }
-    if (wrap > Constants.MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("wrap > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+    if (wrap > MEMORY_SIZE - 1) {
+      throw new IllegalArgumentException("wrap > " + (MEMORY_SIZE - 1) + ": " +
                                          wrap);
     }
     if (wrapTarget < 0) {
       throw new IllegalArgumentException("wrap_target < 0: " + wrapTarget);
     }
-    if (wrapTarget > Constants.MEMORY_SIZE - 1) {
+    if (wrapTarget > MEMORY_SIZE - 1) {
       throw new IllegalArgumentException("wrap_target > " +
-                                         (Constants.MEMORY_SIZE - 1) + ": " +
+                                         (MEMORY_SIZE - 1) + ": " +
                                          wrapTarget);
     }
     if (sideSetCount < 0) {
@@ -107,9 +106,9 @@ public class Program
       throw new NullPointerException("instructions");
     }
     final int length = instructions.length;
-    if (length > Constants.MEMORY_SIZE) {
+    if (length > MEMORY_SIZE) {
       throw new IllegalArgumentException("instructions length > " +
-                                         Constants.MEMORY_SIZE + ": " +
+                                         MEMORY_SIZE + ": " +
                                          length);
     }
     this.id = id;
@@ -123,7 +122,7 @@ public class Program
     final int mask = (0x1 << length) - 1;
     allocationMask =
       origin >= 0 ?
-      mask << origin | (mask << (origin - Constants.MEMORY_SIZE)) :
+      mask << origin | (mask << (origin - MEMORY_SIZE)) :
       mask;
   }
 
