@@ -46,7 +46,7 @@ public class Monitor
   public Monitor()
   {
     pio = PIO.PIO0;
-    pioSdk = new PIOSDK(new Registers(pio));
+    pioSdk = new PIOSDK(pio);
     System.out.println(about);
   }
 

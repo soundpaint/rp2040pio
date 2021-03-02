@@ -141,7 +141,7 @@ public class TimingDiagram implements Constants
   public TimingDiagram(final PIO pio)
   {
     this.pio = pio;
-    pioSdk = new PIOSDK(new Registers(pio));
+    pioSdk = new PIOSDK(pio);
     diagramConfig = new DiagramConfig();
     frame = new JFrame("Timing Diagram");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -387,8 +387,9 @@ public class TimingDiagram implements Constants
   {
     pioSdk.setSmMaskEnabled((1 << SM_COUNT) - 1, false);
     pioSdk.restartSmMask(SM_COUNT - 1);
-    final GPIO gpio = pio.getGPIO();
-    gpio.reset();
+    for (int pin = 0; pin < Constants.GPIO_NUM; pin++) {
+      pioSdk.gpioInit(pin);
+    }
     for (final DiagramConfig.Signal signal : diagramConfig) {
       signal.reset();
     }
@@ -399,7 +400,6 @@ public class TimingDiagram implements Constants
   {
     toolTips.clear();
     final MasterClock clock = MasterClock.getDefaultInstance();
-    final SM sm0 = pio.getSM(0);
     g.setStroke(PLAIN_STROKE);
     paintLabels(panel, g);
     final int stopCycle =

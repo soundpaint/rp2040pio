@@ -1,5 +1,5 @@
 /*
- * @(#)Registers.java 1.00 21/02/25
+ * @(#)PIORegisters.java 1.00 21/02/25
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -30,7 +30,7 @@ package org.soundpaint.rp2040pio;
  * datasheet.  The facade is in particular intended for use by the
  * SDK.
  */
-public class Registers implements Constants
+public class PIORegisters implements Constants
 {
   public static final int CTRL = 0x000;
   public static final int FSTAT = 0x004;
@@ -118,12 +118,12 @@ public class Registers implements Constants
 
   private final PIO pio;
 
-  private Registers()
+  private PIORegisters()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Registers(final PIO pio)
+  public PIORegisters(final PIO pio)
   {
     if (pio == null) {
       throw new NullPointerException("pio");
@@ -134,21 +134,6 @@ public class Registers implements Constants
   public int getIndex()
   {
     return pio.getIndex();
-  }
-
-  public PIO getPIO() { return pio; }
-
-  public void gpioInit(final int pin)
-  {
-    if (pin < 0) {
-      throw new IllegalArgumentException("pin < 0: " + pin);
-    }
-    if (pin > 31) {
-      throw new IllegalArgumentException("pin > 31: " + pin);
-    }
-    final GPIO_Function function =
-      getIndex() == 1 ? GPIO_Function.PIO1 : GPIO_Function.PIO0;
-    pio.getGPIO().setFunction(pin, function);
   }
 
   /*
