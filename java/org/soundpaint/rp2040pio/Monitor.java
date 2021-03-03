@@ -26,6 +26,7 @@ package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
+import org.soundpaint.rp2040pio.sdk.SDK;
 import org.soundpaint.rp2040pio.sdk.Program;
 import org.soundpaint.rp2040pio.sdk.ProgramParser;
 
@@ -40,13 +41,17 @@ public class Monitor
     "© 2021 by J. Reuter\n" +
     "Karlsruhe, Germany\n";
 
-  private final PIO pio;
+  private final SDK sdk;
   private final PIOSDK pioSdk;
+  private final PIO pio;
+  private final GPIO gpio;
 
   public Monitor()
   {
-    pio = PIO.PIO0;
-    pioSdk = new PIOSDK(pio);
+    sdk = SDK.getDefaultInstance();
+    pioSdk = sdk.getPIO0SDK();
+    pio = pioSdk.getRegisters().getPIO();
+    gpio = pio.getGPIO();
     System.out.println(about);
   }
 

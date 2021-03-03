@@ -25,16 +25,26 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class Main
 {
-  private final PIO pio;
-  private final GPIO gpio;
+  public static final int SERVER_PORT = 1088;
 
-  public Main()
+  private final SDK sdk;
+  private final PIO pio;
+  private final PIORegisters pio0Registers;
+  private final GPIO gpio;
+  private final RegisterServer registerServer;
+
+  public Main() throws IOException
   {
-    pio = new PIO(0, MasterClock.getDefaultInstance()); //PIO.PIO0;
+    sdk = SDK.getDefaultInstance();
+    pio0Registers = sdk.getPIO0SDK().getRegisters();
+    pio = pio0Registers.getPIO();
     gpio = pio.getGPIO();
+    registerServer = new RegisterServer(SERVER_PORT);
+    registerServer.addRegisters(pio0Registers);
   }
 
   public void run() throws IOException
@@ -45,7 +55,7 @@ public class Main
     //monitor.addProgram(programResourcePath);
     //monitor.setSideSetCount(1);
     //monitor.dumpProgram();
-    final TimingDiagram diagram = new TimingDiagram(pio);
+    final TimingDiagram diagram = new TimingDiagram();
     diagram.addProgram(programResourcePath);
     diagram.addSignal(DiagramConfig.createClockSignal("clock"));
     diagram.addSignal(new

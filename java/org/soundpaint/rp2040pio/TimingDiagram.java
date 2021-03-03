@@ -46,6 +46,7 @@ import javax.swing.JPanel;
 import org.soundpaint.rp2040pio.sdk.Program;
 import org.soundpaint.rp2040pio.sdk.ProgramParser;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
  * Framework for displaying a timing diagram resulting from an
@@ -99,8 +100,10 @@ public class TimingDiagram implements Constants
   private static final TexturePaint FILL_PAINT =
     new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
 
-  private final PIO pio;
+  private final SDK sdk;
   private final PIOSDK pioSdk;
+  private final PIO pio;
+  private final GPIO gpio;
   private final DiagramConfig diagramConfig;
   private final JFrame frame;
   private final JPanel panel;
@@ -133,15 +136,12 @@ public class TimingDiagram implements Constants
     }
   }
 
-  private TimingDiagram()
+  public TimingDiagram()
   {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
-
-  public TimingDiagram(final PIO pio)
-  {
-    this.pio = pio;
-    pioSdk = new PIOSDK(pio);
+    sdk = SDK.getDefaultInstance();
+    pioSdk = sdk.getPIO0SDK();
+    pio = pioSdk.getRegisters().getPIO();
+    gpio = pio.getGPIO();
     diagramConfig = new DiagramConfig();
     frame = new JFrame("Timing Diagram");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

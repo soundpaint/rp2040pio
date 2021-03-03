@@ -29,6 +29,10 @@ package org.soundpaint.rp2040pio;
  */
 public class GPIO implements Constants
 {
+  private static final GPIO DEFAULT_INSTANCE = new GPIO();
+
+  public static GPIO getDefaultInstance() { return DEFAULT_INSTANCE; }
+
   public enum Direction {
     IN(0, "in"),
     OUT(1, "out");

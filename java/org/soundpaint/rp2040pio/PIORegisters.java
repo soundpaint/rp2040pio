@@ -30,9 +30,10 @@ package org.soundpaint.rp2040pio;
  * datasheet.  The facade is in particular intended for use by the
  * SDK.
  */
-public class PIORegisters implements Constants
+public class PIORegisters implements Registers, Constants
 {
-  public static final int CTRL = 0x000;
+  public static final int ADDR_MIN = 0x000;
+  public static final int CTRL = ADDR_MIN;
   public static final int FSTAT = 0x004;
   public static final int FDEBUG = 0x008;
   public static final int FLEVEL = 0x00c;
@@ -113,6 +114,7 @@ public class PIORegisters implements Constants
   public static final int IRQ1_INTE = 0x138;
   public static final int IRQ1_INTF = 0x13c;
   public static final int IRQ1_INTS = 0x140;
+  public static final int ADDR_MAX = IRQ1_INTS + 3;
 
   public static final int SM_SIZE = SM1_CLKDIV - SM0_CLKDIV;
 
@@ -134,6 +136,13 @@ public class PIORegisters implements Constants
   public int getIndex()
   {
     return pio.getIndex();
+  }
+
+  public PIO getPIO() { return pio; }
+
+  public boolean providesAddress(final int address)
+  {
+    return (address >= ADDR_MIN) && (address <= ADDR_MAX + 3);
   }
 
   /*

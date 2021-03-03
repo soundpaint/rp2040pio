@@ -34,8 +34,9 @@ public class PIO implements Constants, Clock.TransitionListener
 {
   public static final MasterClock MASTER_CLOCK =
     MasterClock.getDefaultInstance();
-  public static final PIO PIO0 = new PIO(0, MASTER_CLOCK);
-  public static final PIO PIO1 = new PIO(1, MASTER_CLOCK);
+  private static final GPIO _GPIO = GPIO.getDefaultInstance();
+  public static final PIO PIO0 = new PIO(0, MASTER_CLOCK, _GPIO);
+  public static final PIO PIO1 = new PIO(1, MASTER_CLOCK, _GPIO);
 
   private final int index;
   private final List<Decoder.DecodeException> caughtExceptions;
@@ -119,7 +120,7 @@ public class PIO implements Constants, Clock.TransitionListener
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIO(final int index, final Clock clock)
+  public PIO(final int index, final Clock clock, final GPIO gpio)
   {
     if (index < 0) {
       throw new IllegalArgumentException("PIO index < 0: " + index);
@@ -130,10 +131,13 @@ public class PIO implements Constants, Clock.TransitionListener
     if (clock == null) {
       throw new NullPointerException("clock");
     }
+    if (gpio == null) {
+      throw new NullPointerException("gpio");
+    }
     this.index = index;
+    this.gpio = gpio;
     clock.addTransitionListener(this);
     caughtExceptions = new ArrayList<Decoder.DecodeException>();
-    gpio = new GPIO();
     memory = new Memory();
     irq = new IRQ();
     sms = new SM[SM_COUNT];
