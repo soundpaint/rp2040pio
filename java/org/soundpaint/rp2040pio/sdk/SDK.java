@@ -39,8 +39,8 @@ public class SDK
 
   private SDK()
   {
-    pio0Sdk = new PIOSDK(PIO.PIO0);
-    pio1Sdk = new PIOSDK(PIO.PIO1);
+    pio0Sdk = new PIOSDK(PIO.PIO0, PIO.PIO0_BASE);
+    pio1Sdk = new PIOSDK(PIO.PIO1, PIO.PIO1_BASE);
     gpioSdk = new GPIOSDK(pio0Sdk.getRegisters().getPIO().getGPIO());
   }
 

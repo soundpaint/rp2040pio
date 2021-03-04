@@ -26,6 +26,12 @@ package org.soundpaint.rp2040pio;
 
 public interface Registers
 {
+  static final int NORMAL_READ_WRITE_ADDR_OFFS = 0x0000;
+  static final int ATOMIC_XOR_WRITE_ADDR_OFFS = 0x1000;
+  static final int ATOMIC_BITS_SET_ADDR_OFFS = 0x2000;
+  static final int ATOMIC_BITS_CLEAR_ADDR_OFFS = 0x3000;
+
+  int getBaseAddress();
   boolean providesAddress(final int address);
   void write(final int address, final int value);
   int read(final int address);

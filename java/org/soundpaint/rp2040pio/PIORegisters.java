@@ -119,26 +119,34 @@ public class PIORegisters implements Registers, Constants
   public static final int SM_SIZE = SM1_CLKDIV - SM0_CLKDIV;
 
   private final PIO pio;
+  private final int baseAddress;
 
   private PIORegisters()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIORegisters(final PIO pio)
+  public PIORegisters(final PIO pio, final int baseAddress)
   {
     if (pio == null) {
       throw new NullPointerException("pio");
     }
     this.pio = pio;
+    if ((baseAddress & 0x3) != 0x0) {
+      throw new IllegalArgumentException("base address not word-aligned: " +
+                                         String.format("%04x", baseAddress));
+    }
+    this.baseAddress = baseAddress;
   }
 
-  public int getIndex()
+  public PIO getPIO() { return pio; }
+
+  public int getPIOIndex()
   {
     return pio.getIndex();
   }
 
-  public PIO getPIO() { return pio; }
+  public int getBaseAddress() { return baseAddress; }
 
   public boolean providesAddress(final int address)
   {
@@ -170,20 +178,56 @@ public class PIORegisters implements Registers, Constants
     }
   }
 
+  private enum AccessMethod {
+    NORMAL_RW, ATOMIC_XOR, ATOMIC_SET, ATOMIC_CLEAR;
+  };
+
+  private static AccessMethod[] ACCESS_METHODS = AccessMethod.values();
+
   public synchronized void write(final int address, final int value)
   {
-    if (address < 0) {
-      throw new IllegalArgumentException("address < 0: " + address);
+    final AccessMethod accessMethod = ACCESS_METHODS[((address >> 12) & 0x3)];
+    final int mask;
+    final int bits;
+    switch (accessMethod) {
+    case NORMAL_RW:
+      mask = ~0x0;
+      bits = value;
+      break;
+    case ATOMIC_XOR:
+      mask = value;
+      bits = ~read(address) ^ value;
+      break;
+    case ATOMIC_SET:
+      mask = value;
+      bits = ~0x0;
+      break;
+    case ATOMIC_CLEAR:
+      mask = value;
+      bits = 0x0;
+      break;
+    default:
+      throw new InternalError("unexpected case fall-through");
     }
-    if (address > 0x140) {
-      throw new IllegalArgumentException("address > 0x140: " +
-                                         String.format("%04x", address));
+    write(address, bits, mask);
+  }
+
+  public void write(final int address, final int value, final int mask)
+  {
+    // TODO: Write only masked bits.
+    final int pioAddress = (address - baseAddress) & ~0x00003000;
+    if (pioAddress < 0) {
+      throw new IllegalArgumentException("pio address < 0: " + pioAddress);
     }
-    if ((address & 0x3) != 0x0) {
+    if (pioAddress > 0x140) {
+      throw new IllegalArgumentException("pio address > 0x140: " +
+                                         String.format("%04x", pioAddress));
+    }
+    if ((pioAddress & 0x3) != 0x0) {
       throw new IllegalArgumentException("address not word-aligned: " +
-                                         String.format("%04x", address));
+                                         String.format("%04x", pioAddress));
     }
-    switch (address) {
+    switch (pioAddress) {
     case CTRL:
       pio.setCtrl(value);
       break;
@@ -198,7 +242,7 @@ public class PIORegisters implements Registers, Constants
     case TXF1:
     case TXF2:
     case TXF3:
-      pio.getSM((address - TXF0) >> 2).put(value);
+      pio.getSM((pioAddress - TXF0) >> 2).put(value);
       break;
     case RXF0:
     case RXF1:
@@ -252,25 +296,25 @@ public class PIORegisters implements Registers, Constants
     case INSTR_MEM29:
     case INSTR_MEM30:
     case INSTR_MEM31:
-      pio.getMemory().set((address - INSTR_MEM0) >> 2, (short)value);
+      pio.getMemory().set((pioAddress - INSTR_MEM0) >> 2, (short)value);
       break;
     case SM0_CLKDIV:
     case SM1_CLKDIV:
     case SM2_CLKDIV:
     case SM3_CLKDIV:
-      pio.getSM((address - SM0_CLKDIV) / SM_SIZE).setCLKDIV(value);
+      pio.getSM((pioAddress - SM0_CLKDIV) / SM_SIZE).setCLKDIV(value);
       break;
     case SM0_EXECCTRL:
     case SM1_EXECCTRL:
     case SM2_EXECCTRL:
     case SM3_EXECCTRL:
-      pio.getSM((address - SM0_EXECCTRL) / SM_SIZE).setEXECCTRL(value);
+      pio.getSM((pioAddress - SM0_EXECCTRL) / SM_SIZE).setEXECCTRL(value);
       break;
     case SM0_SHIFTCTRL:
     case SM1_SHIFTCTRL:
     case SM2_SHIFTCTRL:
     case SM3_SHIFTCTRL:
-      pio.getSM((address - SM0_SHIFTCTRL) / SM_SIZE).setSHIFTCTRL(value);
+      pio.getSM((pioAddress - SM0_SHIFTCTRL) / SM_SIZE).setSHIFTCTRL(value);
       break;
     case SM0_ADDR:
     case SM1_ADDR:
@@ -281,13 +325,13 @@ public class PIORegisters implements Registers, Constants
     case SM1_INSTR:
     case SM2_INSTR:
     case SM3_INSTR:
-      pio.getSM((address - SM0_INSTR) / SM_SIZE).insertDMAInstruction(value);
+      pio.getSM((pioAddress - SM0_INSTR) / SM_SIZE).insertDMAInstruction(value);
       break;
     case SM0_PINCTRL:
     case SM1_PINCTRL:
     case SM2_PINCTRL:
     case SM3_PINCTRL:
-      pio.getSM((address - SM0_PINCTRL) / SM_SIZE).setPINCTRL(value);
+      pio.getSM((pioAddress - SM0_PINCTRL) / SM_SIZE).setPINCTRL(value);
       break;
     case INTR:
       break; // read-only address
@@ -377,18 +421,19 @@ public class PIORegisters implements Registers, Constants
 
   public synchronized int read(final int address)
   {
-    if (address < 0) {
-      throw new IllegalArgumentException("address < 0: " + address);
+    final int pioAddress = (address - baseAddress) & ~0x00003000;
+    if (pioAddress < 0) {
+      throw new IllegalArgumentException("pio address < 0: " + pioAddress);
     }
-    if (address > 0x140) {
-      throw new IllegalArgumentException("address > 0x140: " +
-                                         String.format("%04x", address));
+    if (pioAddress > 0x140) {
+      throw new IllegalArgumentException("pio address > 0x140: " +
+                                         String.format("%04x", pioAddress));
     }
-    if ((address & 0x3) != 0x0) {
-      throw new IllegalArgumentException("address not word-aligned: " +
-                                         String.format("%04x", address));
+    if ((pioAddress & 0x3) != 0x0) {
+      throw new IllegalArgumentException("pio address not word-aligned: " +
+                                         String.format("%04x", pioAddress));
     }
-    switch (address) {
+    switch (pioAddress) {
     case CTRL:
       return pio.getSM_ENABLED();
     case FSTAT:
@@ -406,7 +451,7 @@ public class PIORegisters implements Registers, Constants
     case RXF1:
     case RXF2:
     case RXF3:
-      return pio.getSM((address - TXF0) >> 2).get();
+      return pio.getSM((pioAddress - TXF0) >> 2).get();
     case IRQ:
       return pio.getIRQ().readRegIRQ();
     case IRQ_FORCE:
@@ -456,32 +501,32 @@ public class PIORegisters implements Registers, Constants
     case SM1_CLKDIV:
     case SM2_CLKDIV:
     case SM3_CLKDIV:
-      return pio.getSM((address - SM0_CLKDIV) / SM_SIZE).getCLKDIV();
+      return pio.getSM((pioAddress - SM0_CLKDIV) / SM_SIZE).getCLKDIV();
     case SM0_EXECCTRL:
     case SM1_EXECCTRL:
     case SM2_EXECCTRL:
     case SM3_EXECCTRL:
-      return pio.getSM((address - SM0_EXECCTRL) / SM_SIZE).getEXECCTRL();
+      return pio.getSM((pioAddress - SM0_EXECCTRL) / SM_SIZE).getEXECCTRL();
     case SM0_SHIFTCTRL:
     case SM1_SHIFTCTRL:
     case SM2_SHIFTCTRL:
     case SM3_SHIFTCTRL:
-      return pio.getSM((address - SM0_SHIFTCTRL) / SM_SIZE).getSHIFTCTRL();
+      return pio.getSM((pioAddress - SM0_SHIFTCTRL) / SM_SIZE).getSHIFTCTRL();
     case SM0_ADDR:
     case SM1_ADDR:
     case SM2_ADDR:
     case SM3_ADDR:
-      return pio.getSM((address - SM0_ADDR) / SM_SIZE).getPC();
+      return pio.getSM((pioAddress - SM0_ADDR) / SM_SIZE).getPC();
     case SM0_INSTR:
     case SM1_INSTR:
     case SM2_INSTR:
     case SM3_INSTR:
-      return pio.getSM((address - SM0_INSTR) / SM_SIZE).getInstruction();
+      return pio.getSM((pioAddress - SM0_INSTR) / SM_SIZE).getInstruction();
     case SM0_PINCTRL:
     case SM1_PINCTRL:
     case SM2_PINCTRL:
     case SM3_PINCTRL:
-      return pio.getSM((address - SM0_PINCTRL) / SM_SIZE).getPINCTRL();
+      return pio.getSM((pioAddress - SM0_PINCTRL) / SM_SIZE).getPINCTRL();
     case INTR:
       return pio.getIRQ().readINTR();
     case IRQ0_INTE:

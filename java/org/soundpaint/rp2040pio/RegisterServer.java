@@ -138,6 +138,16 @@ public class RegisterServer
     return msg != null ? statusDisplay + ": " + msg : statusDisplay;
   }
 
+  private int parseUnsignedInt(final String unparsed)
+  {
+    if (unparsed.startsWith("0x") ||
+        unparsed.startsWith("0X")) {
+      return Integer.parseUnsignedInt(unparsed.substring(2), 16);
+    } else {
+      return Integer.parseUnsignedInt(unparsed);
+    }
+  }
+
   private String handleGetVersion(final String[] args)
   {
     if (args.length > 0) {
@@ -172,7 +182,7 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = Integer.parseInt(args[0]);
+      address = parseUnsignedInt(args[0]);
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }

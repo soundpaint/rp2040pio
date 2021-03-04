@@ -31,6 +31,11 @@ public interface Constants
   public static final int FIFO_DEPTH = 4;
   public static final int SM_COUNT = 4;
 
+  // address map
+  public static final int PIO0_BASE = 0x50200000;
+  public static final int PIO1_BASE = 0x50300000;
+
+  // PIO registers addressing
   public static final int CTRL_CLKDIV_RESTART_LSB = 8;
   public static final int CTRL_CLKDIV_RESTART_BITS = 0x00000f00;
   public static final int CTRL_SM_RESTART_LSB = 4;
