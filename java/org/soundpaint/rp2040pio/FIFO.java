@@ -84,8 +84,6 @@ public class FIFO implements Constants
   {
     if (join == regSHIFTCTRL_FJOIN_RX)
       return;
-    if (join)
-      regSHIFTCTRL_FJOIN_TX = false;
     rx.clear();
     tx.clear();
     notifyAll();
@@ -104,7 +102,9 @@ public class FIFO implements Constants
   public synchronized boolean fstatRxFull()
   {
     // bit 0, 1, 2 or 3 (for SM_0 .. SM_3) of FSTAT
-    return rx.size() >= (regSHIFTCTRL_FJOIN_RX ? 2 : 1) * FIFO_DEPTH;
+    return tx.size() >=
+      (regSHIFTCTRL_FJOIN_TX ? 0 :
+       (regSHIFTCTRL_FJOIN_RX ? 2 : 1 ) * FIFO_DEPTH);
   }
 
   public synchronized boolean fstatRxEmpty()
@@ -167,8 +167,6 @@ public class FIFO implements Constants
   {
     if (join == regSHIFTCTRL_FJOIN_TX)
       return;
-    if (join)
-      regSHIFTCTRL_FJOIN_RX = false;
     rx.clear();
     tx.clear();
     notifyAll();
@@ -187,7 +185,9 @@ public class FIFO implements Constants
   public synchronized boolean fstatTxFull()
   {
     // bit 16, 17, 18 or 19 (for SM_0 .. SM_3) of FSTAT
-    return tx.size() >= (regSHIFTCTRL_FJOIN_TX ? 2 : 1 ) * FIFO_DEPTH;
+    return tx.size() >=
+      (regSHIFTCTRL_FJOIN_RX ? 0 :
+       (regSHIFTCTRL_FJOIN_TX ? 2 : 1 ) * FIFO_DEPTH);
   }
 
   public synchronized boolean fstatTxEmpty()
