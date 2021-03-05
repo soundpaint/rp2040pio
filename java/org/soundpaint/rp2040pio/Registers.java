@@ -33,8 +33,8 @@ public interface Registers
 
   int getBaseAddress();
   boolean providesAddress(final int address);
-  void write(final int address, final int value);
-  int read(final int address);
+  void writeAddress(final int address, final int value);
+  int readAddress(final int address);
 }
 
 /*

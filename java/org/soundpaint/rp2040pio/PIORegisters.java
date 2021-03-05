@@ -30,113 +30,106 @@ package org.soundpaint.rp2040pio;
  * datasheet.  The facade is in particular intended for use by the
  * SDK.
  */
-public class PIORegisters implements Registers, Constants
+public class PIORegisters extends AbstractRegisters implements Constants
 {
-  public static final int ADDR_MIN = 0x000;
-  public static final int CTRL = ADDR_MIN;
-  public static final int FSTAT = 0x004;
-  public static final int FDEBUG = 0x008;
-  public static final int FLEVEL = 0x00c;
-  public static final int TXF0 = 0x010;
-  public static final int TXF1 = 0x014;
-  public static final int TXF2 = 0x018;
-  public static final int TXF3 = 0x01c;
-  public static final int RXF0 = 0x020;
-  public static final int RXF1 = 0x024;
-  public static final int RXF2 = 0x028;
-  public static final int RXF3 = 0x02c;
-  public static final int IRQ = 0x030;
-  public static final int IRQ_FORCE = 0x034;
-  public static final int INPUT_SYNC_BYPASS = 0x038;
-  public static final int DBG_PADOUT = 0x03c;
-  public static final int DBG_PADOE = 0x040;
-  public static final int DBG_CFGINFO = 0x044;
-  public static final int INSTR_MEM0 = 0x048;
-  public static final int INSTR_MEM1 = 0x04c;
-  public static final int INSTR_MEM2 = 0x050;
-  public static final int INSTR_MEM3 = 0x054;
-  public static final int INSTR_MEM4 = 0x058;
-  public static final int INSTR_MEM5 = 0x05c;
-  public static final int INSTR_MEM6 = 0x060;
-  public static final int INSTR_MEM7 = 0x064;
-  public static final int INSTR_MEM8 = 0x068;
-  public static final int INSTR_MEM9 = 0x06c;
-  public static final int INSTR_MEM10 = 0x070;
-  public static final int INSTR_MEM11 = 0x074;
-  public static final int INSTR_MEM12 = 0x078;
-  public static final int INSTR_MEM13 = 0x07c;
-  public static final int INSTR_MEM14 = 0x080;
-  public static final int INSTR_MEM15 = 0x084;
-  public static final int INSTR_MEM16 = 0x088;
-  public static final int INSTR_MEM17 = 0x08c;
-  public static final int INSTR_MEM18 = 0x090;
-  public static final int INSTR_MEM19 = 0x094;
-  public static final int INSTR_MEM20 = 0x098;
-  public static final int INSTR_MEM21 = 0x09c;
-  public static final int INSTR_MEM22 = 0x0a0;
-  public static final int INSTR_MEM23 = 0x0a4;
-  public static final int INSTR_MEM24 = 0x0a8;
-  public static final int INSTR_MEM25 = 0x0ac;
-  public static final int INSTR_MEM26 = 0x0b0;
-  public static final int INSTR_MEM27 = 0x0b4;
-  public static final int INSTR_MEM28 = 0x0b8;
-  public static final int INSTR_MEM29 = 0x0bc;
-  public static final int INSTR_MEM30 = 0x0c0;
-  public static final int INSTR_MEM31 = 0x0c4;
-  public static final int SM0_CLKDIV = 0x0c8;
-  public static final int SM0_EXECCTRL = 0x0cc;
-  public static final int SM0_SHIFTCTRL = 0x0d0;
-  public static final int SM0_ADDR = 0x0d4;
-  public static final int SM0_INSTR = 0x0d8;
-  public static final int SM0_PINCTRL = 0x0dc;
-  public static final int SM1_CLKDIV = 0x0e0;
-  public static final int SM1_EXECCTRL = 0x0e4;
-  public static final int SM1_SHIFTCTRL = 0x0e8;
-  public static final int SM1_ADDR = 0x0ec;
-  public static final int SM1_INSTR = 0x0f0;
-  public static final int SM1_PINCTRL = 0x0f4;
-  public static final int SM2_CLKDIV = 0x0f8;
-  public static final int SM2_EXECCTRL = 0x0fc;
-  public static final int SM2_SHIFTCTRL = 0x100;
-  public static final int SM2_ADDR = 0x104;
-  public static final int SM2_INSTR = 0x108;
-  public static final int SM2_PINCTRL = 0x10c;
-  public static final int SM3_CLKDIV = 0x110;
-  public static final int SM3_EXECCTRL = 0x114;
-  public static final int SM3_SHIFTCTRL = 0x118;
-  public static final int SM3_ADDR = 0x11c;
-  public static final int SM3_INSTR = 0x120;
-  public static final int SM3_PINCTRL = 0x124;
-  public static final int INTR = 0x128;
-  public static final int IRQ0_INTE = 0x12c;
-  public static final int IRQ0_INTF = 0x130;
-  public static final int IRQ0_INTS = 0x134;
-  public static final int IRQ1_INTE = 0x138;
-  public static final int IRQ1_INTF = 0x13c;
-  public static final int IRQ1_INTS = 0x140;
-  public static final int ADDR_MAX = IRQ1_INTS + 3;
+  public enum Regs {
+    CTRL,
+    FSTAT,
+    FDEBUG,
+    FLEVEL,
+    TXF0,
+    TXF1,
+    TXF2,
+    TXF3,
+    RXF0,
+    RXF1,
+    RXF2,
+    RXF3,
+    IRQ,
+    IRQ_FORCE,
+    INPUT_SYNC_BYPASS,
+    DBG_PADOUT,
+    DBG_PADOE,
+    DBG_CFGINFO,
+    INSTR_MEM0,
+    INSTR_MEM1,
+    INSTR_MEM2,
+    INSTR_MEM3,
+    INSTR_MEM4,
+    INSTR_MEM5,
+    INSTR_MEM6,
+    INSTR_MEM7,
+    INSTR_MEM8,
+    INSTR_MEM9,
+    INSTR_MEM10,
+    INSTR_MEM11,
+    INSTR_MEM12,
+    INSTR_MEM13,
+    INSTR_MEM14,
+    INSTR_MEM15,
+    INSTR_MEM16,
+    INSTR_MEM17,
+    INSTR_MEM18,
+    INSTR_MEM19,
+    INSTR_MEM20,
+    INSTR_MEM21,
+    INSTR_MEM22,
+    INSTR_MEM23,
+    INSTR_MEM24,
+    INSTR_MEM25,
+    INSTR_MEM26,
+    INSTR_MEM27,
+    INSTR_MEM28,
+    INSTR_MEM29,
+    INSTR_MEM30,
+    INSTR_MEM31,
+    SM0_CLKDIV,
+    SM0_EXECCTRL,
+    SM0_SHIFTCTRL,
+    SM0_ADDR,
+    SM0_INSTR,
+    SM0_PINCTRL,
+    SM1_CLKDIV,
+    SM1_EXECCTRL,
+    SM1_SHIFTCTRL,
+    SM1_ADDR,
+    SM1_INSTR,
+    SM1_PINCTRL,
+    SM2_CLKDIV,
+    SM2_EXECCTRL,
+    SM2_SHIFTCTRL,
+    SM2_ADDR,
+    SM2_INSTR,
+    SM2_PINCTRL,
+    SM3_CLKDIV,
+    SM3_EXECCTRL,
+    SM3_SHIFTCTRL,
+    SM3_ADDR,
+    SM3_INSTR,
+    SM3_PINCTRL,
+    INTR,
+    IRQ0_INTE,
+    IRQ0_INTF,
+    IRQ0_INTS,
+    IRQ1_INTE,
+    IRQ1_INTF,
+    IRQ1_INTS;
+  }
 
-  public static final int SM_SIZE = SM1_CLKDIV - SM0_CLKDIV;
+  final static Regs[] REGS = Regs.values();
+
+  public static final int SM_SIZE =
+    Regs.SM1_CLKDIV.ordinal() - Regs.SM0_CLKDIV.ordinal();
 
   private final PIO pio;
-  private final int baseAddress;
-
-  private PIORegisters()
-  {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
 
   public PIORegisters(final PIO pio, final int baseAddress)
   {
+    super(baseAddress, (short)REGS.length);
     if (pio == null) {
       throw new NullPointerException("pio");
     }
     this.pio = pio;
-    if ((baseAddress & 0x3) != 0x0) {
-      throw new IllegalArgumentException("base address not word-aligned: " +
-                                         String.format("%04x", baseAddress));
-    }
-    this.baseAddress = baseAddress;
   }
 
   public PIO getPIO() { return pio; }
@@ -146,18 +139,66 @@ public class PIORegisters implements Registers, Constants
     return pio.getIndex();
   }
 
-  public int getBaseAddress() { return baseAddress; }
-
-  public boolean providesAddress(final int address)
+  public int getAddress(PIORegisters.Regs register)
   {
-    return (address >= ADDR_MIN) && (address <= ADDR_MAX + 3);
+    if (register == null) {
+      throw new NullPointerException("register");
+    }
+    return getBaseAddress() + 0x4 * register.ordinal();
+  }
+
+  public int getSMAddress(PIORegisters.Regs register, final int smNum)
+  {
+    Constants.checkSmNum(smNum);
+    if (register == null) {
+      throw new NullPointerException("register");
+    }
+    switch (register) {
+    case SM0_CLKDIV:
+    case SM0_EXECCTRL:
+    case SM0_SHIFTCTRL:
+    case SM0_ADDR:
+    case SM0_INSTR:
+    case SM0_PINCTRL:
+      break; // ok
+    default:
+      throw new IllegalArgumentException("register not one of SM0_*: " +
+                                         register);
+    }
+    return getBaseAddress() + 0x4 * register.ordinal() + smNum * SM_SIZE;
+  }
+
+  public int getMemoryAddress(final int memoryAddress)
+  {
+    if (memoryAddress < 0) {
+      throw new IllegalArgumentException("memory address < 0: " +
+                                         memoryAddress);
+    }
+    if (memoryAddress > MEMORY_SIZE) {
+      throw new IllegalArgumentException("memory address > " +
+                                         MEMORY_SIZE + ": " +
+                                         memoryAddress);
+    }
+    return
+      getBaseAddress() + 0x4 * (Regs.INSTR_MEM0.ordinal() + memoryAddress);
+  }
+
+  public int getTXFAddress(final int smNum)
+  {
+    Constants.checkSmNum(smNum);
+    return getBaseAddress() + 0x4 * (Regs.TXF0.ordinal() + smNum);
+  }
+
+  public int getRXFAddress(final int smNum)
+  {
+    Constants.checkSmNum(smNum);
+    return getBaseAddress() + 0x4 * (Regs.RXF0.ordinal() + smNum);
   }
 
   /*
    * TODO: In all of the following methods, use constants declared in
    * class Constants for bit shifting & masking.
    */
-
   private void writeFDebug(final int value)
   {
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
@@ -178,56 +219,14 @@ public class PIORegisters implements Registers, Constants
     }
   }
 
-  private enum AccessMethod {
-    NORMAL_RW, ATOMIC_XOR, ATOMIC_SET, ATOMIC_CLEAR;
-  };
-
-  private static AccessMethod[] ACCESS_METHODS = AccessMethod.values();
-
-  public synchronized void write(final int address, final int value)
-  {
-    final AccessMethod accessMethod = ACCESS_METHODS[((address >> 12) & 0x3)];
-    final int mask;
-    final int bits;
-    switch (accessMethod) {
-    case NORMAL_RW:
-      mask = ~0x0;
-      bits = value;
-      break;
-    case ATOMIC_XOR:
-      mask = value;
-      bits = ~read(address) ^ value;
-      break;
-    case ATOMIC_SET:
-      mask = value;
-      bits = ~0x0;
-      break;
-    case ATOMIC_CLEAR:
-      mask = value;
-      bits = 0x0;
-      break;
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
-    write(address, bits, mask);
-  }
-
-  public void write(final int address, final int value, final int mask)
+  public void writeRegister(final int regNum, final int value, final int mask)
   {
     // TODO: Write only masked bits.
-    final int pioAddress = (address - baseAddress) & ~0x00003000;
-    if (pioAddress < 0) {
-      throw new IllegalArgumentException("pio address < 0: " + pioAddress);
+    if ((regNum < 0) || (regNum >= REGS.length)) {
+      throw new InternalError("regNum out of bounds: " + regNum);
     }
-    if (pioAddress > 0x140) {
-      throw new IllegalArgumentException("pio address > 0x140: " +
-                                         String.format("%04x", pioAddress));
-    }
-    if ((pioAddress & 0x3) != 0x0) {
-      throw new IllegalArgumentException("address not word-aligned: " +
-                                         String.format("%04x", pioAddress));
-    }
-    switch (pioAddress) {
+    final Regs register = REGS[regNum];
+    switch (register) {
     case CTRL:
       pio.setCtrl(value);
       break;
@@ -242,7 +241,7 @@ public class PIORegisters implements Registers, Constants
     case TXF1:
     case TXF2:
     case TXF3:
-      pio.getSM((pioAddress - TXF0) >> 2).put(value);
+      pio.getSM(regNum - Regs.TXF0.ordinal()).put(value);
       break;
     case RXF0:
     case RXF1:
@@ -296,25 +295,28 @@ public class PIORegisters implements Registers, Constants
     case INSTR_MEM29:
     case INSTR_MEM30:
     case INSTR_MEM31:
-      pio.getMemory().set((pioAddress - INSTR_MEM0) >> 2, (short)value);
+      pio.getMemory().set(regNum - Regs.INSTR_MEM0.ordinal(), (short)value);
       break;
     case SM0_CLKDIV:
     case SM1_CLKDIV:
     case SM2_CLKDIV:
     case SM3_CLKDIV:
-      pio.getSM((pioAddress - SM0_CLKDIV) / SM_SIZE).setCLKDIV(value);
+      pio.getSM((regNum - Regs.SM0_CLKDIV.ordinal()) / SM_SIZE).
+        setCLKDIV(value);
       break;
     case SM0_EXECCTRL:
     case SM1_EXECCTRL:
     case SM2_EXECCTRL:
     case SM3_EXECCTRL:
-      pio.getSM((pioAddress - SM0_EXECCTRL) / SM_SIZE).setEXECCTRL(value);
+      pio.getSM((regNum - Regs.SM0_EXECCTRL.ordinal()) / SM_SIZE).
+        setEXECCTRL(value);
       break;
     case SM0_SHIFTCTRL:
     case SM1_SHIFTCTRL:
     case SM2_SHIFTCTRL:
     case SM3_SHIFTCTRL:
-      pio.getSM((pioAddress - SM0_SHIFTCTRL) / SM_SIZE).setSHIFTCTRL(value);
+      pio.getSM((regNum - Regs.SM0_SHIFTCTRL.ordinal()) / SM_SIZE).
+        setSHIFTCTRL(value);
       break;
     case SM0_ADDR:
     case SM1_ADDR:
@@ -325,13 +327,15 @@ public class PIORegisters implements Registers, Constants
     case SM1_INSTR:
     case SM2_INSTR:
     case SM3_INSTR:
-      pio.getSM((pioAddress - SM0_INSTR) / SM_SIZE).insertDMAInstruction(value);
+      pio.getSM((regNum - Regs.SM0_INSTR.ordinal()) / SM_SIZE).
+        insertDMAInstruction(value);
       break;
     case SM0_PINCTRL:
     case SM1_PINCTRL:
     case SM2_PINCTRL:
     case SM3_PINCTRL:
-      pio.getSM((pioAddress - SM0_PINCTRL) / SM_SIZE).setPINCTRL(value);
+      pio.getSM((regNum - Regs.SM0_PINCTRL.ordinal()) / SM_SIZE).
+        setPINCTRL(value);
       break;
     case INTR:
       break; // read-only address
@@ -419,21 +423,13 @@ public class PIORegisters implements Registers, Constants
       FIFO_DEPTH;
   }
 
-  public synchronized int read(final int address)
+  public synchronized int readRegister(final int regNum)
   {
-    final int pioAddress = (address - baseAddress) & ~0x00003000;
-    if (pioAddress < 0) {
-      throw new IllegalArgumentException("pio address < 0: " + pioAddress);
+    if ((regNum < 0) || (regNum >= REGS.length)) {
+      throw new InternalError("regNum out of bounds: " + regNum);
     }
-    if (pioAddress > 0x140) {
-      throw new IllegalArgumentException("pio address > 0x140: " +
-                                         String.format("%04x", pioAddress));
-    }
-    if ((pioAddress & 0x3) != 0x0) {
-      throw new IllegalArgumentException("pio address not word-aligned: " +
-                                         String.format("%04x", pioAddress));
-    }
-    switch (pioAddress) {
+    final Regs register = REGS[regNum];
+    switch (register) {
     case CTRL:
       return pio.getSM_ENABLED();
     case FSTAT:
@@ -451,7 +447,7 @@ public class PIORegisters implements Registers, Constants
     case RXF1:
     case RXF2:
     case RXF3:
-      return pio.getSM((pioAddress - TXF0) >> 2).get();
+      return pio.getSM(regNum - Regs.TXF0.ordinal()).get();
     case IRQ:
       return pio.getIRQ().readRegIRQ();
     case IRQ_FORCE:
@@ -501,32 +497,40 @@ public class PIORegisters implements Registers, Constants
     case SM1_CLKDIV:
     case SM2_CLKDIV:
     case SM3_CLKDIV:
-      return pio.getSM((pioAddress - SM0_CLKDIV) / SM_SIZE).getCLKDIV();
+      return
+        pio.getSM((regNum - Regs.SM0_CLKDIV.ordinal()) / SM_SIZE).getCLKDIV();
     case SM0_EXECCTRL:
     case SM1_EXECCTRL:
     case SM2_EXECCTRL:
     case SM3_EXECCTRL:
-      return pio.getSM((pioAddress - SM0_EXECCTRL) / SM_SIZE).getEXECCTRL();
+      return
+        pio.getSM((regNum - Regs.SM0_EXECCTRL.ordinal()) / SM_SIZE).
+        getEXECCTRL();
     case SM0_SHIFTCTRL:
     case SM1_SHIFTCTRL:
     case SM2_SHIFTCTRL:
     case SM3_SHIFTCTRL:
-      return pio.getSM((pioAddress - SM0_SHIFTCTRL) / SM_SIZE).getSHIFTCTRL();
+      return
+        pio.getSM((regNum - Regs.SM0_SHIFTCTRL.ordinal()) / SM_SIZE).
+        getSHIFTCTRL();
     case SM0_ADDR:
     case SM1_ADDR:
     case SM2_ADDR:
     case SM3_ADDR:
-      return pio.getSM((pioAddress - SM0_ADDR) / SM_SIZE).getPC();
+      return pio.getSM((regNum - Regs.SM0_ADDR.ordinal()) / SM_SIZE).getPC();
     case SM0_INSTR:
     case SM1_INSTR:
     case SM2_INSTR:
     case SM3_INSTR:
-      return pio.getSM((pioAddress - SM0_INSTR) / SM_SIZE).getInstruction();
+      return
+        pio.getSM((regNum - Regs.SM0_INSTR.ordinal()) / SM_SIZE).
+        getInstruction();
     case SM0_PINCTRL:
     case SM1_PINCTRL:
     case SM2_PINCTRL:
     case SM3_PINCTRL:
-      return pio.getSM((pioAddress - SM0_PINCTRL) / SM_SIZE).getPINCTRL();
+      return
+        pio.getSM((regNum - Regs.SM0_PINCTRL.ordinal()) / SM_SIZE).getPINCTRL();
     case INTR:
       return pio.getIRQ().readINTR();
     case IRQ0_INTE:

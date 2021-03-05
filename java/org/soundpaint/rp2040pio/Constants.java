@@ -112,6 +112,17 @@ public interface Constants
     }
   };
 
+  public static void checkSmNum(final int smNum)
+  {
+    if (smNum < 0) {
+      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    }
+    if (smNum > SM_COUNT - 1) {
+      throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) + ": " +
+                                         smNum);
+    }
+  }
+
   /**
    * Functionally equivalent replacement for GNU GCC's built-in
    * function __builtin_ctz().

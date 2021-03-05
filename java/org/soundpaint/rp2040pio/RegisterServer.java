@@ -38,7 +38,13 @@ public class RegisterServer
   private static final String SERVER_VERSION = "RP PIO EMULATION V0.1";
   private static final String[] NULL_ARGS = new String[0];
 
+  /*
+   * TODO: Really should replace this simple-minded list approach with
+   * either a responsibility chain or a composite design pattern, as
+   * soon as the number of registers interfaces grows.
+   */
   private final List<Registers> registersList;
+
   private final int portNumber;
   private final ServerSocket serverSocket;
   private int connectionCounter;
@@ -69,7 +75,7 @@ public class RegisterServer
   {
     for (final Registers registers : registersList) {
       if (registers.providesAddress(address)) {
-        return registers.read(address);
+        return registers.readAddress(address);
       }
     }
     return 0;
