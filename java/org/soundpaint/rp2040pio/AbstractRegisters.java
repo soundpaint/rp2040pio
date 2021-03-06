@@ -92,7 +92,8 @@ abstract class AbstractRegisters implements Registers
   private static AccessMethod[] ACCESS_METHODS = AccessMethod.values();
 
   abstract protected void writeRegister(final int regNum,
-                                        final int bits, final int mask);
+                                        final int bits, final int mask,
+                                        final boolean xor);
 
   public synchronized void writeAddress(final int address, final int value)
   {
@@ -110,11 +111,11 @@ abstract class AbstractRegisters implements Registers
       break;
     case ATOMIC_XOR:
       mask = value;
-      bits = ~readAddress(address) ^ value;
+      bits = value;
       break;
     case ATOMIC_SET:
       mask = value;
-      bits = ~0x0;
+      bits = value;
       break;
     case ATOMIC_CLEAR:
       mask = value;
@@ -123,7 +124,8 @@ abstract class AbstractRegisters implements Registers
     default:
       throw new InternalError("unexpected case fall-through");
     }
-    writeRegister(((address - baseAddress) & ~0x3000) >>> 2, bits, mask);
+    writeRegister(((address - baseAddress) & ~0x3000) >>> 2, bits, mask,
+                  accessMethod == AccessMethod.ATOMIC_XOR);
   }
 
   abstract protected int readRegister(final int regNum);

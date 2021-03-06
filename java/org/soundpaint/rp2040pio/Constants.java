@@ -112,6 +112,29 @@ public interface Constants
     }
   };
 
+  public static void checkGpioPin(final int pin, final String label)
+  {
+    if (pin < 0) {
+      throw new IllegalArgumentException(label + " < 0: " + pin);
+    }
+    if (pin > GPIO_NUM - 1) {
+      throw new IllegalArgumentException(label + " > " + (GPIO_NUM - 1) + ": " +
+                                         pin);
+    }
+  }
+
+  public static void checkSmMemAddr(final int address, final String label)
+  {
+    if (address < 0) {
+      throw new IllegalArgumentException(label + " < 0: " + address);
+    }
+    if (address > MEMORY_SIZE - 1) {
+      throw new IllegalArgumentException(label + " > " +
+                                         (MEMORY_SIZE - 1) + ": " +
+                                         address);
+    }
+  }
+
   public static void checkSmNum(final int smNum)
   {
     if (smNum < 0) {

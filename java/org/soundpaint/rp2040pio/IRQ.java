@@ -55,6 +55,11 @@ public class IRQ implements Constants
 
   public int readRegIRQ()
   {
+    /*
+     * TODO: Check: Since readRegIRQ() and writeRegIRQ address
+     * physically different bits, will XOR access mode "hw_xor_bits()"
+     * still work for this address as expected?
+     */
     return regIRQ | regIRQ_FORCE;
   }
 
@@ -166,7 +171,13 @@ public class IRQ implements Constants
     return regIRQ0_INTE;
   }
 
-  public void setIRQ0_INTE(final int value)
+  public void setIRQ0_INTE(final int value, final int mask, final boolean xor)
+  {
+    setIRQ0_INTE(((mask & (xor ? regIRQ0_INTE ^ value : value)) |
+                  (~mask & regIRQ0_INTE)));
+  }
+
+  private void setIRQ0_INTE(final int value)
   {
     regIRQ0_INTE = value & 0xfff; // ignore reserved bits 31:12
   }
@@ -176,7 +187,13 @@ public class IRQ implements Constants
     return regIRQ1_INTE;
   }
 
-  public void setIRQ1_INTE(final int value)
+  public void setIRQ1_INTE(final int value, final int mask, final boolean xor)
+  {
+    setIRQ1_INTE(((mask & (xor ? regIRQ1_INTE ^ value : value)) |
+                  (~mask & regIRQ1_INTE)));
+  }
+
+  private void setIRQ1_INTE(final int value)
   {
     regIRQ1_INTE = value & 0xfff; // ignore reserved bits 31:12
   }
@@ -186,7 +203,13 @@ public class IRQ implements Constants
     return regIRQ0_INTF;
   }
 
-  public void setIRQ0_INTF(final int value)
+  public void setIRQ0_INTF(final int value, final int mask, final boolean xor)
+  {
+    setIRQ0_INTF(((mask & (xor ? regIRQ0_INTF ^ value : value)) |
+                  (~mask & regIRQ0_INTF)));
+  }
+
+  private void setIRQ0_INTF(final int value)
   {
     regIRQ0_INTF = value & 0xfff; // ignore reserved bits 31:12
   }
@@ -196,7 +219,13 @@ public class IRQ implements Constants
     return regIRQ1_INTF;
   }
 
-  public void setIRQ1_INTF(final int value)
+  public void setIRQ1_INTF(final int value, final int mask, final boolean xor)
+  {
+    setIRQ1_INTF(((mask & (xor ? regIRQ1_INTF ^ value : value)) |
+                  (~mask & regIRQ1_INTF)));
+  }
+
+  private void setIRQ1_INTF(final int value)
   {
     regIRQ1_INTF = value & 0xfff; // ignore reserved bits 31:12
   }

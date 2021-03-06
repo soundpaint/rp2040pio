@@ -170,15 +170,7 @@ public class PIORegisters extends AbstractRegisters implements Constants
 
   public int getMemoryAddress(final int memoryAddress)
   {
-    if (memoryAddress < 0) {
-      throw new IllegalArgumentException("memory address < 0: " +
-                                         memoryAddress);
-    }
-    if (memoryAddress > MEMORY_SIZE) {
-      throw new IllegalArgumentException("memory address > " +
-                                         MEMORY_SIZE + ": " +
-                                         memoryAddress);
-    }
+    Constants.checkSmMemAddr(memoryAddress, "memory address");
     return
       getBaseAddress() + 0x4 * (Regs.INSTR_MEM0.ordinal() + memoryAddress);
   }
@@ -199,27 +191,33 @@ public class PIORegisters extends AbstractRegisters implements Constants
    * TODO: In all of the following methods, use constants declared in
    * class Constants for bit shifting & masking.
    */
-  private void writeFDebug(final int value)
+  private void writeFDebug(final int value, final int mask)
   {
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
       final SM sm = pio.getSM(smNum);
       final FIFO fifo = sm.getFIFO();
-      if (((value >>> (24 + smNum)) & 0x1) != 0x0) {
+      if (((value >>> (24 + smNum)) & 0x1) != 0x0 &&
+          ((mask >>> (24 + smNum)) & 0x1) != 0x0) {
         fifo.clearTXStall();
       }
-      if (((value >>> (16 + smNum)) & 0x1) != 0x0) {
+      if (((value >>> (16 + smNum)) & 0x1) != 0x0 &&
+          ((mask >>> (16 + smNum)) & 0x1) != 0x0) {
         fifo.clearTXOver();
       }
-      if (((value >>> (8 + smNum)) & 0x1) != 0x0) {
+      if (((value >>> (8 + smNum)) & 0x1) != 0x0 &&
+          ((mask >>> (8 + smNum)) & 0x1) != 0x0) {
         fifo.clearRXUnder();
       }
-      if (((value >>> smNum) & 0x1) != 0x0) {
+      if (((value >>> smNum) & 0x1) != 0x0 &&
+          ((mask >>> smNum) & 0x1) != 0x0) {
         fifo.clearRXStall();
       }
     }
   }
 
-  public void writeRegister(final int regNum, final int value, final int mask)
+  @Override
+  public void writeRegister(final int regNum, final int value, final int mask,
+                            final boolean xor)
   {
     // TODO: Write only masked bits.
     if ((regNum < 0) || (regNum >= REGS.length)) {
@@ -228,12 +226,12 @@ public class PIORegisters extends AbstractRegisters implements Constants
     final Regs register = REGS[regNum];
     switch (register) {
     case CTRL:
-      pio.setCtrl(value);
+      pio.setCtrl(value, mask);
       break;
     case FSTAT:
       break; // read-only address
     case FDEBUG:
-      writeFDebug(value);
+      writeFDebug(value, mask);
       break;
     case FLEVEL:
       break; // read-only address
@@ -241,7 +239,7 @@ public class PIORegisters extends AbstractRegisters implements Constants
     case TXF1:
     case TXF2:
     case TXF3:
-      pio.getSM(regNum - Regs.TXF0.ordinal()).put(value);
+      pio.getSM(regNum - Regs.TXF0.ordinal()).put(value & mask);
       break;
     case RXF0:
     case RXF1:
@@ -249,13 +247,13 @@ public class PIORegisters extends AbstractRegisters implements Constants
     case RXF3:
       break; // read-only address
     case IRQ:
-      pio.getIRQ().writeRegIRQ(value);
+      pio.getIRQ().writeRegIRQ(value & mask);
       break;
     case IRQ_FORCE:
-      pio.getIRQ().writeRegIRQ_FORCE(value);
+      pio.getIRQ().writeRegIRQ_FORCE(value & mask);
       break;
     case INPUT_SYNC_BYPASS:
-      pio.getGPIO().setInputSyncByPass(value);
+      pio.getGPIO().setInputSyncByPass(value, mask, xor);
       break;
     case DBG_PADOUT:
       break; // read-only address
@@ -295,28 +293,28 @@ public class PIORegisters extends AbstractRegisters implements Constants
     case INSTR_MEM29:
     case INSTR_MEM30:
     case INSTR_MEM31:
-      pio.getMemory().set(regNum - Regs.INSTR_MEM0.ordinal(), (short)value);
+      pio.getMemory().set(regNum - Regs.INSTR_MEM0.ordinal(), value, mask, xor);
       break;
     case SM0_CLKDIV:
     case SM1_CLKDIV:
     case SM2_CLKDIV:
     case SM3_CLKDIV:
       pio.getSM((regNum - Regs.SM0_CLKDIV.ordinal()) / SM_SIZE).
-        setCLKDIV(value);
+        setCLKDIV(value, mask, xor);
       break;
     case SM0_EXECCTRL:
     case SM1_EXECCTRL:
     case SM2_EXECCTRL:
     case SM3_EXECCTRL:
       pio.getSM((regNum - Regs.SM0_EXECCTRL.ordinal()) / SM_SIZE).
-        setEXECCTRL(value);
+        setEXECCTRL(value, mask, xor);
       break;
     case SM0_SHIFTCTRL:
     case SM1_SHIFTCTRL:
     case SM2_SHIFTCTRL:
     case SM3_SHIFTCTRL:
       pio.getSM((regNum - Regs.SM0_SHIFTCTRL.ordinal()) / SM_SIZE).
-        setSHIFTCTRL(value);
+        setSHIFTCTRL(value, mask, xor);
       break;
     case SM0_ADDR:
     case SM1_ADDR:
@@ -328,28 +326,28 @@ public class PIORegisters extends AbstractRegisters implements Constants
     case SM2_INSTR:
     case SM3_INSTR:
       pio.getSM((regNum - Regs.SM0_INSTR.ordinal()) / SM_SIZE).
-        insertDMAInstruction(value);
+        insertDMAInstruction(value & mask);
       break;
     case SM0_PINCTRL:
     case SM1_PINCTRL:
     case SM2_PINCTRL:
     case SM3_PINCTRL:
       pio.getSM((regNum - Regs.SM0_PINCTRL.ordinal()) / SM_SIZE).
-        setPINCTRL(value);
+        setPINCTRL(value, mask, xor);
       break;
     case INTR:
       break; // read-only address
     case IRQ0_INTE:
-      pio.getIRQ().setIRQ0_INTE(value);
+      pio.getIRQ().setIRQ0_INTE(value, mask, xor);
       break;
     case IRQ1_INTE:
-      pio.getIRQ().setIRQ1_INTE(value);
+      pio.getIRQ().setIRQ1_INTE(value, mask, xor);
       break;
     case IRQ0_INTF:
-      pio.getIRQ().setIRQ0_INTF(value);
+      pio.getIRQ().setIRQ0_INTF(value, mask, xor);
       break;
     case IRQ1_INTF:
-      pio.getIRQ().setIRQ1_INTF(value);
+      pio.getIRQ().setIRQ1_INTF(value, mask, xor);
       break;
     case IRQ0_INTS:
     case IRQ1_INTS:
@@ -423,6 +421,7 @@ public class PIORegisters extends AbstractRegisters implements Constants
       FIFO_DEPTH;
   }
 
+  @Override
   public synchronized int readRegister(final int regNum)
   {
     if ((regNum < 0) || (regNum >= REGS.length)) {

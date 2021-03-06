@@ -209,14 +209,18 @@ public class PIO implements Constants, Clock.TransitionListener
     this.smEnabled = smEnabled;
   }
 
-  public void setCtrl(final int ctrl)
+  public void setCtrl(final int ctrl, final int mask)
   {
     synchronized(sms) {
       final int smEnabled = ctrl & 0xf;
       this.smEnabled = smEnabled;
       for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-        final boolean clkDivRestart = ((ctrl >> (8 + smNum)) & 0x1) != 0x0;
-        final boolean smRestart = ((ctrl >> (4 + smNum)) & 0x1) != 0x0;
+        final boolean clkDivRestart =
+          ((ctrl >> (8 + smNum)) & 0x1) != 0x0 &&
+          ((mask >> (8 + smNum)) & 0x1) != 0x0;
+        final boolean smRestart =
+          ((ctrl >> (4 + smNum)) & 0x1) != 0x0 &&
+          ((mask >> (4 + smNum)) & 0x1) != 0x0;
         final SM sm = getSM(smNum);
         if (clkDivRestart) {
           sm.resetCLKDIV();

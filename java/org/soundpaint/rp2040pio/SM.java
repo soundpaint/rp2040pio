@@ -235,9 +235,10 @@ public class SM implements Constants
 
   public PLL getPLL() { return pll; }
 
-  public void setCLKDIV(final int clkdiv)
+  public void setCLKDIV(final int clkdiv, final int mask, final boolean xor)
   {
-    pll.setCLKDIV(clkdiv);
+    pll.setCLKDIV(((mask & (xor ? pll.getCLKDIV() ^ clkdiv : clkdiv)) |
+                   (~mask & pll.getCLKDIV())));
   }
 
   public int getCLKDIV()
@@ -255,7 +256,13 @@ public class SM implements Constants
    * class Constants for bit shifting & masking.
    */
 
-  public void setEXECCTRL(final int execctrl)
+  public void setEXECCTRL(final int execctrl, final int mask, final boolean xor)
+  {
+    setEXECCTRL(((mask & (xor ? getEXECCTRL() ^ execctrl : execctrl)) |
+                 (~mask & getEXECCTRL())));
+  }
+
+  private void setEXECCTRL(final int execctrl)
   {
     status.regEXECCTRL_SIDE_EN = ((execctrl >>> 30) & 0x1) != 0x0;
     status.regEXECCTRL_SIDE_PINDIR =
@@ -280,7 +287,14 @@ public class SM implements Constants
       status.regEXECCTRL_STATUS_N;
   }
 
-  public void setSHIFTCTRL(final int shiftctrl)
+  public void setSHIFTCTRL(final int shiftctrl, final int mask,
+                           final boolean xor)
+  {
+    setSHIFTCTRL(((mask & (xor ? getSHIFTCTRL() ^ shiftctrl : shiftctrl)) |
+                 (~mask & getSHIFTCTRL())));
+  }
+
+  private void setSHIFTCTRL(final int shiftctrl)
   {
     fifo.setJoinRX(((shiftctrl >>> 31) & 0x1) != 0x0);
     fifo.setJoinTX(((shiftctrl >>> 30) & 0x1) != 0x0);
@@ -301,11 +315,18 @@ public class SM implements Constants
       (status.regSHIFTCTRL_AUTOPUSH ? 1 : 0) << 16;
   }
 
-  public void setPINCTRL(final int pinctrl)
+  public void setPINCTRL(final int pinctrl, final int mask, final boolean xor)
+  {
+    setPINCTRL(((mask & (xor ? getPINCTRL() ^ pinctrl : pinctrl)) |
+                (~mask & getPINCTRL())));
+  }
+
+  private void setPINCTRL(final int pinctrl)
   {
     status.regPINCTRL_SIDESET_COUNT = (pinctrl >>> 29) & 0x7;
     status.regPINCTRL_SET_COUNT = (pinctrl >>> 26) & 0x7;
     status.regPINCTRL_OUT_COUNT = (pinctrl >>> 20) & 0x3f;
+    status.regPINCTRL_IN_BASE = (pinctrl >>> 15) & 0x1f;
     status.regPINCTRL_SIDESET_BASE = (pinctrl >>> 10) & 0x1f;
     status.regPINCTRL_SET_BASE = (pinctrl >>> 5) & 0x1f;
     status.regPINCTRL_OUT_BASE = pinctrl & 0x1f;

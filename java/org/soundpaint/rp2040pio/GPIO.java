@@ -125,9 +125,7 @@ public class GPIO implements Constants
    */
   public void setFunction(final int gpio, final GPIO_Function fn)
   {
-    if ((gpio < 0) || (gpio >= terminals.length)) {
-      throw new IllegalArgumentException("gpio port out of range: " + gpio);
-    }
+    Constants.checkGpioPin(gpio, "GPIO port");
     if (fn == null) {
       throw new NullPointerException("fn");
     }
@@ -141,9 +139,7 @@ public class GPIO implements Constants
     if (value == null) {
       throw new NullPointerException("value");
     }
-    if ((port < 0) || (port >= terminals.length)) {
-      throw new IllegalArgumentException("port out of range: " + port);
-    }
+    Constants.checkGpioPin(port, "GPIO port");
     terminals[port].value = value;
   }
 
@@ -151,9 +147,7 @@ public class GPIO implements Constants
   {
     // TODO: Clarify what happens when reading from a GPIO with pin
     // direction set to OUT.
-    if ((port < 0) || (port >= terminals.length)) {
-      throw new IllegalArgumentException("port out of range: " + port);
-    }
+    Constants.checkGpioPin(port, "GPIO port");
     return terminals[port].value;
   }
 
@@ -162,38 +156,20 @@ public class GPIO implements Constants
     if (direction == null) {
       throw new NullPointerException("direction");
     }
-    if ((port < 0) || (port >= terminals.length)) {
-      throw new IllegalArgumentException("port out of range: " + port);
-    }
+    Constants.checkGpioPin(port, "GPIO port");
     terminals[port].direction = direction;
   }
 
   public Direction getDirection(final int port)
   {
-    if ((port < 0) || (port >= terminals.length)) {
-      throw new IllegalArgumentException("port out of range: " + port);
-    }
+    Constants.checkGpioPin(port, "GPIO port");
     return terminals[port].direction;
   }
 
   public int getPins(final int base, final int count)
   {
-    if (base < 0) {
-      throw new IllegalArgumentException("GPIO pin base < 0: " + base);
-    }
-    if (base > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("GPIO pin base > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         base);
-    }
-    if (count < 0) {
-      throw new IllegalArgumentException("GPIO pin count < 0: " + count);
-    }
-    if (count > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("GPIO pin count > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         count);
-    }
+    Constants.checkGpioPin(base, "GPIO pin base");
+    Constants.checkGpioPin(count, "GPIO pin count");
     int pins = 0;
     for (int pin = 0; pin < count; pin++) {
       pins = (pins << 0x1) | getBit((base + pin) & 0x1f).getValue();
@@ -203,22 +179,8 @@ public class GPIO implements Constants
 
   public void setPins(final int pins, final int base, final int count)
   {
-    if (base < 0) {
-      throw new IllegalArgumentException("GPIO pin base < 0: " + base);
-    }
-    if (base > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("GPIO pin base > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         base);
-    }
-    if (count < 0) {
-      throw new IllegalArgumentException("GPIO pin count < 0: " + count);
-    }
-    if (count > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("GPIO pin count > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         count);
-    }
+    Constants.checkGpioPin(base, "GPIO pin base");
+    Constants.checkGpioPin(count, "GPIO pin count");
     for (int pin = 0; pin < count; pin++) {
       setBit((base + pin) & 0x1f, bitFromValue((pins >>> pin) & 0x1));
     }
@@ -226,22 +188,8 @@ public class GPIO implements Constants
 
   public int getPinDirs(final int base, final int count)
   {
-    if (base < 0) {
-      throw new IllegalArgumentException("GPIO pin base < 0: " + base);
-    }
-    if (base > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("GPIO pin base > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         base);
-    }
-    if (count < 0) {
-      throw new IllegalArgumentException("GPIO pin count < 0: " + count);
-    }
-    if (count > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("GPIO pin count > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         count);
-    }
+    Constants.checkGpioPin(base, "GPIO pin base");
+    Constants.checkGpioPin(count, "GPIO pin count");
     int pinDirs = 0;
     for (int pin = 0; pin < count; pin++) {
       pinDirs = (pinDirs << 0x1) | getDirection((base + pin) & 0x1f).getValue();
@@ -251,31 +199,20 @@ public class GPIO implements Constants
 
   public void setPinDirs(final int pinDirs, final int base, final int count)
   {
-    if (base < 0) {
-      throw new IllegalArgumentException("GPIO pin base < 0: " + base);
-    }
-    if (base > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("GPIO pin base > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         base);
-    }
-    if (count < 0) {
-      throw new IllegalArgumentException("GPIO pin count < 0: " + count);
-    }
-    if (count > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("GPIO pin count > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         count);
-    }
+    Constants.checkGpioPin(base, "GPIO pin base");
+    Constants.checkGpioPin(count, "GPIO pin count");
     for (int pin = 0; pin < count; pin++) {
       setDirection((base + pin) & 0x1f,
                    directionFromValue((pinDirs >>> pin) & 0x1));
     }
   }
 
-  public void setInputSyncByPass(final int bits)
+  public void setInputSyncByPass(final int bits, final int mask,
+                                 final boolean xor)
   {
-    regINPUT_SYNC_BYPASS = bits;
+    regINPUT_SYNC_BYPASS =
+      (mask & (xor ? regINPUT_SYNC_BYPASS ^ bits : bits)) |
+      (~mask & regINPUT_SYNC_BYPASS);
   }
 
   public int getInputSyncByPass()

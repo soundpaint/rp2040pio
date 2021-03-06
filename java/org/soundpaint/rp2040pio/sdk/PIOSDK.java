@@ -75,13 +75,7 @@ public class PIOSDK implements Constants
                            final int outBase, final int outCount)
   {
     Constants.checkSmNum(smNum);
-    if (outBase < 0) {
-      throw new IllegalArgumentException("outBase < 0: " + outBase);
-    }
-    if (outBase > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("outBase > " + (GPIO_NUM - 1) + ": " +
-                                         outBase);
-    }
+    Constants.checkGpioPin(outBase, "GPIO out base");
     if (outCount < 0) {
       throw new IllegalArgumentException("outCount < 0: " + outCount);
     }
@@ -104,13 +98,7 @@ public class PIOSDK implements Constants
                            final int setBase, final int setCount)
   {
     Constants.checkSmNum(smNum);
-    if (setBase < 0) {
-      throw new IllegalArgumentException("setBase < 0: " + setBase);
-    }
-    if (setBase > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("setBase > " + (GPIO_NUM - 1) + ": " +
-                                         setBase);
-    }
+    Constants.checkGpioPin(setBase, "GPIO set base");
     if (setCount < 0) {
       throw new IllegalArgumentException("setCount < 0: " + setCount);
     }
@@ -131,13 +119,7 @@ public class PIOSDK implements Constants
   public void smSetInPins(final int smNum, final int inBase)
   {
     Constants.checkSmNum(smNum);
-    if (inBase < 0) {
-      throw new IllegalArgumentException("inBase < 0: " + inBase);
-    }
-    if (inBase > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("inBase > " + (GPIO_NUM - 1) + ": " +
-                                         inBase);
-    }
+    Constants.checkGpioPin(inBase, "GPIO in base");
     final int address =
       registers.getSMAddress(PIORegisters.Regs.SM0_PINCTRL, smNum);
     synchronized(registers) {
@@ -151,14 +133,7 @@ public class PIOSDK implements Constants
   public void smSetSideSetPins(final int smNum, final int sideSetBase)
   {
     Constants.checkSmNum(smNum);
-    if (sideSetBase < 0) {
-      throw new IllegalArgumentException("sideSetBase < 0: " + sideSetBase);
-    }
-    if (sideSetBase > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("sideSetBase > " +
-                                         (GPIO_NUM - 1) + ": " +
-                                         sideSetBase);
-    }
+    Constants.checkGpioPin(sideSetBase, "GPIO side set base");
     final int address =
       registers.getSMAddress(PIORegisters.Regs.SM0_PINCTRL, smNum);
     synchronized(registers) {
@@ -288,14 +263,7 @@ public class PIOSDK implements Constants
     if (program == null) {
       throw new NullPointerException("program");
     }
-    if (offset < 0) {
-      throw new IllegalArgumentException("offset < 0: " + offset);
-    }
-    if (offset > MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("offset > " +
-                                         (MEMORY_SIZE - 1) + ": " +
-                                         offset);
-    }
+    Constants.checkSmMemAddr(offset, "offset");
     final int origin = program.getOrigin();
     if (origin >= 0) {
       // do not allocate program with fixed origin at different offset
@@ -314,15 +282,7 @@ public class PIOSDK implements Constants
     if (program == null) {
       throw new NullPointerException("program");
     }
-    if (addressOffset < 0) {
-      throw new IllegalArgumentException("address offset < 0: " +
-                                         addressOffset);
-    }
-    if (addressOffset > MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("addressOffset > " +
-                                         (MEMORY_SIZE - 1) + ": " +
-                                         addressOffset);
-    }
+    Constants.checkSmMemAddr(addressOffset, "address offset");
     final int length = program.getLength();
     synchronized(registers) {
       for (int index = 0; index < length; index++) {
@@ -362,14 +322,7 @@ public class PIOSDK implements Constants
     if (program == null) {
       throw new NullPointerException("program");
     }
-    if (offset < 0) {
-      throw new IllegalArgumentException("offset < 0: " + offset);
-    }
-    if (offset > MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("offset > " +
-                                         (MEMORY_SIZE - 1) + ": " +
-                                         offset);
-    }
+    Constants.checkSmMemAddr(offset, "offset");
     final int origin = program.getOrigin();
     if (origin >= 0) {
       // do not allocate program with fixed origin at different offset
@@ -397,14 +350,7 @@ public class PIOSDK implements Constants
     if (program == null) {
       throw new NullPointerException("program");
     }
-    if (loadedOffset < 0) {
-      throw new IllegalArgumentException("loaded offset < 0: " + loadedOffset);
-    }
-    if (loadedOffset > MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("loaded offset > " +
-                                         (MEMORY_SIZE - 1) + ": " +
-                                         loadedOffset);
-    }
+    Constants.checkSmMemAddr(loadedOffset, "loaded offset");
     final int origin = program.getOrigin();
     if (origin >= 0) {
       // can not remove program from offset it is not designed for
@@ -595,21 +541,8 @@ public class PIOSDK implements Constants
                         final int wrap)
   {
     Constants.checkSmNum(smNum);
-    if (wrapTarget < 0) {
-      throw new IllegalArgumentException("wrap target < 0: " + wrapTarget);
-    }
-    if (wrapTarget > MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("wrap target > " +
-                                         (MEMORY_SIZE - 1) + ": " +
-                                         wrapTarget);
-    }
-    if (wrap < 0) {
-      throw new IllegalArgumentException("wrap < 0: " + wrap);
-    }
-    if (wrap > MEMORY_SIZE - 1) {
-      throw new IllegalArgumentException("wrap > " + (MEMORY_SIZE - 1) + ": " +
-                                         wrap);
-    }
+    Constants.checkSmMemAddr(wrapTarget, "wrap target");
+    Constants.checkSmMemAddr(wrap, "wrap");
     final int address =
       registers.getSMAddress(PIORegisters.Regs.SM0_EXECCTRL, smNum);
     synchronized(registers) {
@@ -859,18 +792,8 @@ public class PIOSDK implements Constants
                                       final boolean isOut)
   {
     Constants.checkSmNum(smNum);
-    if (pinBase < 0) {
-      throw new IllegalArgumentException("pin base < 0: " + pinBase);
-    }
-    if (pinBase > 31) {
-      throw new IllegalArgumentException("pin base > 31: " + pinBase);
-    }
-    if (pinCount < 0) {
-      throw new IllegalArgumentException("pin count < 0: " + pinCount);
-    }
-    if (pinCount > 31) {
-      throw new IllegalArgumentException("pin count > 31: " + pinCount);
-    }
+    Constants.checkGpioPin(pinBase, "GPIO pin base");
+    Constants.checkGpioPin(pinCount, "GPIO pin count");
     final int address =
       registers.getSMAddress(PIORegisters.Regs.SM0_PINCTRL, smNum);
     synchronized(registers) {

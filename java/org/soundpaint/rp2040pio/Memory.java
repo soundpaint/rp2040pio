@@ -38,19 +38,23 @@ public class Memory implements Constants
     code = new short[MEMORY_SIZE];
   }
 
-  public void set(final int address, final short value)
+  public void set(final int address, final int value,
+                  final int mask, final boolean xor)
   {
-    if ((address < 0) || (address >= MEMORY_SIZE)) {
-      throw new IllegalArgumentException("address out of range: " + address);
-    }
+    set(address,
+        (short)((mask & (xor ? get(address) ^ value : value)) |
+                (~mask & get(address))));
+  }
+
+  private void set(final int address, final short value)
+  {
+    Constants.checkSmMemAddr(address, "write address");
     code[address] = value;
   }
 
   public short get(final int address)
   {
-    if ((address < 0) || (address >= MEMORY_SIZE)) {
-      throw new IllegalArgumentException("address out of range: " + address);
-    }
+    Constants.checkSmMemAddr(address, "read address");
     return code[address];
   }
 }
