@@ -219,7 +219,6 @@ public class PIORegisters extends AbstractRegisters implements Constants
   public void writeRegister(final int regNum, final int value, final int mask,
                             final boolean xor)
   {
-    // TODO: Write only masked bits.
     if ((regNum < 0) || (regNum >= REGS.length)) {
       throw new InternalError("regNum out of bounds: " + regNum);
     }

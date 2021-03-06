@@ -245,6 +245,19 @@ public class FIFO implements Constants
   {
     regFDEBUG_TXSTALL = false;
   }
+
+  public int getMemValue(final int address)
+  {
+    if (address < 0) {
+      throw new IllegalArgumentException("address < 0: " + address);
+    }
+    if (address > 2 * FIFO_DEPTH - 1) {
+      throw new IllegalArgumentException("address > " +
+                                         (2 * FIFO_DEPTH - 1) + ": " +
+                                         address);
+    }
+    return 0; // TODO
+  }
 }
 
 /*

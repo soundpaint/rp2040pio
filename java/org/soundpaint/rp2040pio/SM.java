@@ -488,6 +488,8 @@ public class SM implements Constants
     return rxPush(true, true);
   }
 
+  public int getISRShiftCount() { return status.isrShiftCount; }
+
   public int getOSRValue() { return status.osrValue; }
 
   public void setOSRValue(final int value)
@@ -519,6 +521,8 @@ public class SM implements Constants
     destination.accept(data);
     return txPull(true, true);
   }
+
+  public int getOSRShiftCount() { return status.osrShiftCount; }
 
   public int getNum()
   {
@@ -783,6 +787,11 @@ public class SM implements Constants
     synchronized(memory.FETCH_LOCK) {
       return (status.pendingDMAInstruction >= 0) && isStalled();
     }
+  }
+
+  public int getPendingDelay()
+  {
+    return status.pendingDelay;
   }
 
   public void fetchAndDecode() throws Decoder.DecodeException
