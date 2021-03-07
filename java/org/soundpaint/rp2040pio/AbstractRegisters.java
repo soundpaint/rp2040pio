@@ -91,16 +91,30 @@ abstract class AbstractRegisters implements Registers
 
   private static AccessMethod[] ACCESS_METHODS = AccessMethod.values();
 
+  private static void checkAddressAligned(final int address)
+  {
+    if ((address & 0x3) != 0x0) {
+      throw new IllegalArgumentException("address not word-aligned: " +
+                                         String.format("%08x", address));
+    }
+  }
+
+  private static void checkAddressNormalRWSpace(final int address)
+  {
+    if ((address & 0x3000) != 0x0) {
+      throw new IllegalArgumentException("address is not in the space of " +
+                                         "normal read / write access: " +
+                                         String.format("%08x", address));
+    }
+  }
+
   abstract protected void writeRegister(final int regNum,
                                         final int bits, final int mask,
                                         final boolean xor);
 
   public synchronized void writeAddress(final int address, final int value)
   {
-    if ((address & 0x3) != 0x0) {
-      throw new IllegalArgumentException("address not word-aligned: " +
-                                         String.format("%04x", address));
-    }
+    checkAddressAligned(address);
     final AccessMethod accessMethod = ACCESS_METHODS[((address >> 12) & 0x3)];
     final int mask;
     final int bits;
@@ -126,6 +140,30 @@ abstract class AbstractRegisters implements Registers
     }
     writeRegister(((address - baseAddress) & ~0x3000) >>> 2, bits, mask,
                   accessMethod == AccessMethod.ATOMIC_XOR);
+  }
+
+  public void hwSetBits(final int address, final int mask)
+  {
+    checkAddressNormalRWSpace(address);
+    writeAddress(address | REG_ALIAS_SET_BITS, mask);
+  }
+
+  public void hwClearBits(final int address, final int mask)
+  {
+    checkAddressNormalRWSpace(address);
+    writeAddress(address | REG_ALIAS_CLR_BITS, mask);
+  }
+
+  public void hwXorBits(final int address, final int mask)
+  {
+    checkAddressNormalRWSpace(address);
+    writeAddress(address | REG_ALIAS_XOR_BITS, mask);
+  }
+
+  public void hwWriteMasked(final int address, final int values,
+                            final int writeMask)
+  {
+    hwXorBits(address, (readRegister(address) ^ values) & writeMask);
   }
 
   abstract protected int readRegister(final int regNum);

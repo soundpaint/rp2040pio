@@ -717,14 +717,6 @@ public class PIOSDK implements Constants
       shiftCtrl ^= SM0_SHIFTCTRL_FJOIN_RX_BITS;
       registers.writeAddress(address, shiftCtrl);
     }
-    /*
-     * TODO: Check if FIFO implementation behaves correctly for this
-     * code.
-     *
-     * TODO: What if TX join bit is set upon executing this method?
-     * Will this code reconfigure FIFOs to join RX / TX differently?
-     * (Cp. RP Pico SDK Issue #201.)
-     */
   }
 
   public void smSetPins(final int smNum, int pins)
