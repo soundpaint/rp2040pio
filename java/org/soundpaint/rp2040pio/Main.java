@@ -34,6 +34,7 @@ public class Main
   private final SDK sdk;
   private final PIO pio;
   private final PIORegisters pio0Registers;
+  private final PIOEmuRegisters pio0EmuRegisters;
   private final GPIO gpio;
   private final RegisterServer registerServer;
 
@@ -41,10 +42,12 @@ public class Main
   {
     sdk = SDK.getDefaultInstance();
     pio0Registers = sdk.getPIO0SDK().getRegisters();
+    pio0EmuRegisters = sdk.getPIO0SDK().getEmuRegisters();
     pio = pio0Registers.getPIO();
     gpio = pio.getGPIO();
     registerServer = new RegisterServer(SERVER_PORT);
     registerServer.addRegisters(pio0Registers);
+    registerServer.addRegisters(pio0EmuRegisters);
   }
 
   public void run() throws IOException

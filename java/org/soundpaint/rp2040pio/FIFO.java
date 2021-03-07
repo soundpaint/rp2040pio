@@ -24,7 +24,7 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.util.ArrayDeque;
+import java.util.LinkedList;
 import java.util.Collections;
 
 /**
@@ -41,12 +41,12 @@ public class FIFO implements Constants
   /**
    * RX queue from state machine to system.
    */
-  private final ArrayDeque<Integer> rx;
+  private final LinkedList<Integer> rx;
 
   /**
    * TX queue from system to state machine.
    */
-  private final ArrayDeque<Integer> tx;
+  private final LinkedList<Integer> tx;
 
   private boolean regSHIFTCTRL_FJOIN_RX; // bit 31 of SHIFTCTRL
   private boolean regSHIFTCTRL_FJOIN_TX; // bit 30 of SHIFTCTRL
@@ -57,8 +57,8 @@ public class FIFO implements Constants
 
   public FIFO()
   {
-    rx = new ArrayDeque<Integer>();
-    tx = new ArrayDeque<Integer>();
+    rx = new LinkedList<Integer>();
+    tx = new LinkedList<Integer>();
     reset();
   }
 
@@ -256,7 +256,16 @@ public class FIFO implements Constants
                                          (2 * FIFO_DEPTH - 1) + ": " +
                                          address);
     }
-    return 0; // TODO
+    if (regSHIFTCTRL_FJOIN_RX && regSHIFTCTRL_FJOIN_TX)
+      return 0;
+    if (regSHIFTCTRL_FJOIN_TX) {
+      return address < tx.size() ? tx.get(address) : 0;
+    }
+    if (regSHIFTCTRL_FJOIN_RX || (address < FIFO_DEPTH)) {
+      return address < rx.size() ? rx.get(address) : 0;
+    }
+    return
+      address - FIFO_DEPTH < tx.size() ? tx.get(address - FIFO_DEPTH) : 0;
   }
 }
 

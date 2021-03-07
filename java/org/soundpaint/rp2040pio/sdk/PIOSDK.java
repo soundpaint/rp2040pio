@@ -27,6 +27,7 @@ package org.soundpaint.rp2040pio.sdk;
 import java.io.IOException;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PIO;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
 
 /**
@@ -35,6 +36,7 @@ import org.soundpaint.rp2040pio.PIORegisters;
 public class PIOSDK implements Constants
 {
   private final PIORegisters registers;
+  private final PIOEmuRegisters emuRegisters;
   private final int pioBaseAddress;
   private final GPIOSDK gpioSdk;
 
@@ -45,24 +47,33 @@ public class PIOSDK implements Constants
 
   public PIOSDK(final PIO pio, final int pioBaseAddress)
   {
-    this(new PIORegisters(pio, pioBaseAddress), new GPIOSDK(pio.getGPIO()));
+    this(new PIORegisters(pio, pioBaseAddress),
+         new PIOEmuRegisters(pio, pioBaseAddress + 0x0800),
+         new GPIOSDK(pio.getGPIO()));
   }
 
   public PIOSDK(final PIORegisters registers,
+                final PIOEmuRegisters emuRegisters,
                 final GPIOSDK gpioSdk)
   {
     if (registers == null) {
       throw new NullPointerException("registers");
     }
+    if (emuRegisters == null) {
+      throw new NullPointerException("emuRegisters");
+    }
     if (gpioSdk == null) {
       throw new NullPointerException("gpio sdk");
     }
     this.registers = registers;
+    this.emuRegisters = emuRegisters;
     this.pioBaseAddress = registers.getBaseAddress();
     this.gpioSdk = gpioSdk;
   }
 
   public PIORegisters getRegisters() { return registers; }
+
+  public PIOEmuRegisters getEmuRegisters() { return emuRegisters; }
 
   // ---- Functions for compatibility with the Pico SDK, SM Config Group ----
 
