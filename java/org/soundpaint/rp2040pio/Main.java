@@ -25,57 +25,76 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
+import java.util.function.Supplier;
+import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class Main
 {
-  public static final int SERVER_PORT = 1088;
-
   private final SDK sdk;
-  private final PIO pio;
-  private final PIORegisters pio0Registers;
-  private final PIOEmuRegisters pio0EmuRegisters;
-  private final GPIO gpio;
   private final RegisterServer registerServer;
 
   public Main() throws IOException
   {
     sdk = SDK.getDefaultInstance();
-    pio0Registers = sdk.getPIO0SDK().getRegisters();
-    pio0EmuRegisters = sdk.getPIO0SDK().getEmuRegisters();
-    pio = pio0Registers.getPIO();
-    gpio = pio.getGPIO();
-    registerServer = new RegisterServer(SERVER_PORT);
-    registerServer.addRegisters(pio0Registers);
-    registerServer.addRegisters(pio0EmuRegisters);
+    registerServer = new RegisterServer(sdk);
+  }
+
+  public static Supplier<Boolean> createDelayFilter(final PIOSDK pioSdk,
+                                                    final int smNum)
+  {
+    final Supplier<Boolean> displayFilter = () -> {
+      final PIOEmuRegisters pioEmuRegisters = pioSdk.getEmuRegisters();
+      final int smDelayCycleAddress =
+      pioEmuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_DELAY_CYCLE,
+                                   smNum);
+      final boolean isDelayCycle =
+      pioEmuRegisters.readAddress(smDelayCycleAddress) != 0x0;
+      return !isDelayCycle;
+    };
+    return displayFilter;
   }
 
   public void run() throws IOException
   {
     final String programResourcePath = "/examples/squarewave.hex";
     //final String programResourcePath = "/examples/ws2812.hex";
-    //final Monitor monitor = new Monitor();
+    //final Monitor monitor = new Monitor(sdk);
     //monitor.addProgram(programResourcePath);
     //monitor.setSideSetCount(1);
     //monitor.dumpProgram();
-    final TimingDiagram diagram = new TimingDiagram();
+    final TimingDiagram diagram = new TimingDiagram(sdk);
     diagram.addProgram(programResourcePath);
     diagram.addSignal(DiagramConfig.createClockSignal("clock"));
-    diagram.addSignal(new
-                      DiagramConfig.BitSignal("SM0_CLK_ENABLE",
-                                              () ->
-                                              Bit.fromValue(pio.getSM(0).
-                                                            getPLL().
-                                                            getClockEnable())));
-    diagram.addSignal(DiagramConfig.createGPIOBitSignal(null, gpio, 0));
-    diagram.addSignal(DiagramConfig.createGPIOValueSignal(null, gpio, 0));
-    diagram.addSignal(DiagramConfig.createGPIOValueSignal(null, gpio, 1));
-    diagram.addSignal(DiagramConfig.createGPIOValueSignal(null, gpio, 10));
-    diagram.addSignal(DiagramConfig.createPCStateSignal(null, pio, 0, false));
-    diagram.addSignal(DiagramConfig.createPCStateSignal(null, pio, 0, true));
-    diagram.addSignal(DiagramConfig.createInstructionSignal(null, pio, 0, false, true));
-    diagram.addSignal(DiagramConfig.createInstructionSignal(null, pio, 0, true, false));
-    diagram.addSignal(DiagramConfig.createInstructionSignal(null, pio, 0, true, true));
+
+    diagram.addSignal(sdk.getPIO0Address(PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);
+    diagram.addSignal("GPIO 0",
+                      sdk.getPIO0Address(PIOEmuRegisters.Regs.GPIO_PINS), 0, 0);
+    diagram.addSignal("GPIO 0",
+                      sdk.getPIO0Address(PIOEmuRegisters.Regs.GPIO_PINS), 0);
+    diagram.addSignal("GPIO 1",
+                      sdk.getPIO0Address(PIOEmuRegisters.Regs.GPIO_PINS), 1, 1);
+    diagram.addSignal("GPIO 10",
+                      sdk.getPIO0Address(PIOEmuRegisters.Regs.GPIO_PINS), 10, 10);
+    diagram.addSignal(sdk.getPIO0Address(PIOEmuRegisters.Regs.SM0_PC));
+    diagram.addSignal(sdk.getPIO0Address(PIOEmuRegisters.Regs.SM0_PC),
+                      createDelayFilter(sdk.getPIO0SDK(), 0));
+
+    final int instrAddr = sdk.getPIO0Address(PIORegisters.Regs.SM0_INSTR);
+    final DiagramConfig.Signal instr1 =
+      DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
+                                            0, null, false, null);
+    diagram.addSignal(instr1);
+    final DiagramConfig.Signal instr2 =
+      DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
+                                            0, null, true, null);
+    diagram.addSignal(instr2);
+    final DiagramConfig.Signal instr3 =
+      DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
+                                            0, null, true,
+                                            createDelayFilter(sdk.getPIO0SDK(), 0));
+    diagram.addSignal(instr3);
+
     //diagram.setSideSetCount(1);
     diagram.create();
   }

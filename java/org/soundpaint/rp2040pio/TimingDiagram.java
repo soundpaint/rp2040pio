@@ -41,6 +41,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import org.soundpaint.rp2040pio.sdk.Program;
@@ -136,9 +137,17 @@ public class TimingDiagram implements Constants
     }
   }
 
-  public TimingDiagram()
+  private TimingDiagram()
   {
-    sdk = SDK.getDefaultInstance();
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public TimingDiagram(final SDK sdk)
+  {
+    if (sdk == null) {
+      throw new NullPointerException("sdk");
+    }
+    this.sdk = sdk;
     pioSdk = sdk.getPIO0SDK();
     pio = pioSdk.getRegisters().getPIO();
     gpio = pio.getGPIO();
@@ -180,12 +189,64 @@ public class TimingDiagram implements Constants
     return null;
   }
 
-  public void addSignal(final DiagramConfig.Signal signal)
+  public DiagramConfig.Signal addSignal(final DiagramConfig.Signal signal)
   {
     if (signal == null) {
       throw new NullPointerException("signal");
     }
     diagramConfig.addSignal(signal);
+    return signal;
+  }
+
+  public DiagramConfig.Signal addSignal(final String label, final int address,
+                                        final int msb, final int lsb,
+                                        final Supplier<Boolean> displayFilter)
+  {
+    final DiagramConfig.ValuedSignal<Integer> signal =
+      DiagramConfig.createFromRegister(sdk, label, address, msb, lsb,
+                                       displayFilter);
+    return addSignal(signal);
+  }
+
+  public DiagramConfig.Signal addSignal(final String label, final int address,
+                                        final int msb, final int lsb)
+  {
+    return addSignal(label, address, msb, lsb, null);
+  }
+
+  public DiagramConfig.Signal addSignal(final String label, final int address,
+                                        final int bit)
+  {
+    final DiagramConfig.BitSignal signal =
+      DiagramConfig.createFromRegister(sdk, label, address, bit);
+    return addSignal(signal);
+  }
+
+  public DiagramConfig.Signal addSignal(final int address, final int bit)
+  {
+    return addSignal(null, address, bit);
+  }
+
+  public DiagramConfig.Signal addSignal(final String label, final int address)
+  {
+    return addSignal(label, address, 31, 0);
+  }
+
+  public DiagramConfig.Signal addSignal(final String label, final int address,
+                                        final Supplier<Boolean> displayFilter)
+  {
+    return addSignal(label, address, 31, 0, displayFilter);
+  }
+
+  public DiagramConfig.Signal addSignal(final int address)
+  {
+    return addSignal(null, address);
+  }
+
+  public DiagramConfig.Signal addSignal(final int address,
+                                        final Supplier<Boolean> displayFilter)
+  {
+    return addSignal(null, address, displayFilter);
   }
 
   private int getPreferredHeight()

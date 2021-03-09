@@ -35,6 +35,7 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
   public enum Regs {
     SM0_REGX,
     SM0_REGY,
+    SM0_PC,
     SM0_ISR,
     SM0_ISR_SHIFT_COUNT,
     SM0_OSR,
@@ -47,10 +48,13 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM0_FIFO_MEM5,
     SM0_FIFO_MEM6,
     SM0_FIFO_MEM7,
+    SM0_DELAY,
+    SM0_DELAY_CYCLE,
     SM0_PENDING_DELAY,
     SM0_CLK_ENABLE,
     SM1_REGX,
     SM1_REGY,
+    SM1_PC,
     SM1_ISR,
     SM1_ISR_SHIFT_COUNT,
     SM1_OSR,
@@ -63,10 +67,13 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM1_FIFO_MEM5,
     SM1_FIFO_MEM6,
     SM1_FIFO_MEM7,
+    SM1_DELAY,
+    SM1_DELAY_CYCLE,
     SM1_PENDING_DELAY,
     SM1_CLK_ENABLE,
     SM2_REGX,
     SM2_REGY,
+    SM2_PC,
     SM2_ISR,
     SM2_ISR_SHIFT_COUNT,
     SM2_OSR,
@@ -79,10 +86,13 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM2_FIFO_MEM5,
     SM2_FIFO_MEM6,
     SM2_FIFO_MEM7,
+    SM2_DELAY,
+    SM2_DELAY_CYCLE,
     SM2_PENDING_DELAY,
     SM2_CLK_ENABLE,
     SM3_REGX,
     SM3_REGY,
+    SM3_PC,
     SM3_ISR,
     SM3_ISR_SHIFT_COUNT,
     SM3_OSR,
@@ -95,6 +105,8 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM3_FIFO_MEM5,
     SM3_FIFO_MEM6,
     SM3_FIFO_MEM7,
+    SM3_DELAY,
+    SM3_DELAY_CYCLE,
     SM3_PENDING_DELAY,
     SM3_CLK_ENABLE,
     GPIO_PINS,
@@ -127,7 +139,13 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     return pio.getIndex();
   }
 
-  public int getAddress(PIOEmuRegisters.Regs register)
+  @Override
+  protected String getLabelForRegister(final int regNum)
+  {
+    return REGS[regNum].toString();
+  }
+
+  public int getAddress(final PIOEmuRegisters.Regs register)
   {
     if (register == null) {
       throw new NullPointerException("register");
@@ -135,7 +153,7 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     return getBaseAddress() + 0x4 * register.ordinal();
   }
 
-  public int getSMAddress(PIOEmuRegisters.Regs register, final int smNum)
+  public int getSMAddress(final PIOEmuRegisters.Regs register, final int smNum)
   {
     Constants.checkSmNum(smNum);
     if (register == null) {
@@ -144,6 +162,7 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     switch (register) {
     case SM0_REGX:
     case SM0_REGY:
+    case SM0_PC:
     case SM0_ISR:
     case SM0_ISR_SHIFT_COUNT:
     case SM0_OSR:
@@ -156,6 +175,8 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM0_FIFO_MEM5:
     case SM0_FIFO_MEM6:
     case SM0_FIFO_MEM7:
+    case SM0_DELAY:
+    case SM0_DELAY_CYCLE:
     case SM0_PENDING_DELAY:
     case SM0_CLK_ENABLE:
       break; // ok
@@ -180,8 +201,8 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
   }
 
   @Override
-  public void writeRegister(final int regNum, final int value, final int mask,
-                            final boolean xor)
+  protected void writeRegister(final int regNum, final int value,
+                               final int mask, final boolean xor)
   {
     if ((regNum < 0) || (regNum >= REGS.length)) {
       throw new InternalError("regNum out of bounds: " + regNum);
@@ -197,6 +218,11 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM1_REGY:
     case SM2_REGY:
     case SM3_REGY:
+      break; // (for now) read-only address
+    case SM0_PC:
+    case SM1_PC:
+    case SM2_PC:
+    case SM3_PC:
       break; // (for now) read-only address
     case SM0_ISR:
     case SM1_ISR:
@@ -217,6 +243,16 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM1_OSR_SHIFT_COUNT:
     case SM2_OSR_SHIFT_COUNT:
     case SM3_OSR_SHIFT_COUNT:
+      break; // (for now) read-only address
+    case SM0_DELAY:
+    case SM1_DELAY:
+    case SM2_DELAY:
+    case SM3_DELAY:
+      break; // (for now) read-only address
+    case SM0_DELAY_CYCLE:
+    case SM1_DELAY_CYCLE:
+    case SM2_DELAY_CYCLE:
+    case SM3_DELAY_CYCLE:
       break; // (for now) read-only address
     case SM0_PENDING_DELAY:
     case SM1_PENDING_DELAY:
@@ -292,7 +328,7 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
   }
 
   @Override
-  public synchronized int readRegister(final int regNum)
+  protected synchronized int readRegister(final int regNum)
   {
     if ((regNum < 0) || (regNum >= REGS.length)) {
       throw new InternalError("regNum out of bounds: " + regNum);
@@ -311,6 +347,12 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM3_REGY:
       return
         pio.getSM((regNum - Regs.SM0_REGY.ordinal()) / SM_SIZE).getY();
+    case SM0_PC:
+    case SM1_PC:
+    case SM2_PC:
+    case SM3_PC:
+      return
+        pio.getSM((regNum - Regs.SM0_PC.ordinal()) / SM_SIZE).getPC();
     case SM0_ISR:
     case SM1_ISR:
     case SM2_ISR:
@@ -337,6 +379,20 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
       return
         pio.getSM((regNum - Regs.SM0_OSR_SHIFT_COUNT.ordinal()) / SM_SIZE).
         getOSRShiftCount();
+    case SM0_DELAY:
+    case SM1_DELAY:
+    case SM2_DELAY:
+    case SM3_DELAY:
+      return
+        pio.getSM((regNum - Regs.SM0_DELAY.ordinal()) / SM_SIZE).
+        getDelay();
+    case SM0_DELAY_CYCLE:
+    case SM1_DELAY_CYCLE:
+    case SM2_DELAY_CYCLE:
+    case SM3_DELAY_CYCLE:
+      return
+        pio.getSM((regNum - Regs.SM0_DELAY_CYCLE.ordinal()) / SM_SIZE).
+        isDelayCycle() ? 0x1 : 0x0;
     case SM0_PENDING_DELAY:
     case SM1_PENDING_DELAY:
     case SM2_PENDING_DELAY:

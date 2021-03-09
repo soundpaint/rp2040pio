@@ -30,21 +30,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class RegisterServer
 {
+  public static final int DEFAULT_PORT_NUMBER = 1088;
+
   private static final String SERVER_VERSION = "RP PIO EMULATION V0.1";
   private static final String[] NULL_ARGS = new String[0];
 
-  /*
-   * TODO: Really should replace this simple-minded list approach with
-   * either a responsibility chain or a composite design pattern, as
-   * soon as the number of registers interfaces grows.
-   */
-  private final List<Registers> registersList;
-
+  private final SDK sdk;
   private final int portNumber;
   private final ServerSocket serverSocket;
   private int connectionCounter;
@@ -54,31 +49,18 @@ public class RegisterServer
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public RegisterServer(final int portNumber) throws IOException
+  public RegisterServer(final SDK sdk) throws IOException
   {
+    this(sdk, DEFAULT_PORT_NUMBER);
+  }
+
+  public RegisterServer(final SDK sdk, final int portNumber) throws IOException
+  {
+    this.sdk = sdk;
     this.portNumber = portNumber;
-    registersList = new ArrayList<Registers>();
     serverSocket = new ServerSocket(portNumber);
     connectionCounter = 0;
     new Thread(() -> listen()).start();
-  }
-
-  public void addRegisters(final Registers registers)
-  {
-    if (registers == null) {
-      throw new NullPointerException("registers");
-    }
-    registersList.add(registers);
-  }
-
-  private int read(final int address)
-  {
-    for (final Registers registers : registersList) {
-      if (registers.providesAddress(address)) {
-        return registers.readAddress(address);
-      }
-    }
-    return 0;
   }
 
   private void listen()
@@ -192,7 +174,7 @@ public class RegisterServer
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }
-    final int value = read(address);
+    final int value = sdk.readAddress(address);
     return createResponse(ResponseStatus.OK, String.valueOf(value));
   }
 

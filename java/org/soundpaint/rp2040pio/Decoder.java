@@ -1,5 +1,5 @@
 /*
- * @(#)SM.java 1.00 21/01/31
+ * @(#)Decoder.java 1.00 21/01/31
  *
  * Copyright (C) 2021 Jürgen Reuter
  *

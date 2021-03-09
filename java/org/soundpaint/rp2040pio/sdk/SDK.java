@@ -24,31 +24,111 @@
  */
 package org.soundpaint.rp2040pio.sdk;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PIO;
+import org.soundpaint.rp2040pio.PIORegisters;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
+import org.soundpaint.rp2040pio.Registers;
 
 public class SDK
 {
-  private final GPIOSDK gpioSdk;
-  private final PIOSDK pio0Sdk;
-  private final PIOSDK pio1Sdk;
-
-  private static final SDK DEFAULT_INSTANCE =
-    new SDK();
-
+  private static final SDK DEFAULT_INSTANCE = new SDK();
   public static SDK getDefaultInstance() { return DEFAULT_INSTANCE; }
+
+  public final GPIOSDK gpioSdk;
+  public final PIOSDK pio0Sdk;
+  public final PIOSDK pio1Sdk;
+
+  /*
+   * TODO: Really should replace this simple-minded list approach with
+   * either a responsibility chain or a composite design pattern, as
+   * soon as the number of registers interfaces grows.
+   */
+  private final List<Registers> registersList;
 
   private SDK()
   {
+    registersList = new ArrayList<Registers>();
+
     pio0Sdk = new PIOSDK(PIO.PIO0, PIO.PIO0_BASE);
+    final PIORegisters pio0Registers = pio0Sdk.getRegisters();
+    registersList.add(pio0Registers);
+    final PIOEmuRegisters pio0EmuRegisters = pio0Sdk.getEmuRegisters();
+    registersList.add(pio0EmuRegisters);
+
     pio1Sdk = new PIOSDK(PIO.PIO1, PIO.PIO1_BASE);
+    final PIORegisters pio1Registers = pio1Sdk.getRegisters();
+    registersList.add(pio1Registers);
+    final PIOEmuRegisters pio1EmuRegisters = pio1Sdk.getEmuRegisters();
+    registersList.add(pio1EmuRegisters);
+
     gpioSdk = new GPIOSDK(pio0Sdk.getRegisters().getPIO().getGPIO());
+    // TODO: Implement registers for GPIO SDK.
   }
 
   public GPIOSDK getGPIOSDK() { return gpioSdk; }
-
   public PIOSDK getPIO0SDK() { return pio0Sdk; }
-
   public PIOSDK getPIO1SDK() { return pio1Sdk; }
+
+  public Registers getProvidingRegisters(final int address)
+  {
+    for (final Registers registers : registersList) {
+      if (registers.providesAddress(address)) {
+        return registers;
+      }
+    }
+    return null;
+  }
+
+  public int readAddress(final int address)
+  {
+    final Registers registers = getProvidingRegisters(address);
+    return registers != null ? registers.readAddress(address) : 0;
+  }
+
+  public int readAddress(final int address, final int msb, final int lsb)
+  {
+    Constants.checkMSBLSB(msb, lsb);
+    final int value = readAddress(address);
+    return
+      (msb - lsb == 31) ?
+      value :
+      (value >>> lsb) & ((0x1 << (msb - lsb + 1)) - 1);
+  }
+
+  public void writeAddress(final int address, final int value)
+  {
+    final Registers registers = getProvidingRegisters(address);
+    if (registers != null) registers.writeAddress(address, value);
+  }
+
+  public String getLabelForAddress(final int address)
+  {
+    final Registers registers = getProvidingRegisters(address);
+    return registers != null ? registers.getLabel(address) : null;
+  }
+
+  public int getPIO0Address(final PIORegisters.Regs register)
+  {
+    return pio0Sdk.getRegisters().getAddress(register);
+  }
+
+  public int getPIO1Address(final PIORegisters.Regs register)
+  {
+    return pio1Sdk.getRegisters().getAddress(register);
+  }
+
+  public int getPIO0Address(final PIOEmuRegisters.Regs register)
+  {
+    return pio0Sdk.getEmuRegisters().getAddress(register);
+  }
+
+  public int getPIO1Address(final PIOEmuRegisters.Regs register)
+  {
+    return pio1Sdk.getEmuRegisters().getAddress(register);
+  }
 }
 
 /*

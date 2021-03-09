@@ -85,7 +85,7 @@ public abstract class Instruction
     return delay;
   }
 
-  private String getDelayDisplayValue()
+  private static String getDelayDisplayValue(final int delay)
   {
     return delay > 0 ? "[" + delay + "]" : "";
   }
@@ -95,7 +95,7 @@ public abstract class Instruction
     return opCode;
   }
 
-  private String getSideSetDisplayValue()
+  private static String getSideSetDisplayValue(final int sideSet)
   {
     return sideSet >= 0 ? "side " + Integer.toString(sideSet) : "";
   }
@@ -203,8 +203,8 @@ public abstract class Instruction
   {
     final String mnemonic = getMnemonic();
     final String paramsDisplay = getParamsDisplay();
-    final String sideSetDisplayValue = getSideSetDisplayValue();
-    final String delayDisplayValue = getDelayDisplayValue();
+    final String sideSetDisplayValue = getSideSetDisplayValue(sideSet);
+    final String delayDisplayValue = getDelayDisplayValue(delay);
     return
       String.format("%-16s%s",
                     mnemonic +

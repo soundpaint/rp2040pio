@@ -33,6 +33,7 @@ public interface Registers
 
   int getBaseAddress();
   boolean providesAddress(final int address);
+  String getLabel(final int address);
   void writeAddress(final int address, final int value);
   int readAddress(final int address);
 }

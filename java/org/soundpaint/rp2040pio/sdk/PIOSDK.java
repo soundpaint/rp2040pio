@@ -87,13 +87,7 @@ public class PIOSDK implements Constants
   {
     Constants.checkSmNum(smNum);
     Constants.checkGpioPin(outBase, "GPIO out base");
-    if (outCount < 0) {
-      throw new IllegalArgumentException("outCount < 0: " + outCount);
-    }
-    if (outCount > GPIO_NUM) {
-      throw new IllegalArgumentException("outCount > " + GPIO_NUM + ": " +
-                                         outCount);
-    }
+    Constants.checkGpioPinsCount(outCount, "GPIO out count");
     final int address =
       registers.getSMAddress(PIORegisters.Regs.SM0_PINCTRL, smNum);
     synchronized(registers) {

@@ -117,6 +117,7 @@ public class GPIO implements Constants
       terminal.direction = Direction.IN;
       terminal.value = Bit.LOW;
     }
+    terminals[20].value = null;
   }
 
   /**
@@ -169,10 +170,10 @@ public class GPIO implements Constants
   public int getPins(final int base, final int count)
   {
     Constants.checkGpioPin(base, "GPIO pin base");
-    Constants.checkGpioPin(count, "GPIO pin count");
+    Constants.checkGpioPinsCount(count, "GPIO pin count");
     int pins = 0;
     for (int pin = 0; pin < count; pin++) {
-      pins = (pins << 0x1) | getBit((base + pin) & 0x1f).getValue();
+      pins = (pins << 0x1) | getBit((base - pin - 1) & 0x1f).getValue();
     }
     return pins;
   }
@@ -180,7 +181,7 @@ public class GPIO implements Constants
   public void setPins(final int pins, final int base, final int count)
   {
     Constants.checkGpioPin(base, "GPIO pin base");
-    Constants.checkGpioPin(count, "GPIO pin count");
+    Constants.checkGpioPinsCount(count, "GPIO pin count");
     for (int pin = 0; pin < count; pin++) {
       setBit((base + pin) & 0x1f, bitFromValue((pins >>> pin) & 0x1));
     }
@@ -189,10 +190,11 @@ public class GPIO implements Constants
   public int getPinDirs(final int base, final int count)
   {
     Constants.checkGpioPin(base, "GPIO pin base");
-    Constants.checkGpioPin(count, "GPIO pin count");
+    Constants.checkGpioPinsCount(count, "GPIO pin count");
     int pinDirs = 0;
     for (int pin = 0; pin < count; pin++) {
-      pinDirs = (pinDirs << 0x1) | getDirection((base + pin) & 0x1f).getValue();
+      pinDirs =
+        (pinDirs << 0x1) | getDirection((base - pin - 1) & 0x1f).getValue();
     }
     return pinDirs;
   }
@@ -200,7 +202,7 @@ public class GPIO implements Constants
   public void setPinDirs(final int pinDirs, final int base, final int count)
   {
     Constants.checkGpioPin(base, "GPIO pin base");
-    Constants.checkGpioPin(count, "GPIO pin count");
+    Constants.checkGpioPinsCount(count, "GPIO pin count");
     for (int pin = 0; pin < count; pin++) {
       setDirection((base + pin) & 0x1f,
                    directionFromValue((pinDirs >>> pin) & 0x1));

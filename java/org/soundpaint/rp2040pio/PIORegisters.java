@@ -139,7 +139,13 @@ public class PIORegisters extends AbstractRegisters implements Constants
     return pio.getIndex();
   }
 
-  public int getAddress(PIORegisters.Regs register)
+  @Override
+  protected String getLabelForRegister(final int regNum)
+  {
+    return REGS[regNum].toString();
+  }
+
+  public int getAddress(final PIORegisters.Regs register)
   {
     if (register == null) {
       throw new NullPointerException("register");
@@ -147,7 +153,7 @@ public class PIORegisters extends AbstractRegisters implements Constants
     return getBaseAddress() + 0x4 * register.ordinal();
   }
 
-  public int getSMAddress(PIORegisters.Regs register, final int smNum)
+  public int getSMAddress(final PIORegisters.Regs register, final int smNum)
   {
     Constants.checkSmNum(smNum);
     if (register == null) {
@@ -216,8 +222,8 @@ public class PIORegisters extends AbstractRegisters implements Constants
   }
 
   @Override
-  public void writeRegister(final int regNum, final int value, final int mask,
-                            final boolean xor)
+  protected void writeRegister(final int regNum, final int value,
+                               final int mask, final boolean xor)
   {
     if ((regNum < 0) || (regNum >= REGS.length)) {
       throw new InternalError("regNum out of bounds: " + regNum);
@@ -421,7 +427,7 @@ public class PIORegisters extends AbstractRegisters implements Constants
   }
 
   @Override
-  public synchronized int readRegister(final int regNum)
+  protected synchronized int readRegister(final int regNum)
   {
     if ((regNum < 0) || (regNum >= REGS.length)) {
       throw new InternalError("regNum out of bounds: " + regNum);

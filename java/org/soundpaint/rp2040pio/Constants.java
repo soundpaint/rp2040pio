@@ -112,6 +112,29 @@ public interface Constants
     }
   };
 
+  public static void checkBit(final int bit)
+  {
+    if (bit < 0) {
+      throw new IllegalArgumentException("bit < 0: " + bit);
+    }
+    if (bit > 31) {
+      throw new IllegalArgumentException("bit > 31: " + bit);
+    }
+  }
+
+  public static void checkMSBLSB(final int msb, final int lsb)
+  {
+    if (lsb < 0) {
+      throw new IllegalArgumentException("lsb < 0: " + lsb);
+    }
+    if (msb > 31) {
+      throw new IllegalArgumentException("msb > 31: " + msb);
+    }
+    if (lsb > msb) {
+      throw new IllegalArgumentException("lsb > msb: " + lsb + " > " + msb);
+    }
+  }
+
   public static void checkGpioPin(final int pin, final String label)
   {
     if (pin < 0) {
@@ -120,6 +143,17 @@ public interface Constants
     if (pin > GPIO_NUM - 1) {
       throw new IllegalArgumentException(label + " > " + (GPIO_NUM - 1) + ": " +
                                          pin);
+    }
+  }
+
+  public static void checkGpioPinsCount(final int count, final String label)
+  {
+    if (count < 0) {
+      throw new IllegalArgumentException(label + " < 0: " + count);
+    }
+    if (count > GPIO_NUM) {
+      throw new IllegalArgumentException(label + " > " + GPIO_NUM + ": " +
+                                         count);
     }
   }
 

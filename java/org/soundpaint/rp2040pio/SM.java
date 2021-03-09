@@ -829,16 +829,22 @@ public class SM implements Constants
     return status.resultState == Instruction.ResultState.STALL;
   }
 
+  public int getDelay()
+  {
+    return status.instruction.getDelay();
+  }
+
   public boolean isDelayCycle()
   {
     return status.isDelayCycle;
   }
 
-  public Instruction getCurrentInstruction()
-  {
-    return status.instruction;
-  }
-
+  /*
+   * TODO: Eliminate this method from this class, since it is used on
+   * application level only, but is not part of the emulation.
+   * Instead, retrieve all neccessary information for a dump via the
+   * Registers interface.
+   */
   public void dumpMemory()
   {
     for (int address = 0; address < MEMORY_SIZE; address++) {

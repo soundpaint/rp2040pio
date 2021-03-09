@@ -46,9 +46,17 @@ public class Monitor
   private final PIO pio;
   private final GPIO gpio;
 
-  public Monitor()
+  private Monitor()
   {
-    sdk = SDK.getDefaultInstance();
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public Monitor(final SDK sdk)
+  {
+    if (sdk == null) {
+      throw new NullPointerException("sdk");
+    }
+    this.sdk = sdk;
     pioSdk = sdk.getPIO0SDK();
     pio = pioSdk.getRegisters().getPIO();
     gpio = pio.getGPIO();

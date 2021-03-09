@@ -66,10 +66,12 @@ abstract class AbstractRegisters implements Registers
     addrMax = baseAddress + size * 0x4;
   }
 
+  @Override
   public int getBaseAddress() { return baseAddress; }
 
   public int getSize() { return size; }
 
+  @Override
   public boolean providesAddress(final int address)
   {
     if ((address & 0x3) != 0x0) {
@@ -83,6 +85,17 @@ abstract class AbstractRegisters implements Registers
      */
     final int offset = address - baseAddress;
     return (offset >= 0) && (offset < addrMax - addrMin);
+  }
+
+  abstract protected String getLabelForRegister(final int regNum);
+
+  @Override
+  public String getLabel(final int address)
+  {
+    if (!providesAddress(address)) {
+      return null;
+    }
+    return getLabelForRegister(((address - baseAddress) & ~0x3000) >>> 2);
   }
 
   private enum AccessMethod {
@@ -112,6 +125,7 @@ abstract class AbstractRegisters implements Registers
                                         final int bits, final int mask,
                                         final boolean xor);
 
+  @Override
   public synchronized void writeAddress(final int address, final int value)
   {
     checkAddressAligned(address);
@@ -168,6 +182,7 @@ abstract class AbstractRegisters implements Registers
 
   abstract protected int readRegister(final int regNum);
 
+  @Override
   public synchronized int readAddress(final int address)
   {
     if ((address & 0x3) != 0x0) {

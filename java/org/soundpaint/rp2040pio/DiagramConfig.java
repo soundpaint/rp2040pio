@@ -29,6 +29,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.soundpaint.rp2040pio.sdk.PIOSDK;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
  * Configuration of a timing diagram.
@@ -39,7 +41,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
    * Holds a copy of all info of a specific Instruction during a
    * specific cycle that is relevant for the timing diagram.
    */
-  public static class InstructionInfo
+  private static class InstructionInfo
   {
     private final String mnemonic;
     private final String fullStatement;
@@ -51,21 +53,15 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public InstructionInfo(final SM sm, final boolean hideDelayCycle,
-                           final boolean showAddress)
+    public InstructionInfo(final String mnemonic, final String fullStatement,
+                           final boolean isDelayCycle, final int delay)
     {
       // instruction & state machine will change, hence save snapshot
       // of relevant info
-      final Instruction instruction = sm.getCurrentInstruction();
-      if (instruction == null) {
-        throw new NullPointerException("instruction");
-      }
-      final String addressLabel = showAddress ? sm.getPC() + ": " : "";
-      mnemonic = instruction.getMnemonic().toUpperCase();
-      fullStatement =
-        addressLabel + instruction.toString().replaceAll("\\s{2,}", " ");
-      isDelayCycle = !hideDelayCycle && sm.isDelayCycle();
-      delay = instruction.getDelay();
+      this.mnemonic = mnemonic;
+      this.fullStatement = fullStatement;
+      this.isDelayCycle = isDelayCycle;
+      this.delay = delay;
     }
 
     @Override
@@ -364,27 +360,65 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     return new DiagramConfig.ValuedSignal<String>(signalLabel, valueGetter);
   }
 
+  private static final String[] MNEMONIC =
+  {"jmp", "wait", "in", "out", "push", "mov", "irq", "set"};
+
   public static ValuedSignal<InstructionInfo>
-    createInstructionSignal(final String label, final PIO pio, final int smNum,
-                            final boolean hideDelayCycles,
-                            final boolean showAddress)
+    createInstructionSignal(final SDK sdk,
+                            final PIOSDK pioSdk,
+                            final int address, final int smNum,
+                            final String label,
+                            final boolean showAddress,
+                            final Supplier<Boolean> displayFilter)
   {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
+    if (sdk == null) {
+      throw new NullPointerException("sdk");
     }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " +
-                                         (SM_COUNT - 1) + ": " +
-                                         smNum);
+    if (pioSdk == null) {
+      throw new NullPointerException("pioSdk");
     }
-    final String signalLabel = label != null ? label : "SM" + smNum + "_INSTR";
-    final Supplier<InstructionInfo> valueGetter =
-      () -> new InstructionInfo(pio.getSM(smNum), hideDelayCycles, showAddress);
-    final Supplier<Boolean> changeInfoGetter =
-      () -> !pio.getSM(smNum).isStalled() && !pio.getSM(smNum).isDelayCycle();
+    Constants.checkSmNum(smNum);
+    final String signalLabel = createSignalLabel(sdk, label, address, 31, 0);
+    final Supplier<InstructionInfo> valueGetter = () -> {
+      if ((displayFilter != null) && (!displayFilter.get()))
+        return null;
+      final PIORegisters pioRegisters = pioSdk.getRegisters();
+      final PIOEmuRegisters pioEmuRegisters = pioSdk.getEmuRegisters();
+
+      final int smInstrAddress =
+      pioRegisters.getSMAddress(PIORegisters.Regs.SM0_INSTR, smNum);
+      final int opCode = pioRegisters.readAddress(smInstrAddress) & 0xffff;
+
+      final int smPCAddress =
+      pioEmuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_PC, smNum);
+      final int pc = pioEmuRegisters.readAddress(smPCAddress);
+      final String addressLabel =
+      showAddress ? String.format("%02x:", pc) : "";
+
+      final int smDelayAddress =
+      pioEmuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_DELAY, smNum);
+      final int delay = pioEmuRegisters.readAddress(smDelayAddress);
+
+      final int smDelayCycleAddress =
+      pioEmuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_DELAY_CYCLE, smNum);
+      final boolean isDelayCycle =
+      pioEmuRegisters.readAddress(smDelayCycleAddress) != 0x0;
+
+      final String mnemonic;
+      if (opCode == 0xa042)
+        mnemonic = "nop";
+      else if ((opCode & 0xe080) == 0x8080)
+        mnemonic = "pull";
+      else
+        mnemonic = MNEMONIC[opCode >>> 13];
+      final String fullStatement =
+      addressLabel + mnemonic; // TODO
+      // addressLabel + instruction.toString().replaceAll("\\s{2,}", " ");
+
+      return new InstructionInfo(mnemonic, fullStatement, isDelayCycle, delay);
+    };
     final ValuedSignal<InstructionInfo> instructionSignal =
-      new ValuedSignal<InstructionInfo>(signalLabel,
-                                        valueGetter/*, changeInfoGetter*/);
+      new ValuedSignal<InstructionInfo>(signalLabel, valueGetter);
     instructionSignal.setRenderer((instructionInfo) ->
                                   instructionInfo.toString());
     instructionSignal.setToolTipTexter((instructionInfo) ->
@@ -420,6 +454,70 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return
       new DiagramConfig.BitSignal(signalLabel, () -> gpio.getBit(pin));
+  }
+
+  private static String createSignalLabel(final SDK sdk, final String label,
+                                          final int address, final int bit)
+  {
+    return
+      (label != null) ? label : sdk.getLabelForAddress(address) + "_" + bit;
+  }
+
+  private static String createSignalLabel(final SDK sdk, final String label,
+                                          final int address,
+                                          final int msb, final int lsb)
+  {
+    if (label != null) return label;
+    return
+      sdk.getLabelForAddress(address) +
+      ((lsb == 0) && (msb == 31) ? "" :
+       ("_" + msb +
+        (lsb != msb ? ":" + lsb : "")));
+  }
+
+  public static BitSignal createFromRegister(final SDK sdk, final String label,
+                                             final int address, final int bit)
+  {
+    if (sdk == null) {
+      throw new NullPointerException("sdk");
+    }
+    Constants.checkBit(bit);
+    final String signalLabel = createSignalLabel(sdk, label, address, bit);
+    final Supplier<Bit> supplier =
+      () -> Bit.fromValue(sdk.readAddress(address, bit, bit));
+    return new DiagramConfig.BitSignal(signalLabel, supplier);
+  }
+
+  public static ValuedSignal<Integer>
+    createFromRegister(final SDK sdk, final String label,
+                       final int address)
+  {
+    return createFromRegister(sdk, label, address, 31, 0);
+  }
+
+  public static ValuedSignal<Integer>
+    createFromRegister(final SDK sdk, final String label,
+                       final int address, final int msb, final int lsb)
+  {
+    return createFromRegister(sdk, label, address, msb, lsb, null);
+  }
+
+  public static ValuedSignal<Integer>
+    createFromRegister(final SDK sdk, final String label,
+                       final int address, final int msb, final int lsb,
+                       final Supplier<Boolean> displayFilter)
+  {
+    if (sdk == null) {
+      throw new NullPointerException("sdk");
+    }
+    Constants.checkMSBLSB(msb, lsb);
+    final String signalLabel = createSignalLabel(sdk, label, address, msb, lsb);
+    final Supplier<Integer> supplier = () -> {
+      if ((displayFilter != null) && (!displayFilter.get()))
+        return null;
+      return sdk.readAddress(address, msb, lsb);
+    };
+    return new DiagramConfig.ValuedSignal<Integer>(signalLabel, supplier);
   }
 
   private final List<Signal> signals;
