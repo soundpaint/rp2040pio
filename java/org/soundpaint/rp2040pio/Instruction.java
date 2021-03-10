@@ -35,7 +35,6 @@ import java.util.function.IntConsumer;
  */
 public abstract class Instruction
 {
-  protected final SM sm;
   private int delay;
   private int sideSet;
   private int sideSetCount;
@@ -64,20 +63,9 @@ public abstract class Instruction
     JUMP
   };
 
-  private Instruction()
+  public Instruction()
   {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
-
-  public Instruction(final SM sm)
-  {
-    this.sm = sm;
     delay = 0;
-  }
-
-  public SM getSM()
-  {
-    return sm;
   }
 
   public int getDelay()
@@ -100,35 +88,33 @@ public abstract class Instruction
     return sideSet >= 0 ? "side " + Integer.toString(sideSet) : "";
   }
 
-  public Instruction decode(final short opCode)
+  public Instruction decode(final short opCode,
+                            final int pinCtrlSidesetCount,
+                            final boolean execCtrlSideEn)
     throws Decoder.DecodeException
   {
-    final SM.Status smStatus = sm.getStatus();
     final int delayAndSideSet = (opCode >>> 0x8) & 0x1f;
-    final int delayMask = (0x1 << (5 - smStatus.regPINCTRL_SIDESET_COUNT)) - 1;
+    final int delayMask = (0x1 << (5 - pinCtrlSidesetCount)) - 1;
     this.opCode = opCode;
     delay = delayAndSideSet & delayMask;
-    final int delayBitCount = 5 - smStatus.regPINCTRL_SIDESET_COUNT;
+    final int delayBitCount = 5 - pinCtrlSidesetCount;
     final boolean haveSideSetEnableBit =
-      smStatus.regEXECCTRL_SIDE_EN && (smStatus.regPINCTRL_SIDESET_COUNT > 0);
-    sideSetEnabled =
-      !haveSideSetEnableBit || (delayAndSideSet & 0x10) != 0x0;
-    sideSetCount =
-      smStatus.regPINCTRL_SIDESET_COUNT -
-      (haveSideSetEnableBit ? 1 : 0);
+      execCtrlSideEn && (pinCtrlSidesetCount > 0);
+    sideSetEnabled = !haveSideSetEnableBit || (delayAndSideSet & 0x10) != 0x0;
+    sideSetCount = pinCtrlSidesetCount - (haveSideSetEnableBit ? 1 : 0);
     final int delayAndSideSetWithoutSideEn =
-      smStatus.regEXECCTRL_SIDE_EN ? delayAndSideSet & 0xf : delayAndSideSet;
+      execCtrlSideEn ? delayAndSideSet & 0xf : delayAndSideSet;
     sideSet = delayAndSideSetWithoutSideEn >>> delayBitCount;
     decodeLSB(opCode & 0xff);
     return this;
   }
 
-  protected int getDelayAndSideSetBits()
+  protected int getDelayAndSideSetBits(final int pinCtrlSidesetCount,
+                                       final boolean execCtrlSideEn)
   {
-    final SM.Status smStatus = sm.getStatus();
-    final int delayBitCount = 5 - smStatus.regPINCTRL_SIDESET_COUNT;
+    final int delayBitCount = 5 - pinCtrlSidesetCount;
     final boolean haveSideSetEnableBit =
-      smStatus.regEXECCTRL_SIDE_EN && (smStatus.regPINCTRL_SIDESET_COUNT > 0);
+      execCtrlSideEn && (pinCtrlSidesetCount > 0);
     final int delayAndSideSet =
       (haveSideSetEnableBit && (sideSet > 0) ? 0x10 : 0x00) |
       (sideSet << delayBitCount) |
@@ -142,29 +128,31 @@ public abstract class Instruction
    */
   abstract void decodeLSB(final int lsb) throws Decoder.DecodeException;
 
-  private void executeSideSet()
+  private void executeSideSet(final GPIO gpio,
+                              final int pinCtrlSidesetBase,
+                              final PIO.PinDir execCtrlSidePinDir)
   {
-    final SM.Status status = sm.getStatus();
-    final GPIO gpio = sm.getGPIO();
-    final int base = status.regPINCTRL_SIDESET_BASE;
-    final PIO.PinDir pinDir = status.regEXECCTRL_SIDE_PINDIR;
+    final int base = pinCtrlSidesetBase;
+    final PIO.PinDir pinDir = execCtrlSidePinDir;
     if (sideSetCount > 0) {
       if (pinDir == PIO.PinDir.GPIO_LEVELS) {
-        gpio.setPins(sideSet, status.regPINCTRL_SIDESET_BASE,
-                     sideSetCount);
+        gpio.setPins(sideSet, pinCtrlSidesetBase, sideSetCount);
       } else {
-        gpio.setPinDirs(sideSet, status.regPINCTRL_SIDESET_BASE,
-                        sideSetCount);
+        gpio.setPinDirs(sideSet, pinCtrlSidesetBase, sideSetCount);
       }
     }
   }
 
-  abstract ResultState executeOperation();
+  abstract ResultState executeOperation(final SM sm);
 
-  public ResultState execute()
+  public ResultState execute(final SM sm)
   {
-    final ResultState resultState = executeOperation();
-    if (sideSetEnabled) executeSideSet();
+    final ResultState resultState = executeOperation(sm);
+    final SM.Status smStatus = sm.getStatus();
+    if (sideSetEnabled)
+      executeSideSet(sm.getGPIO(),
+                     smStatus.regPINCTRL_SIDESET_BASE,
+                     smStatus.regEXECCTRL_SIDE_PINDIR);
     return resultState;
   }
 
@@ -259,10 +247,8 @@ public abstract class Instruction
     private int address;
     private Condition condition;
 
-    public Jmp(final SM sm)
+    public Jmp()
     {
-      super(sm);
-
       // force class initializer to be called such that map is filled
       condition = Condition.ALWAYS;
     }
@@ -286,11 +272,12 @@ public abstract class Instruction
       this.address = address;
     }
 
-    public int encode()
+    public int encode(final int pinCtrlSidesetCount,
+                      final boolean execCtrlSideEn)
     {
       return
         0x0000 |
-        getDelayAndSideSetBits() |
+        getDelayAndSideSetBits(pinCtrlSidesetCount, execCtrlSideEn) |
         (condition.ordinal() << 5) |
         (address & 0x1f);
     }
@@ -303,7 +290,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
       final SM.Status smStatus = sm.getStatus();
       final boolean doJump = condition.fulfilled(smStatus);
@@ -334,26 +321,25 @@ public abstract class Instruction
 
     private enum Source
     {
-      GPIO_(0b00, "gpio", (wait) -> wait.sm.getGPIO(wait.index)),
-      PIN(0b01, "pin", (wait) -> {
-          final SM sm = wait.sm;
+      GPIO_(0b00, "gpio", (wait, sm) -> sm.getGPIO(wait.index)),
+      PIN(0b01, "pin", (wait, sm) -> {
           return sm.getGPIO().getBit(sm.getStatus().regPINCTRL_IN_BASE);
         }),
-      IRQ(0b10, "irq", (wait) -> {
-          final int irqNum = getIRQNum(wait.sm.getNum(), wait.index);
-          final Bit bit = wait.sm.getIRQ(irqNum);
+      IRQ(0b10, "irq", (wait, sm) -> {
+          final int irqNum = getIRQNum(sm.getNum(), wait.index);
+          final Bit bit = sm.getIRQ(irqNum);
           if ((wait.polarity == Bit.HIGH) && (bit == wait.polarity))
-            wait.sm.clearIRQ(irqNum);
+            sm.clearIRQ(irqNum);
           return bit;
         }),
       RESERVED_3(0b11, "???", null);
 
       private final int code;
       private final String mnemonic;
-      private final Function<Wait, Bit> eval;
+      private final BiFunction<Wait, SM, Bit> eval;
 
       private Source(final int code, final String mnemonic,
-                     final Function<Wait, Bit> eval)
+                     final BiFunction<Wait, SM, Bit> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
@@ -361,9 +347,9 @@ public abstract class Instruction
         code2src.put(code, this);
       }
 
-      public Bit getBit(final Wait wait)
+      public Bit getBit(final Wait wait, SM sm)
       {
-        return eval.apply(wait);
+        return eval.apply(wait, sm);
       }
 
       @Override
@@ -377,9 +363,8 @@ public abstract class Instruction
     private Source src;
     private int index;
 
-    public Wait(final SM sm)
+    public Wait()
     {
-      super(sm);
       polarity = Bit.LOW;
 
       // force class initializer to be called such that map is filled
@@ -400,9 +385,9 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
-      final boolean doStall = src.getBit(this) != polarity;
+      final boolean doStall = src.getBit(this, sm) != polarity;
       return doStall ? ResultState.STALL : ResultState.COMPLETE;
     }
 
@@ -468,10 +453,8 @@ public abstract class Instruction
     private Source src;
     private int bitCount;
 
-    public In(final SM sm)
+    public In()
     {
-      super(sm);
-
       // force class initializer to be called such that map is filled
       src = Source.PINS;
     }
@@ -490,7 +473,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
       final boolean stall;
       if (sm.getInShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
@@ -583,10 +566,8 @@ public abstract class Instruction
     private Destination dst;
     private int bitCount;
 
-    public Out(final SM sm)
+    public Out()
     {
-      super(sm);
-
       // force class initializer to be called such that map is filled
       dst = Destination.PINS;
     }
@@ -610,11 +591,12 @@ public abstract class Instruction
       this.bitCount = bitCount;
     }
 
-    public int encode()
+    public int encode(final int pinCtrlSidesetCount,
+                      final boolean execCtrlSideEn)
     {
       return
         0x6000 |
-        getDelayAndSideSetBits() |
+        getDelayAndSideSetBits(pinCtrlSidesetCount, execCtrlSideEn) |
         (dst.ordinal() << 5) |
         (bitCount & 0x1f);
     }
@@ -628,7 +610,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
       final boolean stall;
       if (sm.getOutShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
@@ -658,9 +640,8 @@ public abstract class Instruction
 
   public static class Push extends Instruction
   {
-    public Push(final SM sm)
+    public Push()
     {
-      super(sm);
     }
 
     private boolean ifFull;
@@ -678,7 +659,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
       return sm.rxPush(ifFull, block) ?
         ResultState.STALL :
@@ -700,9 +681,8 @@ public abstract class Instruction
 
   public static class Pull extends Instruction
   {
-    public Pull(final SM sm)
+    public Pull()
     {
-      super(sm);
     }
 
     private boolean ifEmpty;
@@ -718,11 +698,12 @@ public abstract class Instruction
       this.block = block;
     }
 
-    public int encode()
+    public int encode(final int pinCtrlSidesetCount,
+                      final boolean execCtrlSideEn)
     {
       return
         0x8080 |
-        getDelayAndSideSetBits() |
+        getDelayAndSideSetBits(pinCtrlSidesetCount, execCtrlSideEn) |
         (ifEmpty ? 0x1 << 6 : 0) |
         (block ? 0x1 << 5 : 0);
     }
@@ -739,7 +720,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
       return sm.txPull(ifEmpty, block) ?
         ResultState.STALL :
@@ -898,10 +879,8 @@ public abstract class Instruction
     private Destination dst;
     private Operation op;
 
-    public Mov(final SM sm)
+    public Mov()
     {
-      super(sm);
-
       // force class initializer to be called such that map is filled
       src = Source.PINS;
       dst = Destination.PINS;
@@ -935,7 +914,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
       dst.write(sm, op.apply(src.read(sm)));
       return
@@ -967,9 +946,8 @@ public abstract class Instruction
     private boolean wait;
     private int index;
 
-    public Irq(final SM sm)
+    public Irq()
     {
-      super(sm);
     }
 
     @Override
@@ -986,7 +964,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
       final boolean stall;
       final int irqNum = getIRQNum(sm.getNum(), index);
@@ -1075,10 +1053,8 @@ public abstract class Instruction
     private Destination dst;
     private int data;
 
-    public Set(final SM sm)
+    public Set()
     {
-      super(sm);
-
       // force class initializer to be called such that map is filled
       dst = Destination.PINS;
     }
@@ -1102,11 +1078,12 @@ public abstract class Instruction
       this.data = data;
     }
 
-    public int encode()
+    public int encode(final int pinCtrlSidesetCount,
+                      final boolean execCtrlSideEn)
     {
       return
         0xe000 |
-        getDelayAndSideSetBits() |
+        getDelayAndSideSetBits(pinCtrlSidesetCount, execCtrlSideEn) |
         (dst.ordinal() << 5) |
         (data & 0x1f);
     }
@@ -1126,7 +1103,7 @@ public abstract class Instruction
     }
 
     @Override
-    public ResultState executeOperation()
+    public ResultState executeOperation(final SM sm)
     {
       dst.write(sm, data);
       return ResultState.COMPLETE;

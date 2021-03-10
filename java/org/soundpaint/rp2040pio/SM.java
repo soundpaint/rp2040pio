@@ -226,7 +226,7 @@ public class SM implements Constants
     this.memory = memory;
     this.irq = irq;
     status = new Status();
-    decoder = new Decoder(this);
+    decoder = new Decoder();
     fifo = new FIFO();
     pll = new PLL();
   }
@@ -644,10 +644,11 @@ public class SM implements Constants
                                          (MEMORY_SIZE - 1) + ": " +
                                          address);
     }
-    final Instruction.Jmp instruction = new Instruction.Jmp(this);
+    final Instruction.Jmp instruction = new Instruction.Jmp();
     instruction.setCondition(condition);
     instruction.setAddress(address);
-    return instruction.encode();
+    return instruction.encode(status.regPINCTRL_SIDESET_COUNT,
+                              status.regEXECCTRL_SIDE_EN);
   }
 
   private int encodeOut(final Instruction.Out.Destination dst,
@@ -662,18 +663,20 @@ public class SM implements Constants
     if (bitCount > 32) {
       throw new IllegalArgumentException("bitCount > 32: " + bitCount);
     }
-    final Instruction.Out instruction = new Instruction.Out(this);
+    final Instruction.Out instruction = new Instruction.Out();
     instruction.setDestination(dst);
     instruction.setBitCount(bitCount);
-    return instruction.encode();
+    return instruction.encode(status.regPINCTRL_SIDESET_COUNT,
+                              status.regEXECCTRL_SIDE_EN);
   }
 
   private int encodePull(final boolean ifEmpty, final boolean block)
   {
-    final Instruction.Pull instruction = new Instruction.Pull(this);
+    final Instruction.Pull instruction = new Instruction.Pull();
     instruction.setIfEmpty(ifEmpty);
     instruction.setBlock(block);
-    return instruction.encode();
+    return instruction.encode(status.regPINCTRL_SIDESET_COUNT,
+                              status.regEXECCTRL_SIDE_EN);
   }
 
   private int encodeSet(final Instruction.Set.Destination dst, final int data)
@@ -687,10 +690,11 @@ public class SM implements Constants
     if (data > 31) {
       throw new IllegalArgumentException("data > 31: " + data);
     }
-    final Instruction.Set instruction = new Instruction.Set(this);
+    final Instruction.Set instruction = new Instruction.Set();
     instruction.setDestination(dst);
     instruction.setData(data);
-    return instruction.encode();
+    return instruction.encode(status.regPINCTRL_SIDESET_COUNT,
+                              status.regEXECCTRL_SIDE_EN);
   }
 
   public int getPC()
@@ -803,7 +807,10 @@ public class SM implements Constants
       }
       status.isDelayCycle = false;
       final short word = fetch();
-      status.instruction = decoder.decode(word);
+      status.instruction =
+        decoder.decode(word,
+                       status.regPINCTRL_SIDESET_COUNT,
+                       status.regEXECCTRL_SIDE_EN);
     }
   }
 
@@ -811,7 +818,7 @@ public class SM implements Constants
   {
     if (status.isDelayCycle)
       return;
-    status.resultState = status.instruction.execute();
+    status.resultState = status.instruction.execute(this);
     if (status.resultState == Instruction.ResultState.COMPLETE) {
       // Sect. 3.4.2.2: "Delay cycles ... take place after ... the
       // program counter is updated" (though this specifically refers
@@ -851,7 +858,10 @@ public class SM implements Constants
       final short word = memory.get(address);
       String opCode;
       try {
-        final Instruction instruction = decoder.decode(word);
+        final Instruction instruction =
+          decoder.decode(word,
+                         status.regPINCTRL_SIDESET_COUNT,
+                         status.regEXECCTRL_SIDE_EN);
         opCode = instruction.toString();
       } catch (final Decoder.DecodeException e) {
         opCode = "???";

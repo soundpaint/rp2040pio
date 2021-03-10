@@ -56,7 +56,6 @@ public class Decoder
     public int getOpCode() { return opCode; }
   }
 
-  private final SM sm;
   private final Instructions instructions;
 
   private class Instructions
@@ -73,48 +72,61 @@ public class Decoder
 
     public Instructions()
     {
-      jmp = new Instruction.Jmp(sm);
-      wait = new Instruction.Wait(sm);
-      in = new Instruction.In(sm);
-      out = new Instruction.Out(sm);
-      push = new Instruction.Push(sm);
-      pull = new Instruction.Pull(sm);
-      mov = new Instruction.Mov(sm);
-      irq = new Instruction.Irq(sm);
-      set = new Instruction.Set(sm);
+      jmp = new Instruction.Jmp();
+      wait = new Instruction.Wait();
+      in = new Instruction.In();
+      out = new Instruction.Out();
+      push = new Instruction.Push();
+      pull = new Instruction.Pull();
+      mov = new Instruction.Mov();
+      irq = new Instruction.Irq();
+      set = new Instruction.Set();
     }
   }
 
-  private Decoder()
+  public Decoder()
   {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
-
-  public Decoder(final SM sm)
-  {
-    if (sm == null) throw new NullPointerException("sm");
-    this.sm = sm;
     instructions = new Instructions();
   }
 
-  public Instruction decode(final short word) throws DecodeException
+  public Instruction decode(final short word,
+                            final int pinCtrlSidesetCount,
+                            final boolean execCtrlSideEn)
+    throws DecodeException
   {
+    final Instruction instruction;
     switch ((word >>> 13) & 0x7) {
-    case 0b000: return instructions.jmp.decode(word);
-    case 0b001: return instructions.wait.decode(word);
-    case 0b010: return instructions.in.decode(word);
-    case 0b011: return instructions.out.decode(word);
+    case 0b000:
+      instruction = instructions.jmp;
+      break;
+    case 0b001:
+      instruction = instructions.wait;
+      break;
+    case 0b010:
+      instruction = instructions.in;
+      break;
+    case 0b011:
+      instruction = instructions.out;
+      break;
     case 0b100:
       if ((word & 0x80) == 0)
-        return instructions.push.decode(word);
+        instruction = instructions.push;
       else
-        return instructions.pull.decode(word);
-    case 0b101: return instructions.mov.decode(word);
-    case 0b110: return instructions.irq.decode(word);
-    case 0b111: return instructions.set.decode(word);
+        instruction = instructions.pull;
+      break;
+    case 0b101:
+      instruction = instructions.mov;
+      break;
+    case 0b110:
+      instruction = instructions.irq;
+      break;
+    case 0b111:
+      instruction = instructions.set;
+      break;
     default:
       throw new InternalError("unexpected case fall-through");
     }
+    return instruction.decode(word, pinCtrlSidesetCount, execCtrlSideEn);
   }
 }
 
