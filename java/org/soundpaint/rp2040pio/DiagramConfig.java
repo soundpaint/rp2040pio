@@ -378,6 +378,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       throw new NullPointerException("pioSdk");
     }
     Constants.checkSmNum(smNum);
+    final Decoder decoder = new Decoder();
     final String signalLabel = createSignalLabel(sdk, label, address, 31, 0);
     final Supplier<InstructionInfo> valueGetter = () -> {
       if ((displayFilter != null) && (!displayFilter.get()))
@@ -404,18 +405,29 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       final boolean isDelayCycle =
       pioEmuRegisters.readAddress(smDelayCycleAddress) != 0x0;
 
-      final String mnemonic;
-      if (opCode == 0xa042)
-        mnemonic = "nop";
-      else if ((opCode & 0xe080) == 0x8080)
-        mnemonic = "pull";
-      else
-        mnemonic = MNEMONIC[opCode >>> 13];
-      final String fullStatement =
-      addressLabel + mnemonic; // TODO
-      // addressLabel + instruction.toString().replaceAll("\\s{2,}", " ");
+      final int smPinCtrlSidesetCountAddress =
+      pioRegisters.getSMAddress(PIORegisters.Regs.SM0_PINCTRL, smNum);
+      final int pinCtrlSidesetCount =
+      (pioRegisters.readAddress(smPinCtrlSidesetCountAddress) &
+       SM0_PINCTRL_SIDESET_COUNT_BITS) >>> SM0_PINCTRL_SIDESET_COUNT_LSB;
 
-      return new InstructionInfo(mnemonic, fullStatement, isDelayCycle, delay);
+      final int smExecCtrlSideEnAddress =
+      pioRegisters.getSMAddress(PIORegisters.Regs.SM0_EXECCTRL, smNum);
+      final boolean execCtrlSideEn =
+      (pioRegisters.readAddress(smExecCtrlSideEnAddress) &
+       SM0_EXECCTRL_SIDE_EN_BITS) != 0x0;
+
+      try {
+        final Instruction instruction =
+          decoder.decode((short)opCode, pinCtrlSidesetCount, execCtrlSideEn);
+        final String mnemonic = instruction.getMnemonic();
+        final String fullStatement =
+          addressLabel + instruction.toString().replaceAll("\\s{2,}", " ");
+        return new InstructionInfo(mnemonic, fullStatement, isDelayCycle, delay);
+      } catch (final Decoder.DecodeException e) {
+        // illegal op-code => nothing to show
+        return null;
+      }
     };
     final ValuedSignal<InstructionInfo> instructionSignal =
       new ValuedSignal<InstructionInfo>(signalLabel, valueGetter);
