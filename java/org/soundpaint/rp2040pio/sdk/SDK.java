@@ -27,6 +27,7 @@ package org.soundpaint.rp2040pio.sdk;
 import java.util.ArrayList;
 import java.util.List;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
@@ -37,6 +38,7 @@ public class SDK
   private static final SDK DEFAULT_INSTANCE = new SDK();
   public static SDK getDefaultInstance() { return DEFAULT_INSTANCE; }
 
+  private final PicoEmuRegisters picoEmuRegisters;
   public final GPIOSDK gpioSdk;
   public final PIOSDK pio0Sdk;
   public final PIOSDK pio1Sdk;
@@ -51,6 +53,9 @@ public class SDK
   private SDK()
   {
     registersList = new ArrayList<Registers>();
+    picoEmuRegisters = new PicoEmuRegisters(PIO.MASTER_CLOCK,
+                                            PIO.MASTER_CLOCK_BASE);
+    registersList.add(picoEmuRegisters);
 
     pio0Sdk = new PIOSDK(PIO.PIO0, PIO.PIO0_BASE);
     final PIORegisters pio0Registers = pio0Sdk.getRegisters();
@@ -128,6 +133,30 @@ public class SDK
   public int getPIO1Address(final PIOEmuRegisters.Regs register)
   {
     return pio1Sdk.getEmuRegisters().getAddress(register);
+  }
+
+  // -------- PicoEmuRegisters convenience methods --------
+
+  private void triggerCyclePhaseX(final PicoEmuRegisters.Regs trigger,
+                                  final boolean await)
+  {
+    final int triggerAddress = picoEmuRegisters.getAddress(trigger);
+    synchronized(picoEmuRegisters) {
+      picoEmuRegisters.writeAddress(triggerAddress, 0);
+      while (await && (picoEmuRegisters.readAddress(triggerAddress) == 0)) {
+        Thread.yield();
+      }
+    }
+  }
+
+  public void triggerCyclePhase0(final boolean await)
+  {
+    triggerCyclePhaseX(PicoEmuRegisters.Regs.MASTERCLK_TRIGGER_PHASE0, await);
+  }
+
+  public void triggerCyclePhase1(final boolean await)
+  {
+    triggerCyclePhaseX(PicoEmuRegisters.Regs.MASTERCLK_TRIGGER_PHASE1, await);
   }
 }
 

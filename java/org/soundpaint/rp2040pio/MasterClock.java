@@ -32,16 +32,63 @@ import java.util.List;
  */
 public class MasterClock implements Clock
 {
-  private enum Phase
-  {
-    PHASE_0, PHASE_1
-  };
+  public static final long DEFAULT_FREQUENCY = 1000000000;
 
   private static final MasterClock DEFAULT_INSTANCE = new MasterClock();
 
+  public enum Mode {
+    TARGET_FREQUENCY,
+    SINGLE_STEP;
+
+    public static Mode fromValue(final int value) {
+      if ((value < 0) || (value >= MODES.length)) {
+        throw new IllegalArgumentException("value: " + value);
+      }
+      return MODES[value];
+    }
+  };
+
+  private static final Mode[] MODES = Mode.values();
+
+  private class DrivingGear extends Thread
+  {
+    @Override
+    public void run()
+    {
+      while (true) {
+        synchronized(this) {
+          while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_1)) {
+            try {
+              wait();
+            } catch (final InterruptedException e) {
+              // ignore here, since check in while condition
+            }
+          }
+          if (phase == Phase.PHASE_1) {
+            cyclePhase0();
+          }
+          while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_0)) {
+            try {
+              wait();
+            } catch (final InterruptedException e) {
+              // ignore here, since check in while condition
+            }
+          }
+          if (phase == Phase.PHASE_0) {
+            cyclePhase1();
+          }
+        }
+      }
+    }
+  }
+
+  private final DrivingGear drivingGear;
   private final List<TransitionListener> listeners;
-  private long wallClock;
+  private long frequency;
+  private Mode mode;
   private Phase phase;
+  private Phase trigger;
+  private long wallClock;
 
   public static MasterClock getDefaultInstance()
   {
@@ -50,14 +97,55 @@ public class MasterClock implements Clock
 
   public MasterClock()
   {
+    drivingGear = new DrivingGear();
     listeners = new ArrayList<TransitionListener>();
     reset();
+    drivingGear.start();
   }
 
   public void reset()
   {
+    frequency = DEFAULT_FREQUENCY;
+    mode = Mode.SINGLE_STEP;
+    phase = Phase.PHASE_1;
+    trigger = Phase.PHASE_1;
     wallClock = -1;
-    phase = null;
+  }
+
+  public void setMASTERCLK_FREQ(final int frequency)
+  {
+    synchronized(drivingGear) {
+      this.frequency = frequency & 0xffffffff;
+      drivingGear.notify();
+    }
+  }
+
+  public int getMASTERCLK_FREQ()
+  {
+    return (int)frequency;
+  }
+
+  public void setMode(final Mode mode)
+  {
+    synchronized(drivingGear) {
+      this.mode = mode;
+      drivingGear.notify();
+    }
+  }
+
+  public Mode getMode() { return mode; }
+
+  public void setMASTERCLK_MODE(final int value)
+  {
+    synchronized(drivingGear) {
+      mode = Mode.fromValue(value & 0x1);
+      drivingGear.notify();
+    }
+  }
+
+  public int getMASTERCLK_MODE()
+  {
+    return mode.ordinal();
   }
 
   @Override
@@ -92,29 +180,41 @@ public class MasterClock implements Clock
     }
   }
 
-  public void cyclePhase0()
+  public Phase getPhase() { return phase; }
+
+  public Phase getLatestTrigger() { return trigger; }
+
+  public void triggerPhase0()
   {
-    if (phase == Phase.PHASE_0) {
-      throw new InternalError("already in phase 0");
+    synchronized(drivingGear) {
+      trigger = Phase.PHASE_0;
+      drivingGear.notify();
     }
+  }
+
+  private void cyclePhase0()
+  {
+    if (mode != Mode.SINGLE_STEP) return;
+    if (phase == Phase.PHASE_0) return;
     phase = Phase.PHASE_0;
     announceRaisingEdge();
   }
 
-  public void cyclePhase1()
+  public void triggerPhase1()
   {
-    if (phase == Phase.PHASE_1) {
-      throw new InternalError("already in phase 1");
+    synchronized(drivingGear) {
+      trigger = Phase.PHASE_1;
+      drivingGear.notify();
     }
+  }
+
+  private void cyclePhase1()
+  {
+    if (mode != Mode.SINGLE_STEP) return;
+    if (phase == Phase.PHASE_1) return;
     phase = Phase.PHASE_1;
     announceFallingEdge();
     wallClock++;
-  }
-
-  public void cycle()
-  {
-    cyclePhase0();
-    cyclePhase1();
   }
 }
 

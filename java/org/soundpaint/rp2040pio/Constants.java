@@ -32,6 +32,7 @@ public interface Constants
   public static final int SM_COUNT = 4;
 
   // address map
+  public static final int MASTER_CLOCK_BASE = 0x40024800;
   public static final int PIO0_BASE = 0x50200000;
   public static final int PIO1_BASE = 0x50300000;
 
@@ -205,6 +206,12 @@ public interface Constants
       count++;
     }
     return count;
+  }
+
+  public static int hwSetBits(final int oldBits, final int newBits,
+                              final int mask, final boolean xor)
+  {
+    return (mask & (xor ? oldBits ^ newBits : newBits)) | (~mask & oldBits);
   }
 }
 

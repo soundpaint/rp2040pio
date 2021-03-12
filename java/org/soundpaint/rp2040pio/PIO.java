@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,15 +36,17 @@ public class PIO implements Constants, Clock.TransitionListener
   public static final MasterClock MASTER_CLOCK =
     MasterClock.getDefaultInstance();
   private static final GPIO _GPIO = GPIO.getDefaultInstance();
-  public static final PIO PIO0 = new PIO(0, MASTER_CLOCK, _GPIO);
-  public static final PIO PIO1 = new PIO(1, MASTER_CLOCK, _GPIO);
+  public static final PIO PIO0 = new PIO(0, System.out, MASTER_CLOCK, _GPIO);
+  public static final PIO PIO1 = new PIO(1, System.out, MASTER_CLOCK, _GPIO);
 
   private final int index;
-  private final List<Decoder.DecodeException> caughtExceptions;
+  private final PrintStream console;
+  private final MasterClock masterClock;
   private final GPIO gpio;
   private final Memory memory;
   private final IRQ irq;
   private final SM[] sms;
+  private final List<Decoder.DecodeException> caughtExceptions;
   private int smEnabled; // bits 0..3 of CTRL_SM_ENABLE
 
   public enum PinDir {
@@ -120,7 +123,8 @@ public class PIO implements Constants, Clock.TransitionListener
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIO(final int index, final Clock clock, final GPIO gpio)
+  public PIO(final int index, final PrintStream console,
+             final MasterClock masterClock, final GPIO gpio)
   {
     if (index < 0) {
       throw new IllegalArgumentException("PIO index < 0: " + index);
@@ -128,22 +132,27 @@ public class PIO implements Constants, Clock.TransitionListener
     if (index > 1) {
       throw new IllegalArgumentException("PIO index > 1: " + index);
     }
-    if (clock == null) {
-      throw new NullPointerException("clock");
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
+    if (masterClock == null) {
+      throw new NullPointerException("masterClock");
     }
     if (gpio == null) {
       throw new NullPointerException("gpio");
     }
     this.index = index;
+    this.console = console;
+    this.masterClock = masterClock;
+    masterClock.addTransitionListener(this);
     this.gpio = gpio;
-    clock.addTransitionListener(this);
-    caughtExceptions = new ArrayList<Decoder.DecodeException>();
     memory = new Memory();
     irq = new IRQ();
     sms = new SM[SM_COUNT];
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-      sms[smNum] = new SM(smNum, gpio, memory, irq);
+      sms[smNum] = new SM(smNum, console, masterClock, gpio, memory, irq);
     }
+    caughtExceptions = new ArrayList<Decoder.DecodeException>();
     smEnabled = 0x0;
   }
 
@@ -165,6 +174,16 @@ public class PIO implements Constants, Clock.TransitionListener
   public int getDBG_CFGINFO_FIFO_DEPTH()
   {
     return FIFO_DEPTH;
+  }
+
+  public PrintStream getConsole()
+  {
+    return console;
+  }
+
+  public MasterClock getMasterClock()
+  {
+    return masterClock;
   }
 
   public GPIO getGPIO()

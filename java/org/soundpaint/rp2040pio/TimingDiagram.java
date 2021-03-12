@@ -460,7 +460,6 @@ public class TimingDiagram implements Constants
                             final int width, final int height)
   {
     toolTips.clear();
-    final MasterClock clock = MasterClock.getDefaultInstance();
     g.setStroke(PLAIN_STROKE);
     paintLabels(panel, g);
     final int stopCycle =
@@ -470,7 +469,7 @@ public class TimingDiagram implements Constants
     // replayed, whenever the simulation is restarted.
     pioSdk.setSmMaskEnabled(1, true);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
-      clock.cyclePhase0();
+      sdk.triggerCyclePhase0(true);
       for (final Decoder.DecodeException e : pio.getExceptions()) {
         System.err.println(e);
       }
@@ -479,7 +478,7 @@ public class TimingDiagram implements Constants
       final boolean rightBorder = cycle + 1 == stopCycle;
       paintGridLine(g, x, height);
       paintSignalsCycle(panel, g, x, leftBorder, rightBorder);
-      clock.cyclePhase1();
+      sdk.triggerCyclePhase1(true);
     }
     paintGridLine(g, LEFT_MARGIN + stopCycle * CLOCK_CYCLE_WIDTH, height);
   }

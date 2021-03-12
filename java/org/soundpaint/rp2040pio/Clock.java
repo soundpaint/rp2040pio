@@ -32,6 +32,11 @@ import java.util.List;
  */
 public interface Clock
 {
+  public enum Phase
+  {
+    PHASE_0, PHASE_1
+  };
+
   public static interface TransitionListener
   {
     void raisingEdge(final long wallClock);

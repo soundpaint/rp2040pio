@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.io.PrintStream;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 
@@ -42,6 +43,8 @@ public class SM implements Constants
   };
 
   private final int num;
+  private final PrintStream console;
+  private final MasterClock masterClock;
   private final GPIO gpio;
   private final Memory memory;
   private final IRQ irq;
@@ -116,6 +119,10 @@ public class SM implements Constants
     public int regPINCTRL_SET_BASE; // bits 5..9 of SMx_PINCTRL
     public int regPINCTRL_OUT_BASE; // bits 0..4 of SMx_PINCTRL
 
+    // PIOEmuRegisters Status
+    public int regBREAKPOINTS; // bits 0..31 of SMx_BREAKPOINTS
+    public int regTRACEPOINTS; // bits 0..31 of SMx_TRACEPOINTS
+
     public Status()
     {
       reset();
@@ -156,6 +163,10 @@ public class SM implements Constants
       regPINCTRL_SIDESET_BASE = 0;
       regPINCTRL_SET_BASE = 0;
       regPINCTRL_OUT_BASE = 0;
+
+      // PIOEmuRegisters Status
+      regBREAKPOINTS = 0;
+      regTRACEPOINTS = 0;
     }
 
     public Bit jmpPin()
@@ -204,13 +215,21 @@ public class SM implements Constants
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public SM(final int num, final GPIO gpio, final Memory memory, final IRQ irq)
+  public SM(final int num, final PrintStream console,
+            final MasterClock masterClock, final GPIO gpio,
+            final Memory memory, final IRQ irq)
   {
     if (num < 0) {
       throw new IllegalArgumentException("SM num < 0: " + num);
     }
     if (num > 3) {
       throw new IllegalArgumentException("SM num > 3: " + num);
+    }
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
+    if (masterClock == null) {
+      throw new NullPointerException("masterClock");
     }
     if (gpio == null) {
       throw new NullPointerException("gpio");
@@ -222,6 +241,8 @@ public class SM implements Constants
       throw new NullPointerException("irq");
     }
     this.num = num;
+    this.console = console;
+    this.masterClock = masterClock;
     this.gpio = gpio;
     this.memory = memory;
     this.irq = irq;
@@ -237,8 +258,7 @@ public class SM implements Constants
 
   public void setCLKDIV(final int clkdiv, final int mask, final boolean xor)
   {
-    pll.setCLKDIV(((mask & (xor ? pll.getCLKDIV() ^ clkdiv : clkdiv)) |
-                   (~mask & pll.getCLKDIV())));
+    pll.setCLKDIV(Constants.hwSetBits(pll.getCLKDIV(), clkdiv, mask, xor));
   }
 
   public int getCLKDIV()
@@ -258,8 +278,7 @@ public class SM implements Constants
 
   public void setEXECCTRL(final int execctrl, final int mask, final boolean xor)
   {
-    setEXECCTRL(((mask & (xor ? getEXECCTRL() ^ execctrl : execctrl)) |
-                 (~mask & getEXECCTRL())));
+    setEXECCTRL(Constants.hwSetBits(getEXECCTRL(), execctrl, mask, xor));
   }
 
   private void setEXECCTRL(final int execctrl)
@@ -290,8 +309,7 @@ public class SM implements Constants
   public void setSHIFTCTRL(final int shiftctrl, final int mask,
                            final boolean xor)
   {
-    setSHIFTCTRL(((mask & (xor ? getSHIFTCTRL() ^ shiftctrl : shiftctrl)) |
-                 (~mask & getSHIFTCTRL())));
+    setSHIFTCTRL(Constants.hwSetBits(getSHIFTCTRL(), shiftctrl, mask, xor));
   }
 
   private void setSHIFTCTRL(final int shiftctrl)
@@ -317,8 +335,7 @@ public class SM implements Constants
 
   public void setPINCTRL(final int pinctrl, final int mask, final boolean xor)
   {
-    setPINCTRL(((mask & (xor ? getPINCTRL() ^ pinctrl : pinctrl)) |
-                (~mask & getPINCTRL())));
+    setPINCTRL(Constants.hwSetBits(getPINCTRL(), pinctrl, mask, xor));
   }
 
   private void setPINCTRL(final int pinctrl)
@@ -630,6 +647,30 @@ public class SM implements Constants
     return fifo.getTXLevel();
   }
 
+  public void setBreakPoints(final int breakPoints,
+                             final int mask, final boolean xor)
+  {
+    status.regBREAKPOINTS =
+      Constants.hwSetBits(status.regBREAKPOINTS, breakPoints, mask, xor);
+  }
+
+  public int getBreakPoints()
+  {
+    return status.regBREAKPOINTS;
+  }
+
+  public void setTracePoints(final int tracePoints,
+                             final int mask, final boolean xor)
+  {
+    status.regTRACEPOINTS =
+      Constants.hwSetBits(status.regTRACEPOINTS, tracePoints, mask, xor);
+  }
+
+  public int getTracePoints()
+  {
+    return status.regTRACEPOINTS;
+  }
+
   private int encodeJmp(final Instruction.Jmp.Condition condition,
                         final int address)
   {
@@ -722,6 +763,9 @@ public class SM implements Constants
     } else {
       status.regADDR = (status.regADDR + 1) & 0x1f;
     }
+    if (((status.regBREAKPOINTS >>> status.regADDR) & 0x1) != 0x0) {
+      masterClock.setMode(MasterClock.Mode.SINGLE_STEP);
+    }
   }
 
   private short fetch()
@@ -755,8 +799,8 @@ public class SM implements Constants
   {
     synchronized(memory.FETCH_LOCK) {
       if (status.pendingDMAInstruction >= 0) {
-        System.out.println("WARNING: " +
-                           "discarding already pending DMA instruction");
+        console.println("WARNING: " +
+                        "discarding already pending DMA instruction");
       }
       if (instruction < 0) {
         throw new IllegalArgumentException("instruction < 0: " + instruction);
@@ -798,7 +842,12 @@ public class SM implements Constants
     return status.pendingDelay;
   }
 
-  public void fetchAndDecode() throws Decoder.DecodeException
+  private void printTrace()
+  {
+    console.println("SM" + num + ": " + status.instruction);
+  }
+
+  private void fetchAndDecode() throws Decoder.DecodeException
   {
     synchronized(memory.FETCH_LOCK) {
       if ((status.pendingDMAInstruction < 0) && status.consumePendingDelay()) {
@@ -811,10 +860,13 @@ public class SM implements Constants
         decoder.decode(word,
                        status.regPINCTRL_SIDESET_COUNT,
                        status.regEXECCTRL_SIDE_EN);
+      if (((status.regTRACEPOINTS >>> status.regADDR) & 0x1) != 0x0) {
+        printTrace();
+      }
     }
   }
 
-  public void execute()
+  private void execute()
   {
     if (status.isDelayCycle)
       return;
@@ -866,7 +918,7 @@ public class SM implements Constants
       } catch (final Decoder.DecodeException e) {
         opCode = "???";
       }
-      System.out.printf("%02x: %04x %s%n", address, word, opCode);
+      console.printf("%02x: %04x %s%n", address, word, opCode);
     }
   }
 

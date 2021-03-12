@@ -52,6 +52,32 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM0_DELAY_CYCLE,
     SM0_PENDING_DELAY,
     SM0_CLK_ENABLE,
+    /**
+     * R/W address.  Reset value: 0.
+     *
+     * Each bit of this values corresponds to each of the 32 memory
+     * locations of the PIO instruction memory (with the LSB of the
+     * word corresponding to the lowest memory address).  Setting a
+     * bit to 1 marks the corresponding memory address as location of
+     * a breakpoint.  Setting a bit to 0 removes the breakpoint.
+     *
+     * As soon as the program counter of the state machine reaches an
+     * address that is marked as a breakpoint, master clock
+     * MASTERCLK_MODE will be automatically set to single step mode.
+     */
+    SM0_BREAKPOINTS,
+    /**
+     * R/W address.  Reset value: 0.
+     *
+     * Tracepoints work like breakpoints with the difference that
+     * master clock MASTERCLK_MODE it not automatically set to single
+     * step mode, but instead a message is printed to console output.
+     * The message contains the state machine's number and
+     * disassembled instruction with prefixed instruction memory
+     * address.  Tracepoints work in all master clock MASTERCLK_MODE
+     * modes.
+     */
+    SM0_TRACEPOINTS,
     SM1_REGX,
     SM1_REGY,
     SM1_PC,
@@ -71,6 +97,8 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM1_DELAY_CYCLE,
     SM1_PENDING_DELAY,
     SM1_CLK_ENABLE,
+    SM1_BREAKPOINTS,
+    SM1_TRACEPOINTS,
     SM2_REGX,
     SM2_REGY,
     SM2_PC,
@@ -90,6 +118,8 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM2_DELAY_CYCLE,
     SM2_PENDING_DELAY,
     SM2_CLK_ENABLE,
+    SM2_BREAKPOINTS,
+    SM2_TRACEPOINTS,
     SM3_REGX,
     SM3_REGY,
     SM3_PC,
@@ -109,17 +139,16 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM3_DELAY_CYCLE,
     SM3_PENDING_DELAY,
     SM3_CLK_ENABLE,
+    SM3_BREAKPOINTS,
+    SM3_TRACEPOINTS,
     GPIO_PINS,
-    GPIO_PINDIRS,
-    MASTERCLK_FREQ,
-    MASTERCLK_MODE,
-    BREAKPOINTS;
+    GPIO_PINDIRS;
   }
 
   final static Regs[] REGS = Regs.values();
 
   public static final int SM_SIZE =
-    Regs.SM1_CLK_ENABLE.ordinal() - Regs.SM0_CLK_ENABLE.ordinal();
+    Regs.SM1_REGX.ordinal() - Regs.SM0_REGX.ordinal();
 
   private final PIO pio;
 
@@ -179,6 +208,8 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM0_DELAY_CYCLE:
     case SM0_PENDING_DELAY:
     case SM0_CLK_ENABLE:
+    case SM0_BREAKPOINTS:
+    case SM0_TRACEPOINTS:
       break; // ok
     default:
       throw new IllegalArgumentException("register not one of SM0_*: " +
@@ -244,26 +275,6 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM2_OSR_SHIFT_COUNT:
     case SM3_OSR_SHIFT_COUNT:
       break; // (for now) read-only address
-    case SM0_DELAY:
-    case SM1_DELAY:
-    case SM2_DELAY:
-    case SM3_DELAY:
-      break; // (for now) read-only address
-    case SM0_DELAY_CYCLE:
-    case SM1_DELAY_CYCLE:
-    case SM2_DELAY_CYCLE:
-    case SM3_DELAY_CYCLE:
-      break; // (for now) read-only address
-    case SM0_PENDING_DELAY:
-    case SM1_PENDING_DELAY:
-    case SM2_PENDING_DELAY:
-    case SM3_PENDING_DELAY:
-      break; // (for now) read-only address
-    case SM0_CLK_ENABLE:
-    case SM1_CLK_ENABLE:
-    case SM2_CLK_ENABLE:
-    case SM3_CLK_ENABLE:
-      break; // (for now) read-only address
     case SM0_FIFO_MEM0:
     case SM0_FIFO_MEM1:
     case SM0_FIFO_MEM2:
@@ -297,15 +308,43 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM3_FIFO_MEM6:
     case SM3_FIFO_MEM7:
       break; // (for now) read-only address
+    case SM0_DELAY:
+    case SM1_DELAY:
+    case SM2_DELAY:
+    case SM3_DELAY:
+      break; // (for now) read-only address
+    case SM0_DELAY_CYCLE:
+    case SM1_DELAY_CYCLE:
+    case SM2_DELAY_CYCLE:
+    case SM3_DELAY_CYCLE:
+      break; // (for now) read-only address
+    case SM0_PENDING_DELAY:
+    case SM1_PENDING_DELAY:
+    case SM2_PENDING_DELAY:
+    case SM3_PENDING_DELAY:
+      break; // (for now) read-only address
+    case SM0_CLK_ENABLE:
+    case SM1_CLK_ENABLE:
+    case SM2_CLK_ENABLE:
+    case SM3_CLK_ENABLE:
+      break; // (for now) read-only address
+    case SM0_BREAKPOINTS:
+    case SM1_BREAKPOINTS:
+    case SM2_BREAKPOINTS:
+    case SM3_BREAKPOINTS:
+      pio.getSM((regNum - Regs.SM0_BREAKPOINTS.ordinal()) / SM_SIZE).
+        setBreakPoints(value, mask, xor);
+      break;
+    case SM0_TRACEPOINTS:
+    case SM1_TRACEPOINTS:
+    case SM2_TRACEPOINTS:
+    case SM3_TRACEPOINTS:
+      pio.getSM((regNum - Regs.SM0_TRACEPOINTS.ordinal()) / SM_SIZE).
+        setTracePoints(value, mask, xor);
+      break;
     case GPIO_PINS:
       break; // (for now) read-only address
     case GPIO_PINDIRS:
-      break; // (for now) read-only address
-    case MASTERCLK_FREQ:
-      break; // (for now) read-only address
-    case MASTERCLK_MODE:
-      break; // (for now) read-only address
-    case BREAKPOINTS:
       break; // (for now) read-only address
     default:
       throw new InternalError("unexpected case fall-through");
@@ -379,32 +418,6 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
       return
         pio.getSM((regNum - Regs.SM0_OSR_SHIFT_COUNT.ordinal()) / SM_SIZE).
         getOSRShiftCount();
-    case SM0_DELAY:
-    case SM1_DELAY:
-    case SM2_DELAY:
-    case SM3_DELAY:
-      return
-        pio.getSM((regNum - Regs.SM0_DELAY.ordinal()) / SM_SIZE).
-        getDelay();
-    case SM0_DELAY_CYCLE:
-    case SM1_DELAY_CYCLE:
-    case SM2_DELAY_CYCLE:
-    case SM3_DELAY_CYCLE:
-      return
-        pio.getSM((regNum - Regs.SM0_DELAY_CYCLE.ordinal()) / SM_SIZE).
-        isDelayCycle() ? 0x1 : 0x0;
-    case SM0_PENDING_DELAY:
-    case SM1_PENDING_DELAY:
-    case SM2_PENDING_DELAY:
-    case SM3_PENDING_DELAY:
-      return
-        pio.getSM((regNum - Regs.SM0_PENDING_DELAY.ordinal()) / SM_SIZE).
-        getPendingDelay();
-    case SM0_CLK_ENABLE:
-    case SM1_CLK_ENABLE:
-    case SM2_CLK_ENABLE:
-    case SM3_CLK_ENABLE:
-      return getClockEnable((regNum - Regs.SM0_CLK_ENABLE.ordinal()) / SM_SIZE);
     case SM0_FIFO_MEM0:
     case SM0_FIFO_MEM1:
     case SM0_FIFO_MEM2:
@@ -438,16 +451,50 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM3_FIFO_MEM6:
     case SM3_FIFO_MEM7:
       return getFIFOMemValue(regNum - Regs.SM0_FIFO_MEM0.ordinal());
+    case SM0_DELAY:
+    case SM1_DELAY:
+    case SM2_DELAY:
+    case SM3_DELAY:
+      return
+        pio.getSM((regNum - Regs.SM0_DELAY.ordinal()) / SM_SIZE).
+        getDelay();
+    case SM0_DELAY_CYCLE:
+    case SM1_DELAY_CYCLE:
+    case SM2_DELAY_CYCLE:
+    case SM3_DELAY_CYCLE:
+      return
+        pio.getSM((regNum - Regs.SM0_DELAY_CYCLE.ordinal()) / SM_SIZE).
+        isDelayCycle() ? 0x1 : 0x0;
+    case SM0_PENDING_DELAY:
+    case SM1_PENDING_DELAY:
+    case SM2_PENDING_DELAY:
+    case SM3_PENDING_DELAY:
+      return
+        pio.getSM((regNum - Regs.SM0_PENDING_DELAY.ordinal()) / SM_SIZE).
+        getPendingDelay();
+    case SM0_CLK_ENABLE:
+    case SM1_CLK_ENABLE:
+    case SM2_CLK_ENABLE:
+    case SM3_CLK_ENABLE:
+      return getClockEnable((regNum - Regs.SM0_CLK_ENABLE.ordinal()) / SM_SIZE);
+    case SM0_BREAKPOINTS:
+    case SM1_BREAKPOINTS:
+    case SM2_BREAKPOINTS:
+    case SM3_BREAKPOINTS:
+      return
+        pio.getSM((regNum - Regs.SM0_BREAKPOINTS.ordinal()) / SM_SIZE).
+        getBreakPoints();
+    case SM0_TRACEPOINTS:
+    case SM1_TRACEPOINTS:
+    case SM2_TRACEPOINTS:
+    case SM3_TRACEPOINTS:
+      return
+        pio.getSM((regNum - Regs.SM0_TRACEPOINTS.ordinal()) / SM_SIZE).
+        getTracePoints();
     case GPIO_PINS:
       return pio.getGPIO().getPins(0, GPIO_NUM);
     case GPIO_PINDIRS:
       return pio.getGPIO().getPinDirs(0, GPIO_NUM);
-    case MASTERCLK_FREQ:
-      return 0; // TODO
-    case MASTERCLK_MODE:
-      return 0; // TODO
-    case BREAKPOINTS:
-      return 0; // TODO
     default:
       throw new InternalError("unexpected case fall-through");
     }

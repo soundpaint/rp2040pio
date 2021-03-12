@@ -187,6 +187,14 @@ public class RegisterServer
     final String unparsedArgs = request.substring(1);
     final String[] args =
       unparsedArgs.length() > 0 ? unparsedArgs.split(" ") : NULL_ARGS;
+    /*
+     * TODO: Idea: Introduce another command 's' for waiting (or
+     * "sleeping") until the emulator runs idle (in MasterClock
+     * SINGLE_STEP mode).  This way, an external application like
+     * TimingDiagram does not need to busy wait (via periodic polling
+     * with 'r' read command) until a triggered clock phase has been
+     * completed.
+     */
     switch (command) {
     case 'v':
       return handleGetVersion(args);
