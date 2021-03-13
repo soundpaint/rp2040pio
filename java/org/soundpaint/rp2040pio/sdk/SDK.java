@@ -39,6 +39,14 @@ public class SDK
   public static SDK getDefaultInstance() { return DEFAULT_INSTANCE; }
 
   private final PicoEmuRegisters picoEmuRegisters;
+
+  /*
+   * TODO: There is only a single GPIO, but each of the two PIOs has
+   * its own GPIO input / output latches. Therefore, some GPIO
+   * functionality is shared between both PIOs, while other GPIO
+   * functionality is instantiated per PIO.  This difference should be
+   * made more explicit in the overall architecture.
+   */
   public final GPIOSDK gpioSdk;
   public final PIOSDK pio0Sdk;
   public final PIOSDK pio1Sdk;

@@ -104,7 +104,6 @@ public class TimingDiagram implements Constants
   private final SDK sdk;
   private final PIOSDK pioSdk;
   private final PIO pio;
-  private final GPIO gpio;
   private final DiagramConfig diagramConfig;
   private final JFrame frame;
   private final JPanel panel;
@@ -150,7 +149,6 @@ public class TimingDiagram implements Constants
     this.sdk = sdk;
     pioSdk = sdk.getPIO0SDK();
     pio = pioSdk.getRegisters().getPIO();
-    gpio = pio.getGPIO();
     diagramConfig = new DiagramConfig();
     frame = new JFrame("Timing Diagram");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

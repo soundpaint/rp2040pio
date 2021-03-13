@@ -52,6 +52,11 @@ public class MasterClock implements Clock
 
   private class DrivingGear extends Thread
   {
+    public DrivingGear()
+    {
+      super("Emulation Thread");
+    }
+
     @Override
     public void run()
     {
@@ -65,6 +70,7 @@ public class MasterClock implements Clock
             }
           }
           if (phase == Phase.PHASE_1) {
+            syncWithRealTime();
             cyclePhase0();
           }
           while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_0)) {
@@ -85,10 +91,13 @@ public class MasterClock implements Clock
   private final DrivingGear drivingGear;
   private final List<TransitionListener> listeners;
   private long frequency;
+  private double milliSecondsPerCycle;
   private Mode mode;
   private Phase phase;
   private Phase trigger;
   private long wallClock;
+  private long refWallClock;
+  private long refRealTime;
 
   public static MasterClock getDefaultInstance()
   {
@@ -105,17 +114,52 @@ public class MasterClock implements Clock
 
   public void reset()
   {
-    frequency = DEFAULT_FREQUENCY;
-    mode = Mode.SINGLE_STEP;
+    setFrequency((int)DEFAULT_FREQUENCY);
+    setMode(Mode.SINGLE_STEP);
     phase = Phase.PHASE_1;
     trigger = Phase.PHASE_1;
     wallClock = -1;
   }
 
+  private long getMilliSecondsAhead()
+  {
+    if (frequency == 0) {
+      return 0;
+    }
+    final long wallTimeMillisSinceRef =
+      Math.round(milliSecondsPerCycle * (wallClock - refWallClock));
+    final long realTimeMillisSinceRef =
+      System.currentTimeMillis() - refRealTime;
+    final long milliSecondsAhead =
+      wallTimeMillisSinceRef - realTimeMillisSinceRef;
+    return milliSecondsAhead >= 0 ? milliSecondsAhead : 0;
+  }
+
+  private void syncWithRealTime()
+  {
+    if (mode != Mode.TARGET_FREQUENCY) return;
+    long milliSecondsAhead = getMilliSecondsAhead();
+    while (milliSecondsAhead > 0) {
+      try {
+        Thread.sleep(milliSecondsAhead);
+      } catch (final InterruptedException e) {
+        // ignore
+      }
+      milliSecondsAhead = getMilliSecondsAhead();
+    }
+  }
+
+  private void setFrequency(final int frequency)
+  {
+    this.frequency = frequency & 0xffffffff;
+    milliSecondsPerCycle =
+      frequency != 0 ? 8000.0 / this.frequency : Double.POSITIVE_INFINITY;
+  }
+
   public void setMASTERCLK_FREQ(final int frequency)
   {
     synchronized(drivingGear) {
-      this.frequency = frequency & 0xffffffff;
+      setFrequency(frequency);
       drivingGear.notify();
     }
   }
@@ -130,6 +174,8 @@ public class MasterClock implements Clock
     synchronized(drivingGear) {
       this.mode = mode;
       drivingGear.notify();
+      refWallClock = wallClock;
+      refRealTime = System.currentTimeMillis();
     }
   }
 
@@ -137,10 +183,7 @@ public class MasterClock implements Clock
 
   public void setMASTERCLK_MODE(final int value)
   {
-    synchronized(drivingGear) {
-      mode = Mode.fromValue(value & 0x1);
-      drivingGear.notify();
-    }
+    setMode(Mode.fromValue(value & 0x1));
   }
 
   public int getMASTERCLK_MODE()

@@ -60,7 +60,9 @@ public class RegisterServer
     this.portNumber = portNumber;
     serverSocket = new ServerSocket(portNumber);
     connectionCounter = 0;
-    new Thread(() -> listen()).start();
+    // TODO: Maybe introduce pool of client threads to limit maximum
+    // number of connections.
+    new Thread(() -> listen(), "RegisterServer Client Thread").start();
   }
 
   private void listen()
@@ -68,7 +70,8 @@ public class RegisterServer
     while (true) {
       try {
         final Socket clientSocket = serverSocket.accept();
-        new Thread(() -> serve(clientSocket)).start();
+        new Thread(() -> serve(clientSocket), "RegisterServer Server Thread").
+          start();
       } catch (final IOException e) {
         // establishing connection failed => abort connection
       }
