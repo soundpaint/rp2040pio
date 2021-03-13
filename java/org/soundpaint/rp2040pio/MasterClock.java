@@ -88,6 +88,12 @@ public class MasterClock implements Clock
     }
   }
 
+  /**
+   * Insure access to the following set of variables is atomic:
+   * (refWallClock, refRealTime, frequency, milliSecondsPerCycle).
+   */
+  private final Object accountingLock;
+
   private final DrivingGear drivingGear;
   private final List<TransitionListener> listeners;
   private long frequency;
@@ -106,6 +112,7 @@ public class MasterClock implements Clock
 
   public MasterClock()
   {
+    accountingLock = new Object();
     drivingGear = new DrivingGear();
     listeners = new ArrayList<TransitionListener>();
     reset();
@@ -121,18 +128,28 @@ public class MasterClock implements Clock
     wallClock = -1;
   }
 
+  private void resetRef()
+  {
+    synchronized(accountingLock) {
+      refWallClock = wallClock;
+      refRealTime = System.currentTimeMillis();
+    }
+  }
+
   private long getMilliSecondsAhead()
   {
-    if (frequency == 0) {
-      return 0;
+    synchronized(accountingLock) {
+      if (frequency == 0) {
+        return 0;
+      }
+      final long wallTimeMillisSinceRef =
+        Math.round(milliSecondsPerCycle * (wallClock - refWallClock));
+      final long realTimeMillisSinceRef =
+        System.currentTimeMillis() - refRealTime;
+      final long milliSecondsAhead =
+        wallTimeMillisSinceRef - realTimeMillisSinceRef;
+      return milliSecondsAhead >= 0 ? milliSecondsAhead : 0;
     }
-    final long wallTimeMillisSinceRef =
-      Math.round(milliSecondsPerCycle * (wallClock - refWallClock));
-    final long realTimeMillisSinceRef =
-      System.currentTimeMillis() - refRealTime;
-    final long milliSecondsAhead =
-      wallTimeMillisSinceRef - realTimeMillisSinceRef;
-    return milliSecondsAhead >= 0 ? milliSecondsAhead : 0;
   }
 
   private void syncWithRealTime()
@@ -151,9 +168,12 @@ public class MasterClock implements Clock
 
   private void setFrequency(final int frequency)
   {
-    this.frequency = frequency & 0xffffffff;
-    milliSecondsPerCycle =
-      frequency != 0 ? 8000.0 / this.frequency : Double.POSITIVE_INFINITY;
+    synchronized(accountingLock) {
+      this.frequency = frequency & 0xffffffff;
+      milliSecondsPerCycle =
+        frequency != 0 ? 8000.0 / this.frequency : Double.POSITIVE_INFINITY;
+      resetRef();
+    }
   }
 
   public void setMASTERCLK_FREQ(final int frequency)
@@ -174,8 +194,7 @@ public class MasterClock implements Clock
     synchronized(drivingGear) {
       this.mode = mode;
       drivingGear.notify();
-      refWallClock = wallClock;
-      refRealTime = System.currentTimeMillis();
+      resetRef();
     }
   }
 
