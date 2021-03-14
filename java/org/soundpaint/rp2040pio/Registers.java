@@ -36,6 +36,7 @@ public interface Registers
   String getLabel(final int address);
   void writeAddress(final int address, final int value);
   int readAddress(final int address);
+  void irqWaitAddress(final int address);
 }
 
 /*

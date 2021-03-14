@@ -185,11 +185,17 @@ abstract class AbstractRegisters implements Registers
   @Override
   public synchronized int readAddress(final int address)
   {
-    if ((address & 0x3) != 0x0) {
-      throw new IllegalArgumentException("address not word-aligned: " +
-                                         String.format("%04x", address));
-    }
+    checkAddressAligned(address);
     return readRegister(((address - baseAddress) & ~0x3000) >>> 2);
+  }
+
+  abstract protected void irqWaitRegister(final int regNum);
+
+  @Override
+  public void irqWaitAddress(final int address)
+  {
+    checkAddressAligned(address);
+    irqWaitRegister(((address - baseAddress) & ~0x3000) >>> 2);
   }
 }
 

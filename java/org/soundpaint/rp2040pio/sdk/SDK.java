@@ -47,9 +47,9 @@ public class SDK
    * functionality is instantiated per PIO.  This difference should be
    * made more explicit in the overall architecture.
    */
-  public final GPIOSDK gpioSdk;
-  public final PIOSDK pio0Sdk;
-  public final PIOSDK pio1Sdk;
+  private final GPIOSDK gpioSdk;
+  private final PIOSDK pio0Sdk;
+  private final PIOSDK pio1Sdk;
 
   /*
    * TODO: Really should replace this simple-minded list approach with
@@ -65,20 +65,21 @@ public class SDK
                                             PIO.MASTER_CLOCK_BASE);
     registersList.add(picoEmuRegisters);
 
-    pio0Sdk = new PIOSDK(PIO.PIO0, PIO.PIO0_BASE);
+    gpioSdk = new GPIOSDK(PIO.GPIO);
+    // TODO: Implement registers for GPIO SDK.
+
+    pio0Sdk = new PIOSDK(gpioSdk, PIO.PIO0, PIO.PIO0_BASE);
     final PIORegisters pio0Registers = pio0Sdk.getRegisters();
     registersList.add(pio0Registers);
     final PIOEmuRegisters pio0EmuRegisters = pio0Sdk.getEmuRegisters();
     registersList.add(pio0EmuRegisters);
 
-    pio1Sdk = new PIOSDK(PIO.PIO1, PIO.PIO1_BASE);
+    pio1Sdk = new PIOSDK(gpioSdk, PIO.PIO1, PIO.PIO1_BASE);
     final PIORegisters pio1Registers = pio1Sdk.getRegisters();
     registersList.add(pio1Registers);
     final PIOEmuRegisters pio1EmuRegisters = pio1Sdk.getEmuRegisters();
     registersList.add(pio1EmuRegisters);
 
-    gpioSdk = new GPIOSDK(pio0Sdk.getRegisters().getPIO().getGPIO());
-    // TODO: Implement registers for GPIO SDK.
   }
 
   public GPIOSDK getGPIOSDK() { return gpioSdk; }
@@ -116,6 +117,14 @@ public class SDK
     final Registers registers = getProvidingRegisters(address);
     if (registers != null) registers.writeAddress(address, value);
   }
+
+  public void irqWaitAddress(final int address)
+  {
+    final Registers registers = getProvidingRegisters(address);
+    if (registers != null) registers.irqWaitAddress(address);
+  }
+
+  // -------- address helpers --------
 
   public String getLabelForAddress(final int address)
   {

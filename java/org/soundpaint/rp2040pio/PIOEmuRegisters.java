@@ -499,6 +499,12 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
       throw new InternalError("unexpected case fall-through");
     }
   }
+
+  @Override
+  protected void irqWaitRegister(final int regNum)
+  {
+    // TODO
+  }
 }
 
 /*

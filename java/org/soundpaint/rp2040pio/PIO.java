@@ -35,9 +35,10 @@ public class PIO implements Constants, Clock.TransitionListener
 {
   public static final MasterClock MASTER_CLOCK =
     MasterClock.getDefaultInstance();
-  private static final GPIO _GPIO = GPIO.getDefaultInstance();
-  public static final PIO PIO0 = new PIO(0, System.out, MASTER_CLOCK, _GPIO);
-  public static final PIO PIO1 = new PIO(1, System.out, MASTER_CLOCK, _GPIO);
+  public static final GPIO GPIO =
+    org.soundpaint.rp2040pio.GPIO.getDefaultInstance();
+  public static final PIO PIO0 = new PIO(0, System.out, MASTER_CLOCK, GPIO);
+  public static final PIO PIO1 = new PIO(1, System.out, MASTER_CLOCK, GPIO);
 
   private final int index;
   private final PrintStream console;

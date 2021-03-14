@@ -35,40 +35,40 @@ import org.soundpaint.rp2040pio.PIORegisters;
  */
 public class PIOSDK implements Constants
 {
+  private final GPIOSDK gpioSdk;
   private final PIORegisters registers;
   private final PIOEmuRegisters emuRegisters;
   private final int pioBaseAddress;
-  private final GPIOSDK gpioSdk;
 
   private PIOSDK()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIOSDK(final PIO pio, final int pioBaseAddress)
+  public PIOSDK(final GPIOSDK gpioSdk, final PIO pio, final int pioBaseAddress)
   {
-    this(new PIORegisters(pio, pioBaseAddress),
-         new PIOEmuRegisters(pio, pioBaseAddress + 0x0800),
-         new GPIOSDK(pio.getGPIO()));
+    this(gpioSdk,
+         new PIORegisters(pio, pioBaseAddress),
+         new PIOEmuRegisters(pio, pioBaseAddress + 0x0800));
   }
 
-  public PIOSDK(final PIORegisters registers,
-                final PIOEmuRegisters emuRegisters,
-                final GPIOSDK gpioSdk)
+  private PIOSDK(final GPIOSDK gpioSdk,
+                 final PIORegisters registers,
+                 final PIOEmuRegisters emuRegisters)
   {
+    if (gpioSdk == null) {
+      throw new NullPointerException("gpio sdk");
+    }
     if (registers == null) {
       throw new NullPointerException("registers");
     }
     if (emuRegisters == null) {
       throw new NullPointerException("emuRegisters");
     }
-    if (gpioSdk == null) {
-      throw new NullPointerException("gpio sdk");
-    }
+    this.gpioSdk = gpioSdk;
     this.registers = registers;
     this.emuRegisters = emuRegisters;
-    this.pioBaseAddress = registers.getBaseAddress();
-    this.gpioSdk = gpioSdk;
+    pioBaseAddress = registers.getBaseAddress();
   }
 
   public PIORegisters getRegisters() { return registers; }

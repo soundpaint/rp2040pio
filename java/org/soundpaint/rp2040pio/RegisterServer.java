@@ -32,6 +32,34 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
+/**
+ * The idea of the RegisterServer class is to provide access to the
+ * PIO emulator applicable even for processes other than the JVM
+ * instance that hosts the PIO emulator, and potential integration
+ * with other languages such as C/C++ or Python.  Effectively, this
+ * class adds an architectural layer that provides the PIO emulator as
+ * software as a service (SaaS).  Access is provided via a standard
+ * TC/IP socket with a simple protocol for accessing the PIO
+ * emulator's pseudo-memory-mapped registers, including the additional
+ * emulator-specific extended set of registers (such as for accessing
+ * the internal X and Y register or FIFO values).  For example, even
+ * an ordinary C program (like one created with the pioasm tool) may
+ * make access the PIO emulator by compiling it against a special
+ * extended version of the Pico C SDK, such that e.g. set up and
+ * control of the PIO Emulator can be done directly from the C code
+ * injected in a .pio file.  Similarly, a Python library may be
+ * developed that replaces the standard Pico Python libary with one
+ * that accesses the emulator instead of real Pico hardware.
+ *
+ * The Pico Host SDL shows a specific example that draws the general
+ * idea of how to extend the Pico C SDK in such a manner (see:
+ * https://github.com/raspberrypi/pico-host-sdl).  For this PIO
+ * emulator, the SDK is to be extended in a way similar to the Pico
+ * Host SDL, such that access to the PIO's registers is not performed
+ * via direct memory access (as the default implementation of the C
+ * SDK does), but via the socket interface that this RegisterServer
+ * class provides.
+ */
 public class RegisterServer
 {
   public static final int DEFAULT_PORT_NUMBER = 1088;
@@ -120,6 +148,11 @@ public class RegisterServer
     }
   };
 
+  private String createResponse(final ResponseStatus status)
+  {
+    return createResponse(status, null);
+  }
+
   private String createResponse(final ResponseStatus status, final String msg)
   {
     if (status == null) {
@@ -181,6 +214,48 @@ public class RegisterServer
     return createResponse(ResponseStatus.OK, String.valueOf(value));
   }
 
+  private String handleWrite(final String[] args)
+  {
+    if (args.length < 2) {
+      return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
+    }
+    if (args.length > 2) {
+      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[2]);
+    }
+    final int address;
+    try {
+      address = parseUnsignedInt(args[0]);
+    } catch (final NumberFormatException e) {
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+    }
+    final int value;
+    try {
+      value = parseUnsignedInt(args[1]);
+    } catch (final NumberFormatException e) {
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[1]);
+    }
+    sdk.writeAddress(address, value);
+    return createResponse(ResponseStatus.OK);
+  }
+
+  private String handleIRQWait(final String[] args)
+  {
+    if (args.length < 1) {
+      return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
+    }
+    if (args.length > 1) {
+      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[1]);
+    }
+    final int address;
+    try {
+      address = parseUnsignedInt(args[0]);
+    } catch (final NumberFormatException e) {
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+    }
+    sdk.irqWaitAddress(address);
+    return createResponse(ResponseStatus.OK);
+  }
+
   private String handleRequest(final String request)
   {
     if (request.isEmpty()) {
@@ -208,6 +283,10 @@ public class RegisterServer
       return handleQuit(args);
     case 'r':
       return handleRead(args);
+    case 'w':
+      return handleWrite(args);
+    case 'i':
+      return handleIRQWait(args);
     default:
       return createResponse(ResponseStatus.ERR_UNKNOWN_COMMAND,
                             String.valueOf(command));
