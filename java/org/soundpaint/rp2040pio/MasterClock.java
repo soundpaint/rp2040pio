@@ -57,32 +57,49 @@ public class MasterClock implements Clock
       super("Emulation Thread");
     }
 
+    private void runSingleStep()
+    {
+      synchronized(this) {
+        while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_1)) {
+          try {
+            wait();
+          } catch (final InterruptedException e) {
+            // ignore here, since check in while condition
+          }
+        }
+        if (phase == Phase.PHASE_1) {
+          syncWithRealTime();
+          cyclePhase0();
+        }
+        while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_0)) {
+          try {
+            wait();
+          } catch (final InterruptedException e) {
+            // ignore here, since check in while condition
+          }
+        }
+        if (phase == Phase.PHASE_0) {
+          cyclePhase1();
+        }
+      }
+    }
+
+    private void runTargetFrequency()
+    {
+      syncWithRealTime();
+      cyclePhase0();
+      cyclePhase1();
+    }
+
     @Override
     public void run()
     {
       while (true) {
-        synchronized(this) {
-          while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_1)) {
-            try {
-              wait();
-            } catch (final InterruptedException e) {
-              // ignore here, since check in while condition
-            }
-          }
-          if (phase == Phase.PHASE_1) {
-            syncWithRealTime();
-            cyclePhase0();
-          }
-          while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_0)) {
-            try {
-              wait();
-            } catch (final InterruptedException e) {
-              // ignore here, since check in while condition
-            }
-          }
-          if (phase == Phase.PHASE_0) {
-            cyclePhase1();
-          }
+        while (mode == Mode.SINGLE_STEP) {
+          runSingleStep();
+        }
+        while (mode == Mode.TARGET_FREQUENCY) {
+          runTargetFrequency();
         }
       }
     }
@@ -155,14 +172,13 @@ public class MasterClock implements Clock
   private void syncWithRealTime()
   {
     if (mode != Mode.TARGET_FREQUENCY) return;
-    long milliSecondsAhead = getMilliSecondsAhead();
-    while (milliSecondsAhead > 0) {
+    final long milliSecondsAhead = getMilliSecondsAhead();
+    if (milliSecondsAhead > 0) {
       try {
         Thread.sleep(milliSecondsAhead);
       } catch (final InterruptedException e) {
         // ignore
       }
-      milliSecondsAhead = getMilliSecondsAhead();
     }
   }
 
@@ -248,15 +264,17 @@ public class MasterClock implements Clock
 
   public void triggerPhase0()
   {
-    synchronized(drivingGear) {
-      trigger = Phase.PHASE_0;
-      drivingGear.notify();
+    synchronized(accountingLock) {
+      if (mode != Mode.SINGLE_STEP) return;
+      synchronized(drivingGear) {
+        trigger = Phase.PHASE_0;
+        drivingGear.notify();
+      }
     }
   }
 
   private void cyclePhase0()
   {
-    if (mode != Mode.SINGLE_STEP) return;
     if (phase == Phase.PHASE_0) return;
     phase = Phase.PHASE_0;
     announceRaisingEdge();
@@ -264,15 +282,17 @@ public class MasterClock implements Clock
 
   public void triggerPhase1()
   {
-    synchronized(drivingGear) {
-      trigger = Phase.PHASE_1;
-      drivingGear.notify();
+    synchronized(accountingLock) {
+      if (mode != Mode.SINGLE_STEP) return;
+      synchronized(drivingGear) {
+        trigger = Phase.PHASE_1;
+        drivingGear.notify();
+      }
     }
   }
 
   private void cyclePhase1()
   {
-    if (mode != Mode.SINGLE_STEP) return;
     if (phase == Phase.PHASE_1) return;
     phase = Phase.PHASE_1;
     announceFallingEdge();
