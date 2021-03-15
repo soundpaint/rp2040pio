@@ -103,7 +103,6 @@ public class TimingDiagram implements Constants
 
   private final SDK sdk;
   private final PIOSDK pioSdk;
-  private final PIO pio;
   private final DiagramConfig diagramConfig;
   private final JFrame frame;
   private final JPanel panel;
@@ -148,7 +147,6 @@ public class TimingDiagram implements Constants
     }
     this.sdk = sdk;
     pioSdk = sdk.getPIO0SDK();
-    pio = pioSdk.getRegisters().getPIO();
     diagramConfig = new DiagramConfig();
     frame = new JFrame("Timing Diagram");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -468,9 +466,6 @@ public class TimingDiagram implements Constants
     pioSdk.setSmMaskEnabled(1, true);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
       sdk.triggerCyclePhase0(true);
-      for (final Decoder.DecodeException e : pio.getExceptions()) {
-        System.err.println(e);
-      }
       final double x = LEFT_MARGIN + cycle * CLOCK_CYCLE_WIDTH;
       final boolean leftBorder = cycle == 0;
       final boolean rightBorder = cycle + 1 == stopCycle;

@@ -26,6 +26,8 @@ package org.soundpaint.rp2040pio.sdk;
 
 import java.io.IOException;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.Decoder;
+import org.soundpaint.rp2040pio.Instruction;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
@@ -38,6 +40,7 @@ public class PIOSDK implements Constants
   private final GPIOSDK gpioSdk;
   private final PIORegisters registers;
   private final PIOEmuRegisters emuRegisters;
+  private final Decoder decoder;
   private final int pioBaseAddress;
 
   private PIOSDK()
@@ -68,12 +71,44 @@ public class PIOSDK implements Constants
     this.gpioSdk = gpioSdk;
     this.registers = registers;
     this.emuRegisters = emuRegisters;
+    this.decoder = new Decoder();
     pioBaseAddress = registers.getBaseAddress();
   }
 
   public PIORegisters getRegisters() { return registers; }
 
   public PIOEmuRegisters getEmuRegisters() { return emuRegisters; }
+
+  /**
+   * Note: This method is synchronized since we have only a single
+   * instance of a decoder.  Use of this decoder must be serialized.
+   */
+  public synchronized Instruction getCurrentInstruction(final int smNum)
+  {
+    Constants.checkSmNum(smNum);
+
+    final int smInstrAddress =
+      registers.getSMAddress(PIORegisters.Regs.SM0_INSTR, smNum);
+    final int opCode = registers.readAddress(smInstrAddress) & 0xffff;
+
+    final int smPinCtrlSidesetCountAddress =
+      registers.getSMAddress(PIORegisters.Regs.SM0_PINCTRL, smNum);
+    final int pinCtrlSidesetCount =
+      (registers.readAddress(smPinCtrlSidesetCountAddress) &
+       SM0_PINCTRL_SIDESET_COUNT_BITS) >>> SM0_PINCTRL_SIDESET_COUNT_LSB;
+
+    final int smExecCtrlSideEnAddress =
+      registers.getSMAddress(PIORegisters.Regs.SM0_EXECCTRL, smNum);
+    final boolean execCtrlSideEn =
+      (registers.readAddress(smExecCtrlSideEnAddress) &
+       SM0_EXECCTRL_SIDE_EN_BITS) != 0x0;
+
+    try {
+      return decoder.decode((short)opCode, pinCtrlSidesetCount, execCtrlSideEn);
+    } catch (final Decoder.DecodeException e) {
+      return null;
+    }
+  }
 
   // ---- Functions for compatibility with the Pico SDK, SM Config Group ----
 

@@ -237,6 +237,12 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     {
       return toolTipTextForValue(previousValue);
     }
+
+    @Override
+    public String toString()
+    {
+      return "Signal[" + label + "]";
+    }
   }
 
   public static class ClockSignal extends AbstractSignal<Void>
@@ -383,12 +389,10 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     final Supplier<InstructionInfo> valueGetter = () -> {
       if ((displayFilter != null) && (!displayFilter.get()))
         return null;
+      final Instruction instruction = pioSdk.getCurrentInstruction(smNum);
+      if (instruction == null) return null;
       final PIORegisters pioRegisters = pioSdk.getRegisters();
       final PIOEmuRegisters pioEmuRegisters = pioSdk.getEmuRegisters();
-
-      final int smInstrAddress =
-      pioRegisters.getSMAddress(PIORegisters.Regs.SM0_INSTR, smNum);
-      final int opCode = pioRegisters.readAddress(smInstrAddress) & 0xffff;
 
       final int smPCAddress =
       pioEmuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_PC, smNum);
@@ -405,29 +409,10 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       final boolean isDelayCycle =
       pioEmuRegisters.readAddress(smDelayCycleAddress) != 0x0;
 
-      final int smPinCtrlSidesetCountAddress =
-      pioRegisters.getSMAddress(PIORegisters.Regs.SM0_PINCTRL, smNum);
-      final int pinCtrlSidesetCount =
-      (pioRegisters.readAddress(smPinCtrlSidesetCountAddress) &
-       SM0_PINCTRL_SIDESET_COUNT_BITS) >>> SM0_PINCTRL_SIDESET_COUNT_LSB;
-
-      final int smExecCtrlSideEnAddress =
-      pioRegisters.getSMAddress(PIORegisters.Regs.SM0_EXECCTRL, smNum);
-      final boolean execCtrlSideEn =
-      (pioRegisters.readAddress(smExecCtrlSideEnAddress) &
-       SM0_EXECCTRL_SIDE_EN_BITS) != 0x0;
-
-      try {
-        final Instruction instruction =
-          decoder.decode((short)opCode, pinCtrlSidesetCount, execCtrlSideEn);
-        final String mnemonic = instruction.getMnemonic();
-        final String fullStatement =
-          addressLabel + instruction.toString().replaceAll("\\s{2,}", " ");
-        return new InstructionInfo(mnemonic, fullStatement, isDelayCycle, delay);
-      } catch (final Decoder.DecodeException e) {
-        // illegal op-code => nothing to show
-        return null;
-      }
+      final String mnemonic = instruction.getMnemonic();
+      final String fullStatement =
+      addressLabel + instruction.toString().replaceAll("\\s{2,}", " ");
+      return new InstructionInfo(mnemonic, fullStatement, isDelayCycle, delay);
     };
     final ValuedSignal<InstructionInfo> instructionSignal =
       new ValuedSignal<InstructionInfo>(signalLabel, valueGetter);

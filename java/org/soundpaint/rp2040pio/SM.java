@@ -362,16 +362,18 @@ public class SM implements Constants
   }
 
   public void clockRaisingEdge(final long wallClock)
-    throws Decoder.DecodeException
   {
     pll.raisingEdge(wallClock);
     if (pll.getClockEnable()) {
-      fetchAndDecode();
+      try {
+        fetchAndDecode();
+      } catch (final Decoder.DecodeException e) {
+        console.println(e.getMessage());
+      }
     }
   }
 
   public void clockFallingEdge(final long wallClock)
-    throws Decoder.DecodeException
   {
     pll.fallingEdge(wallClock);
     if (pll.getClockEnable()) {

@@ -47,7 +47,6 @@ public class PIO implements Constants, Clock.TransitionListener
   private final Memory memory;
   private final IRQ irq;
   private final SM[] sms;
-  private final List<Decoder.DecodeException> caughtExceptions;
   private int smEnabled; // bits 0..3 of CTRL_SM_ENABLE
 
   public enum PinDir {
@@ -153,7 +152,6 @@ public class PIO implements Constants, Clock.TransitionListener
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
       sms[smNum] = new SM(smNum, console, masterClock, gpio, memory, irq);
     }
-    caughtExceptions = new ArrayList<Decoder.DecodeException>();
     smEnabled = 0x0;
   }
 
@@ -265,15 +263,6 @@ public class PIO implements Constants, Clock.TransitionListener
     }
   }
 
-  /**
-   * Returns a copy of the list of all exceptions that have been
-   * collected during the most recent clock cycle.
-   */
-  public List<Decoder.DecodeException> getExceptions()
-  {
-    return List.copyOf(caughtExceptions);
-  }
-
   private boolean smIsEnabled(final int smNum)
   {
     if (smNum < 0) {
@@ -290,16 +279,11 @@ public class PIO implements Constants, Clock.TransitionListener
   @Override
   public void raisingEdge(final long wallClock)
   {
-    caughtExceptions.clear();
     synchronized(sms) {
       for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         if (smIsEnabled(smNum)) {
-          try {
-            final SM sm = getSM(smNum);
-            sm.clockRaisingEdge(wallClock);
-          } catch (final Decoder.DecodeException e) {
-            caughtExceptions.add(e);
-          }
+          final SM sm = getSM(smNum);
+          sm.clockRaisingEdge(wallClock);
         }
       }
     }
@@ -310,12 +294,8 @@ public class PIO implements Constants, Clock.TransitionListener
     synchronized(sms) {
       for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         if (smIsEnabled(smNum)) {
-          try {
-            final SM sm = getSM(smNum);
-            sm.clockFallingEdge(wallClock);
-          } catch (final Decoder.DecodeException e) {
-            caughtExceptions.add(e);
-          }
+          final SM sm = getSM(smNum);
+          sm.clockFallingEdge(wallClock);
         }
       }
     }
