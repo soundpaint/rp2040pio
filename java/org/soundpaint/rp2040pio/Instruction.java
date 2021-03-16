@@ -156,7 +156,7 @@ public abstract class Instruction
     return resultState;
   }
 
-  abstract String getMnemonic();
+  public abstract String getMnemonic();
 
   abstract String getParamsDisplay();
 

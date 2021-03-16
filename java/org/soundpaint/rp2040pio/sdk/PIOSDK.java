@@ -80,17 +80,72 @@ public class PIOSDK implements Constants
   public PIOEmuRegisters getEmuRegisters() { return emuRegisters; }
 
   /**
-   * Note: This method is synchronized since we have only a single
-   * instance of a decoder.  Use of this decoder must be serialized.
+   * Holds a copy of all info of a specific Instruction during a
+   * specific cycle that is relevant for the timing diagram.
    */
-  public synchronized Instruction getCurrentInstruction(final int smNum)
+  public static class InstructionInfo
+  {
+    private final String mnemonic;
+    private final String fullStatement;
+    private final boolean isDelayCycle;
+    private final int delay;
+
+    private InstructionInfo()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    public InstructionInfo(final String mnemonic, final String fullStatement,
+                           final boolean isDelayCycle, final int delay)
+    {
+      // instruction & state machine will change, hence save snapshot
+      // of relevant info
+      this.mnemonic = mnemonic;
+      this.fullStatement = fullStatement;
+      this.isDelayCycle = isDelayCycle;
+      this.delay = delay;
+    }
+
+    @Override
+    public boolean equals(final Object obj)
+    {
+      if (!(obj instanceof InstructionInfo)) return false;
+      final InstructionInfo other = (InstructionInfo)obj;
+      if (isDelayCycle && other.isDelayCycle) return true;
+      return this == other;
+    }
+
+    @Override
+    public int hashCode()
+    {
+      return isDelayCycle ? 0 : super.hashCode();
+    }
+
+    public String getToolTipText()
+    {
+      return isDelayCycle ? "[delay]" : fullStatement;
+    }
+
+    @Override
+    public String toString()
+    {
+      return isDelayCycle ? "[" + delay + "]" : mnemonic;
+    }
+  }
+
+  /**
+   * Note: This method is synchronized since we have only a single
+   * instance of a decoder, with a single instance of each
+   * instruction.  Therefore, use of this decoder and access to
+   * instances of Instruction objects must be serialized.
+   */
+  private synchronized InstructionInfo
+    getInstructionFromOpCode(final int smNum,
+                             final String addressLabel, final int opCode,
+                             final boolean format,
+                             final boolean isDelayCycle, final int delay)
   {
     Constants.checkSmNum(smNum);
-
-    final int smInstrAddress =
-      registers.getSMAddress(PIORegisters.Regs.SM0_INSTR, smNum);
-    final int opCode = registers.readAddress(smInstrAddress) & 0xffff;
-
     final int smPinCtrlSidesetCountAddress =
       registers.getSMAddress(PIORegisters.Regs.SM0_PINCTRL, smNum);
     final int pinCtrlSidesetCount =
@@ -103,11 +158,84 @@ public class PIOSDK implements Constants
       (registers.readAddress(smExecCtrlSideEnAddress) &
        SM0_EXECCTRL_SIDE_EN_BITS) != 0x0;
 
+    /*final*/ Instruction instruction;
     try {
-      return decoder.decode((short)opCode, pinCtrlSidesetCount, execCtrlSideEn);
+      instruction =
+        decoder.decode((short)opCode, pinCtrlSidesetCount, execCtrlSideEn);
     } catch (final Decoder.DecodeException e) {
-      return null;
+      instruction = null;
     }
+    final String mnemonic;
+    final String fullStatement;
+    if (instruction != null) {
+      mnemonic = instruction.getMnemonic();
+      fullStatement = addressLabel + instruction.toString();
+    } else {
+      mnemonic = "???";
+      fullStatement = addressLabel + "???";
+    }
+    final String formattedFullStatement =
+      format ? fullStatement : fullStatement.replaceAll("\\s{2,}", " ");
+
+    return new InstructionInfo(mnemonic, formattedFullStatement,
+                               isDelayCycle, delay);
+  }
+
+  public InstructionInfo getCurrentInstruction(final int smNum,
+                                               final boolean showAddress,
+                                               final boolean format)
+  {
+    Constants.checkSmNum(smNum);
+    final int smInstrAddress =
+      registers.getSMAddress(PIORegisters.Regs.SM0_INSTR, smNum);
+    final int opCode = registers.readAddress(smInstrAddress) & 0xffff;
+
+    final int smPCAddress =
+      emuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_PC, smNum);
+    final int pc = emuRegisters.readAddress(smPCAddress);
+    final String addressLabel =
+      showAddress ? String.format("%02x:", pc) : "";
+
+    final int smDelayCycleAddress =
+      emuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_DELAY_CYCLE, smNum);
+    final boolean isDelayCycle =
+      emuRegisters.readAddress(smDelayCycleAddress) != 0x0;
+
+    final int smDelayAddress =
+      emuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_DELAY, smNum);
+    final int delay = emuRegisters.readAddress(smDelayAddress);
+
+    return getInstructionFromOpCode(smNum, addressLabel, opCode, format,
+                                    isDelayCycle, delay);
+  }
+
+  /**
+   * Note: This method is synchronized since we have only a single
+   * instance of a decoder, with a single instance of each
+   * instruction.  Therefor, use of this decoder and access to
+   * instances of Instruction objects must be serialized.
+   *
+   * @param smNum Index of state machine.  For decoding an
+   * instruction, it is essential to know for which state machine the
+   * instruction applies, since the state machine's configuration of
+   * the side set / delay settings has an impact on interpretation of
+   * the instruction even for disassembling.
+   */
+  public synchronized InstructionInfo getMemoryInstruction(final int smNum,
+                                                           final int address,
+                                                           final boolean format)
+  {
+    Constants.checkSmNum(smNum);
+    Constants.checkSmMemAddr(address, "memory address");
+    final int instrAddress = emuRegisters.getMemoryAddress(address);
+    final int opCode = emuRegisters.readAddress(instrAddress) & 0xffff;
+    final String addressLabel =
+      String.format("%02x: %04x ", address, opCode);
+    final boolean isDelayCycle = false;
+    final int delay = 0;
+    return
+      getInstructionFromOpCode(smNum, addressLabel, opCode, format,
+                               isDelayCycle, delay);
   }
 
   // ---- Functions for compatibility with the Pico SDK, SM Config Group ----

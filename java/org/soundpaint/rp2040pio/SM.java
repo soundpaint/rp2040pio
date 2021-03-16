@@ -900,30 +900,6 @@ public class SM implements Constants
     return status.isDelayCycle;
   }
 
-  /*
-   * TODO: Eliminate this method from this class, since it is used on
-   * application level only, but is not part of the emulation.
-   * Instead, retrieve all neccessary information for a dump via the
-   * Registers interface.
-   */
-  public void dumpMemory()
-  {
-    for (int address = 0; address < MEMORY_SIZE; address++) {
-      final short word = memory.get(address);
-      String opCode;
-      try {
-        final Instruction instruction =
-          decoder.decode(word,
-                         status.regPINCTRL_SIDESET_COUNT,
-                         status.regEXECCTRL_SIDE_EN);
-        opCode = instruction.toString();
-      } catch (final Decoder.DecodeException e) {
-        opCode = "???";
-      }
-      console.printf("%02x: %04x %s%n", address, word, opCode);
-    }
-  }
-
   @Override
   public String toString()
   {

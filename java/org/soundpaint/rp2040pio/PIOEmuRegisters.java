@@ -141,6 +141,38 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     SM3_CLK_ENABLE,
     SM3_BREAKPOINTS,
     SM3_TRACEPOINTS,
+    INSTR_MEM0,
+    INSTR_MEM1,
+    INSTR_MEM2,
+    INSTR_MEM3,
+    INSTR_MEM4,
+    INSTR_MEM5,
+    INSTR_MEM6,
+    INSTR_MEM7,
+    INSTR_MEM8,
+    INSTR_MEM9,
+    INSTR_MEM10,
+    INSTR_MEM11,
+    INSTR_MEM12,
+    INSTR_MEM13,
+    INSTR_MEM14,
+    INSTR_MEM15,
+    INSTR_MEM16,
+    INSTR_MEM17,
+    INSTR_MEM18,
+    INSTR_MEM19,
+    INSTR_MEM20,
+    INSTR_MEM21,
+    INSTR_MEM22,
+    INSTR_MEM23,
+    INSTR_MEM24,
+    INSTR_MEM25,
+    INSTR_MEM26,
+    INSTR_MEM27,
+    INSTR_MEM28,
+    INSTR_MEM29,
+    INSTR_MEM30,
+    INSTR_MEM31,
     GPIO_PINS,
     GPIO_PINDIRS;
   }
@@ -229,6 +261,13 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
                                          address);
     }
     return getBaseAddress() + 0x4 * (Regs.SM0_FIFO_MEM0.ordinal() + address);
+  }
+
+  public int getMemoryAddress(final int memoryAddress)
+  {
+    Constants.checkSmMemAddr(memoryAddress, "memory address");
+    return
+      getBaseAddress() + 0x4 * (Regs.INSTR_MEM0.ordinal() + memoryAddress);
   }
 
   @Override
@@ -341,6 +380,40 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
     case SM3_TRACEPOINTS:
       pio.getSM((regNum - Regs.SM0_TRACEPOINTS.ordinal()) / SM_SIZE).
         setTracePoints(value, mask, xor);
+      break;
+    case INSTR_MEM0:
+    case INSTR_MEM1:
+    case INSTR_MEM2:
+    case INSTR_MEM3:
+    case INSTR_MEM4:
+    case INSTR_MEM5:
+    case INSTR_MEM6:
+    case INSTR_MEM7:
+    case INSTR_MEM8:
+    case INSTR_MEM9:
+    case INSTR_MEM10:
+    case INSTR_MEM11:
+    case INSTR_MEM12:
+    case INSTR_MEM13:
+    case INSTR_MEM14:
+    case INSTR_MEM15:
+    case INSTR_MEM16:
+    case INSTR_MEM17:
+    case INSTR_MEM18:
+    case INSTR_MEM19:
+    case INSTR_MEM20:
+    case INSTR_MEM21:
+    case INSTR_MEM22:
+    case INSTR_MEM23:
+    case INSTR_MEM24:
+    case INSTR_MEM25:
+    case INSTR_MEM26:
+    case INSTR_MEM27:
+    case INSTR_MEM28:
+    case INSTR_MEM29:
+    case INSTR_MEM30:
+    case INSTR_MEM31:
+      pio.getMemory().set(regNum - Regs.INSTR_MEM0.ordinal(), value, mask, xor);
       break;
     case GPIO_PINS:
       break; // (for now) read-only address
@@ -491,6 +564,39 @@ public class PIOEmuRegisters extends AbstractRegisters implements Constants
       return
         pio.getSM((regNum - Regs.SM0_TRACEPOINTS.ordinal()) / SM_SIZE).
         getTracePoints();
+    case INSTR_MEM0:
+    case INSTR_MEM1:
+    case INSTR_MEM2:
+    case INSTR_MEM3:
+    case INSTR_MEM4:
+    case INSTR_MEM5:
+    case INSTR_MEM6:
+    case INSTR_MEM7:
+    case INSTR_MEM8:
+    case INSTR_MEM9:
+    case INSTR_MEM10:
+    case INSTR_MEM11:
+    case INSTR_MEM12:
+    case INSTR_MEM13:
+    case INSTR_MEM14:
+    case INSTR_MEM15:
+    case INSTR_MEM16:
+    case INSTR_MEM17:
+    case INSTR_MEM18:
+    case INSTR_MEM19:
+    case INSTR_MEM20:
+    case INSTR_MEM21:
+    case INSTR_MEM22:
+    case INSTR_MEM23:
+    case INSTR_MEM24:
+    case INSTR_MEM25:
+    case INSTR_MEM26:
+    case INSTR_MEM27:
+    case INSTR_MEM28:
+    case INSTR_MEM29:
+    case INSTR_MEM30:
+    case INSTR_MEM31:
+      return pio.getMemory().get(regNum - Regs.INSTR_MEM0.ordinal());
     case GPIO_PINS:
       return pio.getGPIO().getPins(0, GPIO_NUM);
     case GPIO_PINDIRS:

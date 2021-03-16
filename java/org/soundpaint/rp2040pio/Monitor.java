@@ -72,7 +72,11 @@ public class Monitor
 
   public void dumpProgram()
   {
-    pio.getSM(0).dumpMemory();
+    for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
+      final PIOSDK.InstructionInfo instructionInfo =
+        pioSdk.getMemoryInstruction(0, address, true);
+      System.out.println(instructionInfo.getToolTipText());
+    }
   }
 
   public void setSideSetCount(final int count)

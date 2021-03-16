@@ -37,60 +37,6 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  */
 public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
 {
-  /**
-   * Holds a copy of all info of a specific Instruction during a
-   * specific cycle that is relevant for the timing diagram.
-   */
-  private static class InstructionInfo
-  {
-    private final String mnemonic;
-    private final String fullStatement;
-    private final boolean isDelayCycle;
-    private final int delay;
-
-    private InstructionInfo()
-    {
-      throw new UnsupportedOperationException("unsupported empty constructor");
-    }
-
-    public InstructionInfo(final String mnemonic, final String fullStatement,
-                           final boolean isDelayCycle, final int delay)
-    {
-      // instruction & state machine will change, hence save snapshot
-      // of relevant info
-      this.mnemonic = mnemonic;
-      this.fullStatement = fullStatement;
-      this.isDelayCycle = isDelayCycle;
-      this.delay = delay;
-    }
-
-    @Override
-    public boolean equals(final Object obj)
-    {
-      if (!(obj instanceof InstructionInfo)) return false;
-      final InstructionInfo other = (InstructionInfo)obj;
-      if (isDelayCycle && other.isDelayCycle) return true;
-      return this == other;
-    }
-
-    @Override
-    public int hashCode()
-    {
-      return isDelayCycle ? 0 : super.hashCode();
-    }
-
-    public String getToolTipText()
-    {
-      return isDelayCycle ? "[delay]" : fullStatement;
-    }
-
-    @Override
-    public String toString()
-    {
-      return isDelayCycle ? "[" + delay + "]" : mnemonic;
-    }
-  }
-
   public static interface Signal
   {
     void reset();
@@ -369,7 +315,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
   private static final String[] MNEMONIC =
   {"jmp", "wait", "in", "out", "push", "mov", "irq", "set"};
 
-  public static ValuedSignal<InstructionInfo>
+  public static ValuedSignal<PIOSDK.InstructionInfo>
     createInstructionSignal(final SDK sdk,
                             final PIOSDK pioSdk,
                             final int address, final int smNum,
@@ -384,38 +330,13 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       throw new NullPointerException("pioSdk");
     }
     Constants.checkSmNum(smNum);
-    final Decoder decoder = new Decoder();
     final String signalLabel = createSignalLabel(sdk, label, address, 31, 0);
-    final Supplier<InstructionInfo> valueGetter = () -> {
-      if ((displayFilter != null) && (!displayFilter.get()))
-        return null;
-      final Instruction instruction = pioSdk.getCurrentInstruction(smNum);
-      if (instruction == null) return null;
-      final PIORegisters pioRegisters = pioSdk.getRegisters();
-      final PIOEmuRegisters pioEmuRegisters = pioSdk.getEmuRegisters();
-
-      final int smPCAddress =
-      pioEmuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_PC, smNum);
-      final int pc = pioEmuRegisters.readAddress(smPCAddress);
-      final String addressLabel =
-      showAddress ? String.format("%02x:", pc) : "";
-
-      final int smDelayAddress =
-      pioEmuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_DELAY, smNum);
-      final int delay = pioEmuRegisters.readAddress(smDelayAddress);
-
-      final int smDelayCycleAddress =
-      pioEmuRegisters.getSMAddress(PIOEmuRegisters.Regs.SM0_DELAY_CYCLE, smNum);
-      final boolean isDelayCycle =
-      pioEmuRegisters.readAddress(smDelayCycleAddress) != 0x0;
-
-      final String mnemonic = instruction.getMnemonic();
-      final String fullStatement =
-      addressLabel + instruction.toString().replaceAll("\\s{2,}", " ");
-      return new InstructionInfo(mnemonic, fullStatement, isDelayCycle, delay);
+    final Supplier<PIOSDK.InstructionInfo> valueGetter = () -> {
+      if ((displayFilter != null) && (!displayFilter.get())) return null;
+      return pioSdk.getCurrentInstruction(smNum, showAddress, false);
     };
-    final ValuedSignal<InstructionInfo> instructionSignal =
-      new ValuedSignal<InstructionInfo>(signalLabel, valueGetter);
+    final ValuedSignal<PIOSDK.InstructionInfo> instructionSignal =
+      new ValuedSignal<PIOSDK.InstructionInfo>(signalLabel, valueGetter);
     instructionSignal.setRenderer((instructionInfo) ->
                                   instructionInfo.toString());
     instructionSignal.setToolTipTexter((instructionInfo) ->
