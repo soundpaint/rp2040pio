@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
+import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 import org.soundpaint.rp2040pio.sdk.Program;
@@ -43,8 +44,7 @@ public class Monitor
 
   private final SDK sdk;
   private final PIOSDK pioSdk;
-  private final PIO pio;
-  private final GPIO gpio;
+  private final GPIOSDK gpioSdk;
 
   private Monitor()
   {
@@ -58,8 +58,7 @@ public class Monitor
     }
     this.sdk = sdk;
     pioSdk = sdk.getPIO0SDK();
-    pio = pioSdk.getRegisters().getPIO();
-    gpio = pio.getGPIO();
+    gpioSdk = sdk.getGPIOSDK();
     System.out.println(about);
   }
 
@@ -77,11 +76,6 @@ public class Monitor
         pioSdk.getMemoryInstruction(0, address, true);
       System.out.println(instructionInfo.getToolTipText());
     }
-  }
-
-  public void setSideSetCount(final int count)
-  {
-    pio.setSideSetCount(count);
   }
 }
 

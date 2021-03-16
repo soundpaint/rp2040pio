@@ -33,8 +33,8 @@ import org.soundpaint.rp2040pio.GPIO;
  * required GPIO-related functionality for PIO SDK.
  *
  * TODO: GPIOSDK should, just as PIOSDK does, use a memory-mapped I/O
- * interface (see class Registers) rather than directly storing and
- * accessing GPIO subsystem.
+ * interface (see class Registers) rather than directly accessing the
+ * GPIO subsystem.
  */
 public class GPIOSDK implements Constants
 {
@@ -61,6 +61,11 @@ public class GPIOSDK implements Constants
       gpio.setBit(pin, Bit.LOW);
       // TODO: Also clear the input/output/irq override bits.
     }
+  }
+
+  public String asBitArrayDisplay()
+  {
+    return gpio.asBitArrayDisplay();
   }
 }
 
