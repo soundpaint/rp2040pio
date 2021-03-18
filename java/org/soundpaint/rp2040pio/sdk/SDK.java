@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio.sdk;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.soundpaint.rp2040pio.Constants;
@@ -86,23 +87,14 @@ public class SDK
   public PIOSDK getPIO0SDK() { return pio0Sdk; }
   public PIOSDK getPIO1SDK() { return pio1Sdk; }
 
-  public Registers getProvidingRegisters(final int address)
-  {
-    for (final Registers registers : registersList) {
-      if (registers.providesAddress(address)) {
-        return registers;
-      }
-    }
-    return null;
-  }
-
-  public int readAddress(final int address)
+  public int readAddress(final int address) throws IOException
   {
     final Registers registers = getProvidingRegisters(address);
     return registers != null ? registers.readAddress(address) : 0;
   }
 
   public int readAddress(final int address, final int msb, final int lsb)
+    throws IOException
   {
     Constants.checkMSBLSB(msb, lsb);
     final int value = readAddress(address);
@@ -113,12 +105,13 @@ public class SDK
   }
 
   public void writeAddress(final int address, final int value)
+    throws IOException
   {
     final Registers registers = getProvidingRegisters(address);
     if (registers != null) registers.writeAddress(address, value);
   }
 
-  public void irqWaitAddress(final int address)
+  public void irqWaitAddress(final int address) throws IOException
   {
     final Registers registers = getProvidingRegisters(address);
     if (registers != null) registers.irqWaitAddress(address);
@@ -126,7 +119,22 @@ public class SDK
 
   // -------- address helpers --------
 
-  public String getLabelForAddress(final int address)
+  private Registers getProvidingRegisters(final int address) throws IOException
+  {
+    for (final Registers registers : registersList) {
+      if (registers.providesAddress(address)) {
+        return registers;
+      }
+    }
+    return null;
+  }
+
+  public boolean matchesProvidingRegisters(final int address) throws IOException
+  {
+    return getProvidingRegisters(address) != null;
+  }
+
+  public String getLabelForAddress(final int address) throws IOException
   {
     final Registers registers = getProvidingRegisters(address);
     return registers != null ? registers.getLabel(address) : null;

@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -193,12 +194,12 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
 
   public static class ClockSignal extends AbstractSignal<Void>
   {
-    public ClockSignal()
+    public ClockSignal() throws IOException
     {
       this("clock");
     }
 
-    public ClockSignal(final String label)
+    public ClockSignal(final String label) throws IOException
     {
       super(label);
     }
@@ -285,6 +286,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
   }
 
   public static DiagramConfig.ClockSignal createClockSignal(final String label)
+    throws IOException
   {
     return new DiagramConfig.ClockSignal(label);
   }
@@ -322,6 +324,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
                             final String label,
                             final boolean showAddress,
                             final Supplier<Boolean> displayFilter)
+    throws IOException
   {
     if (sdk == null) {
       throw new NullPointerException("sdk");
@@ -376,6 +379,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
 
   private static String createSignalLabel(final SDK sdk, final String label,
                                           final int address, final int bit)
+    throws IOException
   {
     return
       (label != null) ? label : sdk.getLabelForAddress(address) + "_" + bit;
@@ -384,6 +388,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
   private static String createSignalLabel(final SDK sdk, final String label,
                                           final int address,
                                           final int msb, final int lsb)
+    throws IOException
   {
     if (label != null) return label;
     return
@@ -395,20 +400,28 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
 
   public static BitSignal createFromRegister(final SDK sdk, final String label,
                                              final int address, final int bit)
+    throws IOException
   {
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
     Constants.checkBit(bit);
     final String signalLabel = createSignalLabel(sdk, label, address, bit);
-    final Supplier<Bit> supplier =
-      () -> Bit.fromValue(sdk.readAddress(address, bit, bit));
+    final Supplier<Bit> supplier = () -> {
+      try {
+        return Bit.fromValue(sdk.readAddress(address, bit, bit));
+      } catch (final IOException e) {
+        // TODO: console.println(e.getMessage());
+        return null;
+      }
+    };
     return new DiagramConfig.BitSignal(signalLabel, supplier);
   }
 
   public static ValuedSignal<Integer>
     createFromRegister(final SDK sdk, final String label,
                        final int address)
+    throws IOException
   {
     return createFromRegister(sdk, label, address, 31, 0);
   }
@@ -416,6 +429,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
   public static ValuedSignal<Integer>
     createFromRegister(final SDK sdk, final String label,
                        final int address, final int msb, final int lsb)
+    throws IOException
   {
     return createFromRegister(sdk, label, address, msb, lsb, null);
   }
@@ -424,6 +438,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     createFromRegister(final SDK sdk, final String label,
                        final int address, final int msb, final int lsb,
                        final Supplier<Boolean> displayFilter)
+    throws IOException
   {
     if (sdk == null) {
       throw new NullPointerException("sdk");
@@ -433,7 +448,12 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     final Supplier<Integer> supplier = () -> {
       if ((displayFilter != null) && (!displayFilter.get()))
         return null;
-      return sdk.readAddress(address, msb, lsb);
+      try {
+        return sdk.readAddress(address, msb, lsb);
+      } catch (final IOException e) {
+        // TODO: console.println(e.getMessage());
+        return null;
+      }
     };
     return new DiagramConfig.ValuedSignal<Integer>(signalLabel, supplier);
   }

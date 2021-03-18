@@ -197,6 +197,7 @@ public class TimingDiagram implements Constants
   public DiagramConfig.Signal addSignal(final String label, final int address,
                                         final int msb, final int lsb,
                                         final Supplier<Boolean> displayFilter)
+    throws IOException
   {
     final DiagramConfig.ValuedSignal<Integer> signal =
       DiagramConfig.createFromRegister(sdk, label, address, msb, lsb,
@@ -206,12 +207,14 @@ public class TimingDiagram implements Constants
 
   public DiagramConfig.Signal addSignal(final String label, final int address,
                                         final int msb, final int lsb)
+    throws IOException
   {
     return addSignal(label, address, msb, lsb, null);
   }
 
   public DiagramConfig.Signal addSignal(final String label, final int address,
                                         final int bit)
+    throws IOException
   {
     final DiagramConfig.BitSignal signal =
       DiagramConfig.createFromRegister(sdk, label, address, bit);
@@ -219,28 +222,32 @@ public class TimingDiagram implements Constants
   }
 
   public DiagramConfig.Signal addSignal(final int address, final int bit)
+    throws IOException
   {
     return addSignal(null, address, bit);
   }
 
   public DiagramConfig.Signal addSignal(final String label, final int address)
+    throws IOException
   {
     return addSignal(label, address, 31, 0);
   }
 
   public DiagramConfig.Signal addSignal(final String label, final int address,
                                         final Supplier<Boolean> displayFilter)
+    throws IOException
   {
     return addSignal(label, address, 31, 0, displayFilter);
   }
 
-  public DiagramConfig.Signal addSignal(final int address)
+  public DiagramConfig.Signal addSignal(final int address) throws IOException
   {
     return addSignal(null, address);
   }
 
   public DiagramConfig.Signal addSignal(final int address,
                                         final Supplier<Boolean> displayFilter)
+    throws IOException
   {
     return addSignal(null, address, displayFilter);
   }

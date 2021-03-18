@@ -153,13 +153,14 @@ public class RegisterServer
     return createResponse(status, null);
   }
 
-  private String createResponse(final ResponseStatus status, final String msg)
+  private String createResponse(final ResponseStatus status,
+                                final String message)
   {
     if (status == null) {
       throw new NullPointerException("status");
     }
     final String statusDisplay = status.getDisplayValue();
-    return msg != null ? statusDisplay + ": " + msg : statusDisplay;
+    return statusDisplay + (message != null ? ": " + message : "");
   }
 
   private int parseUnsignedInt(final String unparsed)
@@ -196,7 +197,7 @@ public class RegisterServer
     return null;
   }
 
-  private String handleRead(final String[] args)
+  private String handleProvidesAddress(final String[] args) throws IOException
   {
     if (args.length < 1) {
       return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
@@ -210,11 +211,29 @@ public class RegisterServer
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }
-    final int value = sdk.readAddress(address);
-    return createResponse(ResponseStatus.OK, String.valueOf(value));
+    final boolean providesAddress = sdk.matchesProvidingRegisters(address);
+    return createResponse(ResponseStatus.OK, String.valueOf(providesAddress));
   }
 
-  private String handleWrite(final String[] args)
+  private String handleGetLabel(final String[] args) throws IOException
+  {
+    if (args.length < 1) {
+      return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
+    }
+    if (args.length > 1) {
+      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[1]);
+    }
+    final int address;
+    try {
+      address = parseUnsignedInt(args[0]);
+    } catch (final NumberFormatException e) {
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+    }
+    final String label = sdk.getLabelForAddress(address);
+    return createResponse(ResponseStatus.OK, label);
+  }
+
+  private String handleWriteAddress(final String[] args) throws IOException
   {
     if (args.length < 2) {
       return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
@@ -238,7 +257,25 @@ public class RegisterServer
     return createResponse(ResponseStatus.OK);
   }
 
-  private String handleIRQWait(final String[] args)
+  private String handleReadAddress(final String[] args) throws IOException
+  {
+    if (args.length < 1) {
+      return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
+    }
+    if (args.length > 1) {
+      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[1]);
+    }
+    final int address;
+    try {
+      address = parseUnsignedInt(args[0]);
+    } catch (final NumberFormatException e) {
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+    }
+    final int value = sdk.readAddress(address);
+    return createResponse(ResponseStatus.OK, String.valueOf(value));
+  }
+
+  private String handleIRQWaitAddress(final String[] args) throws IOException
   {
     if (args.length < 1) {
       return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
@@ -256,7 +293,7 @@ public class RegisterServer
     return createResponse(ResponseStatus.OK);
   }
 
-  private String handleRequest(final String request)
+  private String handleRequest(final String request) throws IOException
   {
     if (request.isEmpty()) {
       return null;
@@ -281,12 +318,16 @@ public class RegisterServer
       return handleGetHelp(args);
     case 'q':
       return handleQuit(args);
-    case 'r':
-      return handleRead(args);
+    case 'p':
+      return handleProvidesAddress(args);
+    case 'l':
+      return handleGetLabel(args);
     case 'w':
-      return handleWrite(args);
+      return handleWriteAddress(args);
+    case 'r':
+      return handleReadAddress(args);
     case 'i':
-      return handleIRQWait(args);
+      return handleIRQWaitAddress(args);
     default:
       return createResponse(ResponseStatus.ERR_UNKNOWN_COMMAND,
                             String.valueOf(command));

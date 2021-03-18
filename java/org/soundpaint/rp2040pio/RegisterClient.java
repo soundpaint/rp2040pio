@@ -35,7 +35,7 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * Remote client that connects to a RegisterServer via TCP/IP socket
  * connection.
  */
-public class RegisterClient
+public class RegisterClient implements Registers
 {
   private static class Response
   {
@@ -69,6 +69,17 @@ public class RegisterClient
     public String getMessage()
     {
       return message;
+    }
+
+    public boolean isOk()
+    {
+      return statusCode == 101; // TODO: Use global constant.
+    }
+
+    public String toString()
+    {
+      return
+        statusCode + " " + statusId + (message != null ? ": " + message : "");
     }
   }
 
@@ -129,7 +140,126 @@ public class RegisterClient
     if (response == null) {
       return null;
     }
-    return response.getMessage();
+    final String message = response.getMessage();
+    if (!response.isOk()) {
+      throw new IOException("failed retrieving version: " + message);
+    }
+    return message;
+  }
+
+  public synchronized String getHelp() throws IOException
+  {
+    final Response response = getResponse("h");
+    if (response == null) {
+      return null;
+    }
+    final String message = response.getMessage();
+    if (!response.isOk()) {
+      throw new IOException("failed retrieving help: " + message);
+    }
+    return message;
+  }
+
+  public synchronized void quit() throws IOException
+  {
+    final Response response = getResponse("q");
+    if (response != null) {
+      throw new IOException("unexpected response on quit: " + response);
+    }
+  }
+
+  public int getBaseAddress() { return 0; }
+
+  public boolean providesAddress(final int address) throws IOException
+  {
+    final Response response = getResponse("p " + address);
+    if (response == null) {
+      throw new IOException("missing response for address " + address);
+    }
+    final String message = response.getMessage();
+    if (!response.isOk()) {
+      throw new IOException("failed retrieving provision info " +
+                            "for address " + address + ": " + message);
+    }
+    if (message == null) {
+      throw new IOException("missing provision info for address " + address);
+    }
+    final boolean provided;
+    try {
+      provided = Boolean.parseBoolean(message);
+    } catch (final NumberFormatException e) {
+      throw new IOException("failed parsing provision info for address " +
+                            address + ": " + message);
+    }
+    return provided;
+  }
+
+  public String getLabel(final int address) throws IOException
+  {
+    final Response response = getResponse("l " + address);
+    if (response == null) {
+      throw new IOException("missing response for address " + address);
+    }
+    final String message = response.getMessage();
+    if (!response.isOk()) {
+      throw new IOException("failed retrieving label " +
+                            "for address " + address + ": " + message);
+    }
+    if (message == null) {
+      throw new IOException("missing label for address " + address);
+    }
+    return message;
+  }
+
+  public synchronized void writeAddress(final int address,
+                                        final int value) throws IOException
+  {
+    final Response response = getResponse("w " + address + " " + value);
+    if (response == null) {
+      throw new IOException("missing response for address " + address);
+    }
+    final String message = response.getMessage();
+    if (!response.isOk()) {
+      throw new IOException("failed writing value " + value +
+                            "to address " + address + ": " + message);
+    }
+  }
+
+  public synchronized int readAddress(final int address) throws IOException
+  {
+    final Response response = getResponse("r " + address);
+    if (response == null) {
+      throw new IOException("missing response for address " + address);
+    }
+    final String message = response.getMessage();
+    if (!response.isOk()) {
+      throw new IOException("failed retrieving value " +
+                            "for address " + address + ": " + message);
+    }
+    if (message == null) {
+      throw new IOException("missing value for address " + address);
+    }
+    final int value;
+    try {
+      value = Integer.parseInt(message);
+    } catch (final NumberFormatException e) {
+      throw new IOException("failed parsing value for address " +
+                            address + ": " + message);
+    }
+    return value;
+  }
+
+  public synchronized void irqWaitAddress(final int address) throws IOException
+  {
+    final Response response = getResponse("i " + address);
+    if (response == null) {
+      throw new IOException("missing response for address " + address);
+    }
+    final String message = response.getMessage();
+    if (!response.isOk()) {
+      throw new IOException("failed waiting for IRQ " +
+                            "on address " + address + ": " + message);
+    }
   }
 }
 

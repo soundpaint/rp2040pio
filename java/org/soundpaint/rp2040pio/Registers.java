@@ -24,6 +24,8 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.io.IOException;
+
 public interface Registers
 {
   static final int REG_ALIAS_RW_BITS = 0x0000;
@@ -32,11 +34,11 @@ public interface Registers
   static final int REG_ALIAS_CLR_BITS = 0x3000;
 
   int getBaseAddress();
-  boolean providesAddress(final int address);
-  String getLabel(final int address);
-  void writeAddress(final int address, final int value);
-  int readAddress(final int address);
-  void irqWaitAddress(final int address);
+  boolean providesAddress(final int address) throws IOException;
+  String getLabel(final int address) throws IOException;
+  void writeAddress(final int address, final int value) throws IOException;
+  int readAddress(final int address) throws IOException;
+  void irqWaitAddress(final int address) throws IOException;
 }
 
 /*
