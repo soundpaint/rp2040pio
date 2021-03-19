@@ -45,7 +45,7 @@ public class SM implements Constants
   private final int num;
   private final PrintStream console;
   private final MasterClock masterClock;
-  private final GPIO gpio;
+  private final PIOGPIO pioGpio;
   private final Memory memory;
   private final IRQ irq;
   private final Status status;
@@ -74,12 +74,12 @@ public class SM implements Constants
 
     public void setPins(final SM sm, final int data)
     {
-      sm.gpio.setPins(data, baseGetter.apply(sm), countGetter.apply(sm));
+      sm.pioGpio.setPins(data, baseGetter.apply(sm), countGetter.apply(sm));
     }
 
     public void setPinDirs(final SM sm, final int data)
     {
-      sm.gpio.setPinDirs(data, baseGetter.apply(sm), countGetter.apply(sm));
+      sm.pioGpio.setPinDirs(data, baseGetter.apply(sm), countGetter.apply(sm));
     }
   };
 
@@ -171,7 +171,17 @@ public class SM implements Constants
 
     public Bit jmpPin()
     {
-      return gpio.getBit(regEXECCTRL_JMP_PIN);
+      return pioGpio.getLevel(regEXECCTRL_JMP_PIN);
+    }
+
+    public void setPins(final int pins, final int base, final int count)
+    {
+      pioGpio.setPins(pins, base, count);
+    }
+
+    public void setPinDirs(final int pins, final int base, final int count)
+    {
+      pioGpio.setPinDirs(pins, base, count);
     }
 
     public boolean osrEmpty()
@@ -216,7 +226,7 @@ public class SM implements Constants
   }
 
   public SM(final int num, final PrintStream console,
-            final MasterClock masterClock, final GPIO gpio,
+            final MasterClock masterClock, final PIOGPIO pioGpio,
             final Memory memory, final IRQ irq)
   {
     if (num < 0) {
@@ -231,8 +241,8 @@ public class SM implements Constants
     if (masterClock == null) {
       throw new NullPointerException("masterClock");
     }
-    if (gpio == null) {
-      throw new NullPointerException("gpio");
+    if (pioGpio == null) {
+      throw new NullPointerException("pioGpio");
     }
     if (memory == null) {
       throw new NullPointerException("memory");
@@ -243,7 +253,7 @@ public class SM implements Constants
     this.num = num;
     this.console = console;
     this.masterClock = masterClock;
-    this.gpio = gpio;
+    this.pioGpio = pioGpio;
     this.memory = memory;
     this.irq = irq;
     status = new Status();
@@ -398,14 +408,14 @@ public class SM implements Constants
     return status;
   }
 
-  public GPIO getGPIO()
+  public PIOGPIO getPIOGPIO()
   {
-    return gpio;
+    return pioGpio;
   }
 
   public Bit getGPIO(final int index)
   {
-    return gpio.getBit(index);
+    return pioGpio.getLevel(index);
   }
 
   public Bit getIRQ(final int index)
@@ -561,7 +571,7 @@ public class SM implements Constants
 
   public int getPins()
   {
-    return gpio.getPins(status.regPINCTRL_IN_BASE, GPIO_NUM);
+    return pioGpio.getPins(status.regPINCTRL_IN_BASE, GPIO_NUM);
   }
 
   public PIO.ShiftDir getInShiftDir()

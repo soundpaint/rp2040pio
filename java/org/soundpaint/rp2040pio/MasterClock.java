@@ -34,8 +34,6 @@ public class MasterClock implements Clock
 {
   public static final long DEFAULT_FREQUENCY = 1000000000;
 
-  private static final MasterClock DEFAULT_INSTANCE = new MasterClock();
-
   public enum Mode {
     TARGET_FREQUENCY,
     SINGLE_STEP;
@@ -121,11 +119,6 @@ public class MasterClock implements Clock
   private long wallClock;
   private long refWallClock;
   private long refRealTime;
-
-  public static MasterClock getDefaultInstance()
-  {
-    return DEFAULT_INSTANCE;
-  }
 
   public MasterClock()
   {

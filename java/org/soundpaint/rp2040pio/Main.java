@@ -36,7 +36,7 @@ public class Main
 
   public Main() throws IOException
   {
-    sdk = SDK.getDefaultInstance();
+    sdk = new SDK(System.out);
     registerServer = new RegisterServer(sdk);
   }
 

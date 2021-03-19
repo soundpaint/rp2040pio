@@ -359,7 +359,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     }
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return
-      new DiagramConfig.ValuedSignal<Bit>(signalLabel, () -> gpio.getBit(pin));
+      new DiagramConfig.ValuedSignal<Bit>(signalLabel, () -> gpio.getLevel(pin));
   }
 
   public static BitSignal
@@ -374,7 +374,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     }
     final String signalLabel = label != null ? label : "GPIO " + pin;
     return
-      new DiagramConfig.BitSignal(signalLabel, () -> gpio.getBit(pin));
+      new DiagramConfig.BitSignal(signalLabel, () -> gpio.getLevel(pin));
   }
 
   private static String createSignalLabel(final SDK sdk, final String label,

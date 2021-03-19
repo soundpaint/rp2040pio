@@ -27,18 +27,24 @@ package org.soundpaint.rp2040pio;
 /**
  * Representation of a single bit value.
  */
-public enum Bit {
-  LOW(0, '0'),
-  HIGH(1, '1');
+public enum Bit
+{
+  LOW(0, '0', '⁰', '₀'),
+  HIGH(1, '1', '¹', '₁');
 
   private final int value;
   private final char charLabel;
+  private final char superScriptLabel;
+  private final char subScriptLabel;
   private final String stringLabel;
 
-  private Bit(final int value, final char charLabel)
+  private Bit(final int value, final char charLabel,
+              final char superScriptLabel, final char subScriptLabel)
   {
     this.value = value;
     this.charLabel = charLabel;
+    this.superScriptLabel = superScriptLabel;
+    this.subScriptLabel = subScriptLabel;
     this.stringLabel = String.valueOf(charLabel);
   }
 
@@ -51,25 +57,27 @@ public enum Bit {
 
   public static Bit fromValue(final int value)
   {
-    if (value == 0)
-      return LOW;
-    if (value == 1)
-      return HIGH;
-    throw new IllegalArgumentException("value neither 0 nor 1");
+    if (value == LOW.value) return LOW;
+    if (value == HIGH.value) return HIGH;
+    throw new IllegalArgumentException("value not a bit: " + value);
   }
 
   public static Bit fromValue(final int value, final Bit defaultValue)
   {
-    if (value == 0)
-      return LOW;
-    if (value == 1)
-      return HIGH;
+    if (value == LOW.value) return LOW;
+    if (value == HIGH.value) return HIGH;
     return defaultValue;
   }
 
   public char toChar()
   {
-    return charLabel;
+    return toChar(null);
+  }
+
+  public char toChar(final Direction direction)
+  {
+    if (direction == null) return charLabel;
+    return direction == Direction.IN ? superScriptLabel : subScriptLabel;
   }
 
   @Override

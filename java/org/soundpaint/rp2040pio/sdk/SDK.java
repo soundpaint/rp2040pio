@@ -25,20 +25,20 @@
 package org.soundpaint.rp2040pio.sdk;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.Registers;
 
-public class SDK
+public class SDK implements Constants
 {
-  private static final SDK DEFAULT_INSTANCE = new SDK();
-  public static SDK getDefaultInstance() { return DEFAULT_INSTANCE; }
-
+  private final Emulator emulator;
   private final PicoEmuRegisters picoEmuRegisters;
 
   /*
@@ -59,28 +59,29 @@ public class SDK
    */
   private final List<Registers> registersList;
 
-  private SDK()
+  public SDK(final PrintStream console)
   {
+    emulator = new Emulator(console);
+
     registersList = new ArrayList<Registers>();
-    picoEmuRegisters = new PicoEmuRegisters(PIO.MASTER_CLOCK,
-                                            PIO.MASTER_CLOCK_BASE);
+    picoEmuRegisters = new PicoEmuRegisters(emulator.getMasterClock(),
+                                            MASTER_CLOCK_BASE);
     registersList.add(picoEmuRegisters);
 
-    gpioSdk = new GPIOSDK(PIO.GPIO);
+    gpioSdk = new GPIOSDK(emulator.getGPIO());
     // TODO: Implement registers for GPIO SDK.
 
-    pio0Sdk = new PIOSDK(gpioSdk, PIO.PIO0, PIO.PIO0_BASE);
+    pio0Sdk = new PIOSDK(gpioSdk, emulator.getPIO0(), PIO0_BASE);
     final PIORegisters pio0Registers = pio0Sdk.getRegisters();
     registersList.add(pio0Registers);
     final PIOEmuRegisters pio0EmuRegisters = pio0Sdk.getEmuRegisters();
     registersList.add(pio0EmuRegisters);
 
-    pio1Sdk = new PIOSDK(gpioSdk, PIO.PIO1, PIO.PIO1_BASE);
+    pio1Sdk = new PIOSDK(gpioSdk, emulator.getPIO1(), PIO1_BASE);
     final PIORegisters pio1Registers = pio1Sdk.getRegisters();
     registersList.add(pio1Registers);
     final PIOEmuRegisters pio1EmuRegisters = pio1Sdk.getEmuRegisters();
     registersList.add(pio1EmuRegisters);
-
   }
 
   public GPIOSDK getGPIOSDK() { return gpioSdk; }

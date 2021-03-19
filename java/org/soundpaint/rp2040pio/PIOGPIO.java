@@ -1,5 +1,5 @@
 /*
- * @(#)GPIO.java 1.00 21/01/31
+ * @(#)PIOGPIO.java 1.00 21/03/19
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -27,79 +27,66 @@ package org.soundpaint.rp2040pio;
 /**
  * General-Purpose Set of 32 Peripheral I/O Terminals
  */
-public class GPIO implements Constants
+public class PIOGPIO implements Constants
 {
-  private class Terminal
+  private static class State
   {
-    private int num;
-    private GPIO_Function function;
-
-    private Terminal()
-    {
-    }
-
-    private Terminal(final int num)
-    {
-      Constants.checkGpioPin(num, "GPIO port");
-      this.num = num;
-    }
+    private Direction direction;
+    private Bit level;
 
     public void reset()
     {
-      function = GPIO_Function.NULL;
+      direction = Direction.IN;
+      level = Bit.LOW;
     }
 
     public char toChar()
     {
-      final Bit level = getLevel(num);
-      final Direction direction = getDirection(num);
-      return level != null ? level.toChar(direction) : '?';
+      if (direction == Direction.IN) {
+        return level == Bit.HIGH ? '¹' : '⁰';
+      } else {
+        return level == Bit.HIGH ? '₁' : '₀';
+      }
     }
   }
 
-  private final Terminal[] terminals;
-  private int regINPUT_SYNC_BYPASS; // bits 0..31 of INPUT_SYNC_BYPASS
-                                    // (contents currently ignored)
+  private final GPIO gpio;
+  private final State[] states;
 
-  public GPIO()
+  private PIOGPIO()
   {
-    terminals = new Terminal[GPIO_NUM];
-    for (int port = 0; port < terminals.length; port++) {
-      terminals[port] = new Terminal(port);
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public PIOGPIO(final GPIO gpio)
+  {
+    if (gpio == null) {
+      throw new NullPointerException("gpio");
+    }
+    this.gpio = gpio;
+    states = new State[GPIO_NUM];
+    for (int port = 0; port < states.length; port++) {
+      states[port] = new State();
     }
     reset();
   }
 
   public void reset()
   {
-    for (int port = 0; port < terminals.length; port++) {
-      terminals[port].reset();
+    for (int port = 0; port < states.length; port++) {
+      states[port].reset();
     }
   }
 
-  /**
-   * Set GPIOx_CTRL_FUNCSEL to 6 (for PIO0) or 7 (for PIO1), see
-   * Sect. 2.19.2. "Function Select" of RP2040 datasheet for details.
-   */
-  public void setFunction(final int gpio, final GPIO_Function fn)
-  {
-    Constants.checkGpioPin(gpio, "GPIO port");
-    if (fn == null) {
-      throw new NullPointerException("fn");
-    }
-    terminals[gpio].function = fn;
-  }
+  public GPIO getGPIO() { return gpio; }
 
   public void setLevel(final int port, final Bit level)
   {
-    // TODO: Clarify what happens when writing to a GPIO with pin
-    // direction set to IN.
     if (level == null) {
-      throw new NullPointerException("value");
+      throw new NullPointerException("level");
     }
     Constants.checkGpioPin(port, "GPIO port");
-    // TODO: GPIO Mapping: Ouput priority.
-    //terminals[port].level = level;
+    states[port].level = level;
   }
 
   public Bit getLevel(final int port)
@@ -107,8 +94,7 @@ public class GPIO implements Constants
     // TODO: Clarify what happens when reading from a GPIO with pin
     // direction set to OUT.
     Constants.checkGpioPin(port, "GPIO port");
-    // TODO: GPIO Mapping: Ouput priority.
-    return Bit.LOW; //terminals[port].level;
+    return states[port].level;
   }
 
   public void setDirection(final int port, final Direction direction)
@@ -117,15 +103,13 @@ public class GPIO implements Constants
       throw new NullPointerException("direction");
     }
     Constants.checkGpioPin(port, "GPIO port");
-    // TODO: GPIO Mapping: Ouput priority.
-    //terminals[port].direction = direction;
+    states[port].direction = direction;
   }
 
   public Direction getDirection(final int port)
   {
     Constants.checkGpioPin(port, "GPIO port");
-    // TODO: GPIO Mapping: Ouput priority.
-    return Direction.IN; //terminals[port].direction;
+    return states[port].direction;
   }
 
   public int getPins(final int base, final int count)
@@ -144,7 +128,7 @@ public class GPIO implements Constants
     Constants.checkGpioPin(base, "GPIO pin base");
     Constants.checkGpioPinsCount(count, "GPIO pin count");
     for (int pin = 0; pin < count; pin++) {
-      setLevel((base + pin) & 0x1f,  Bit.fromValue((pins >>> pin) & 0x1));
+      setLevel((base + pin) & 0x1f, Bit.fromValue((pins >>> pin) & 0x1));
     }
   }
 
@@ -170,24 +154,11 @@ public class GPIO implements Constants
     }
   }
 
-  public void setInputSyncByPass(final int bits, final int mask,
-                                 final boolean xor)
-  {
-    regINPUT_SYNC_BYPASS =
-      (mask & (xor ? regINPUT_SYNC_BYPASS ^ bits : bits)) |
-      (~mask & regINPUT_SYNC_BYPASS);
-  }
-
-  public int getInputSyncByPass()
-  {
-    return regINPUT_SYNC_BYPASS;
-  }
-
   public String asBitArrayDisplay()
   {
     final StringBuffer s = new StringBuffer();
-    for (final Terminal terminal : terminals) {
-      s.append(terminal.toChar());
+    for (final State state : states) {
+      s.append(state.toChar());
       if ((s.length() + 1) % 9 == 0) s.append(' ');
     }
     return s.toString();

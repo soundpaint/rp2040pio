@@ -58,7 +58,7 @@ public class GPIOSDK implements Constants
     }
     synchronized(gpio) {
       gpio.setFunction(pin, fn);
-      gpio.setBit(pin, Bit.LOW);
+      gpio.setLevel(pin, Bit.LOW);
       // TODO: Also clear the input/output/irq override bits.
     }
   }

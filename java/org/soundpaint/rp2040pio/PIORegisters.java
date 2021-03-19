@@ -258,7 +258,7 @@ public class PIORegisters extends AbstractRegisters implements Constants
       pio.getIRQ().writeRegIRQ_FORCE(value & mask);
       break;
     case INPUT_SYNC_BYPASS:
-      pio.getGPIO().setInputSyncByPass(value, mask, xor);
+      pio.getPIOGPIO().getGPIO().setInputSyncByPass(value, mask, xor);
       break;
     case DBG_PADOUT:
       break; // read-only address
@@ -457,7 +457,7 @@ public class PIORegisters extends AbstractRegisters implements Constants
     case IRQ_FORCE:
       return pio.getIRQ().readRegIRQ_FORCE();
     case INPUT_SYNC_BYPASS:
-      return pio.getGPIO().getInputSyncByPass();
+      return pio.getPIOGPIO().getGPIO().getInputSyncByPass();
     case DBG_PADOUT:
       return pio.getGPIO().getPins(0, 32);
     case DBG_PADOE:

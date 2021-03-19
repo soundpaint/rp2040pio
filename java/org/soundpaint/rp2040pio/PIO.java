@@ -33,17 +33,11 @@ import java.util.List;
  */
 public class PIO implements Constants, Clock.TransitionListener
 {
-  public static final MasterClock MASTER_CLOCK =
-    MasterClock.getDefaultInstance();
-  public static final GPIO GPIO =
-    org.soundpaint.rp2040pio.GPIO.getDefaultInstance();
-  public static final PIO PIO0 = new PIO(0, System.out, MASTER_CLOCK, GPIO);
-  public static final PIO PIO1 = new PIO(1, System.out, MASTER_CLOCK, GPIO);
-
   private final int index;
   private final PrintStream console;
   private final MasterClock masterClock;
   private final GPIO gpio;
+  private final PIOGPIO pioGpio;
   private final Memory memory;
   private final IRQ irq;
   private final SM[] sms;
@@ -144,13 +138,14 @@ public class PIO implements Constants, Clock.TransitionListener
     this.index = index;
     this.console = console;
     this.masterClock = masterClock;
-    masterClock.addTransitionListener(this);
     this.gpio = gpio;
+    masterClock.addTransitionListener(this);
+    pioGpio = new PIOGPIO(gpio);
     memory = new Memory();
     irq = new IRQ();
     sms = new SM[SM_COUNT];
     for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-      sms[smNum] = new SM(smNum, console, masterClock, gpio, memory, irq);
+      sms[smNum] = new SM(smNum, console, masterClock, pioGpio, memory, irq);
     }
     smEnabled = 0x0;
   }
@@ -188,6 +183,11 @@ public class PIO implements Constants, Clock.TransitionListener
   public GPIO getGPIO()
   {
     return gpio;
+  }
+
+  public PIOGPIO getPIOGPIO()
+  {
+    return pioGpio;
   }
 
   public Memory getMemory()

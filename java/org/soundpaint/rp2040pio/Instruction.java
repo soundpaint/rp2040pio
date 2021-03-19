@@ -128,17 +128,15 @@ public abstract class Instruction
    */
   abstract void decodeLSB(final int lsb) throws Decoder.DecodeException;
 
-  private void executeSideSet(final GPIO gpio,
-                              final int pinCtrlSidesetBase,
-                              final PIO.PinDir execCtrlSidePinDir)
+  private void executeSideSet(final SM.Status smStatus)
   {
-    final int base = pinCtrlSidesetBase;
-    final PIO.PinDir pinDir = execCtrlSidePinDir;
+    final int pinCtrlSidesetBase = smStatus.regPINCTRL_SIDESET_BASE;
+    final PIO.PinDir execCtrlSidePinDir = smStatus.regEXECCTRL_SIDE_PINDIR;
     if (sideSetCount > 0) {
-      if (pinDir == PIO.PinDir.GPIO_LEVELS) {
-        gpio.setPins(sideSet, pinCtrlSidesetBase, sideSetCount);
+      if (execCtrlSidePinDir == PIO.PinDir.GPIO_LEVELS) {
+        smStatus.setPins(sideSet, pinCtrlSidesetBase, sideSetCount);
       } else {
-        gpio.setPinDirs(sideSet, pinCtrlSidesetBase, sideSetCount);
+        smStatus.setPinDirs(sideSet, pinCtrlSidesetBase, sideSetCount);
       }
     }
   }
@@ -148,11 +146,7 @@ public abstract class Instruction
   public ResultState execute(final SM sm)
   {
     final ResultState resultState = executeOperation(sm);
-    final SM.Status smStatus = sm.getStatus();
-    if (sideSetEnabled)
-      executeSideSet(sm.getGPIO(),
-                     smStatus.regPINCTRL_SIDESET_BASE,
-                     smStatus.regEXECCTRL_SIDE_PINDIR);
+    if (sideSetEnabled) executeSideSet(sm.getStatus());
     return resultState;
   }
 
@@ -323,7 +317,7 @@ public abstract class Instruction
     {
       GPIO_(0b00, "gpio", (wait, sm) -> sm.getGPIO(wait.index)),
       PIN(0b01, "pin", (wait, sm) -> {
-          return sm.getGPIO().getBit(sm.getStatus().regPINCTRL_IN_BASE);
+          return sm.getGPIO(sm.getStatus().regPINCTRL_IN_BASE);
         }),
       IRQ(0b10, "irq", (wait, sm) -> {
           final int irqNum = getIRQNum(sm.getNum(), wait.index);
