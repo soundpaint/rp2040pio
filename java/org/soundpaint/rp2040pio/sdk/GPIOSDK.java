@@ -27,45 +27,71 @@ package org.soundpaint.rp2040pio.sdk;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.GPIO;
+import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
+import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
 
 /**
  * Minimal subset of GPIO SDK Interface, just enough to provide all
  * required GPIO-related functionality for PIO SDK.
- *
- * TODO: GPIOSDK should, just as PIOSDK does, use a memory-mapped I/O
- * interface (see class Registers) rather than directly accessing the
- * GPIO subsystem.
  */
 public class GPIOSDK implements Constants
 {
-  private final GPIO gpio;
+  private final GPIOIOBank0Registers ioBank0Registers;
+  private final GPIOPadsBank0Registers padsBank0Registers;
 
-  public GPIOSDK(final GPIO gpio)
+  public GPIOSDK(final GPIO gpio,
+                 final int gpioIOBank0BaseAddress,
+                 final int gpioPadsBank0BaseAddress)
   {
-    if (gpio == null) {
-      throw new NullPointerException("gpio");
+    this(new GPIOIOBank0Registers(gpio, gpioIOBank0BaseAddress),
+         new GPIOPadsBank0Registers(gpio, gpioPadsBank0BaseAddress));
+  }
+
+  public GPIOSDK(final GPIOIOBank0Registers ioBank0Registers,
+                 final GPIOPadsBank0Registers padsBank0Registers)
+  {
+    if (ioBank0Registers == null) {
+      throw new NullPointerException("ioBank0Registers");
     }
-    this.gpio = gpio;
+    if (padsBank0Registers == null) {
+      throw new NullPointerException("padsBank0Registers");
+    }
+    this.ioBank0Registers = ioBank0Registers;
+    this.padsBank0Registers = padsBank0Registers;
+  }
+
+  public GPIOIOBank0Registers getIOBank0Registers()
+  {
+    return ioBank0Registers;
+  }
+
+  public GPIOPadsBank0Registers getPadsBank0Registers()
+  {
+    return padsBank0Registers;
   }
 
   public void setFunction(final int pin, final GPIO_Function fn)
   {
-    if (pin < 0) {
-      throw new IllegalArgumentException("gpio pin < 0: " + pin);
-    }
-    if (pin > 31) {
-      throw new IllegalArgumentException("gpio pin > 31: " + pin);
-    }
-    synchronized(gpio) {
-      gpio.setFunction(pin, fn);
-      gpio.setLevel(pin, Bit.LOW);
-      // TODO: Also clear the input/output/irq override bits.
-    }
+    Constants.checkGpioPin(pin, "GPIO pin number");
+
+    final int padsGpioAddress = padsBank0Registers.getGPIOAddress(pin);
+    final int padsValues = Bit.LOW.getValue() << PADS_BANK0_GPIO0_IE_LSB;
+    final int padsWriteMask = PADS_BANK0_GPIO0_IE_BITS;
+    padsBank0Registers.hwWriteMasked(padsGpioAddress,
+                                     padsValues, padsWriteMask);
+
+    final GPIOIOBank0Registers.Regs ioBank0Reg =
+      GPIOIOBank0Registers.Regs.GPIO0_STATUS;
+    final int ioGpioAddress = ioBank0Registers.getGPIOAddress(ioBank0Reg, pin);
+    final int ioValues = fn.ordinal() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
+    final int ioWriteMask = IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS;
+    ioBank0Registers.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
   }
 
   public String asBitArrayDisplay()
   {
-    return gpio.asBitArrayDisplay();
+    // return gpio.asBitArrayDisplay(); // TODO
+    throw new InternalError("not yet implemented");
   }
 }
 

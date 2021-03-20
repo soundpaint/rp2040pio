@@ -41,7 +41,6 @@ public class PIOSDK implements Constants
   private final PIORegisters registers;
   private final PIOEmuRegisters emuRegisters;
   private final Decoder decoder;
-  private final int pioBaseAddress;
 
   private PIOSDK()
   {
@@ -72,7 +71,6 @@ public class PIOSDK implements Constants
     this.registers = registers;
     this.emuRegisters = emuRegisters;
     this.decoder = new Decoder();
-    pioBaseAddress = registers.getBaseAddress();
   }
 
   public PIORegisters getRegisters() { return registers; }
@@ -357,8 +355,9 @@ public class PIOSDK implements Constants
 
   public void gpioInit(final int pin)
   {
+    Constants.checkGpioPin(pin, "GPIO pin number");
     final GPIO_Function function =
-      getIndex() == 1 ? GPIO_Function.PIO1 : GPIO_Function.PIO0;
+      getIndex() == 0 ? GPIO_Function.PIO0 : GPIO_Function.PIO1;
     gpioSdk.setFunction(pin, function);
   }
 

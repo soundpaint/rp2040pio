@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Emulator;
+import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
+import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIORegisters;
@@ -68,8 +70,13 @@ public class SDK implements Constants
                                             MASTER_CLOCK_BASE);
     registersList.add(picoEmuRegisters);
 
-    gpioSdk = new GPIOSDK(emulator.getGPIO());
-    // TODO: Implement registers for GPIO SDK.
+    gpioSdk = new GPIOSDK(emulator.getGPIO(), IO_BANK0_BASE, PADS_BANK0_BASE);
+    final GPIOIOBank0Registers gpioIOBank0Registers =
+      gpioSdk.getIOBank0Registers();
+    registersList.add(gpioIOBank0Registers);
+    final GPIOPadsBank0Registers gpioPadsBank0Registers =
+      gpioSdk.getPadsBank0Registers();
+    registersList.add(gpioPadsBank0Registers);
 
     pio0Sdk = new PIOSDK(gpioSdk, emulator.getPIO0(), PIO0_BASE);
     final PIORegisters pio0Registers = pio0Sdk.getRegisters();

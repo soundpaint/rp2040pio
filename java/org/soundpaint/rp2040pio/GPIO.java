@@ -90,6 +90,25 @@ public class GPIO implements Constants
     terminals[gpio].function = fn;
   }
 
+  private GPIO_Function getFunction(final int gpio)
+  {
+    Constants.checkGpioPin(gpio, "GPIO port");
+    return terminals[gpio].function;
+  }
+
+  public void setCTRL(final int gpio, final int value,
+                      final int mask, final boolean xor)
+  {
+    final int oldValue =
+      getFunction(gpio).ordinal() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
+    final int newValue =
+      Constants.hwSetBits(oldValue, value, mask, xor);
+    setFunction(gpio,
+                GPIO_Function.fromValue((newValue &
+                                         IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS) >>
+                                        IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB));
+  }
+
   public void setLevel(final int port, final Bit level)
   {
     // TODO: Clarify what happens when writing to a GPIO with pin

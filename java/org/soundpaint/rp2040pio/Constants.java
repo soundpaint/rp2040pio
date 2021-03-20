@@ -29,12 +29,22 @@ public interface Constants
   public static final int GPIO_NUM = 32;
   public static final int MEMORY_SIZE = 32;
   public static final int FIFO_DEPTH = 4;
+  public static final int PIO_NUM = 2;
   public static final int SM_COUNT = 4;
+  public static final int INTR_NUM = 4;
 
   // address map
+  public static final int IO_BANK0_BASE = 0x40014000;
+  public static final int PADS_BANK0_BASE = 0x4001c000;
   public static final int MASTER_CLOCK_BASE = 0x40024800;
   public static final int PIO0_BASE = 0x50200000;
   public static final int PIO1_BASE = 0x50300000;
+
+  // GPIO registers addressing
+  public static final int IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB = 0;
+  public static final int IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS = 0x0000001f;
+  public static final int PADS_BANK0_GPIO0_IE_LSB = 6;
+  public static final int PADS_BANK0_GPIO0_IE_BITS = 0x00000040;
 
   // PIO registers addressing
   public static final int CTRL_CLKDIV_RESTART_LSB = 8;
@@ -103,6 +113,8 @@ public interface Constants
     USB(9, "usb"),
     NULL(15, "null");
 
+    private static final GPIO_Function[] values = GPIO_Function.values();
+
     private final int value;
     private final String label;
 
@@ -113,6 +125,11 @@ public interface Constants
     }
 
     private int getValue() { return value; }
+
+    public static GPIO_Function fromValue(final int value)
+    {
+      return values[value];
+    }
 
     @Override
     public String toString()
@@ -166,6 +183,17 @@ public interface Constants
     }
   }
 
+  public static void checkPioNum(final int pioNum, final String label)
+  {
+    if (pioNum < 0) {
+      throw new IllegalArgumentException(label + " < 0: " + pioNum);
+    }
+    if (pioNum > PIO_NUM - 1) {
+      throw new IllegalArgumentException(label + " > " + (PIO_NUM - 1) + ": " +
+                                         pioNum);
+    }
+  }
+
   public static void checkSmMemAddr(final int address, final String label)
   {
     if (address < 0) {
@@ -186,6 +214,17 @@ public interface Constants
     if (smNum > SM_COUNT - 1) {
       throw new IllegalArgumentException("smNum > " + (SM_COUNT - 1) + ": " +
                                          smNum);
+    }
+  }
+
+  public static void checkIntrNum(final int intrNum, final String label)
+  {
+    if (intrNum < 0) {
+      throw new IllegalArgumentException(label + " < 0: " + intrNum);
+    }
+    if (intrNum > INTR_NUM - 1) {
+      throw new IllegalArgumentException(label + " > " + (INTR_NUM - 1) + ": " +
+                                         intrNum);
     }
   }
 

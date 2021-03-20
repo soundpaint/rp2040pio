@@ -155,10 +155,10 @@ public class PIORegisters extends AbstractRegisters implements Constants
 
   public int getSMAddress(final PIORegisters.Regs register, final int smNum)
   {
-    Constants.checkSmNum(smNum);
     if (register == null) {
       throw new NullPointerException("register");
     }
+    Constants.checkSmNum(smNum);
     switch (register) {
     case SM0_CLKDIV:
     case SM0_EXECCTRL:

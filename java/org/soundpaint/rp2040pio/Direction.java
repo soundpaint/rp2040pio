@@ -25,7 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 /**
- * Representation of a single bit value.
+ * Representation of a single GPIO pin's direction.
  */
 public enum Direction
 {
