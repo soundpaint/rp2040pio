@@ -46,12 +46,12 @@ abstract class AbstractRegisters implements Registers
   {
     if ((baseAddress & 0x3) != 0x0) {
       throw new IllegalArgumentException("base address not word-aligned: " +
-                                         String.format("%08x", baseAddress));
+                                         String.format("0x%08x", baseAddress));
     }
     if ((baseAddress & 0x3000) != 0x0) {
       throw new IllegalArgumentException("base address not conforming to " +
                                          "model of register access methods: " +
-                                         String.format("%08x", baseAddress));
+                                         String.format("0x%08x", baseAddress));
     }
     if (size < 0) {
       throw new IllegalArgumentException("size < 0: " + size);
@@ -76,7 +76,7 @@ abstract class AbstractRegisters implements Registers
   {
     if ((address & 0x3) != 0x0) {
       throw new IllegalArgumentException("address not word-aligned: " +
-                                         String.format("%08x", address));
+                                         String.format("0x%08x", address));
     }
     /*
      * Work around signed vs. unsigned int / wrap issues by comparing
@@ -108,7 +108,7 @@ abstract class AbstractRegisters implements Registers
   {
     if ((address & 0x3) != 0x0) {
       throw new IllegalArgumentException("address not word-aligned: " +
-                                         String.format("%08x", address));
+                                         String.format("0x%08x", address));
     }
   }
 
@@ -117,7 +117,7 @@ abstract class AbstractRegisters implements Registers
     if ((address & 0x3000) != 0x0) {
       throw new IllegalArgumentException("address is not in the space of " +
                                          "normal read / write access: " +
-                                         String.format("%08x", address));
+                                         String.format("0x%08x", address));
     }
   }
 
@@ -177,7 +177,7 @@ abstract class AbstractRegisters implements Registers
   public void hwWriteMasked(final int address, final int values,
                             final int writeMask)
   {
-    hwXorBits(address, (readRegister(address) ^ values) & writeMask);
+    hwXorBits(address, (readAddress(address) ^ values) & writeMask);
   }
 
   abstract protected int readRegister(final int regNum);

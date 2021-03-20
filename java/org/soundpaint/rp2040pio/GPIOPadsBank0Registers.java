@@ -109,8 +109,7 @@ public class GPIOPadsBank0Registers extends AbstractRegisters
   public int getGPIOAddress(final int gpioNum)
   {
     Constants.checkGpioPin(gpioNum, "GPIO pin number");
-    return
-      getBaseAddress() + (Regs.GPIO0.ordinal() + gpioNum) * 0x4;
+    return getBaseAddress() + 0x4 * (Regs.GPIO0.ordinal() + gpioNum);
   }
 
   @Override

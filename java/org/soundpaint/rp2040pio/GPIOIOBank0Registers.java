@@ -195,7 +195,7 @@ public class GPIOIOBank0Registers extends AbstractRegisters
                                          register);
     }
     return
-      getBaseAddress() + 0x4 * register.ordinal() + gpioNum * GPIO_DATA_SIZE;
+      getBaseAddress() + 0x4 * (register.ordinal() + gpioNum * GPIO_DATA_SIZE);
   }
 
   public int getIntr(final int intrNum)
