@@ -40,6 +40,7 @@ import org.soundpaint.rp2040pio.Registers;
 
 public class SDK implements Constants
 {
+  private final PrintStream console;
   private final Emulator emulator;
   private final PicoEmuRegisters picoEmuRegisters;
 
@@ -63,6 +64,10 @@ public class SDK implements Constants
 
   public SDK(final PrintStream console)
   {
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
+    this.console = console;
     emulator = new Emulator(console);
 
     registersList = new ArrayList<Registers>();
@@ -91,6 +96,17 @@ public class SDK implements Constants
     registersList.add(pio1EmuRegisters);
   }
 
+  public String getProgramAndVersion()
+  {
+    return emulator.getProgramAndVersion();
+  }
+
+  public String getAbout()
+  {
+    return emulator.getAbout();
+  }
+
+  public PrintStream getConsole() { return console; }
   public GPIOSDK getGPIOSDK() { return gpioSdk; }
   public PIOSDK getPIO0SDK() { return pio0Sdk; }
   public PIOSDK getPIO1SDK() { return pio1Sdk; }
@@ -146,6 +162,16 @@ public class SDK implements Constants
   {
     final Registers registers = getProvidingRegisters(address);
     return registers != null ? registers.getLabel(address) : null;
+  }
+
+  public int getGPIOAddress(final GPIOIOBank0Registers.Regs register)
+  {
+    return gpioSdk.getIOBank0Registers().getAddress(register);
+  }
+
+  public int getGPIOAddress(final GPIOPadsBank0Registers.Regs register)
+  {
+    return gpioSdk.getPadsBank0Registers().getAddress(register);
   }
 
   public int getPIO0Address(final PIORegisters.Regs register)

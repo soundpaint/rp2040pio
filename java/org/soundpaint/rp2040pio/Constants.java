@@ -43,6 +43,22 @@ public interface Constants
   // GPIO registers addressing
   public static final int IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB = 0;
   public static final int IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS = 0x0000001f;
+  public static final int IO_BANK0_GPIO0_STATUS_IRQTOPROC_LSB = 26;
+  public static final int IO_BANK0_GPIO0_STATUS_IRQTOPROC_BITS = 0x04000000;
+  public static final int IO_BANK0_GPIO0_STATUS_IRQFROMPAD_LSB = 24;
+  public static final int IO_BANK0_GPIO0_STATUS_IRQFROMPAD_BITS = 0x01000000;
+  public static final int IO_BANK0_GPIO0_STATUS_INTOPERI_LSB = 19;
+  public static final int IO_BANK0_GPIO0_STATUS_INTOPERI_BITS = 0x000800000;
+  public static final int IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB = 17;
+  public static final int IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS = 0x00020000;
+  public static final int IO_BANK0_GPIO0_STATUS_OETOPAD_LSB = 13;
+  public static final int IO_BANK0_GPIO0_STATUS_OETOPAD_BITS = 0x00002000;
+  public static final int IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB = 12;
+  public static final int IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS = 0x00001000;
+  public static final int IO_BANK0_GPIO0_STATUS_OUTTOPAD_LSB = 9;
+  public static final int IO_BANK0_GPIO0_STATUS_OUTTOPAD_BITS = 0x00000200;
+  public static final int IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB = 8;
+  public static final int IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS = 0x00000100;
   public static final int PADS_BANK0_GPIO0_IE_LSB = 6;
   public static final int PADS_BANK0_GPIO0_IE_BITS = 0x00000040;
 

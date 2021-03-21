@@ -69,13 +69,11 @@ public class Main
 
     diagram.addSignal(sdk.getPIO0Address(PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);
     diagram.addSignal("GPIO 0",
-                      sdk.getPIO0Address(PIOEmuRegisters.Regs.GPIO_PINS), 0, 0);
-    diagram.addSignal("GPIO 0",
-                      sdk.getPIO0Address(PIOEmuRegisters.Regs.GPIO_PINS), 0);
+                      sdk.getGPIOAddress(GPIOIOBank0Registers.Regs.GPIO0_STATUS), 8, 8);
     diagram.addSignal("GPIO 1",
-                      sdk.getPIO0Address(PIOEmuRegisters.Regs.GPIO_PINS), 1, 1);
+                      sdk.getGPIOAddress(GPIOIOBank0Registers.Regs.GPIO1_STATUS), 8, 8);
     diagram.addSignal("GPIO 10",
-                      sdk.getPIO0Address(PIOEmuRegisters.Regs.GPIO_PINS), 10, 10);
+                      sdk.getGPIOAddress(GPIOIOBank0Registers.Regs.GPIO10_STATUS), 8, 8);
     diagram.addSignal(sdk.getPIO0Address(PIOEmuRegisters.Regs.SM0_PC));
     diagram.addSignal(sdk.getPIO0Address(PIOEmuRegisters.Regs.SM0_PC),
                       createDelayFilter(sdk.getPIO0SDK(), 0));

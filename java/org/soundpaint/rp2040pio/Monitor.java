@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -36,12 +37,7 @@ import org.soundpaint.rp2040pio.sdk.ProgramParser;
  */
 public class Monitor
 {
-  private static final String about =
-    "RP2040 PIO Emulator V0.1\n" +
-    "\n" +
-    "© 2021 by J. Reuter\n" +
-    "Karlsruhe, Germany\n";
-
+  private final PrintStream console;
   private final SDK sdk;
   private final PIOSDK pioSdk;
   private final GPIOSDK gpioSdk;
@@ -57,9 +53,15 @@ public class Monitor
       throw new NullPointerException("sdk");
     }
     this.sdk = sdk;
+    console = sdk.getConsole();
     pioSdk = sdk.getPIO0SDK();
     gpioSdk = sdk.getGPIOSDK();
-    System.out.println(about);
+    printAbout();
+  }
+
+  private void printAbout()
+  {
+    console.println(sdk.getAbout());
   }
 
   public void addProgram(final String programResourcePath)

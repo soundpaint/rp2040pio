@@ -31,6 +31,11 @@ import java.io.PrintStream;
  */
 public class Emulator
 {
+  private static final String PROGRAM_ID = "RP PIO EMULATION";
+  private static final String VERSION_ID = "0.1";
+  private static final String COPYRIGHT_INFO =
+    "© 2021 by J. Reuter\nKarlsruhe, Germany";
+
   private final PrintStream console;
   private final MasterClock masterClock;
   private final GPIO gpio;
@@ -49,9 +54,34 @@ public class Emulator
     }
     this.console = console;
     masterClock = new MasterClock();
-    gpio = new GPIO();
-    pio0 = new PIO(0, console, masterClock, gpio);
-    pio1 = new PIO(1, console, masterClock, gpio);
+    gpio = new GPIO(console, masterClock);
+    pio0 = gpio.getPIO0();
+    pio1 = gpio.getPIO1();
+  }
+
+  public static String getProgramId()
+  {
+    return PROGRAM_ID;
+  }
+
+  public static String getVersionId()
+  {
+    return VERSION_ID;
+  }
+
+  public static String getCopyrightInfo()
+  {
+    return COPYRIGHT_INFO;
+  }
+
+  public String getProgramAndVersion()
+  {
+    return getProgramId() + " " + getVersionId();
+  }
+
+  public String getAbout()
+  {
+    return getProgramAndVersion() + "\n" + getCopyrightInfo();
   }
 
   public MasterClock getMasterClock()

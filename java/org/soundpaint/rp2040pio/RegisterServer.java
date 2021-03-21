@@ -63,8 +63,6 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 public class RegisterServer
 {
   public static final int DEFAULT_PORT_NUMBER = 1088;
-
-  private static final String SERVER_VERSION = "RP PIO EMULATION V0.1";
   private static final String[] NULL_ARGS = new String[0];
 
   private final SDK sdk;
@@ -106,9 +104,9 @@ public class RegisterServer
     }
   }
 
-  private String getServerVersion()
+  private String getEmulatorVersion()
   {
-    return SERVER_VERSION;
+    return sdk.getProgramAndVersion();
   }
 
   private String getHelp()
@@ -178,7 +176,7 @@ public class RegisterServer
     if (args.length > 0) {
       return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[0]);
     }
-    return createResponse(ResponseStatus.OK, getServerVersion());
+    return createResponse(ResponseStatus.OK, getEmulatorVersion());
   }
 
   private String handleGetHelp(final String[] args)

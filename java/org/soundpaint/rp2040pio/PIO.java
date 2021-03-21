@@ -276,6 +276,16 @@ public class PIO implements Constants, Clock.TransitionListener
     return (smEnabled & (0x1 << smNum)) != 0x0;
   }
 
+  public Bit getOutToPad(final int gpio)
+  {
+    return pioGpio.getOutToPad(gpio);
+  }
+
+  public Bit getOutFromPeripheral(final int gpio)
+  {
+    return pioGpio.getOutFromPeripheral(gpio);
+  }
+
   @Override
   public void raisingEdge(final long wallClock)
   {

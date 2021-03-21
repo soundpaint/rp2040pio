@@ -292,8 +292,7 @@ public class GPIOIOBank0Registers extends AbstractRegisters
     case GPIO27_STATUS:
     case GPIO28_STATUS:
     case GPIO29_STATUS:
-      // TODO
-      break;
+      break; // read-only address
     case GPIO0_CTRL:
     case GPIO1_CTRL:
     case GPIO2_CTRL:
@@ -424,7 +423,8 @@ public class GPIOIOBank0Registers extends AbstractRegisters
     case GPIO27_STATUS:
     case GPIO28_STATUS:
     case GPIO29_STATUS:
-      return 0; // TODO
+      return
+        gpio.getSTATUS((regNum - Regs.GPIO0_CTRL.ordinal()) / GPIO_DATA_SIZE);
     case GPIO0_CTRL:
     case GPIO1_CTRL:
     case GPIO2_CTRL:

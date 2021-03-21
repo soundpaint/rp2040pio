@@ -154,6 +154,19 @@ public class PIOGPIO implements Constants
     }
   }
 
+  public Bit getOutToPad(final int gpio)
+  {
+    final Bit beforeRegisterOverride = getOutFromPeripheral(gpio);
+    // TODO: Check if we need to implement register override.
+    final Bit afterRegisterOverride = beforeRegisterOverride;
+    return afterRegisterOverride;
+  }
+
+  public Bit getOutFromPeripheral(final int gpio)
+  {
+    return getLevel(gpio);
+  }
+
   public String asBitArrayDisplay()
   {
     final StringBuffer s = new StringBuffer();
