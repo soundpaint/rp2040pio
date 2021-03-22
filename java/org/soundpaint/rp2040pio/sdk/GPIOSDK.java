@@ -81,9 +81,9 @@ public class GPIOSDK implements Constants
                                      padsValues, padsWriteMask);
 
     final GPIOIOBank0Registers.Regs ioBank0Reg =
-      GPIOIOBank0Registers.Regs.GPIO0_STATUS;
+      GPIOIOBank0Registers.Regs.GPIO0_CTRL;
     final int ioGpioAddress = ioBank0Registers.getGPIOAddress(ioBank0Reg, pin);
-    final int ioValues = fn.ordinal() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
+    final int ioValues = fn.getValue() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
     final int ioWriteMask = IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS;
     ioBank0Registers.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
   }

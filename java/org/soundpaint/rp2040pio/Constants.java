@@ -140,11 +140,23 @@ public interface Constants
       this.label = label;
     }
 
-    private int getValue() { return value; }
+    public int getValue() { return value; }
 
     public static GPIO_Function fromValue(final int value)
     {
-      return values[value];
+      if ((value >= 0) && (value <= 9)) return values[value];
+      if (value == 15) return NULL;
+      throw new IllegalArgumentException("value: " + value);
+    }
+
+    public static GPIO_Function fromValue(final int value,
+                                          final GPIO_Function defaultValue)
+    {
+      try {
+        return fromValue(value);
+      } catch (final IllegalArgumentException e) {
+        return defaultValue;
+      }
     }
 
     @Override

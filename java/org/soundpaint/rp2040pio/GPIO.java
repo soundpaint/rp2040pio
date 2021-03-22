@@ -128,12 +128,13 @@ public class GPIO implements Constants
     setFunction(gpio,
                 GPIO_Function.fromValue((newValue &
                                          IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS) >>
-                                        IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB));
+                                        IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB,
+                                        GPIO_Function.NULL));
   }
 
   public int getCTRL(final int gpio)
   {
-    return getFunction(gpio).ordinal() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
+    return getFunction(gpio).getValue() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
   }
 
   public int getSTATUS(final int gpio)

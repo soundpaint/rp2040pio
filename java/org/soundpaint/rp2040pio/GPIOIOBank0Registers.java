@@ -455,7 +455,8 @@ public class GPIOIOBank0Registers extends AbstractRegisters
     case GPIO27_CTRL:
     case GPIO28_CTRL:
     case GPIO29_CTRL:
-      return 0; // TODO
+      return
+        gpio.getCTRL((regNum - Regs.GPIO0_CTRL.ordinal()) / GPIO_DATA_SIZE);
     case INTR0:
     case INTR1:
     case INTR2:
