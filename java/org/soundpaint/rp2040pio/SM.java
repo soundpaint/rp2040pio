@@ -262,9 +262,25 @@ public class SM implements Constants
     pll = new PLL();
   }
 
+  public int getNum() { return num; }
+
+  public PIOGPIO getPIOGPIO() { return pioGpio; }
+
+  public Memory getMemory() { return memory; }
+
+  public Status getStatus() { return status; }
+
   public FIFO getFIFO() { return fifo; }
 
   public PLL getPLL() { return pll; }
+
+  public void reset()
+  {
+    status.reset();
+    decoder.reset();
+    fifo.reset();
+    pll.reset();
+  }
 
   public void setCLKDIV(final int clkdiv, final int mask, final boolean xor)
   {
@@ -396,21 +412,6 @@ public class SM implements Constants
     // TODO: What about the program counter?  Always reset to 0x00?
     // Or is the .origin value of a compiled program somewhere stored?
     status.reset();
-  }
-
-  public Memory getMemory()
-  {
-    return memory;
-  }
-
-  public Status getStatus()
-  {
-    return status;
-  }
-
-  public PIOGPIO getPIOGPIO()
-  {
-    return pioGpio;
   }
 
   public Bit getGPIO(final int index)
@@ -552,11 +553,6 @@ public class SM implements Constants
   }
 
   public int getOSRShiftCount() { return status.osrShiftCount; }
-
-  public int getNum()
-  {
-    return num;
-  }
 
   public void setSideSetCount(final int count)
   {

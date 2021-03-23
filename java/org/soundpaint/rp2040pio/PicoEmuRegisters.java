@@ -34,6 +34,13 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
 {
   public enum Regs {
     /**
+     * W/C address.
+     *
+     * Writing the value 0xa55a5aa5 to this address will fully reset
+     * the emulator.  Writing any other value will have no effect.
+     */
+    PWR_UP,
+    /**
      * R/W address.  Reset value: 1000000000.
      *
      * Unsigned integer value that represents the target frequency of
@@ -88,18 +95,18 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
 
   final static Regs[] REGS = Regs.values();
 
-  private final MasterClock masterClock;
+  private final Emulator emulator;
 
-  public PicoEmuRegisters(final MasterClock masterClock, final int baseAddress)
+  public PicoEmuRegisters(final Emulator emulator, final int baseAddress)
   {
     super(baseAddress, (short)REGS.length);
-    if (masterClock == null) {
-      throw new NullPointerException("masterClock");
+    if (emulator == null) {
+      throw new NullPointerException("emulator");
     }
-    this.masterClock = masterClock;
+    this.emulator = emulator;
   }
 
-  public MasterClock getMasterClock() { return masterClock; }
+  public Emulator getEmulator() { return emulator; }
 
   @Override
   protected String getLabelForRegister(final int regNum)
@@ -124,17 +131,20 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
     }
     final Regs register = REGS[regNum];
     switch (register) {
+    case PWR_UP:
+      if (value == PICO_PWR_UP_VALUE) emulator.reset();
+      break;
     case MASTERCLK_FREQ:
-      masterClock.setMASTERCLK_FREQ(value);
+      emulator.getMasterClock().setMASTERCLK_FREQ(value);
       break;
     case MASTERCLK_MODE:
-      masterClock.setMASTERCLK_MODE(value);
+      emulator.getMasterClock().setMASTERCLK_MODE(value);
       break;
     case MASTERCLK_TRIGGER_PHASE0:
-      masterClock.triggerPhase0();
+      emulator.getMasterClock().triggerPhase0();
       break;
     case MASTERCLK_TRIGGER_PHASE1:
-      masterClock.triggerPhase1();
+      emulator.getMasterClock().triggerPhase1();
       break;
     default:
       throw new InternalError("unexpected case fall-through");
@@ -149,14 +159,16 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
     }
     final Regs register = REGS[regNum];
     switch (register) {
+    case PWR_UP:
+      return 0; // write-only address
     case MASTERCLK_FREQ:
-      return masterClock.getMASTERCLK_FREQ();
+      return emulator.getMasterClock().getMASTERCLK_FREQ();
     case MASTERCLK_MODE:
-      return masterClock.getMASTERCLK_MODE();
+      return emulator.getMasterClock().getMASTERCLK_MODE();
     case MASTERCLK_TRIGGER_PHASE0:
-      return masterClock.getPhase().ordinal() == 0 ? 0x1 : 0x0;
+      return emulator.getMasterClock().getPhase().ordinal() == 0 ? 0x1 : 0x0;
     case MASTERCLK_TRIGGER_PHASE1:
-      return masterClock.getPhase().ordinal() == 1 ? 0x1 : 0x0;
+      return emulator.getMasterClock().getPhase().ordinal() == 1 ? 0x1 : 0x0;
     default:
       throw new InternalError("unexpected case fall-through");
     }

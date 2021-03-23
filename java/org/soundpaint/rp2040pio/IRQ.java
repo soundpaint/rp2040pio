@@ -42,7 +42,7 @@ public class IRQ implements Constants
     reset();
   }
 
-  private void reset()
+  public void reset()
   {
     regIRQ = 0;
     regIRQ_FORCE = 0;

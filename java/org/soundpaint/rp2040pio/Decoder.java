@@ -69,6 +69,7 @@ public class Decoder
     private final Instruction.Mov mov;
     private final Instruction.Irq irq;
     private final Instruction.Set set;
+    private final Instruction[] instructionSet;
 
     public Instructions()
     {
@@ -81,12 +82,21 @@ public class Decoder
       mov = new Instruction.Mov();
       irq = new Instruction.Irq();
       set = new Instruction.Set();
+      instructionSet =
+        new Instruction[] { jmp, wait, in, out, push, pull, mov, irq, set };
     }
   }
 
   public Decoder()
   {
     instructions = new Instructions();
+  }
+
+  public void reset()
+  {
+    for (final Instruction instruction : instructions.instructionSet) {
+      instruction.reset();
+    }
   }
 
   public Instruction decode(final short word,

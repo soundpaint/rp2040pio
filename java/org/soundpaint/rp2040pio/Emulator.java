@@ -103,6 +103,14 @@ public class Emulator
   {
     return pio1;
   }
+
+  public void reset()
+  {
+    masterClock.reset();
+    gpio.reset();
+    pio0.reset();
+    pio1.reset();
+  }
 }
 
 /*

@@ -38,6 +38,15 @@ public class Memory implements Constants
     code = new short[MEMORY_SIZE];
   }
 
+  public void reset()
+  {
+    synchronized(FETCH_LOCK) {
+      for (int address = 0; address < MEMORY_SIZE; address++) {
+        set(address, (short)0);
+      }
+    }
+  }
+
   public void set(final int address, final int value,
                   final int mask, final boolean xor)
   {

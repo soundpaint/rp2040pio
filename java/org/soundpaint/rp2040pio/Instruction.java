@@ -65,7 +65,7 @@ public abstract class Instruction
 
   public Instruction()
   {
-    delay = 0;
+    reset();
   }
 
   public int getDelay()
@@ -87,6 +87,17 @@ public abstract class Instruction
   {
     return sideSet >= 0 ? "side " + Integer.toString(sideSet) : "";
   }
+
+  public void reset()
+  {
+    delay = 0;
+    sideSet = 0;
+    sideSetCount = 0;
+    sideSetEnabled = false;
+    resetParams();
+  }
+
+  abstract protected void resetParams();
 
   public Instruction decode(final short opCode,
                             final int pinCtrlSidesetCount,
@@ -241,9 +252,10 @@ public abstract class Instruction
     private int address;
     private Condition condition;
 
-    public Jmp()
+    @Override
+    protected void resetParams()
     {
-      // force class initializer to be called such that map is filled
+      address = 0;
       condition = Condition.ALWAYS;
     }
 
@@ -357,12 +369,12 @@ public abstract class Instruction
     private Source src;
     private int index;
 
-    public Wait()
+    @Override
+    protected void resetParams()
     {
       polarity = Bit.LOW;
-
-      // force class initializer to be called such that map is filled
       src = Source.GPIO_;
+      index = 0;
     }
 
     @Override
@@ -447,10 +459,11 @@ public abstract class Instruction
     private Source src;
     private int bitCount;
 
-    public In()
+    @Override
+    protected void resetParams()
     {
-      // force class initializer to be called such that map is filled
       src = Source.PINS;
+      bitCount = 0;
     }
 
     @Override
@@ -560,10 +573,11 @@ public abstract class Instruction
     private Destination dst;
     private int bitCount;
 
-    public Out()
+    @Override
+    protected void resetParams()
     {
-      // force class initializer to be called such that map is filled
       dst = Destination.PINS;
+      bitCount = 0;
     }
 
     public void setDestination(final Destination dst)
@@ -634,12 +648,15 @@ public abstract class Instruction
 
   public static class Push extends Instruction
   {
-    public Push()
-    {
-    }
-
     private boolean ifFull;
     private boolean block;
+
+    @Override
+    protected void resetParams()
+    {
+      ifFull = false;
+      block = false;
+    }
 
     @Override
     public void decodeLSB(final int lsb)
@@ -675,12 +692,15 @@ public abstract class Instruction
 
   public static class Pull extends Instruction
   {
-    public Pull()
-    {
-    }
-
     private boolean ifEmpty;
     private boolean block;
+
+    @Override
+    protected void resetParams()
+    {
+      ifEmpty = false;
+      block = false;
+    }
 
     public void setIfEmpty(final boolean ifEmpty)
     {
@@ -873,9 +893,9 @@ public abstract class Instruction
     private Destination dst;
     private Operation op;
 
-    public Mov()
+    @Override
+    protected void resetParams()
     {
-      // force class initializer to be called such that map is filled
       src = Source.PINS;
       dst = Destination.PINS;
       op = Operation.NONE;
@@ -940,8 +960,12 @@ public abstract class Instruction
     private boolean wait;
     private int index;
 
-    public Irq()
+    @Override
+    protected void resetParams()
     {
+      clr = false;
+      wait = false;
+      index = 0;
     }
 
     @Override
@@ -1047,10 +1071,11 @@ public abstract class Instruction
     private Destination dst;
     private int data;
 
-    public Set()
+    @Override
+    protected void resetParams()
     {
-      // force class initializer to be called such that map is filled
       dst = Destination.PINS;
+      data = 0;
     }
 
     public void setDestination(final Destination dst)

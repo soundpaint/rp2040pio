@@ -71,8 +71,7 @@ public class SDK implements Constants
     emulator = new Emulator(console);
 
     registersList = new ArrayList<Registers>();
-    picoEmuRegisters = new PicoEmuRegisters(emulator.getMasterClock(),
-                                            MASTER_CLOCK_BASE);
+    picoEmuRegisters = new PicoEmuRegisters(emulator, EMULATOR_BASE);
     registersList.add(picoEmuRegisters);
 
     gpioSdk = new GPIOSDK(emulator.getGPIO(), IO_BANK0_BASE, PADS_BANK0_BASE);
@@ -195,6 +194,13 @@ public class SDK implements Constants
   }
 
   // -------- PicoEmuRegisters convenience methods --------
+
+  public void reset()
+  {
+    final int address =
+      picoEmuRegisters.getAddress(PicoEmuRegisters.Regs.PWR_UP);
+    picoEmuRegisters.writeAddress(address, PICO_PWR_UP_VALUE);
+  }
 
   private void triggerCyclePhaseX(final PicoEmuRegisters.Regs trigger,
                                   final boolean await)

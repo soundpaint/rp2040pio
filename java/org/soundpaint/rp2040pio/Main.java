@@ -64,7 +64,7 @@ public class Main
     //monitor.setSideSetCount(1);
     //monitor.dumpProgram();
     final TimingDiagram diagram = new TimingDiagram(sdk);
-    diagram.addProgram(programResourcePath);
+    diagram.setProgram(programResourcePath);
     diagram.addSignal(DiagramConfig.createClockSignal("clock"));
 
     diagram.addSignal(sdk.getPIO0Address(PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);

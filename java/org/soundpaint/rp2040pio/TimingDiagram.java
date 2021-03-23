@@ -107,6 +107,7 @@ public class TimingDiagram implements Constants
   private final JFrame frame;
   private final JPanel panel;
   private final List<ToolTip> toolTips;
+  private Program program;
 
   private static class ToolTip
   {
@@ -164,6 +165,7 @@ public class TimingDiagram implements Constants
       });
     panel.setToolTipText("");
     toolTips = new ArrayList<ToolTip>();
+    program = null;
   }
 
   private void addToolTip(final int x0, final int y0,
@@ -447,8 +449,12 @@ public class TimingDiagram implements Constants
     }
   }
 
-  private void resetEmulation()
+  private void restartEmulation()
   {
+    sdk.reset();
+    if (program != null) {
+      pioSdk.addProgram(program);
+    }
     pioSdk.setSmMaskEnabled((1 << SM_COUNT) - 1, false);
     pioSdk.restartSmMask(SM_COUNT - 1);
     for (int pin = 0; pin < Constants.GPIO_NUM; pin++) {
@@ -467,7 +473,7 @@ public class TimingDiagram implements Constants
     paintLabels(panel, g);
     final int stopCycle =
       (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / CLOCK_CYCLE_WIDTH + 1);
-    resetEmulation();
+    restartEmulation();
     // TODO: Enabling SM should be part of configuration and
     // replayed, whenever the simulation is restarted.
     pioSdk.setSmMaskEnabled(1, true);
@@ -483,11 +489,10 @@ public class TimingDiagram implements Constants
     paintGridLine(g, LEFT_MARGIN + stopCycle * CLOCK_CYCLE_WIDTH, height);
   }
 
-  public void addProgram(final String programResourcePath)
+  public void setProgram(final String programResourcePath)
     throws IOException
   {
-    final Program program = ProgramParser.parse(programResourcePath);
-    pioSdk.addProgram(program);
+    program = ProgramParser.parse(programResourcePath);
   }
 }
 

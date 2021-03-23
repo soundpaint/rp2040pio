@@ -36,9 +36,12 @@ public interface Constants
   // address map
   public static final int IO_BANK0_BASE = 0x40014000;
   public static final int PADS_BANK0_BASE = 0x4001c000;
-  public static final int MASTER_CLOCK_BASE = 0x40024800;
+  public static final int EMULATOR_BASE = 0x40024800;
   public static final int PIO0_BASE = 0x50200000;
   public static final int PIO1_BASE = 0x50300000;
+
+  // Emulator registers addressing
+  public static final int PICO_PWR_UP_VALUE = 0xa55a5aa5;
 
   // GPIO registers addressing
   public static final int IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB = 0;
