@@ -38,7 +38,9 @@ public interface Registers
   String getLabel(final int address) throws IOException;
   void writeAddress(final int address, final int value) throws IOException;
   int readAddress(final int address) throws IOException;
-  void irqWaitAddress(final int address) throws IOException;
+  int wait(final int address, final int expectedValue, final int mask,
+           final long cyclesTimeout, final long millisTimeout)
+    throws IOException;
 }
 
 /*

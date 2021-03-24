@@ -123,9 +123,10 @@ public class PIORegisters extends AbstractRegisters implements Constants
 
   private final PIO pio;
 
-  public PIORegisters(final PIO pio, final int baseAddress)
+  public PIORegisters(final MasterClock masterClock,
+                      final PIO pio, final int baseAddress)
   {
-    super(baseAddress, (short)REGS.length);
+    super(masterClock, baseAddress, (short)REGS.length);
     if (pio == null) {
       throw new NullPointerException("pio");
     }
@@ -552,12 +553,6 @@ public class PIORegisters extends AbstractRegisters implements Constants
     default:
       throw new InternalError("unexpected case fall-through");
     }
-  }
-
-  @Override
-  protected void irqWaitRegister(final int regNum)
-  {
-    // TODO
   }
 }
 

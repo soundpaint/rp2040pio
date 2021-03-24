@@ -168,8 +168,10 @@ public class RegisterClient implements Registers
     }
   }
 
+  @Override
   public int getBaseAddress() { return 0; }
 
+  @Override
   public boolean providesAddress(final int address) throws IOException
   {
     final Response response = getResponse("p " + address);
@@ -194,6 +196,7 @@ public class RegisterClient implements Registers
     return provided;
   }
 
+  @Override
   public String getLabel(final int address) throws IOException
   {
     final Response response = getResponse("l " + address);
@@ -211,6 +214,7 @@ public class RegisterClient implements Registers
     return message;
   }
 
+  @Override
   public synchronized void writeAddress(final int address,
                                         final int value) throws IOException
   {
@@ -225,17 +229,9 @@ public class RegisterClient implements Registers
     }
   }
 
-  public synchronized int readAddress(final int address) throws IOException
+  private int parseIntResult(final int address, final String message)
+    throws IOException
   {
-    final Response response = getResponse("r " + address);
-    if (response == null) {
-      throw new IOException("missing response for address " + address);
-    }
-    final String message = response.getMessage();
-    if (!response.isOk()) {
-      throw new IOException("failed retrieving value " +
-                            "for address " + address + ": " + message);
-    }
     if (message == null) {
       throw new IOException("missing value for address " + address);
     }
@@ -249,9 +245,34 @@ public class RegisterClient implements Registers
     return value;
   }
 
-  public synchronized void irqWaitAddress(final int address) throws IOException
+  @Override
+  public synchronized int readAddress(final int address) throws IOException
   {
-    final Response response = getResponse("i " + address);
+    final Response response = getResponse("r " + address);
+    if (response == null) {
+      throw new IOException("missing response for address " + address);
+    }
+    final String message = response.getMessage();
+    if (!response.isOk()) {
+      throw new IOException("failed retrieving value " +
+                            "for address " + address + ": " + message);
+    }
+    return parseIntResult(address, message);
+  }
+
+  @Override
+  public synchronized int wait(final int address,
+                               final int expectedValue, final int mask,
+                               final long cyclesTimeout,
+                               final long millisTimeout)
+    throws IOException
+  {
+    final StringBuffer query = new StringBuffer();
+    final Response response = getResponse("i " + address + " " +
+                                          expectedValue + " " +
+                                          mask + " " +
+                                          cyclesTimeout + " " +
+                                          millisTimeout);
     if (response == null) {
       throw new IOException("missing response for address " + address);
     }
@@ -260,6 +281,7 @@ public class RegisterClient implements Registers
       throw new IOException("failed waiting for IRQ " +
                             "on address " + address + ": " + message);
     }
+    return parseIntResult(address, message);
   }
 }
 

@@ -28,6 +28,7 @@ import java.io.IOException;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
 import org.soundpaint.rp2040pio.Instruction;
+import org.soundpaint.rp2040pio.MasterClock;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
@@ -47,11 +48,12 @@ public class PIOSDK implements Constants
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIOSDK(final GPIOSDK gpioSdk, final PIO pio, final int pioBaseAddress)
+  public PIOSDK(final GPIOSDK gpioSdk, final MasterClock masterClock,
+                final PIO pio, final int pioBaseAddress)
   {
     this(gpioSdk,
-         new PIORegisters(pio, pioBaseAddress),
-         new PIOEmuRegisters(pio, pioBaseAddress + 0x0800));
+         new PIORegisters(masterClock, pio, pioBaseAddress),
+         new PIOEmuRegisters(masterClock, pio, pioBaseAddress + 0x0800));
   }
 
   private PIOSDK(final GPIOSDK gpioSdk,

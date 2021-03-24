@@ -273,13 +273,13 @@ public class RegisterServer
     return createResponse(ResponseStatus.OK, String.valueOf(value));
   }
 
-  private String handleIRQWaitAddress(final String[] args) throws IOException
+  private String handleWait(final String[] args) throws IOException
   {
-    if (args.length < 1) {
+    if (args.length < 2) {
       return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
     }
-    if (args.length > 1) {
-      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[1]);
+    if (args.length > 5) {
+      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[5]);
     }
     final int address;
     try {
@@ -287,7 +287,43 @@ public class RegisterServer
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }
-    sdk.irqWaitAddress(address);
+    final int expectedValue;
+    try {
+      expectedValue = parseUnsignedInt(args[1]);
+    } catch (final NumberFormatException e) {
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[1]);
+    }
+    final int mask;
+    if (args.length > 2) {
+      try {
+        mask = parseUnsignedInt(args[2]);
+      } catch (final NumberFormatException e) {
+        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[2]);
+      }
+    } else {
+      mask = 0xffffffff;
+    }
+    final int cyclesTimeout;
+    if (args.length > 3) {
+      try {
+        cyclesTimeout = parseUnsignedInt(args[3]);
+      } catch (final NumberFormatException e) {
+        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[3]);
+      }
+    } else {
+      cyclesTimeout = 0x0;
+    }
+    final int millisTimeout;
+    if (args.length > 4) {
+      try {
+        millisTimeout = parseUnsignedInt(args[4]);
+      } catch (final NumberFormatException e) {
+        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[4]);
+      }
+    } else {
+      millisTimeout = 0x0;
+    }
+    sdk.wait(address, mask, expectedValue, cyclesTimeout, millisTimeout);
     return createResponse(ResponseStatus.OK);
   }
 
@@ -325,7 +361,7 @@ public class RegisterServer
     case 'r':
       return handleReadAddress(args);
     case 'i':
-      return handleIRQWaitAddress(args);
+      return handleWait(args);
     default:
       return createResponse(ResponseStatus.ERR_UNKNOWN_COMMAND,
                             String.valueOf(command));

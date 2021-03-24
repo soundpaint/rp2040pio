@@ -26,6 +26,7 @@ package org.soundpaint.rp2040pio;
 
 abstract class AbstractRegisters implements Registers
 {
+  private final MasterClock masterClock;
   private final int baseAddress;
   private final short size;
   private final int addrMin;
@@ -42,8 +43,12 @@ abstract class AbstractRegisters implements Registers
    * The maximum allowed address computes as &lt;code&gt;baseAddress +
    * size * 0x4&lt;/code&gt;.
    */
-  protected AbstractRegisters(final int baseAddress, final short size)
+  protected AbstractRegisters(final MasterClock masterClock,
+                              final int baseAddress, final short size)
   {
+    if (masterClock == null) {
+      throw new NullPointerException("masterClock");
+    }
     if ((baseAddress & 0x3) != 0x0) {
       throw new IllegalArgumentException("base address not word-aligned: " +
                                          String.format("0x%08x", baseAddress));
@@ -60,11 +65,14 @@ abstract class AbstractRegisters implements Registers
       throw new IllegalArgumentException(String.format("size * 0x4 > 0x1000: " +
                                                        "0x%08x" + size * 0x4));
     }
+    this.masterClock = masterClock;
     this.baseAddress = baseAddress;
     this.size = size;
     addrMin = baseAddress;
     addrMax = baseAddress + size * 0x4;
   }
+
+  public MasterClock getMasterClock() { return masterClock; }
 
   @Override
   public int getBaseAddress() { return baseAddress; }
@@ -189,13 +197,51 @@ abstract class AbstractRegisters implements Registers
     return readRegister(((address - baseAddress) & ~0x3000) >>> 2);
   }
 
-  abstract protected void irqWaitRegister(final int regNum);
+  private boolean timedOut(final long startWallClock,
+                           final long stopWallClock,
+                           final long wallClock)
+  {
+    return
+      (startWallClock < stopWallClock) ?
+      (wallClock < startWallClock) || (wallClock >= stopWallClock) :
+      (wallClock < startWallClock) && (wallClock >= stopWallClock);
+  }
 
   @Override
-  public void irqWaitAddress(final int address)
+  public int wait(final int address, final int expectedValue, final int mask,
+                  final long cyclesTimeout, final long millisTimeout)
   {
     checkAddressAligned(address);
-    irqWaitRegister(((address - baseAddress) & ~0x3000) >>> 2);
+    if (cyclesTimeout < 0) {
+      throw new IllegalArgumentException("cyclesTimeout < 0: " + cyclesTimeout);
+    }
+    if (millisTimeout < 0) {
+      throw new IllegalArgumentException("millisTimeout < 0: " + millisTimeout);
+    }
+    final int regNum = ((address - baseAddress) & ~0x3000) >>> 2;
+    final long startWallClock = masterClock.getWallClock();
+    final long stopWallClock = startWallClock + cyclesTimeout;
+    final long startTime = System.currentTimeMillis();
+    final long stopTime = startTime + millisTimeout;
+    synchronized(masterClock.getRegisterWaitLock()) {
+      int receivedValue;
+      while (((receivedValue = readRegister(regNum) & mask) != expectedValue)) {
+        final long wallClock = masterClock.getWallClock();
+        if (timedOut(startWallClock, stopWallClock, wallClock)) break;
+        try {
+          if (millisTimeout != 0) {
+            final long time = System.currentTimeMillis();
+            if (timedOut(startTime, stopTime, time)) break;
+            wait(stopTime - time);
+          } else {
+            wait();
+          }
+        } catch (final InterruptedException e) {
+          // ignore here, since check in while condition
+        }
+      }
+      return receivedValue;
+    }
   }
 }
 

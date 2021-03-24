@@ -109,6 +109,12 @@ public class MasterClock implements Clock
    */
   private final Object accountingLock;
 
+  /**
+   * Emulator-wide lock for synchronizing register reads waiting for a
+   * specific masked value to match.
+   */
+  private final Object registerWaitLock;
+
   private final DrivingGear drivingGear;
   private final List<TransitionListener> listeners;
   private long frequency;
@@ -123,6 +129,7 @@ public class MasterClock implements Clock
   public MasterClock()
   {
     accountingLock = new Object();
+    registerWaitLock = new Object();
     drivingGear = new DrivingGear();
     listeners = new ArrayList<TransitionListener>();
     reset();
@@ -183,6 +190,11 @@ public class MasterClock implements Clock
         frequency != 0 ? 8000.0 / this.frequency : Double.POSITIVE_INFINITY;
       resetRef();
     }
+  }
+
+  public Object getRegisterWaitLock()
+  {
+    return registerWaitLock;
   }
 
   public void setMASTERCLK_FREQ(final int frequency)
@@ -290,6 +302,9 @@ public class MasterClock implements Clock
     phase = Phase.PHASE_1;
     announceFallingEdge();
     wallClock++;
+    synchronized(registerWaitLock) {
+      registerWaitLock.notifyAll();
+    }
   }
 }
 

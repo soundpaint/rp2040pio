@@ -32,6 +32,7 @@ import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
+import org.soundpaint.rp2040pio.MasterClock;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIORegisters;
@@ -69,12 +70,14 @@ public class SDK implements Constants
     }
     this.console = console;
     emulator = new Emulator(console);
+    final MasterClock masterClock = emulator.getMasterClock();
 
     registersList = new ArrayList<Registers>();
     picoEmuRegisters = new PicoEmuRegisters(emulator, EMULATOR_BASE);
     registersList.add(picoEmuRegisters);
 
-    gpioSdk = new GPIOSDK(emulator.getGPIO(), IO_BANK0_BASE, PADS_BANK0_BASE);
+    gpioSdk = new GPIOSDK(masterClock, emulator.getGPIO(),
+                          IO_BANK0_BASE, PADS_BANK0_BASE);
     final GPIOIOBank0Registers gpioIOBank0Registers =
       gpioSdk.getIOBank0Registers();
     registersList.add(gpioIOBank0Registers);
@@ -82,13 +85,13 @@ public class SDK implements Constants
       gpioSdk.getPadsBank0Registers();
     registersList.add(gpioPadsBank0Registers);
 
-    pio0Sdk = new PIOSDK(gpioSdk, emulator.getPIO0(), PIO0_BASE);
+    pio0Sdk = new PIOSDK(gpioSdk, masterClock, emulator.getPIO0(), PIO0_BASE);
     final PIORegisters pio0Registers = pio0Sdk.getRegisters();
     registersList.add(pio0Registers);
     final PIOEmuRegisters pio0EmuRegisters = pio0Sdk.getEmuRegisters();
     registersList.add(pio0EmuRegisters);
 
-    pio1Sdk = new PIOSDK(gpioSdk, emulator.getPIO1(), PIO1_BASE);
+    pio1Sdk = new PIOSDK(gpioSdk, masterClock, emulator.getPIO1(), PIO1_BASE);
     final PIORegisters pio1Registers = pio1Sdk.getRegisters();
     registersList.add(pio1Registers);
     final PIOEmuRegisters pio1EmuRegisters = pio1Sdk.getEmuRegisters();
@@ -134,10 +137,35 @@ public class SDK implements Constants
     if (registers != null) registers.writeAddress(address, value);
   }
 
-  public void irqWaitAddress(final int address) throws IOException
+  public int wait(final int address, final int expectedValue)
+    throws IOException
+  {
+    return wait(address, expectedValue, 0xffffffff);
+  }
+
+  public int wait(final int address, final int expectedValue, final int mask)
+    throws IOException
+  {
+    return wait(address, expectedValue, mask, 0x0);
+  }
+
+  public int wait(final int address, final int expectedValue, final int mask,
+                  final long cyclesTimeout)
+    throws IOException
+  {
+    return wait(address, expectedValue, mask, cyclesTimeout, 0x0);
+  }
+
+  public int wait(final int address, final int expectedValue, final int mask,
+                  final long cyclesTimeout, final long millisTimeout)
+    throws IOException
   {
     final Registers registers = getProvidingRegisters(address);
-    if (registers != null) registers.irqWaitAddress(address);
+    if (registers != null) {
+      return registers.wait(address, expectedValue, mask,
+                            cyclesTimeout, millisTimeout);
+    }
+    return 0;
   }
 
   // -------- address helpers --------

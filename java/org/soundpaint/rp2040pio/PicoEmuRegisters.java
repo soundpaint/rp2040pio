@@ -99,10 +99,7 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
 
   public PicoEmuRegisters(final Emulator emulator, final int baseAddress)
   {
-    super(baseAddress, (short)REGS.length);
-    if (emulator == null) {
-      throw new NullPointerException("emulator");
-    }
+    super(emulator.getMasterClock(), baseAddress, (short)REGS.length);
     this.emulator = emulator;
   }
 
@@ -172,12 +169,6 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
     default:
       throw new InternalError("unexpected case fall-through");
     }
-  }
-
-  @Override
-  protected void irqWaitRegister(final int regNum)
-  {
-    // TODO
   }
 }
 

@@ -35,8 +35,7 @@ package org.soundpaint.rp2040pio;
  * simulation.  All GPIO registers specified by the RP2040 datasheet
  * are addressable, but writing to non-relevant registers or register
  * bits will have no effect, and reading from non-relevant registers
- * or register bits will return a constant value of 0.  For now,
- * execution of irqWaitRegister() will always immediately return.
+ * or register bits will return a constant value of 0.
  */
 public class GPIOIOBank0Registers extends AbstractRegisters
   implements Constants
@@ -154,9 +153,10 @@ public class GPIOIOBank0Registers extends AbstractRegisters
 
   private final GPIO gpio;
 
-  public GPIOIOBank0Registers(final GPIO gpio, final int baseAddress)
+  public GPIOIOBank0Registers(final MasterClock masterClock,
+                              final GPIO gpio, final int baseAddress)
   {
-    super(baseAddress, (short)REGS.length);
+    super(masterClock, baseAddress, (short)REGS.length);
     if (gpio == null) {
       throw new NullPointerException("gpio");
     }
@@ -507,12 +507,6 @@ public class GPIOIOBank0Registers extends AbstractRegisters
     default:
       throw new InternalError("unexpected case fall-through");
     }
-  }
-
-  @Override
-  protected void irqWaitRegister(final int regNum)
-  {
-    // TODO
   }
 }
 

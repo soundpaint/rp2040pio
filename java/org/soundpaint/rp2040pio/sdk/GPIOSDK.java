@@ -29,6 +29,7 @@ import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.GPIO;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
+import org.soundpaint.rp2040pio.MasterClock;
 
 /**
  * Minimal subset of GPIO SDK Interface, just enough to provide all
@@ -39,12 +40,14 @@ public class GPIOSDK implements Constants
   private final GPIOIOBank0Registers ioBank0Registers;
   private final GPIOPadsBank0Registers padsBank0Registers;
 
-  public GPIOSDK(final GPIO gpio,
+  public GPIOSDK(final MasterClock masterClock,
+                 final GPIO gpio,
                  final int gpioIOBank0BaseAddress,
                  final int gpioPadsBank0BaseAddress)
   {
-    this(new GPIOIOBank0Registers(gpio, gpioIOBank0BaseAddress),
-         new GPIOPadsBank0Registers(gpio, gpioPadsBank0BaseAddress));
+    this(new GPIOIOBank0Registers(masterClock, gpio, gpioIOBank0BaseAddress),
+         new GPIOPadsBank0Registers(masterClock, gpio,
+                                    gpioPadsBank0BaseAddress));
   }
 
   public GPIOSDK(final GPIOIOBank0Registers ioBank0Registers,
