@@ -90,7 +90,23 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
      * address will have no effect.  Upon reset, the system is in
      * phase 1.
      */
-    MASTERCLK_TRIGGER_PHASE1;
+    MASTERCLK_TRIGGER_PHASE1,
+    /**
+     * R/O address.
+     *
+     * LSB value (lower 32 bits) of wall clock.  The wall clock is a
+     * 64 bit counter that is initialized to 0 and incremented
+     * whenever the master clock has completed a cycle.
+     */
+    WALLCLOCK_LSB,
+    /**
+     * R/O address.
+     *
+     * MSB value (upper 32 bits) of wall clock.  The wall clock is a
+     * 64 bit counter that is initialized to 0 and incremented
+     * whenever the master clock has completed a cycle.
+     */
+    WALLCLOCK_MSB;
   }
 
   final static Regs[] REGS = Regs.values();
@@ -132,17 +148,20 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
       if (value == PICO_PWR_UP_VALUE) emulator.reset();
       break;
     case MASTERCLK_FREQ:
-      emulator.getMasterClock().setMASTERCLK_FREQ(value);
+      getMasterClock().setMASTERCLK_FREQ(value);
       break;
     case MASTERCLK_MODE:
-      emulator.getMasterClock().setMASTERCLK_MODE(value);
+      getMasterClock().setMASTERCLK_MODE(value);
       break;
     case MASTERCLK_TRIGGER_PHASE0:
-      emulator.getMasterClock().triggerPhase0();
+      getMasterClock().triggerPhase0();
       break;
     case MASTERCLK_TRIGGER_PHASE1:
-      emulator.getMasterClock().triggerPhase1();
+      getMasterClock().triggerPhase1();
       break;
+    case WALLCLOCK_LSB:
+    case WALLCLOCK_MSB:
+      break; // read-only address
     default:
       throw new InternalError("unexpected case fall-through");
     }
@@ -159,13 +178,17 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
     case PWR_UP:
       return 0; // write-only address
     case MASTERCLK_FREQ:
-      return emulator.getMasterClock().getMASTERCLK_FREQ();
+      return getMasterClock().getMASTERCLK_FREQ();
     case MASTERCLK_MODE:
-      return emulator.getMasterClock().getMASTERCLK_MODE();
+      return getMasterClock().getMASTERCLK_MODE();
     case MASTERCLK_TRIGGER_PHASE0:
-      return emulator.getMasterClock().getPhase().ordinal() == 0 ? 0x1 : 0x0;
+      return getMasterClock().getPhase().ordinal() == 0 ? 0x1 : 0x0;
     case MASTERCLK_TRIGGER_PHASE1:
-      return emulator.getMasterClock().getPhase().ordinal() == 1 ? 0x1 : 0x0;
+      return getMasterClock().getPhase().ordinal() == 1 ? 0x1 : 0x0;
+    case WALLCLOCK_LSB:
+      return (int)getMasterClock().getWallClock();
+    case WALLCLOCK_MSB:
+      return (int)(getMasterClock().getWallClock() >>> 32);
     default:
       throw new InternalError("unexpected case fall-through");
     }

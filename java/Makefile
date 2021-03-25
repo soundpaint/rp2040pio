@@ -26,8 +26,8 @@ include ../defs.mak
 
 COMPILE_CLASSPATH=$(JAVA_DIR):$(BUILD_DIR)
 RUN_CLASSPATH=.
-
-JAVA_SRC=$(wildcard $(JAVA_DIR)/org/soundpaint/rp2040pio/**.java)
+PIO_DIR=$(JAVA_DIR)/org/soundpaint/rp2040pio
+JAVA_SRC=$(wildcard $(PIO_DIR)/*.java) $(wildcard $(PIO_DIR)/*/*.java)
 JAVA_OBJ=$(patsubst $(JAVA_DIR)/%.java,$(BUILD_DIR)/%.class,$(JAVA_SRC))
 
 IMAGES_SRC_DIR=$(JAVA_DIR)/images

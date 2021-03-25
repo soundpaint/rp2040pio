@@ -168,6 +168,12 @@ public class SDK implements Constants
     return 0;
   }
 
+  public void awaitNextCycle() throws IOException
+  {
+    final Registers registers = getProvidingRegisters(EMULATOR_BASE);
+    registers.wait(EMULATOR_BASE, 0xffffffff, 0x0, 1, 0);
+  }
+
   // -------- address helpers --------
 
   private Registers getProvidingRegisters(final int address) throws IOException
