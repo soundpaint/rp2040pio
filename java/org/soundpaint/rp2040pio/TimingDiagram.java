@@ -156,7 +156,11 @@ public class TimingDiagram implements Constants
         public void paint(final Graphics g)
         {
           super.paint(g);
-          paintDiagram(this, (Graphics2D)g, getWidth(), getHeight());
+          try {
+            paintDiagram(this, (Graphics2D)g, getWidth(), getHeight());
+          } catch (final IOException e) {
+            paintError(this, (Graphics2D)g, getWidth(), getHeight(), e);
+          }
         }
         @Override
         public String getToolTipText(final MouseEvent event) {
@@ -449,7 +453,7 @@ public class TimingDiagram implements Constants
     }
   }
 
-  private void restartEmulation()
+  private void restartEmulation() throws IOException
   {
     sdk.reset();
     if (program != null) {
@@ -467,6 +471,7 @@ public class TimingDiagram implements Constants
 
   private void paintDiagram(final JPanel panel, final Graphics2D g,
                             final int width, final int height)
+    throws IOException
   {
     toolTips.clear();
     g.setStroke(PLAIN_STROKE);
@@ -487,6 +492,15 @@ public class TimingDiagram implements Constants
       sdk.triggerCyclePhase1(true);
     }
     paintGridLine(g, LEFT_MARGIN + stopCycle * CLOCK_CYCLE_WIDTH, height);
+  }
+
+  private void paintError(final JPanel panel, final Graphics2D g,
+                          final int width, final int height,
+                          final IOException exception)
+  {
+    g.setStroke(PLAIN_STROKE);
+    g.setFont(VALUE_FONT);
+    g.drawString(exception.getMessage(), 10.0f, 10.0f);
   }
 
   public void setProgram(final String programResourcePath)

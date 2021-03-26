@@ -35,7 +35,7 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * Remote client that connects to a RegisterServer via TCP/IP socket
  * connection.
  */
-public class RegisterClient implements Registers
+public class RegisterClient extends AbstractRegisters
 {
   private static class Response
   {
@@ -87,11 +87,6 @@ public class RegisterClient implements Registers
   private final PrintWriter out;
   private final BufferedReader in;
 
-  private RegisterClient()
-  {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
-
   public RegisterClient(final int port) throws IOException
   {
     this("localhost", port);
@@ -99,6 +94,7 @@ public class RegisterClient implements Registers
 
   public RegisterClient(final String host, final int port) throws IOException
   {
+    super(null, 0x0, (short)0x0);
     socket = new Socket(host, port);
     out = new PrintWriter(socket.getOutputStream(), true);
     in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -196,8 +192,13 @@ public class RegisterClient implements Registers
     return provided;
   }
 
+  protected String getRegisterLabel(final int regNum)
+  {
+    throw new InternalError("method not applicable for this class");
+  }
+
   @Override
-  public String getLabel(final int address) throws IOException
+  public String getAddressLabel(final int address) throws IOException
   {
     final Response response = getResponse("l " + address);
     if (response == null) {
@@ -212,6 +213,13 @@ public class RegisterClient implements Registers
       throw new IOException("missing label for address " + address);
     }
     return message;
+  }
+
+  protected void writeRegister(final int regNum,
+                               final int bits, final int mask,
+                               final boolean xor)
+  {
+    throw new InternalError("method not applicable for this class");
   }
 
   @Override
@@ -243,6 +251,12 @@ public class RegisterClient implements Registers
                             address + ": " + message);
     }
     return value;
+  }
+
+  @Override
+  protected int readRegister(final int regNum)
+  {
+    throw new InternalError("method not applicable for this class");
   }
 
   @Override

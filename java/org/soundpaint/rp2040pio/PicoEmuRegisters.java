@@ -30,7 +30,8 @@ package org.soundpaint.rp2040pio;
  * facade is in particular intended for use by software that wants to
  * exploit the emulator's debug facilities.
  */
-public class PicoEmuRegisters extends AbstractRegisters implements Constants
+public abstract class PicoEmuRegisters extends AbstractRegisters
+  implements Constants
 {
   public enum Regs {
     /**
@@ -109,89 +110,24 @@ public class PicoEmuRegisters extends AbstractRegisters implements Constants
     WALLCLOCK_MSB;
   }
 
-  final static Regs[] REGS = Regs.values();
+  protected static final Regs[] REGS = Regs.values();
 
-  private final Emulator emulator;
-
-  public PicoEmuRegisters(final Emulator emulator, final int baseAddress)
-  {
-    super(emulator.getMasterClock(), baseAddress, (short)REGS.length);
-    this.emulator = emulator;
-  }
-
-  public Emulator getEmulator() { return emulator; }
-
-  @Override
-  protected String getLabelForRegister(final int regNum)
+  public static String getLabelForRegister(final int regNum)
   {
     return REGS[regNum].toString();
   }
 
-  public int getAddress(final PicoEmuRegisters.Regs register)
+  public static int getAddress(final PicoEmuRegisters.Regs register)
   {
     if (register == null) {
       throw new NullPointerException("register");
     }
-    return getBaseAddress() + 0x4 * register.ordinal();
+    return EMULATOR_BASE + 0x4 * register.ordinal();
   }
 
-  @Override
-  protected void writeRegister(final int regNum, final int value,
-                               final int mask, final boolean xor)
+  public PicoEmuRegisters(final MasterClock masterClock)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
-    final Regs register = REGS[regNum];
-    switch (register) {
-    case PWR_UP:
-      if (value == PICO_PWR_UP_VALUE) emulator.reset();
-      break;
-    case MASTERCLK_FREQ:
-      getMasterClock().setMASTERCLK_FREQ(value);
-      break;
-    case MASTERCLK_MODE:
-      getMasterClock().setMASTERCLK_MODE(value);
-      break;
-    case MASTERCLK_TRIGGER_PHASE0:
-      getMasterClock().triggerPhase0();
-      break;
-    case MASTERCLK_TRIGGER_PHASE1:
-      getMasterClock().triggerPhase1();
-      break;
-    case WALLCLOCK_LSB:
-    case WALLCLOCK_MSB:
-      break; // read-only address
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
-  }
-
-  @Override
-  protected synchronized int readRegister(final int regNum)
-  {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
-    final Regs register = REGS[regNum];
-    switch (register) {
-    case PWR_UP:
-      return 0; // write-only address
-    case MASTERCLK_FREQ:
-      return getMasterClock().getMASTERCLK_FREQ();
-    case MASTERCLK_MODE:
-      return getMasterClock().getMASTERCLK_MODE();
-    case MASTERCLK_TRIGGER_PHASE0:
-      return getMasterClock().getPhase().ordinal() == 0 ? 0x1 : 0x0;
-    case MASTERCLK_TRIGGER_PHASE1:
-      return getMasterClock().getPhase().ordinal() == 1 ? 0x1 : 0x0;
-    case WALLCLOCK_LSB:
-      return (int)getMasterClock().getWallClock();
-    case WALLCLOCK_MSB:
-      return (int)(getMasterClock().getWallClock() >>> 32);
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
+    super(masterClock, EMULATOR_BASE, (short)REGS.length);
   }
 }
 

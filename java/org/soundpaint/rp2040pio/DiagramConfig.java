@@ -336,7 +336,11 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     final String signalLabel = createSignalLabel(sdk, label, address, 31, 0);
     final Supplier<PIOSDK.InstructionInfo> valueGetter = () -> {
       if ((displayFilter != null) && (!displayFilter.get())) return null;
-      return pioSdk.getCurrentInstruction(smNum, showAddress, false);
+      try {
+        return pioSdk.getCurrentInstruction(smNum, showAddress, false);
+      } catch (final IOException e) {
+        return new PIOSDK.InstructionInfo(e);
+      }
     };
     final ValuedSignal<PIOSDK.InstructionInfo> instructionSignal =
       new ValuedSignal<PIOSDK.InstructionInfo>(signalLabel, valueGetter);

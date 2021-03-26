@@ -24,7 +24,9 @@
  */
 package org.soundpaint.rp2040pio;
 
-abstract class AbstractRegisters implements Registers
+import java.io.IOException;
+
+public abstract class AbstractRegisters implements Registers
 {
   private final MasterClock masterClock;
   private final int baseAddress;
@@ -46,6 +48,7 @@ abstract class AbstractRegisters implements Registers
   protected AbstractRegisters(final MasterClock masterClock,
                               final int baseAddress, final short size)
   {
+    // TODO: Allow (masterClock == null)?
     if (masterClock == null) {
       throw new NullPointerException("masterClock");
     }
@@ -80,7 +83,7 @@ abstract class AbstractRegisters implements Registers
   public int getSize() { return size; }
 
   @Override
-  public boolean providesAddress(final int address)
+  public boolean providesAddress(final int address) throws IOException
   {
     if ((address & 0x3) != 0x0) {
       throw new IllegalArgumentException("address not word-aligned: " +
@@ -95,22 +98,22 @@ abstract class AbstractRegisters implements Registers
     return (offset >= 0) && (offset < addrMax - addrMin);
   }
 
-  abstract protected String getLabelForRegister(final int regNum);
-
-  @Override
-  public String getLabel(final int address)
-  {
-    if (!providesAddress(address)) {
-      return null;
-    }
-    return getLabelForRegister(((address - baseAddress) & ~0x3000) >>> 2);
-  }
-
   private enum AccessMethod {
     NORMAL_RW, ATOMIC_XOR, ATOMIC_SET, ATOMIC_CLEAR;
   };
 
   private static AccessMethod[] ACCESS_METHODS = AccessMethod.values();
+
+  protected abstract String getRegisterLabel(final int regNum);
+
+  @Override
+  public String getAddressLabel(final int address) throws IOException
+  {
+    if (!providesAddress(address)) {
+      return null;
+    }
+    return getRegisterLabel(((address - baseAddress) & ~0x3000) >>> 2);
+  }
 
   private static void checkAddressAligned(final int address)
   {
@@ -131,10 +134,12 @@ abstract class AbstractRegisters implements Registers
 
   abstract protected void writeRegister(final int regNum,
                                         final int bits, final int mask,
-                                        final boolean xor);
+                                        final boolean xor)
+    throws IOException;
 
   @Override
   public synchronized void writeAddress(final int address, final int value)
+    throws IOException
   {
     checkAddressAligned(address);
     final AccessMethod accessMethod = ACCESS_METHODS[((address >> 12) & 0x3)];
@@ -164,34 +169,39 @@ abstract class AbstractRegisters implements Registers
                   accessMethod == AccessMethod.ATOMIC_XOR);
   }
 
-  public void hwSetBits(final int address, final int mask)
+  @Override
+  public void hwSetBits(final int address, final int mask) throws IOException
   {
     checkAddressNormalRWSpace(address);
     writeAddress(address | REG_ALIAS_SET_BITS, mask);
   }
 
-  public void hwClearBits(final int address, final int mask)
+  @Override
+  public void hwClearBits(final int address, final int mask) throws IOException
   {
     checkAddressNormalRWSpace(address);
     writeAddress(address | REG_ALIAS_CLR_BITS, mask);
   }
 
-  public void hwXorBits(final int address, final int mask)
+  @Override
+  public void hwXorBits(final int address, final int mask) throws IOException
   {
     checkAddressNormalRWSpace(address);
     writeAddress(address | REG_ALIAS_XOR_BITS, mask);
   }
 
+  @Override
   public void hwWriteMasked(final int address, final int values,
                             final int writeMask)
+    throws IOException
   {
     hwXorBits(address, (readAddress(address) ^ values) & writeMask);
   }
 
-  abstract protected int readRegister(final int regNum);
+  abstract protected int readRegister(final int regNum) throws IOException;
 
   @Override
-  public synchronized int readAddress(final int address)
+  public synchronized int readAddress(final int address) throws IOException
   {
     checkAddressAligned(address);
     return readRegister(((address - baseAddress) & ~0x3000) >>> 2);
@@ -210,6 +220,7 @@ abstract class AbstractRegisters implements Registers
   @Override
   public int wait(final int address, final int expectedValue, final int mask,
                   final long cyclesTimeout, final long millisTimeout)
+    throws IOException
   {
     checkAddressAligned(address);
     if (cyclesTimeout < 0) {
@@ -242,6 +253,13 @@ abstract class AbstractRegisters implements Registers
       }
       return receivedValue;
     }
+  }
+
+  public String toString()
+  {
+    return
+      String.format("%s@%08x, size=%08x, addrMin=%08x, addrMax=%08x",
+                    getClass().getName(), baseAddress, size, addrMin, addrMax);
   }
 }
 

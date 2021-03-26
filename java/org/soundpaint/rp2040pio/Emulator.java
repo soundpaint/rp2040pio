@@ -84,6 +84,11 @@ public class Emulator
     return getProgramAndVersion() + "\n" + getCopyrightInfo();
   }
 
+  public PrintStream getConsole()
+  {
+    return console;
+  }
+
   public MasterClock getMasterClock()
   {
     return masterClock;

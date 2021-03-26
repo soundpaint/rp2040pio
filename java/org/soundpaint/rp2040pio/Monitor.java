@@ -71,7 +71,7 @@ public class Monitor
     pioSdk.addProgram(program);
   }
 
-  public void dumpProgram()
+  public void dumpProgram() throws IOException
   {
     for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
       final PIOSDK.InstructionInfo instructionInfo =

@@ -37,7 +37,7 @@ package org.soundpaint.rp2040pio;
  * bits will have no effect, and reading from non-relevant registers
  * or register bits will return a constant value of 0.
  */
-public class GPIOIOBank0Registers extends AbstractRegisters
+public abstract class GPIOIOBank0Registers extends AbstractRegisters
   implements Constants
 {
   public enum Regs {
@@ -143,49 +143,34 @@ public class GPIOIOBank0Registers extends AbstractRegisters
     DORMANT_WAKE_INTS3;
   }
 
-  final static Regs[] REGS = Regs.values();
+  protected static final Regs[] REGS = Regs.values();
 
-  public static final int GPIO_DATA_SIZE =
+  protected static final int GPIO_DATA_SIZE =
     Regs.GPIO1_STATUS.ordinal() - Regs.GPIO0_STATUS.ordinal();
 
-  public static final int PROC_INT_DATA_SIZE =
+  protected static final int PROC_INT_DATA_SIZE =
     Regs.PROC1_INTE0.ordinal() - Regs.PROC0_INTE0.ordinal();
 
-  private final GPIO gpio;
-
-  public GPIOIOBank0Registers(final MasterClock masterClock,
-                              final GPIO gpio, final int baseAddress)
-  {
-    super(masterClock, baseAddress, (short)REGS.length);
-    if (gpio == null) {
-      throw new NullPointerException("gpio");
-    }
-    this.gpio = gpio;
-  }
-
-  public GPIO getGPIO() { return gpio; }
-
-  @Override
-  protected String getLabelForRegister(final int regNum)
+  public static String getLabelForRegister(final int regNum)
   {
     return REGS[regNum].toString();
   }
 
-  public int getAddress(final GPIOIOBank0Registers.Regs register)
+  public static int getAddress(final GPIOIOBank0Registers.Regs register)
   {
     if (register == null) {
       throw new NullPointerException("register");
     }
-    return getBaseAddress() + 0x4 * register.ordinal();
+    return IO_BANK0_BASE + 0x4 * register.ordinal();
   }
 
-  public int getGPIOAddress(final GPIOIOBank0Registers.Regs register,
-                            final int gpioNum)
+  public static int getGPIOAddress(final int gpioNum,
+                                   final GPIOIOBank0Registers.Regs register)
   {
+    Constants.checkGpioPin(gpioNum, "GPIO pin number");
     if (register == null) {
       throw new NullPointerException("register");
     }
-    Constants.checkGpioPin(gpioNum, "GPIO pin number");
     switch (register) {
     case GPIO0_STATUS:
     case GPIO0_CTRL:
@@ -195,318 +180,60 @@ public class GPIOIOBank0Registers extends AbstractRegisters
                                          register);
     }
     return
-      getBaseAddress() + 0x4 * (register.ordinal() + gpioNum * GPIO_DATA_SIZE);
+      IO_BANK0_BASE + 0x4 * (register.ordinal() + gpioNum * GPIO_DATA_SIZE);
   }
 
-  public int getIntr(final int intrNum)
+  public static int getIntr(final int intrNum)
   {
     Constants.checkIntrNum(intrNum, "INTR number");
-    return
-      getBaseAddress() + 0x4 * (Regs.INTR0.ordinal() + intrNum);
+    return IO_BANK0_BASE + 0x4 * (Regs.INTR0.ordinal() + intrNum);
   }
 
-  public int getProcIntE(final int pioNum, final int inteNum)
+  public static int getProcIntE(final int pioNum, final int inteNum)
   {
     Constants.checkPioNum(pioNum, "PIO number");
     Constants.checkIntrNum(inteNum, "INTE number");
     final int regsOffs = pioNum * PROC_INT_DATA_SIZE + inteNum;
-    return
-      getBaseAddress() + 0x4 * (Regs.PROC0_INTE0.ordinal() + regsOffs);
+    return IO_BANK0_BASE + 0x4 * (Regs.PROC0_INTE0.ordinal() + regsOffs);
   }
 
-  public int getProcIntF(final int pioNum, final int intfNum)
+  public static int getProcIntF(final int pioNum, final int intfNum)
   {
     Constants.checkPioNum(pioNum, "PIO number");
     Constants.checkIntrNum(intfNum, "INTF number");
     final int regsOffs = pioNum * PROC_INT_DATA_SIZE + intfNum;
-    return
-      getBaseAddress() + 0x4 * (Regs.PROC0_INTF0.ordinal() + regsOffs);
+    return IO_BANK0_BASE + 0x4 * (Regs.PROC0_INTF0.ordinal() + regsOffs);
   }
 
-  public int getProcIntS(final int pioNum, final int intsNum)
+  public static int getProcIntS(final int pioNum, final int intsNum)
   {
     Constants.checkPioNum(pioNum, "PIO number");
     Constants.checkIntrNum(intsNum, "INTS number");
     final int regsOffs = pioNum * PROC_INT_DATA_SIZE + intsNum;
-    return
-      getBaseAddress() + 0x4 * (Regs.PROC0_INTS0.ordinal() + regsOffs);
+    return IO_BANK0_BASE + 0x4 * (Regs.PROC0_INTS0.ordinal() + regsOffs);
   }
 
-  public int getDormantWakeIntE(final int inteNum)
+  public static int getDormantWakeIntE(final int inteNum)
   {
     Constants.checkIntrNum(inteNum, "Dormant Wake INTE number");
-    return
-      getBaseAddress() + 0x4 * (Regs.DORMANT_WAKE_INTE0.ordinal() + inteNum);
+    return IO_BANK0_BASE + 0x4 * (Regs.DORMANT_WAKE_INTE0.ordinal() + inteNum);
   }
 
-  public int getDormantWakeIntF(final int intfNum)
+  public static int getDormantWakeIntF(final int intfNum)
   {
     Constants.checkIntrNum(intfNum, "Dormant Wake INTF number");
-    return
-      getBaseAddress() + 0x4 * (Regs.DORMANT_WAKE_INTF0.ordinal() + intfNum);
+    return IO_BANK0_BASE + 0x4 * (Regs.DORMANT_WAKE_INTF0.ordinal() + intfNum);
   }
 
-  public int getDormantWakeIntS(final int intsNum)
+  public static int getDormantWakeIntS(final int intsNum)
   {
     Constants.checkIntrNum(intsNum, "Dormant Wake INTS number");
-    return
-      getBaseAddress() + 0x4 * (Regs.DORMANT_WAKE_INTS0.ordinal() + intsNum);
+    return IO_BANK0_BASE + 0x4 * (Regs.DORMANT_WAKE_INTS0.ordinal() + intsNum);
   }
 
-  @Override
-  protected void writeRegister(final int regNum, final int value,
-                               final int mask, final boolean xor)
+  public GPIOIOBank0Registers(final MasterClock masterClock)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
-    final Regs register = REGS[regNum];
-    switch (register) {
-    case GPIO0_STATUS:
-    case GPIO1_STATUS:
-    case GPIO2_STATUS:
-    case GPIO3_STATUS:
-    case GPIO4_STATUS:
-    case GPIO5_STATUS:
-    case GPIO6_STATUS:
-    case GPIO7_STATUS:
-    case GPIO8_STATUS:
-    case GPIO9_STATUS:
-    case GPIO10_STATUS:
-    case GPIO11_STATUS:
-    case GPIO12_STATUS:
-    case GPIO13_STATUS:
-    case GPIO14_STATUS:
-    case GPIO15_STATUS:
-    case GPIO16_STATUS:
-    case GPIO17_STATUS:
-    case GPIO18_STATUS:
-    case GPIO19_STATUS:
-    case GPIO20_STATUS:
-    case GPIO21_STATUS:
-    case GPIO22_STATUS:
-    case GPIO23_STATUS:
-    case GPIO24_STATUS:
-    case GPIO25_STATUS:
-    case GPIO26_STATUS:
-    case GPIO27_STATUS:
-    case GPIO28_STATUS:
-    case GPIO29_STATUS:
-      break; // read-only address
-    case GPIO0_CTRL:
-    case GPIO1_CTRL:
-    case GPIO2_CTRL:
-    case GPIO3_CTRL:
-    case GPIO4_CTRL:
-    case GPIO5_CTRL:
-    case GPIO6_CTRL:
-    case GPIO7_CTRL:
-    case GPIO8_CTRL:
-    case GPIO9_CTRL:
-    case GPIO10_CTRL:
-    case GPIO11_CTRL:
-    case GPIO12_CTRL:
-    case GPIO13_CTRL:
-    case GPIO14_CTRL:
-    case GPIO15_CTRL:
-    case GPIO16_CTRL:
-    case GPIO17_CTRL:
-    case GPIO18_CTRL:
-    case GPIO19_CTRL:
-    case GPIO20_CTRL:
-    case GPIO21_CTRL:
-    case GPIO22_CTRL:
-    case GPIO23_CTRL:
-    case GPIO24_CTRL:
-    case GPIO25_CTRL:
-    case GPIO26_CTRL:
-    case GPIO27_CTRL:
-    case GPIO28_CTRL:
-    case GPIO29_CTRL:
-      gpio.setCTRL((regNum - Regs.GPIO0_CTRL.ordinal()) / GPIO_DATA_SIZE,
-                   value, mask, xor);
-      break;
-    case INTR0:
-    case INTR1:
-    case INTR2:
-    case INTR3:
-      // TODO
-      break;
-    case PROC0_INTE0:
-    case PROC0_INTE1:
-    case PROC0_INTE2:
-    case PROC0_INTE3:
-    case PROC1_INTE0:
-    case PROC1_INTE1:
-    case PROC1_INTE2:
-    case PROC1_INTE3:
-      // TODO
-      break;
-    case PROC0_INTF0:
-    case PROC0_INTF1:
-    case PROC0_INTF2:
-    case PROC0_INTF3:
-    case PROC1_INTF0:
-    case PROC1_INTF1:
-    case PROC1_INTF2:
-    case PROC1_INTF3:
-      // TODO
-      break;
-    case PROC0_INTS0:
-    case PROC0_INTS1:
-    case PROC0_INTS2:
-    case PROC0_INTS3:
-    case PROC1_INTS0:
-    case PROC1_INTS1:
-    case PROC1_INTS2:
-    case PROC1_INTS3:
-      // TODO
-      break;
-    case DORMANT_WAKE_INTE0:
-    case DORMANT_WAKE_INTE1:
-    case DORMANT_WAKE_INTE2:
-    case DORMANT_WAKE_INTE3:
-      // TODO
-      break;
-    case DORMANT_WAKE_INTF0:
-    case DORMANT_WAKE_INTF1:
-    case DORMANT_WAKE_INTF2:
-    case DORMANT_WAKE_INTF3:
-      // TODO
-      break;
-    case DORMANT_WAKE_INTS0:
-    case DORMANT_WAKE_INTS1:
-    case DORMANT_WAKE_INTS2:
-    case DORMANT_WAKE_INTS3:
-      // TODO
-      break;
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
-  }
-
-  @Override
-  protected synchronized int readRegister(final int regNum)
-  {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
-    final Regs register = REGS[regNum];
-    switch (register) {
-    case GPIO0_STATUS:
-    case GPIO1_STATUS:
-    case GPIO2_STATUS:
-    case GPIO3_STATUS:
-    case GPIO4_STATUS:
-    case GPIO5_STATUS:
-    case GPIO6_STATUS:
-    case GPIO7_STATUS:
-    case GPIO8_STATUS:
-    case GPIO9_STATUS:
-    case GPIO10_STATUS:
-    case GPIO11_STATUS:
-    case GPIO12_STATUS:
-    case GPIO13_STATUS:
-    case GPIO14_STATUS:
-    case GPIO15_STATUS:
-    case GPIO16_STATUS:
-    case GPIO17_STATUS:
-    case GPIO18_STATUS:
-    case GPIO19_STATUS:
-    case GPIO20_STATUS:
-    case GPIO21_STATUS:
-    case GPIO22_STATUS:
-    case GPIO23_STATUS:
-    case GPIO24_STATUS:
-    case GPIO25_STATUS:
-    case GPIO26_STATUS:
-    case GPIO27_STATUS:
-    case GPIO28_STATUS:
-    case GPIO29_STATUS:
-      return
-        gpio.getSTATUS((regNum - Regs.GPIO0_CTRL.ordinal()) / GPIO_DATA_SIZE);
-    case GPIO0_CTRL:
-    case GPIO1_CTRL:
-    case GPIO2_CTRL:
-    case GPIO3_CTRL:
-    case GPIO4_CTRL:
-    case GPIO5_CTRL:
-    case GPIO6_CTRL:
-    case GPIO7_CTRL:
-    case GPIO8_CTRL:
-    case GPIO9_CTRL:
-    case GPIO10_CTRL:
-    case GPIO11_CTRL:
-    case GPIO12_CTRL:
-    case GPIO13_CTRL:
-    case GPIO14_CTRL:
-    case GPIO15_CTRL:
-    case GPIO16_CTRL:
-    case GPIO17_CTRL:
-    case GPIO18_CTRL:
-    case GPIO19_CTRL:
-    case GPIO20_CTRL:
-    case GPIO21_CTRL:
-    case GPIO22_CTRL:
-    case GPIO23_CTRL:
-    case GPIO24_CTRL:
-    case GPIO25_CTRL:
-    case GPIO26_CTRL:
-    case GPIO27_CTRL:
-    case GPIO28_CTRL:
-    case GPIO29_CTRL:
-      return
-        gpio.getCTRL((regNum - Regs.GPIO0_CTRL.ordinal()) / GPIO_DATA_SIZE);
-    case INTR0:
-    case INTR1:
-    case INTR2:
-    case INTR3:
-      return 0; // TODO
-    case PROC0_INTE0:
-    case PROC0_INTE1:
-    case PROC0_INTE2:
-    case PROC0_INTE3:
-    case PROC1_INTE0:
-    case PROC1_INTE1:
-    case PROC1_INTE2:
-    case PROC1_INTE3:
-      return 0; // TODO
-    case PROC0_INTF0:
-    case PROC0_INTF1:
-    case PROC0_INTF2:
-    case PROC0_INTF3:
-    case PROC1_INTF0:
-    case PROC1_INTF1:
-    case PROC1_INTF2:
-    case PROC1_INTF3:
-      return 0; // TODO
-    case PROC0_INTS0:
-    case PROC0_INTS1:
-    case PROC0_INTS2:
-    case PROC0_INTS3:
-    case PROC1_INTS0:
-    case PROC1_INTS1:
-    case PROC1_INTS2:
-    case PROC1_INTS3:
-      return 0; // TODO
-    case DORMANT_WAKE_INTE0:
-    case DORMANT_WAKE_INTE1:
-    case DORMANT_WAKE_INTE2:
-    case DORMANT_WAKE_INTE3:
-      return 0; // TODO
-    case DORMANT_WAKE_INTF0:
-    case DORMANT_WAKE_INTF1:
-    case DORMANT_WAKE_INTF2:
-    case DORMANT_WAKE_INTF3:
-      return 0; // TODO
-    case DORMANT_WAKE_INTS0:
-    case DORMANT_WAKE_INTS1:
-    case DORMANT_WAKE_INTS2:
-    case DORMANT_WAKE_INTS3:
-      return 0; // TODO
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
+    super(masterClock, IO_BANK0_BASE, (short)REGS.length);
   }
 }
 

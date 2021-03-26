@@ -35,11 +35,16 @@ public interface Registers
 
   int getBaseAddress();
   boolean providesAddress(final int address) throws IOException;
-  String getLabel(final int address) throws IOException;
+  String getAddressLabel(final int address) throws IOException;
   void writeAddress(final int address, final int value) throws IOException;
   int readAddress(final int address) throws IOException;
   int wait(final int address, final int expectedValue, final int mask,
            final long cyclesTimeout, final long millisTimeout)
+    throws IOException;
+  void hwSetBits(final int address, final int mask) throws IOException;
+  void hwClearBits(final int address, final int mask) throws IOException;
+  void hwXorBits(final int address, final int mask) throws IOException;
+  void hwWriteMasked(final int address, final int values, final int writeMask)
     throws IOException;
 }
 

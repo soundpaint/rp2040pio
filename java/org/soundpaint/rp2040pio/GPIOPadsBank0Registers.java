@@ -37,7 +37,7 @@ package org.soundpaint.rp2040pio;
  * bits will have no effect, and reading from non-relevant registers
  * or register bits will return a constant value of 0.
  */
-public class GPIOPadsBank0Registers extends AbstractRegisters
+public abstract class GPIOPadsBank0Registers extends AbstractRegisters
   implements Constants
 {
   public enum Regs {
@@ -76,145 +76,30 @@ public class GPIOPadsBank0Registers extends AbstractRegisters
     SWD;
   }
 
-  final static Regs[] REGS = Regs.values();
+  protected static final Regs[] REGS = Regs.values();
 
-  private final GPIO gpio;
-
-  public GPIOPadsBank0Registers(final MasterClock masterClock,
-                                final GPIO gpio, final int baseAddress)
-  {
-    super(masterClock, baseAddress, (short)REGS.length);
-    if (gpio == null) {
-      throw new NullPointerException("gpio");
-    }
-    this.gpio = gpio;
-  }
-
-  public GPIO getGPIO() { return gpio; }
-
-  @Override
-  protected String getLabelForRegister(final int regNum)
+  public static String getLabelForRegister(final int regNum)
   {
     return REGS[regNum].toString();
   }
 
-  public int getAddress(final GPIOPadsBank0Registers.Regs register)
+  public static int getAddress(final GPIOPadsBank0Registers.Regs register)
   {
     if (register == null) {
       throw new NullPointerException("register");
     }
-    return getBaseAddress() + 0x4 * register.ordinal();
+    return PADS_BANK0_BASE + 0x4 * register.ordinal();
   }
 
-  public int getGPIOAddress(final int gpioNum)
+  public static int getGPIOAddress(final int gpioNum)
   {
     Constants.checkGpioPin(gpioNum, "GPIO pin number");
-    return getBaseAddress() + 0x4 * (Regs.GPIO0.ordinal() + gpioNum);
+    return PADS_BANK0_BASE + 0x4 * (Regs.GPIO0.ordinal() + gpioNum);
   }
 
-  @Override
-  protected void writeRegister(final int regNum, final int value,
-                               final int mask, final boolean xor)
+  public GPIOPadsBank0Registers(final MasterClock masterClock)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
-    final Regs register = REGS[regNum];
-    switch (register) {
-    case VOLTAGE_SELECT:
-      // TODO
-      break;
-    case GPIO0:
-    case GPIO1:
-    case GPIO2:
-    case GPIO3:
-    case GPIO4:
-    case GPIO5:
-    case GPIO6:
-    case GPIO7:
-    case GPIO8:
-    case GPIO9:
-    case GPIO10:
-    case GPIO11:
-    case GPIO12:
-    case GPIO13:
-    case GPIO14:
-    case GPIO15:
-    case GPIO16:
-    case GPIO17:
-    case GPIO18:
-    case GPIO19:
-    case GPIO20:
-    case GPIO21:
-    case GPIO22:
-    case GPIO23:
-    case GPIO24:
-    case GPIO25:
-    case GPIO26:
-    case GPIO27:
-    case GPIO28:
-    case GPIO29:
-      // TODO
-      break;
-    case SWCLK:
-      // TODO
-      break;
-    case SWD:
-      // TODO
-      break;
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
-  }
-
-  @Override
-  protected synchronized int readRegister(final int regNum)
-  {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
-    final Regs register = REGS[regNum];
-    switch (register) {
-    case VOLTAGE_SELECT:
-      return 0; // TODO
-    case GPIO0:
-    case GPIO1:
-    case GPIO2:
-    case GPIO3:
-    case GPIO4:
-    case GPIO5:
-    case GPIO6:
-    case GPIO7:
-    case GPIO8:
-    case GPIO9:
-    case GPIO10:
-    case GPIO11:
-    case GPIO12:
-    case GPIO13:
-    case GPIO14:
-    case GPIO15:
-    case GPIO16:
-    case GPIO17:
-    case GPIO18:
-    case GPIO19:
-    case GPIO20:
-    case GPIO21:
-    case GPIO22:
-    case GPIO23:
-    case GPIO24:
-    case GPIO25:
-    case GPIO26:
-    case GPIO27:
-    case GPIO28:
-    case GPIO29:
-      return 0; // TODO
-    case SWCLK:
-      return 0; // TODO
-    case SWD:
-      return 0; // TODO
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
+    super(masterClock, PADS_BANK0_BASE, (short)REGS.length);
   }
 }
 

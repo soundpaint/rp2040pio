@@ -30,7 +30,8 @@ package org.soundpaint.rp2040pio;
  * datasheet.  The facade is in particular intended for use by the
  * SDK.
  */
-public class PIORegisters extends AbstractRegisters implements Constants
+public abstract class PIORegisters extends AbstractRegisters
+  implements Constants
 {
   public enum Regs {
     CTRL,
@@ -116,50 +117,35 @@ public class PIORegisters extends AbstractRegisters implements Constants
     IRQ1_INTS;
   }
 
-  final static Regs[] REGS = Regs.values();
+  protected static final Regs[] REGS = Regs.values();
 
   public static final int SM_SIZE =
     Regs.SM1_CLKDIV.ordinal() - Regs.SM0_CLKDIV.ordinal();
 
-  private final PIO pio;
-
-  public PIORegisters(final MasterClock masterClock,
-                      final PIO pio, final int baseAddress)
-  {
-    super(masterClock, baseAddress, (short)REGS.length);
-    if (pio == null) {
-      throw new NullPointerException("pio");
-    }
-    this.pio = pio;
-  }
-
-  public PIO getPIO() { return pio; }
-
-  public int getPIOIndex()
-  {
-    return pio.getIndex();
-  }
-
-  @Override
-  protected String getLabelForRegister(final int regNum)
+  public static String getLabelForRegister(final int regNum)
   {
     return REGS[regNum].toString();
   }
 
-  public int getAddress(final PIORegisters.Regs register)
+  public static int getAddress(final int pioNum,
+                               final PIORegisters.Regs register)
   {
+    Constants.checkPioNum(pioNum, "PIO index number");
     if (register == null) {
       throw new NullPointerException("register");
     }
-    return getBaseAddress() + 0x4 * register.ordinal();
+    return Constants.getPIOBaseAddress(pioNum) + 0x4 * register.ordinal();
   }
 
-  public int getSMAddress(final PIORegisters.Regs register, final int smNum)
+  public static int getSMAddress(final int pioNum,
+                                 final int smNum,
+                                 final PIORegisters.Regs register)
   {
+    Constants.checkPioNum(pioNum, "PIO index number");
+    Constants.checkSmNum(smNum);
     if (register == null) {
       throw new NullPointerException("register");
     }
-    Constants.checkSmNum(smNum);
     switch (register) {
     case SM0_CLKDIV:
     case SM0_EXECCTRL:
@@ -172,387 +158,42 @@ public class PIORegisters extends AbstractRegisters implements Constants
       throw new IllegalArgumentException("register not one of SM0_*: " +
                                          register);
     }
-    return getBaseAddress() + 0x4 * register.ordinal() + smNum * SM_SIZE;
+    return
+      Constants.getPIOBaseAddress(pioNum) +
+      0x4 * register.ordinal() + smNum * SM_SIZE;
   }
 
-  public int getMemoryAddress(final int memoryAddress)
+  public static int getMemoryAddress(final int pioNum,
+                                     final int memoryAddress)
   {
+    Constants.checkPioNum(pioNum, "PIO index number");
     Constants.checkSmMemAddr(memoryAddress, "memory address");
     return
-      getBaseAddress() + 0x4 * (Regs.INSTR_MEM0.ordinal() + memoryAddress);
+      Constants.getPIOBaseAddress(pioNum) +
+      0x4 * (Regs.INSTR_MEM0.ordinal() + memoryAddress);
   }
 
-  public int getTXFAddress(final int smNum)
+  public static int getTXFAddress(final int pioNum, final int smNum)
   {
+    Constants.checkPioNum(pioNum, "PIO index number");
     Constants.checkSmNum(smNum);
-    return getBaseAddress() + 0x4 * (Regs.TXF0.ordinal() + smNum);
+    return
+      Constants.getPIOBaseAddress(pioNum) +
+      0x4 * (Regs.TXF0.ordinal() + smNum);
   }
 
-  public int getRXFAddress(final int smNum)
+  public static int getRXFAddress(final int pioNum, final int smNum)
   {
+    Constants.checkPioNum(pioNum, "PIO index number");
     Constants.checkSmNum(smNum);
-    return getBaseAddress() + 0x4 * (Regs.RXF0.ordinal() + smNum);
-  }
-
-  /*
-   * TODO: In all of the following methods, use constants declared in
-   * class Constants for bit shifting & masking.
-   */
-  private void writeFDebug(final int value, final int mask)
-  {
-    for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-      final SM sm = pio.getSM(smNum);
-      final FIFO fifo = sm.getFIFO();
-      if (((value >>> (24 + smNum)) & 0x1) != 0x0 &&
-          ((mask >>> (24 + smNum)) & 0x1) != 0x0) {
-        fifo.clearTXStall();
-      }
-      if (((value >>> (16 + smNum)) & 0x1) != 0x0 &&
-          ((mask >>> (16 + smNum)) & 0x1) != 0x0) {
-        fifo.clearTXOver();
-      }
-      if (((value >>> (8 + smNum)) & 0x1) != 0x0 &&
-          ((mask >>> (8 + smNum)) & 0x1) != 0x0) {
-        fifo.clearRXUnder();
-      }
-      if (((value >>> smNum) & 0x1) != 0x0 &&
-          ((mask >>> smNum) & 0x1) != 0x0) {
-        fifo.clearRXStall();
-      }
-    }
-  }
-
-  @Override
-  protected void writeRegister(final int regNum, final int value,
-                               final int mask, final boolean xor)
-  {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
-    final Regs register = REGS[regNum];
-    switch (register) {
-    case CTRL:
-      pio.setCtrl(value, mask);
-      break;
-    case FSTAT:
-      break; // read-only address
-    case FDEBUG:
-      writeFDebug(value, mask);
-      break;
-    case FLEVEL:
-      break; // read-only address
-    case TXF0:
-    case TXF1:
-    case TXF2:
-    case TXF3:
-      pio.getSM(regNum - Regs.TXF0.ordinal()).put(value & mask);
-      break;
-    case RXF0:
-    case RXF1:
-    case RXF2:
-    case RXF3:
-      break; // read-only address
-    case IRQ:
-      pio.getIRQ().writeRegIRQ(value & mask);
-      break;
-    case IRQ_FORCE:
-      pio.getIRQ().writeRegIRQ_FORCE(value & mask);
-      break;
-    case INPUT_SYNC_BYPASS:
-      pio.getPIOGPIO().getGPIO().setInputSyncByPass(value, mask, xor);
-      break;
-    case DBG_PADOUT:
-      break; // read-only address
-    case DBG_PADOE:
-      break; // read-only address
-    case DBG_CFGINFO:
-      break; // read-only address
-    case INSTR_MEM0:
-    case INSTR_MEM1:
-    case INSTR_MEM2:
-    case INSTR_MEM3:
-    case INSTR_MEM4:
-    case INSTR_MEM5:
-    case INSTR_MEM6:
-    case INSTR_MEM7:
-    case INSTR_MEM8:
-    case INSTR_MEM9:
-    case INSTR_MEM10:
-    case INSTR_MEM11:
-    case INSTR_MEM12:
-    case INSTR_MEM13:
-    case INSTR_MEM14:
-    case INSTR_MEM15:
-    case INSTR_MEM16:
-    case INSTR_MEM17:
-    case INSTR_MEM18:
-    case INSTR_MEM19:
-    case INSTR_MEM20:
-    case INSTR_MEM21:
-    case INSTR_MEM22:
-    case INSTR_MEM23:
-    case INSTR_MEM24:
-    case INSTR_MEM25:
-    case INSTR_MEM26:
-    case INSTR_MEM27:
-    case INSTR_MEM28:
-    case INSTR_MEM29:
-    case INSTR_MEM30:
-    case INSTR_MEM31:
-      pio.getMemory().set(regNum - Regs.INSTR_MEM0.ordinal(), value, mask, xor);
-      break;
-    case SM0_CLKDIV:
-    case SM1_CLKDIV:
-    case SM2_CLKDIV:
-    case SM3_CLKDIV:
-      pio.getSM((regNum - Regs.SM0_CLKDIV.ordinal()) / SM_SIZE).
-        setCLKDIV(value, mask, xor);
-      break;
-    case SM0_EXECCTRL:
-    case SM1_EXECCTRL:
-    case SM2_EXECCTRL:
-    case SM3_EXECCTRL:
-      pio.getSM((regNum - Regs.SM0_EXECCTRL.ordinal()) / SM_SIZE).
-        setEXECCTRL(value, mask, xor);
-      break;
-    case SM0_SHIFTCTRL:
-    case SM1_SHIFTCTRL:
-    case SM2_SHIFTCTRL:
-    case SM3_SHIFTCTRL:
-      pio.getSM((regNum - Regs.SM0_SHIFTCTRL.ordinal()) / SM_SIZE).
-        setSHIFTCTRL(value, mask, xor);
-      break;
-    case SM0_ADDR:
-    case SM1_ADDR:
-    case SM2_ADDR:
-    case SM3_ADDR:
-      break; // read-only address
-    case SM0_INSTR:
-    case SM1_INSTR:
-    case SM2_INSTR:
-    case SM3_INSTR:
-      pio.getSM((regNum - Regs.SM0_INSTR.ordinal()) / SM_SIZE).
-        insertDMAInstruction(value & mask);
-      break;
-    case SM0_PINCTRL:
-    case SM1_PINCTRL:
-    case SM2_PINCTRL:
-    case SM3_PINCTRL:
-      pio.getSM((regNum - Regs.SM0_PINCTRL.ordinal()) / SM_SIZE).
-        setPINCTRL(value, mask, xor);
-      break;
-    case INTR:
-      break; // read-only address
-    case IRQ0_INTE:
-      pio.getIRQ().setIRQ0_INTE(value, mask, xor);
-      break;
-    case IRQ1_INTE:
-      pio.getIRQ().setIRQ1_INTE(value, mask, xor);
-      break;
-    case IRQ0_INTF:
-      pio.getIRQ().setIRQ0_INTF(value, mask, xor);
-      break;
-    case IRQ1_INTF:
-      pio.getIRQ().setIRQ1_INTF(value, mask, xor);
-      break;
-    case IRQ0_INTS:
-    case IRQ1_INTS:
-      break; // read-only address
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
-  }
-
-  private int readFStat()
-  {
     return
-      ((pio.getSM(3).isTXFIFOEmpty() ? 0x1 : 0x0) << 27) |
-      ((pio.getSM(2).isTXFIFOEmpty() ? 0x1 : 0x0) << 26) |
-      ((pio.getSM(1).isTXFIFOEmpty() ? 0x1 : 0x0) << 25) |
-      ((pio.getSM(0).isTXFIFOEmpty() ? 0x1 : 0x0) << 24) |
-      ((pio.getSM(3).isTXFIFOFull() ? 0x1 : 0x0) << 19) |
-      ((pio.getSM(2).isTXFIFOFull() ? 0x1 : 0x0) << 18) |
-      ((pio.getSM(1).isTXFIFOFull() ? 0x1 : 0x0) << 17) |
-      ((pio.getSM(0).isTXFIFOFull() ? 0x1 : 0x0) << 16) |
-      ((pio.getSM(3).isRXFIFOEmpty() ? 0x1 : 0x0) << 11) |
-      ((pio.getSM(2).isRXFIFOEmpty() ? 0x1 : 0x0) << 10) |
-      ((pio.getSM(1).isRXFIFOEmpty() ? 0x1 : 0x0) << 9) |
-      ((pio.getSM(0).isRXFIFOEmpty() ? 0x1 : 0x0) << 8) |
-      ((pio.getSM(3).isRXFIFOFull() ? 0x1 : 0x0) << 3) |
-      ((pio.getSM(2).isRXFIFOFull() ? 0x1 : 0x0) << 2) |
-      ((pio.getSM(1).isRXFIFOFull() ? 0x1 : 0x0) << 1) |
-      ((pio.getSM(0).isRXFIFOFull() ? 0x1 : 0x0) << 0);
+      Constants.getPIOBaseAddress(pioNum) +
+      0x4 * (Regs.RXF0.ordinal() + smNum);
   }
 
-  private int readFDebug()
+  public PIORegisters(final MasterClock masterClock, final int pioNum)
   {
-    int value = 0;
-    for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-      final SM sm = pio.getSM(smNum);
-      final FIFO fifo = sm.getFIFO();
-      if (fifo.isTXStall()) {
-        value |= 0x1 << (24 + smNum);
-      }
-      if (fifo.isTXOver()) {
-        value |= 0x1 << (16 + smNum);
-      }
-      if (fifo.isRXUnder()) {
-        value |= 0x1 << (8 + smNum);
-      }
-      if (fifo.isRXStall()) {
-        value |= 0x1 << smNum;
-      }
-    }
-    return value;
-  }
-
-  private int readFLevel()
-  {
-    return
-      (pio.getSM(3).getRXFIFOLevel() << 28) |
-      (pio.getSM(3).getTXFIFOLevel() << 24) |
-      (pio.getSM(2).getRXFIFOLevel() << 20) |
-      (pio.getSM(2).getTXFIFOLevel() << 16) |
-      (pio.getSM(1).getRXFIFOLevel() << 12) |
-      (pio.getSM(1).getTXFIFOLevel() << 8) |
-      (pio.getSM(0).getRXFIFOLevel() << 4) |
-      pio.getSM(0).getTXFIFOLevel();
-  }
-
-  private int getCfgInfo()
-  {
-    return
-      MEMORY_SIZE << 16 |
-      SM_COUNT << 8 |
-      FIFO_DEPTH;
-  }
-
-  @Override
-  protected synchronized int readRegister(final int regNum)
-  {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
-    final Regs register = REGS[regNum];
-    switch (register) {
-    case CTRL:
-      return pio.getSM_ENABLED();
-    case FSTAT:
-      return readFStat();
-    case FDEBUG:
-      return readFDebug();
-    case FLEVEL:
-      return readFLevel();
-    case TXF0:
-    case TXF1:
-    case TXF2:
-    case TXF3:
-      return 0; // write-only address
-    case RXF0:
-    case RXF1:
-    case RXF2:
-    case RXF3:
-      return pio.getSM(regNum - Regs.TXF0.ordinal()).get();
-    case IRQ:
-      return pio.getIRQ().readRegIRQ();
-    case IRQ_FORCE:
-      return pio.getIRQ().readRegIRQ_FORCE();
-    case INPUT_SYNC_BYPASS:
-      return pio.getPIOGPIO().getGPIO().getInputSyncByPass();
-    case DBG_PADOUT:
-      return pio.getGPIO().getPins(0, 32);
-    case DBG_PADOE:
-      return pio.getGPIO().getPinDirs(0, 32);
-    case DBG_CFGINFO:
-      return getCfgInfo();
-    case INSTR_MEM0:
-    case INSTR_MEM1:
-    case INSTR_MEM2:
-    case INSTR_MEM3:
-    case INSTR_MEM4:
-    case INSTR_MEM5:
-    case INSTR_MEM6:
-    case INSTR_MEM7:
-    case INSTR_MEM8:
-    case INSTR_MEM9:
-    case INSTR_MEM10:
-    case INSTR_MEM11:
-    case INSTR_MEM12:
-    case INSTR_MEM13:
-    case INSTR_MEM14:
-    case INSTR_MEM15:
-    case INSTR_MEM16:
-    case INSTR_MEM17:
-    case INSTR_MEM18:
-    case INSTR_MEM19:
-    case INSTR_MEM20:
-    case INSTR_MEM21:
-    case INSTR_MEM22:
-    case INSTR_MEM23:
-    case INSTR_MEM24:
-    case INSTR_MEM25:
-    case INSTR_MEM26:
-    case INSTR_MEM27:
-    case INSTR_MEM28:
-    case INSTR_MEM29:
-    case INSTR_MEM30:
-    case INSTR_MEM31:
-      return 0; // write-only address
-    case SM0_CLKDIV:
-    case SM1_CLKDIV:
-    case SM2_CLKDIV:
-    case SM3_CLKDIV:
-      return
-        pio.getSM((regNum - Regs.SM0_CLKDIV.ordinal()) / SM_SIZE).getCLKDIV();
-    case SM0_EXECCTRL:
-    case SM1_EXECCTRL:
-    case SM2_EXECCTRL:
-    case SM3_EXECCTRL:
-      return
-        pio.getSM((regNum - Regs.SM0_EXECCTRL.ordinal()) / SM_SIZE).
-        getEXECCTRL();
-    case SM0_SHIFTCTRL:
-    case SM1_SHIFTCTRL:
-    case SM2_SHIFTCTRL:
-    case SM3_SHIFTCTRL:
-      return
-        pio.getSM((regNum - Regs.SM0_SHIFTCTRL.ordinal()) / SM_SIZE).
-        getSHIFTCTRL();
-    case SM0_ADDR:
-    case SM1_ADDR:
-    case SM2_ADDR:
-    case SM3_ADDR:
-      return pio.getSM((regNum - Regs.SM0_ADDR.ordinal()) / SM_SIZE).getPC();
-    case SM0_INSTR:
-    case SM1_INSTR:
-    case SM2_INSTR:
-    case SM3_INSTR:
-      return
-        pio.getSM((regNum - Regs.SM0_INSTR.ordinal()) / SM_SIZE).
-        getInstruction();
-    case SM0_PINCTRL:
-    case SM1_PINCTRL:
-    case SM2_PINCTRL:
-    case SM3_PINCTRL:
-      return
-        pio.getSM((regNum - Regs.SM0_PINCTRL.ordinal()) / SM_SIZE).getPINCTRL();
-    case INTR:
-      return pio.getIRQ().readINTR();
-    case IRQ0_INTE:
-      return pio.getIRQ().getIRQ0_INTE();
-    case IRQ1_INTE:
-      return pio.getIRQ().getIRQ1_INTE();
-    case IRQ0_INTF:
-      return pio.getIRQ().getIRQ0_INTF();
-    case IRQ1_INTF:
-      return pio.getIRQ().getIRQ1_INTF();
-    case IRQ0_INTS:
-      return pio.getIRQ().readIRQ0_INTS();
-    case IRQ1_INTS:
-      return pio.getIRQ().readIRQ1_INTS();
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
+    super(masterClock, Constants.getPIOBaseAddress(pioNum), (short)REGS.length);
   }
 }
 

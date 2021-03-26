@@ -24,12 +24,14 @@
  */
 package org.soundpaint.rp2040pio.sdk;
 
+import java.io.IOException;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.GPIO;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
 import org.soundpaint.rp2040pio.MasterClock;
+import org.soundpaint.rp2040pio.Registers;
 
 /**
  * Minimal subset of GPIO SDK Interface, just enough to provide all
@@ -37,58 +39,34 @@ import org.soundpaint.rp2040pio.MasterClock;
  */
 public class GPIOSDK implements Constants
 {
-  private final GPIOIOBank0Registers ioBank0Registers;
-  private final GPIOPadsBank0Registers padsBank0Registers;
+  private final Registers registers;
 
-  public GPIOSDK(final MasterClock masterClock,
-                 final GPIO gpio,
-                 final int gpioIOBank0BaseAddress,
-                 final int gpioPadsBank0BaseAddress)
+  public GPIOSDK(final Registers registers)
   {
-    this(new GPIOIOBank0Registers(masterClock, gpio, gpioIOBank0BaseAddress),
-         new GPIOPadsBank0Registers(masterClock, gpio,
-                                    gpioPadsBank0BaseAddress));
-  }
-
-  public GPIOSDK(final GPIOIOBank0Registers ioBank0Registers,
-                 final GPIOPadsBank0Registers padsBank0Registers)
-  {
-    if (ioBank0Registers == null) {
-      throw new NullPointerException("ioBank0Registers");
+    if (registers == null) {
+      throw new NullPointerException("registers");
     }
-    if (padsBank0Registers == null) {
-      throw new NullPointerException("padsBank0Registers");
-    }
-    this.ioBank0Registers = ioBank0Registers;
-    this.padsBank0Registers = padsBank0Registers;
-  }
-
-  public GPIOIOBank0Registers getIOBank0Registers()
-  {
-    return ioBank0Registers;
-  }
-
-  public GPIOPadsBank0Registers getPadsBank0Registers()
-  {
-    return padsBank0Registers;
+    this.registers = registers;
   }
 
   public void setFunction(final int pin, final GPIO_Function fn)
+    throws IOException
   {
     Constants.checkGpioPin(pin, "GPIO pin number");
 
-    final int padsGpioAddress = padsBank0Registers.getGPIOAddress(pin);
+    final int padsGpioAddress =
+      GPIOPadsBank0Registers.getGPIOAddress(pin);
     final int padsValues = Bit.LOW.getValue() << PADS_BANK0_GPIO0_IE_LSB;
     final int padsWriteMask = PADS_BANK0_GPIO0_IE_BITS;
-    padsBank0Registers.hwWriteMasked(padsGpioAddress,
-                                     padsValues, padsWriteMask);
+    registers.hwWriteMasked(padsGpioAddress, padsValues, padsWriteMask);
 
     final GPIOIOBank0Registers.Regs ioBank0Reg =
       GPIOIOBank0Registers.Regs.GPIO0_CTRL;
-    final int ioGpioAddress = ioBank0Registers.getGPIOAddress(ioBank0Reg, pin);
+    final int ioGpioAddress =
+      GPIOIOBank0Registers.getGPIOAddress(pin, ioBank0Reg);
     final int ioValues = fn.getValue() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
     final int ioWriteMask = IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS;
-    ioBank0Registers.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
+    registers.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
   }
 
   public String asBitArrayDisplay()
