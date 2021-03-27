@@ -125,9 +125,9 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
     return EMULATOR_BASE + 0x4 * register.ordinal();
   }
 
-  public PicoEmuRegisters(final MasterClock masterClock)
+  public PicoEmuRegisters()
   {
-    super(masterClock, EMULATOR_BASE, (short)REGS.length);
+    super(EMULATOR_BASE, (short)REGS.length);
   }
 }
 

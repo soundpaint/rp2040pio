@@ -41,10 +41,8 @@ public class GPIOPadsBank0RegistersImpl extends GPIOPadsBank0Registers
 {
   private final GPIO gpio;
 
-  public GPIOPadsBank0RegistersImpl(final MasterClock masterClock,
-                                    final GPIO gpio)
+  public GPIOPadsBank0RegistersImpl(final GPIO gpio)
   {
-    super(masterClock);
     if (gpio == null) {
       throw new NullPointerException("gpio");
     }

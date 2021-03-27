@@ -47,10 +47,8 @@ public class GPIOIOBank0RegistersImpl extends GPIOIOBank0Registers
 
   private final GPIO gpio;
 
-  public GPIOIOBank0RegistersImpl(final MasterClock masterClock,
-                                  final GPIO gpio)
+  public GPIOIOBank0RegistersImpl(final GPIO gpio)
   {
-    super(masterClock);
     if (gpio == null) {
       throw new NullPointerException("gpio");
     }

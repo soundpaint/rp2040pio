@@ -62,7 +62,6 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  */
 public class RegisterServer
 {
-  public static final int DEFAULT_PORT_NUMBER = 1088;
   private static final String[] NULL_ARGS = new String[0];
 
   private final SDK sdk;
@@ -77,7 +76,7 @@ public class RegisterServer
 
   public RegisterServer(final SDK sdk) throws IOException
   {
-    this(sdk, DEFAULT_PORT_NUMBER);
+    this(sdk, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
   }
 
   public RegisterServer(final SDK sdk, final int portNumber) throws IOException

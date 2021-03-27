@@ -36,7 +36,6 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
 
   public PicoEmuRegistersImpl(final Emulator emulator)
   {
-    super(emulator.getMasterClock());
     this.emulator = emulator;
   }
 
@@ -61,16 +60,16 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
       if (value == PICO_PWR_UP_VALUE) emulator.reset();
       break;
     case MASTERCLK_FREQ:
-      getMasterClock().setMASTERCLK_FREQ(value);
+      emulator.getMasterClock().setMASTERCLK_FREQ(value);
       break;
     case MASTERCLK_MODE:
-      getMasterClock().setMASTERCLK_MODE(value);
+      emulator.getMasterClock().setMASTERCLK_MODE(value);
       break;
     case MASTERCLK_TRIGGER_PHASE0:
-      getMasterClock().triggerPhase0();
+      emulator.getMasterClock().triggerPhase0();
       break;
     case MASTERCLK_TRIGGER_PHASE1:
-      getMasterClock().triggerPhase1();
+      emulator.getMasterClock().triggerPhase1();
       break;
     case WALLCLOCK_LSB:
     case WALLCLOCK_MSB:
@@ -91,17 +90,17 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
     case PWR_UP:
       return 0; // write-only address
     case MASTERCLK_FREQ:
-      return getMasterClock().getMASTERCLK_FREQ();
+      return emulator.getMasterClock().getMASTERCLK_FREQ();
     case MASTERCLK_MODE:
-      return getMasterClock().getMASTERCLK_MODE();
+      return emulator.getMasterClock().getMASTERCLK_MODE();
     case MASTERCLK_TRIGGER_PHASE0:
-      return getMasterClock().getPhase().ordinal() == 0 ? 0x1 : 0x0;
+      return emulator.getMasterClock().getPhase().ordinal() == 0 ? 0x1 : 0x0;
     case MASTERCLK_TRIGGER_PHASE1:
-      return getMasterClock().getPhase().ordinal() == 1 ? 0x1 : 0x0;
+      return emulator.getMasterClock().getPhase().ordinal() == 1 ? 0x1 : 0x0;
     case WALLCLOCK_LSB:
-      return (int)getMasterClock().getWallClock();
+      return (int)emulator.getMasterClock().getWallClock();
     case WALLCLOCK_MSB:
-      return (int)(getMasterClock().getWallClock() >>> 32);
+      return (int)(emulator.getMasterClock().getWallClock() >>> 32);
     default:
       throw new InternalError("unexpected case fall-through");
     }

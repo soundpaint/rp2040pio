@@ -231,9 +231,9 @@ public abstract class GPIOIOBank0Registers extends AbstractRegisters
     return IO_BANK0_BASE + 0x4 * (Regs.DORMANT_WAKE_INTS0.ordinal() + intsNum);
   }
 
-  public GPIOIOBank0Registers(final MasterClock masterClock)
+  public GPIOIOBank0Registers()
   {
-    super(masterClock, IO_BANK0_BASE, (short)REGS.length);
+    super(IO_BANK0_BASE, (short)REGS.length);
   }
 }
 

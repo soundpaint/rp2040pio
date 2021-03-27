@@ -27,10 +27,8 @@ package org.soundpaint.rp2040pio.sdk;
 import java.io.IOException;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Bit;
-import org.soundpaint.rp2040pio.GPIO;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
-import org.soundpaint.rp2040pio.MasterClock;
 import org.soundpaint.rp2040pio.Registers;
 
 /**

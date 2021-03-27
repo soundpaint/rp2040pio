@@ -28,7 +28,6 @@ import java.io.IOException;
 
 public abstract class AbstractRegisters implements Registers
 {
-  private final MasterClock masterClock;
   private final int baseAddress;
   private final short size;
   private final int addrMin;
@@ -45,13 +44,8 @@ public abstract class AbstractRegisters implements Registers
    * The maximum allowed address computes as &lt;code&gt;baseAddress +
    * size * 0x4&lt;/code&gt;.
    */
-  protected AbstractRegisters(final MasterClock masterClock,
-                              final int baseAddress, final short size)
+  protected AbstractRegisters(final int baseAddress, final short size)
   {
-    // TODO: Allow (masterClock == null)?
-    if (masterClock == null) {
-      throw new NullPointerException("masterClock");
-    }
     if ((baseAddress & 0x3) != 0x0) {
       throw new IllegalArgumentException("base address not word-aligned: " +
                                          String.format("0x%08x", baseAddress));
@@ -68,14 +62,11 @@ public abstract class AbstractRegisters implements Registers
       throw new IllegalArgumentException(String.format("size * 0x4 > 0x1000: " +
                                                        "0x%08x" + size * 0x4));
     }
-    this.masterClock = masterClock;
     this.baseAddress = baseAddress;
     this.size = size;
     addrMin = baseAddress;
     addrMax = baseAddress | 0x3fff;
   }
-
-  public MasterClock getMasterClock() { return masterClock; }
 
   @Override
   public int getBaseAddress() { return baseAddress; }
@@ -217,6 +208,17 @@ public abstract class AbstractRegisters implements Registers
       (wallClock < startWallClock) && (wallClock >= stopWallClock);
   }
 
+  private long getWallClock() throws IOException
+  {
+    final int addressLSB =
+      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
+    final int addressMSB =
+      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
+    final int wallClockLSB = readAddress(addressLSB);
+    final int wallClockMSB = readAddress(addressMSB);
+    return (wallClockMSB << 32) | wallClockLSB;
+  }
+
   @Override
   public int wait(final int address, final int expectedValue, final int mask,
                   final long cyclesTimeout, final long millisTimeout)
@@ -230,14 +232,14 @@ public abstract class AbstractRegisters implements Registers
       throw new IllegalArgumentException("millisTimeout < 0: " + millisTimeout);
     }
     final int regNum = ((address - baseAddress) & ~0x3000) >>> 2;
-    final long startWallClock = masterClock.getWallClock();
+    final long startWallClock = getWallClock();
     final long stopWallClock = startWallClock + cyclesTimeout;
     final long startTime = System.currentTimeMillis();
     final long stopTime = startTime + millisTimeout;
-    synchronized(masterClock.getRegisterWaitLock()) {
+    synchronized(this) {
       int receivedValue;
       while (((receivedValue = readRegister(regNum) & mask) != expectedValue)) {
-        final long wallClock = masterClock.getWallClock();
+        final long wallClock = getWallClock();
         if (timedOut(startWallClock, stopWallClock, wallClock)) break;
         try {
           if (millisTimeout != 0) {

@@ -87,6 +87,11 @@ public class RegisterClient extends AbstractRegisters
   private final PrintWriter out;
   private final BufferedReader in;
 
+  public RegisterClient() throws IOException
+  {
+    this(Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
+  }
+
   public RegisterClient(final int port) throws IOException
   {
     this("localhost", port);
@@ -94,7 +99,7 @@ public class RegisterClient extends AbstractRegisters
 
   public RegisterClient(final String host, final int port) throws IOException
   {
-    super(null, 0x0, (short)0x0);
+    super(0x0, (short)0x0);
     socket = new Socket(host, port);
     out = new PrintWriter(socket.getOutputStream(), true);
     in = new BufferedReader(new InputStreamReader(socket.getInputStream()));

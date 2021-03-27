@@ -34,9 +34,9 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
 {
   private final PIO pio;
 
-  public PIOEmuRegistersImpl(final MasterClock masterClock, final PIO pio)
+  public PIOEmuRegistersImpl(final PIO pio)
   {
-    super(masterClock, pio.getIndex());
+    super(pio.getIndex());
     if (pio == null) {
       throw new NullPointerException("pio");
     }

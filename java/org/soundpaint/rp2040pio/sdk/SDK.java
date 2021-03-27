@@ -26,17 +26,9 @@ package org.soundpaint.rp2040pio.sdk;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Emulator;
-import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
-import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
-import org.soundpaint.rp2040pio.MasterClock;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
-import org.soundpaint.rp2040pio.PIO;
-import org.soundpaint.rp2040pio.PIORegisters;
-import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.Registers;
 
 public class SDK implements Constants

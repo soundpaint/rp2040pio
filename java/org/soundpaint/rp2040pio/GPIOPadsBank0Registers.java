@@ -97,9 +97,9 @@ public abstract class GPIOPadsBank0Registers extends AbstractRegisters
     return PADS_BANK0_BASE + 0x4 * (Regs.GPIO0.ordinal() + gpioNum);
   }
 
-  public GPIOPadsBank0Registers(final MasterClock masterClock)
+  public GPIOPadsBank0Registers()
   {
-    super(masterClock, PADS_BANK0_BASE, (short)REGS.length);
+    super(PADS_BANK0_BASE, (short)REGS.length);
   }
 }
 

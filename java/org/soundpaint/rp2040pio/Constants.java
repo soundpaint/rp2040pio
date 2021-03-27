@@ -133,6 +133,8 @@ public interface Constants
   public static final int SM0_PINCTRL_OUT_BASE_LSB = 0;
   public static final int SM0_PINCTRL_OUT_BASE_BITS = 0x0000001f;
 
+  public static final int REGISTER_SERVER_DEFAULT_PORT_NUMBER = 1088;
+
   public enum GPIO_Function {
     XIP(0, "xip"),
     SPI(1, "spi"),

@@ -55,6 +55,7 @@ public class Main
           sdk.readAddress(smDelayCycleAddress) != 0x0;
         return !isDelayCycle;
       } catch (final IOException e) {
+        // TODO: Maybe log warning that we failed to evaluate delay?
         return false;
       }
     };

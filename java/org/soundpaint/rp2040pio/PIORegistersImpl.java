@@ -34,9 +34,9 @@ public class PIORegistersImpl extends PIORegisters
 {
   private final PIO pio;
 
-  public PIORegistersImpl(final MasterClock masterClock, final PIO pio)
+  public PIORegistersImpl(final PIO pio)
   {
-    super(masterClock, pio.getIndex());
+    super(pio.getIndex());
     if (pio == null) {
       throw new NullPointerException("pio");
     }

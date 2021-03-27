@@ -258,9 +258,9 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
       0x4 * (Regs.INSTR_MEM0.ordinal() + memoryAddress);
   }
 
-  public PIOEmuRegisters(final MasterClock masterClock, final int pioNum)
+  public PIOEmuRegisters(final int pioNum)
   {
-    super(masterClock, Constants.getPIOEmuAddress(pioNum), (short)REGS.length);
+    super(Constants.getPIOEmuAddress(pioNum), (short)REGS.length);
   }
 }
 

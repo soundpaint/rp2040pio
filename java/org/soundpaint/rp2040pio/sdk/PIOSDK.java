@@ -28,8 +28,6 @@ import java.io.IOException;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
 import org.soundpaint.rp2040pio.Instruction;
-import org.soundpaint.rp2040pio.MasterClock;
-import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.Registers;

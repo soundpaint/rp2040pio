@@ -191,9 +191,9 @@ public abstract class PIORegisters extends AbstractRegisters
       0x4 * (Regs.RXF0.ordinal() + smNum);
   }
 
-  public PIORegisters(final MasterClock masterClock, final int pioNum)
+  public PIORegisters(final int pioNum)
   {
-    super(masterClock, Constants.getPIOBaseAddress(pioNum), (short)REGS.length);
+    super(Constants.getPIOBaseAddress(pioNum), (short)REGS.length);
   }
 }
 

@@ -28,17 +28,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.soundpaint.rp2040pio.AbstractRegisters;
-import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.GPIO;
 import org.soundpaint.rp2040pio.GPIOIOBank0RegistersImpl;
 import org.soundpaint.rp2040pio.GPIOPadsBank0RegistersImpl;
-import org.soundpaint.rp2040pio.MasterClock;
 import org.soundpaint.rp2040pio.PicoEmuRegistersImpl;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIORegistersImpl;
 import org.soundpaint.rp2040pio.PIOEmuRegistersImpl;
-import org.soundpaint.rp2040pio.Registers;
 
 public class LocalRegisters extends AbstractRegisters
 {
@@ -60,30 +57,29 @@ public class LocalRegisters extends AbstractRegisters
 
   public LocalRegisters(final Emulator emulator)
   {
-    super(emulator.getMasterClock(), 0x0, (short)0x0);
+    super(0x0, (short)0x0);
     this.emulator = emulator;
-    final MasterClock masterClock = emulator.getMasterClock();
 
     registersList = new ArrayList<AbstractRegisters>();
     picoEmuRegisters = new PicoEmuRegistersImpl(emulator);
     registersList.add(picoEmuRegisters);
 
     final GPIO gpio = emulator.getGPIO();
-    gpioIOBank0Registers = new GPIOIOBank0RegistersImpl(masterClock, gpio);
+    gpioIOBank0Registers = new GPIOIOBank0RegistersImpl(gpio);
     registersList.add(gpioIOBank0Registers);
-    gpioPadsBank0Registers = new GPIOPadsBank0RegistersImpl(masterClock, gpio);
+    gpioPadsBank0Registers = new GPIOPadsBank0RegistersImpl(gpio);
     registersList.add(gpioPadsBank0Registers);
 
     final PIO pio0 = emulator.getPIO0();
-    pio0Registers = new PIORegistersImpl(masterClock, pio0);
+    pio0Registers = new PIORegistersImpl(pio0);
     registersList.add(pio0Registers);
-    pio0EmuRegisters = new PIOEmuRegistersImpl(masterClock, pio0);
+    pio0EmuRegisters = new PIOEmuRegistersImpl(pio0);
     registersList.add(pio0EmuRegisters);
 
     final PIO pio1 = emulator.getPIO1();
-    pio1Registers = new PIORegistersImpl(masterClock, pio1);
+    pio1Registers = new PIORegistersImpl(pio1);
     registersList.add(pio1Registers);
-    pio1EmuRegisters = new PIOEmuRegistersImpl(masterClock, pio1);
+    pio1EmuRegisters = new PIOEmuRegistersImpl(pio1);
     registersList.add(pio1EmuRegisters);
   }
 
