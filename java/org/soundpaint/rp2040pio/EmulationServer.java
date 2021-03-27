@@ -35,58 +35,27 @@ public class EmulationServer
 {
   private static class Flags {
     private static final String PRG_NAME = "EmulationServer";
-    private static final String PRG_DESCRIPTION =
+    private static final String PRG_ID_AND_VERSION =
       "Emulation Server Version 0.1 for " + Constants.getProgramAndVersion();
-    private static final CmdOptions.OptionDeclaration optVersion =
-      new CmdOptions.OptionDeclaration(CmdOptions.Type.FLAG, null, false,
-                                       'V', "version",
-                                       CmdOptions.FlagOptionDefinition.OFF,
-                                       "display version information and exit");
-    private static final CmdOptions.OptionDeclaration optHelp =
-      new CmdOptions.OptionDeclaration(CmdOptions.Type.FLAG, null, false,
-                                       'h', "help",
-                                       CmdOptions.FlagOptionDefinition.OFF,
-                                       "display this help text and exit");
-    private static final CmdOptions.OptionDeclaration optSilent =
-      new CmdOptions.OptionDeclaration(CmdOptions.Type.FLAG, null, false,
-                                       's', "silent",
-                                       CmdOptions.FlagOptionDefinition.OFF,
-                                       "print verbose information");
-    private static final CmdOptions.OptionDeclaration optVerbose =
-      new CmdOptions.OptionDeclaration(CmdOptions.Type.FLAG, null, false,
-                                       'v', "verbose",
-                                       CmdOptions.FlagOptionDefinition.OFF,
-                                       "print verbose information");
-    private static final CmdOptions.OptionDeclaration optPort =
-      new CmdOptions.OptionDeclaration(CmdOptions.Type.INTEGER, "PORT", false,
-                                       'p', "port",
-                                       null,
-                                       "use PORT as server port number");
 
-    private static final CmdOptions.OptionDeclaration[] OPTION_DECLARATIONS =
-      new CmdOptions.OptionDeclaration[] {
-      optVersion, optHelp, optVerbose, optPort
-    };
-
-    private CmdOptions.FlagOptionDefinition version;
-    private CmdOptions.FlagOptionDefinition help;
-    private CmdOptions.FlagOptionDefinition silent;
-    private CmdOptions.FlagOptionDefinition verbose;
-    private CmdOptions.IntegerOptionDefinition port;
-
-    private final static CmdOptions options;
-
-    static {
-      try {
-        options = new CmdOptions(PRG_NAME, PRG_DESCRIPTION,
-                                 OPTION_DECLARATIONS);
-      } catch (final CmdOptions.ParseException ex) {
-        throw new RuntimeException("bad option declaration in class Recorder",
-                                   ex);
-      }
-    }
+    private static final CmdOptions.FlagOptionDeclaration optVersion =
+      CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
+                                  "display version information and exit");
+    private static final CmdOptions.FlagOptionDeclaration optHelp =
+      CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
+                                  "display this help text and exit");
+    private static final CmdOptions.FlagOptionDeclaration optSilent =
+      CmdOptions.createFlagOption(false, 's', "silent", CmdOptions.Flag.OFF,
+                                  "print no information at all");
+    private static final CmdOptions.FlagOptionDeclaration optVerbose =
+      CmdOptions.createFlagOption(false, 'v', "verbose", CmdOptions.Flag.OFF,
+                                  "print verbose information");
+    private static final CmdOptions.IntegerOptionDeclaration optPort =
+      CmdOptions.createIntegerOption("PORT", false, 'p', "port", 1088,
+                                     "use PORT as server port number");
 
     private final PrintStream console;
+    private final CmdOptions options;
 
     private Flags()
     {
@@ -97,32 +66,35 @@ public class EmulationServer
       throws CmdOptions.ParseException
     {
       this.console = console;
+      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION,
+                               optVersion, optHelp, optSilent,
+                               optVerbose, optPort);
       options.parse(argv);
-      version = (CmdOptions.FlagOptionDefinition)options.
-        <Boolean>findDefinitionForDeclaration(optVersion);
-      help = (CmdOptions.FlagOptionDefinition)options.
-        <Boolean>findDefinitionForDeclaration(optHelp);
-      silent = (CmdOptions.FlagOptionDefinition)options.
-        <Boolean>findDefinitionForDeclaration(optSilent);
-      verbose = (CmdOptions.FlagOptionDefinition)options.
-        <Boolean>findDefinitionForDeclaration(optVerbose);
-      port = (CmdOptions.IntegerOptionDefinition)options.
-        <Integer>findDefinitionForDeclaration(optPort);
+      checkValidity();
+      if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
+        console.println(PRG_ID_AND_VERSION);
+        System.exit(0);
+      }
+      if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
+        console.println(options.getFullInfo());
+        System.exit(0);
+      }
     }
 
-    public boolean checkValidity()
+    private void checkValidity() throws CmdOptions.ParseException
     {
-      final Integer portNumber = port.getValue();
+      final Integer portNumber = options.getValue(optPort);
       if (portNumber != null) {
         if ((portNumber < 0) || (portNumber > 65535)) {
-          console.println("port number must be in the range 0..65535");
-          return false;
+          throw new CmdOptions.
+            ParseException("port number must be in the range 0..65535");
         }
       }
-      if (silent.isTrue() && verbose.isTrue()) {
-        console.println("either 'silent' or 'verbose' can be activated");
+      if ((options.getValue(optSilent) == CmdOptions.Flag.ON) &&
+          (options.getValue(optVerbose) == CmdOptions.Flag.ON)) {
+        throw new CmdOptions.
+          ParseException("either 'silent' or 'verbose' can be activated");
       }
-      return true;
     }
   }
 
@@ -132,11 +104,9 @@ public class EmulationServer
     final Emulator emulator = new Emulator(console);
     final LocalRegisters registers = new LocalRegisters(emulator);
     final SDK sdk = new SDK(console, registers);
-    final Integer portNumber = flags.port.getValue();
+    final Integer port = flags.options.getValue(Flags.optPort);
     final RegisterServer server =
-      portNumber != null ?
-      new RegisterServer(sdk, portNumber) :
-      new RegisterServer(sdk);
+      port != null ? new RegisterServer(sdk, port) : new RegisterServer(sdk);
     try {
       Thread.sleep(1000); // wait for server thread starting up
     } catch (final InterruptedException e) {
@@ -150,8 +120,8 @@ public class EmulationServer
       final PrintStream console = System.out;
       final Flags flags = new Flags(console, argv);
       startServer(console, flags);
-      if ((flags.silent == null) || !flags.silent.isTrue()) {
-        final Integer port = flags.port.getValue();
+      if (flags.options.getValue(Flags.optSilent) != CmdOptions.Flag.ON) {
+        final Integer port = flags.options.getValue(Flags.optPort);
         final int portNumber =
           port != null ? port : Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER;
         console.println("started emulation server at port " + portNumber);

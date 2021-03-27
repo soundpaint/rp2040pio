@@ -31,73 +31,8 @@ import java.util.ArrayList;
  */
 public class CmdOptions
 {
-  private static interface Definator
+  public abstract static class OptionDeclaration<T>
   {
-    public OptionDefinition<?> define(final OptionDeclaration declaration)
-      throws ParseException;
-  }
-
-  public static enum Type {
-    FLAG(new Definator() {
-        public OptionDefinition<Boolean>
-          define(final OptionDeclaration declaration)
-          throws ParseException
-        {
-          return new FlagOptionDefinition(declaration);
-        }
-      }),
-    BOOLEAN(new Definator() {
-        public OptionDefinition<Boolean>
-          define(final OptionDeclaration declaration)
-          throws ParseException
-        {
-          return new BooleanOptionDefinition(declaration);
-        }
-      }),
-    INTEGER(new Definator() {
-        public OptionDefinition<Integer>
-          define(final OptionDeclaration declaration)
-          throws ParseException
-        {
-          return new IntegerOptionDefinition(declaration);
-        }
-      }),
-    STRING(new Definator() {
-        public OptionDefinition<String>
-          define(final OptionDeclaration declaration)
-          throws ParseException
-        {
-          return new StringOptionDefinition(declaration);
-        }
-      });
-
-    private final Definator definator;
-
-    private Type(final Definator definator) {
-      this.definator = definator;
-    }
-
-    public OptionDefinition<?>
-      define(final OptionDeclaration declaration)
-      throws ParseException
-    {
-      return definator.define(declaration);
-    }
-
-    public boolean isFlag()
-    {
-      return this == FLAG;
-    }
-
-    public boolean isBoolean()
-    {
-      return this == BOOLEAN;
-    }
-  };
-
-  public static class OptionDeclaration
-  {
-    private final Type type;
     private final String typeName;
     private final boolean mandatory;
     private final Character shortName;
@@ -105,26 +40,22 @@ public class CmdOptions
     private final String defaultValueAsString;
     private final String description;
 
-    private OptionDeclaration() {
-      throw new RuntimeException("unsupported constructor");
+    private OptionDeclaration()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public OptionDeclaration(final Type type,
-                             final String typeName,
-                             final boolean mandatory,
-                             final Character shortName,
-                             final String longName,
-                             final String defaultValueAsString,
-                             final String description)
+    private OptionDeclaration(final String typeName,
+                              final boolean mandatory,
+                              final Character shortName,
+                              final String longName,
+                              final String defaultValueAsString,
+                              final String description)
     {
-      if (type == null) {
-        throw new NullPointerException("type must be non-null");
-      }
       if ((shortName == null) && (longName == null)) {
         throw new NullPointerException("either shortName or longName " +
                                        "must be non-null");
       }
-      this.type = type;
       this.typeName = typeName;
       this.mandatory = mandatory;
       this.shortName = shortName;
@@ -133,53 +64,45 @@ public class CmdOptions
       this.defaultValueAsString = defaultValueAsString;
     }
 
-    public Type getType()
-    {
-      return type;
-    }
-
-    public String getTypeName()
+    private String getTypeName()
     {
       return typeName;
     }
 
-    public boolean isMandatory()
+    private boolean isMandatory()
     {
       return mandatory;
     }
 
-    public Character getShortName()
+    private Character getShortName()
     {
       return shortName;
     }
 
-    public String getShortNameAsString()
+    private String getShortNameAsString()
     {
       return
         shortName != null ? shortName.toString() : null;
     }
 
-    public String getLongName()
+    private String getLongName()
     {
       return longName;
     }
 
-    public String getDefaultValueAsString()
+    private String getDefaultValueAsString()
     {
       return defaultValueAsString;
     }
 
-    public String getDescription()
+    private String getDescription()
     {
       return description;
     }
 
-    private OptionDefinition<?> define() throws ParseException
-    {
-      return type.define(this);
-    }
+    abstract OptionDefinition<T> define() throws ParseException;
 
-    public String getHelp()
+    private String getHelp()
     {
       final String ls = System.lineSeparator();
       final StringBuffer sb = new StringBuffer();
@@ -193,11 +116,14 @@ public class CmdOptions
       return sb.toString();
     }
 
+    abstract String getDefaultTypeName();
+
+    @Override
     public String toString()
     {
       final StringBuffer sb = new StringBuffer();
       if (shortName != null) {
-        if (type.isBoolean()) {
+        if (this instanceof BooleanOptionDeclaration) {
           sb.append("+");
           sb.append(shortName);
           sb.append(" / -");
@@ -214,12 +140,13 @@ public class CmdOptions
         sb.append("--");
         sb.append(longName);
       }
-      if ((type != Type.FLAG) && (type != Type.BOOLEAN)) {
+      if (!(this instanceof FlagOptionDeclaration) &&
+          !(this instanceof BooleanOptionDeclaration)) {
         sb.append("=");
         if (typeName != null) {
           sb.append(typeName);
         } else {
-          sb.append(type.toString());
+          sb.append(getDefaultTypeName());
         }
       }
       if (defaultValueAsString != null) {
@@ -234,6 +161,138 @@ public class CmdOptions
       }
       return sb.toString();
     }
+  }
+
+  public static class FlagOptionDeclaration extends OptionDeclaration<Flag>
+  {
+    public FlagOptionDeclaration(final boolean mandatory,
+                                 final Character shortName,
+                                 final String longName,
+                                 final Flag defaultValue,
+                                 final String description)
+    {
+      super(null, mandatory, shortName, longName,
+            String.valueOf(defaultValue), description);
+    }
+
+    String getDefaultTypeName() { return "FLAG"; }
+
+    OptionDefinition<Flag> define() throws ParseException
+    {
+      return new FlagOptionDefinition(this);
+    }
+  }
+
+  public static FlagOptionDeclaration
+    createFlagOption(final boolean mandatory,
+                     final Character shortName,
+                     final String longName,
+                     final Flag defaultValue,
+                     final String description)
+  {
+    return new FlagOptionDeclaration(mandatory, shortName, longName,
+                                     defaultValue, description);
+  }
+
+  public static class BooleanOptionDeclaration
+    extends OptionDeclaration<Boolean>
+  {
+    public BooleanOptionDeclaration(final boolean mandatory,
+                                    final Character shortName,
+                                    final String longName,
+                                    final boolean defaultValue,
+                                    final String description)
+    {
+      super(null, mandatory, shortName, longName,
+            String.valueOf(defaultValue), description);
+    }
+
+    String getDefaultTypeName() { return "BOOLEAN"; }
+
+    OptionDefinition<Boolean> define() throws ParseException
+    {
+      return new BooleanOptionDefinition(this);
+    }
+  }
+
+  public static BooleanOptionDeclaration
+    createBooleanOption(final boolean mandatory,
+                        final Character shortName,
+                        final String longName,
+                        final boolean defaultValue,
+                        final String description)
+  {
+    return new BooleanOptionDeclaration(mandatory, shortName, longName,
+                                        defaultValue, description);
+  }
+
+  public static class IntegerOptionDeclaration
+    extends OptionDeclaration<Integer>
+  {
+    public IntegerOptionDeclaration(final String typeName,
+                                    final boolean mandatory,
+                                    final Character shortName,
+                                    final String longName,
+                                    final Integer defaultValue,
+                                    final String description)
+    {
+      super(typeName, mandatory, shortName, longName,
+            defaultValue != null ? String.valueOf(defaultValue) : null,
+            description);
+    }
+
+    String getDefaultTypeName() { return "INTEGER"; }
+
+    OptionDefinition<Integer> define() throws ParseException
+    {
+      return new IntegerOptionDefinition(this);
+    }
+  }
+
+  public static IntegerOptionDeclaration
+    createIntegerOption(final String typeName,
+                        final boolean mandatory,
+                        final Character shortName,
+                        final String longName,
+                        final Integer defaultValue,
+                        final String description)
+  {
+    return new IntegerOptionDeclaration(typeName, mandatory, shortName,
+                                        longName, defaultValue, description);
+  }
+
+  public static class StringOptionDeclaration
+    extends OptionDeclaration<String>
+  {
+    public StringOptionDeclaration(final String typeName,
+                                   final boolean mandatory,
+                                   final Character shortName,
+                                   final String longName,
+                                   final String defaultValue,
+                                   final String description)
+    {
+      super(typeName, mandatory, shortName, longName,
+            defaultValue, description);
+    }
+
+    String getDefaultTypeName() { return "STRING"; }
+
+    OptionDefinition<String> define() throws ParseException
+    {
+      return new StringOptionDefinition(this);
+    }
+  }
+
+  public static StringOptionDeclaration
+    createStringOption(final String typeName,
+                       final boolean mandatory,
+                       final Character shortName,
+                       final String longName,
+                       final String defaultValue,
+                       final String description)
+  {
+    return new StringOptionDeclaration(typeName, mandatory, shortName,
+                                       longName, defaultValue, description);
   }
 
   public static class ParseException extends Exception
@@ -258,20 +317,13 @@ public class CmdOptions
 
   private abstract static class OptionDefinition<T>
   {
-    private final OptionDeclaration declaration;
+    private final OptionDeclaration<T> declaration;
     private T defaultValue;
     private T parsedValue;
 
-    private OptionDefinition(final OptionDeclaration declaration)
+    private OptionDefinition(final OptionDeclaration<T> declaration)
       throws ParseException
     {
-      if (getType() != declaration.getType()) {
-        final String msg =
-          "option " + declaration + ": " +
-          "definition type does not match delcaration type: " +
-          getType() + " != " + declaration.getType();
-        throw new ParseException(msg);
-      }
       this.declaration = declaration;
       final String defaultValueAsString = declaration.getDefaultValueAsString();
       defaultValue =
@@ -281,18 +333,16 @@ public class CmdOptions
 
     abstract T parse(final String strValue) throws ParseException;
 
-    public T parseAndSet(final String strValue) throws ParseException
+    private T parseAndSet(final String strValue) throws ParseException
     {
       parsedValue = parse(strValue);
       return parsedValue;
     }
 
-    public OptionDeclaration getDeclaration()
+    private OptionDeclaration<T> getDeclaration()
     {
       return declaration;
     }
-
-    abstract Type getType();
 
     protected void setParsedValue(final T value)
     {
@@ -317,69 +367,76 @@ public class CmdOptions
       return defaultValue != null;
     }
 
-    public boolean isDefined()
+    private boolean isDefined()
     {
       return isParsed() || hasDefaultValue();
     }
 
-    public boolean isValid()
+    private boolean isDefinedIfMandatory()
     {
       return isDefined() || !declaration.isMandatory();
     }
 
-    public T getDefinition()
+    protected T getValue()
     {
       return isParsed() ? parsedValue : defaultValue;
     }
 
+    @Override
     public String toString()
     {
       return declaration.toString();
     }
   }
 
-  public static class FlagOptionDefinition extends OptionDefinition<Boolean>
+  public static enum Flag
   {
-    public static String OFF = "off";
-    public static String ON = "on";
+    OFF("off"), ON("on");
 
-    public Type getType() { return Type.FLAG; }
+    private final String displayValue;
 
-    public FlagOptionDefinition(final OptionDeclaration declaration)
+    private Flag(final String displayValue)
+    {
+      this.displayValue = displayValue;
+    }
+
+    @Override
+    public String toString() { return displayValue; }
+  }
+
+  public static class FlagOptionDefinition extends OptionDefinition<Flag>
+  {
+    public FlagOptionDefinition(final FlagOptionDeclaration declaration)
       throws ParseException
     {
       super(declaration);
     }
 
-    public Boolean parse(final String strValue) throws ParseException
+    @Override
+    Flag parse(final String strValue) throws ParseException
     {
-      if (OFF.equals(strValue)) {
-        return false;
-      } else if (ON.equals(strValue)) {
-        return true;
+      if (Flag.OFF.toString().equals(strValue)) {
+        return Flag.OFF;
+      } else if (Flag.ON.toString().equals(strValue)) {
+        return Flag.ON;
       } else {
-        throw new ParseException(this +
-                                 ": '" + OFF + "' or '" + ON + "' expected");
+        throw new ParseException(this + ": '" +
+                                 Flag.OFF + "' or '" +
+                                 Flag.ON + "' expected");
       }
-    }
-
-    public boolean isTrue()
-    {
-      return getDefinition();
     }
   }
 
   public static class BooleanOptionDefinition extends OptionDefinition<Boolean>
   {
-    public Type getType() { return Type.BOOLEAN; }
-
-    public BooleanOptionDefinition(final OptionDeclaration declaration)
+    public BooleanOptionDefinition(final BooleanOptionDeclaration declaration)
       throws ParseException
     {
       super(declaration);
     }
 
-    public Boolean parse(final String strValue) throws ParseException
+    @Override
+    Boolean parse(final String strValue) throws ParseException
     {
       if ("false".equals(strValue)) {
         return false;
@@ -389,67 +446,55 @@ public class CmdOptions
         throw new ParseException(this + ": 'false' or 'true' expected");
       }
     }
-
-    public boolean isTrue()
-    {
-      return getDefinition();
-    }
   }
 
   public static class IntegerOptionDefinition extends OptionDefinition<Integer>
   {
-    public Type getType() { return Type.INTEGER; }
-
-    public IntegerOptionDefinition(final OptionDeclaration declaration)
+    public IntegerOptionDefinition(final IntegerOptionDeclaration declaration)
       throws ParseException
     {
       super(declaration);
     }
 
-    public Integer parse(final String strValue) throws ParseException
+    @Override
+    Integer parse(final String strValue) throws ParseException
     {
-      if (strValue.startsWith("0x") || strValue.startsWith("0X")) {
-        return Integer.parseUnsignedInt(strValue.substring(2), 16);
-      } else {
-        return Integer.parseInt(strValue);
+      try {
+        if (strValue.startsWith("0x") || strValue.startsWith("0X")) {
+          return Integer.parseUnsignedInt(strValue.substring(2), 16);
+        } else {
+          return Integer.parseInt(strValue);
+        }
+      } catch (final NumberFormatException e) {
+        throw new ParseException(this + ": " +
+                                 "integer value expected: " + e.getMessage());
       }
-    }
-
-    public Integer getValue()
-    {
-      return getDefinition();
     }
   }
 
   public static class StringOptionDefinition extends OptionDefinition<String>
   {
-    public Type getType() { return Type.STRING; }
-
-    public StringOptionDefinition(final OptionDeclaration declaration)
+    public StringOptionDefinition(final StringOptionDeclaration declaration)
       throws ParseException
     {
       super(declaration);
     }
 
-    public String parse(final String strValue) throws ParseException
+    @Override
+    String parse(final String strValue) throws ParseException
     {
       return strValue;
-    }
-
-    public String getValue()
-    {
-      return getDefinition();
     }
   }
 
   private final String prgName;
   private final String prgDescription;
-  private final OptionDeclaration[] declarations;
+  private final OptionDeclaration<?>[] declarations;
   private final OptionDefinition<?>[] definitions;
 
   public CmdOptions(final String prgName,
                     final String prgDescription,
-                    final OptionDeclaration[] declarations)
+                    final OptionDeclaration<?> ... declarations)
     throws ParseException
   {
     if (prgName == null) {
@@ -464,12 +509,12 @@ public class CmdOptions
     definitions = createDefinitions();
   }
 
-  public String getPrgName()
+  private String getPrgName()
   {
     return prgName;
   }
 
-  public String getPrgDescription()
+  private String getPrgDescription()
   {
     return prgDescription;
   }
@@ -484,7 +529,7 @@ public class CmdOptions
   {
     final String ls = System.lineSeparator();
     final StringBuffer sb = new StringBuffer();
-    for (final OptionDeclaration declaration : declarations) {
+    for (final OptionDeclaration<?> declaration : declarations) {
       sb.append(declaration.getHelp());
       sb.append(ls);
     }
@@ -507,7 +552,7 @@ public class CmdOptions
   {
     final ArrayList<OptionDefinition<?>> definitionList =
       new ArrayList<OptionDefinition<?>>();
-    for (final OptionDeclaration declaration : declarations) {
+    for (final OptionDeclaration<?> declaration : declarations) {
       final OptionDefinition<?> definition = declaration.define();
       definitionList.add(definition);
     }
@@ -533,7 +578,7 @@ public class CmdOptions
       if (strValue != null) {
         throw new ParseException("unexpected arg for option: " + definition);
       }
-      definition.parseAndSet(FlagOptionDefinition.ON);
+      definition.parseAndSet(Flag.ON.toString());
       return false;
     } else if (strValue != null) {
       definition.parseAndSet(strValue);
@@ -564,7 +609,7 @@ public class CmdOptions
                                option);
     }
     OptionDefinition<?> definition = null;
-    for (final OptionDeclaration declaration : declarations) {
+    for (final OptionDeclaration<?> declaration : declarations) {
       final String longName = declaration.getLongName();
       if (name.equals(longName)) {
         definition = findDefinitionForDeclaration(declaration);
@@ -586,7 +631,7 @@ public class CmdOptions
                                name);
     }
     OptionDefinition<?> definition = null;
-    for (final OptionDeclaration declaration : declarations) {
+    for (final OptionDeclaration<?> declaration : declarations) {
       final String shortName = declaration.getShortNameAsString();
       if (name.equals(shortName)) {
         definition = findDefinitionForDeclaration(declaration);
@@ -635,20 +680,15 @@ public class CmdOptions
                                currentOption.getDeclaration());
     }
     for (final OptionDefinition<?> definition : definitions) {
-      if (!definition.isValid()) {
+      if (!definition.isDefinedIfMandatory()) {
         throw new ParseException("missing option: " +
                                  definition.getDeclaration());
       }
     }
   }
 
-  public <T> T getDefinition(final OptionDefinition<T> definition)
-  {
-    return definition.getDefinition();
-  }
-
-  public OptionDefinition<?>
-    findDefinitionForDeclaration(final OptionDeclaration declaration)
+  private OptionDefinition<?>
+    findDefinitionForDeclaration(final OptionDeclaration<?> declaration)
   {
     // TODO: Performance: Pre-build a hash map, rather than
     // iterating each time thorugh all definitions.
@@ -658,6 +698,34 @@ public class CmdOptions
       }
     }
     return null;
+  }
+
+  public Flag getValue(final FlagOptionDeclaration declaration)
+  {
+    final FlagOptionDefinition definition =
+      (FlagOptionDefinition)findDefinitionForDeclaration(declaration);
+    return definition != null ? definition.getValue() : null;
+  }
+
+  public Boolean getValue(final BooleanOptionDeclaration declaration)
+  {
+    final BooleanOptionDefinition definition =
+      (BooleanOptionDefinition)findDefinitionForDeclaration(declaration);
+    return definition != null ? definition.getValue() : null;
+  }
+
+  public Integer getValue(final IntegerOptionDeclaration declaration)
+  {
+    final IntegerOptionDefinition definition =
+      (IntegerOptionDefinition)findDefinitionForDeclaration(declaration);
+    return definition != null ? definition.getValue() : null;
+  }
+
+  public String getValue(final StringOptionDeclaration declaration)
+  {
+    final StringOptionDefinition definition =
+      (StringOptionDefinition)findDefinitionForDeclaration(declaration);
+    return definition != null ? definition.getValue() : null;
   }
 }
 

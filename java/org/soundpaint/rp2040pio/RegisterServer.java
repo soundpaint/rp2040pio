@@ -112,14 +112,15 @@ public class RegisterServer
   {
     final String ls = System.lineSeparator();
     return "available commands: " + ls +
-      "h                (help)" + ls +
-      "v                (version)" + ls +
-      "q                (quit)" + ls +
-      "r <addr>         (read address)" + ls +
-      "w <addr> <value> (write address)" + ls +
-      "i <addr> <value> (await value)" + ls +
-      "l <addr>         (show address label)" + ls +
-      "p <addr>         (check address validity)";
+      "h                    (help)" + ls +
+      "v                    (version)" + ls +
+      "q                    (quit)" + ls +
+      "r <addr>             (read address)" + ls +
+      "w <addr> <value>     (write address)" + ls +
+      "i <addr> <value> [<mask> [<timeout cycles> [<timeout millis>]]]" + ls +
+      "                     (await value)" + ls +
+      "l <addr>             (show address label)" + ls +
+      "p <addr>             (check address validity)";
   }
 
   private enum ResponseStatus
