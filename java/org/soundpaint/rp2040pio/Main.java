@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.sdk.LocalRegisters;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
@@ -32,14 +33,20 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class Main
 {
+  private final PrintStream console;
   private final SDK sdk;
 
-  public Main() throws IOException
+  private Main()
   {
-    final Emulator emulator = new Emulator(System.out);
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public Main(final PrintStream console) throws IOException
+  {
+    this.console = console;
+    final Emulator emulator = new Emulator(console);
     final Registers registers = new LocalRegisters(emulator);
-    sdk = new SDK(emulator.getConsole(), registers,
-                  emulator.getProgramAndVersion(), emulator.getAbout());
+    sdk = new SDK(console, registers);
   }
 
   public static Supplier<Boolean> createDelayFilter(final SDK sdk,
@@ -106,7 +113,7 @@ public class Main
 
   public static void main(final String argv[]) throws IOException
   {
-    new Main().run();
+    new Main(System.out).run();
   }
 }
 

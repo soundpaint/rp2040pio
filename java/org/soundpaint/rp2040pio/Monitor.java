@@ -61,7 +61,7 @@ public class Monitor
 
   private void printAbout()
   {
-    console.println(sdk.getAbout());
+    console.println(Constants.getAbout());
   }
 
   public void addProgram(final String programResourcePath)

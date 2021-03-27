@@ -35,8 +35,6 @@ public class SDK implements Constants
 {
   private final PrintStream console;
   private final Registers registers;
-  private final String programAndVersion;
-  private final String about;
 
   /*
    * TODO: There is only a single GPIO, but each of the two PIOs has
@@ -49,8 +47,7 @@ public class SDK implements Constants
   private final PIOSDK pio0Sdk;
   private final PIOSDK pio1Sdk;
 
-  public SDK(final PrintStream console, final Registers registers,
-             final String programAndVersion, final String about)
+  public SDK(final PrintStream console, final Registers registers)
   {
     if (console == null) {
       throw new NullPointerException("console");
@@ -60,21 +57,9 @@ public class SDK implements Constants
       throw new NullPointerException("registers");
     }
     this.registers = registers;
-    this.programAndVersion = programAndVersion;
-    this.about = about;
     gpioSdk = new GPIOSDK(registers);
     pio0Sdk = new PIOSDK(0, registers, gpioSdk);
     pio1Sdk = new PIOSDK(1, registers, gpioSdk);
-  }
-
-  public String getProgramAndVersion()
-  {
-    return programAndVersion;
-  }
-
-  public String getAbout()
-  {
-    return about;
   }
 
   public PrintStream getConsole() { return console; }

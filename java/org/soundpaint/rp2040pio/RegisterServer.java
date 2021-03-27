@@ -105,7 +105,7 @@ public class RegisterServer
 
   private String getEmulatorVersion()
   {
-    return sdk.getProgramAndVersion();
+    return Constants.getProgramAndVersion();
   }
 
   private String getHelp()
