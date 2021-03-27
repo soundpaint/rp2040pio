@@ -119,7 +119,7 @@ public abstract class PIORegisters extends AbstractRegisters
 
   protected static final Regs[] REGS = Regs.values();
 
-  public static final int SM_SIZE =
+  protected static final int SM_SIZE =
     Regs.SM1_CLKDIV.ordinal() - Regs.SM0_CLKDIV.ordinal();
 
   public static String getLabelForRegister(final int regNum)

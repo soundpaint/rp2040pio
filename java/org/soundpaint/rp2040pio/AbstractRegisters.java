@@ -56,7 +56,7 @@ public abstract class AbstractRegisters implements Registers
       throw new IllegalArgumentException("base address not word-aligned: " +
                                          String.format("0x%08x", baseAddress));
     }
-    if ((baseAddress & 0x3000) != 0x0) {
+    if ((baseAddress & 0x3fff) != 0x0) {
       throw new IllegalArgumentException("base address not conforming to " +
                                          "model of register access methods: " +
                                          String.format("0x%08x", baseAddress));
@@ -72,7 +72,7 @@ public abstract class AbstractRegisters implements Registers
     this.baseAddress = baseAddress;
     this.size = size;
     addrMin = baseAddress;
-    addrMax = baseAddress + size * 0x4;
+    addrMax = baseAddress | 0x3fff;
   }
 
   public MasterClock getMasterClock() { return masterClock; }

@@ -192,6 +192,7 @@ public class RegisterClient extends AbstractRegisters
     return provided;
   }
 
+  @Override
   protected String getRegisterLabel(final int regNum)
   {
     throw new InternalError("method not applicable for this class");
@@ -215,6 +216,7 @@ public class RegisterClient extends AbstractRegisters
     return message;
   }
 
+  @Override
   protected void writeRegister(final int regNum,
                                final int bits, final int mask,
                                final boolean xor)

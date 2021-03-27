@@ -137,6 +137,7 @@ public class LocalRegisters extends AbstractRegisters
     return getProvidingRegisters(address) != null;
   }
 
+  @Override
   protected String getRegisterLabel(final int regNum)
   {
     throw new InternalError("method not applicable for this class");
@@ -149,6 +150,7 @@ public class LocalRegisters extends AbstractRegisters
     return registers != null ? registers.getAddressLabel(address) : null;
   }
 
+  @Override
   protected void writeRegister(final int regNum,
                                final int bits, final int mask,
                                final boolean xor)

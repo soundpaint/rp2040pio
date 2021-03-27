@@ -36,11 +36,11 @@ public interface Constants
   // address map
   public static final int IO_BANK0_BASE = 0x40014000;
   public static final int PADS_BANK0_BASE = 0x4001c000;
-  public static final int EMULATOR_BASE = 0x40024800;
   public static final int PIO0_BASE = 0x50200000;
-  public static final int PIO0_EMU = PIO0_BASE + 0x0800;
   public static final int PIO1_BASE = 0x50300000;
-  public static final int PIO1_EMU = PIO1_BASE + 0x0800;
+  public static final int EMULATOR_BASE = 0x58000000;
+  public static final int PIO0_EMU = PIO0_BASE + 0x08000000;
+  public static final int PIO1_EMU = PIO1_BASE + 0x08000000;
 
   public static int getPIOBaseAddress(final int pioNum)
   {

@@ -180,7 +180,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
 
   protected static final Regs[] REGS = Regs.values();
 
-  public static final int SM_SIZE =
+  protected static final int SM_SIZE =
     Regs.SM1_REGX.ordinal() - Regs.SM0_REGX.ordinal();
 
   public static String getLabelForRegister(final int regNum)
