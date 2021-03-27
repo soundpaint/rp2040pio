@@ -41,7 +41,7 @@ public class RegisterClient extends AbstractRegisters
   {
     private final int statusCode;
     private final String statusId;
-    private final String message;
+    private final String result;
 
     private Response()
     {
@@ -49,11 +49,11 @@ public class RegisterClient extends AbstractRegisters
     }
 
     private Response(final int statusCode, final String statusId,
-                     final String message)
+                     final String result)
     {
       this.statusCode = statusCode;
       this.statusId = statusId;
-      this.message = message;
+      this.result = result;
     }
 
     public int getStatusCode()
@@ -66,9 +66,9 @@ public class RegisterClient extends AbstractRegisters
       return statusId;
     }
 
-    public String getMessage()
+    public String getResult()
     {
-      return message;
+      return result;
     }
 
     public boolean isOk()
@@ -76,10 +76,19 @@ public class RegisterClient extends AbstractRegisters
       return statusCode == 101; // TODO: Use global constant.
     }
 
+    public String getResultOrThrowOnFailure(final String errorMessage)
+      throws IOException
+    {
+      if (!isOk()) {
+        throw new IOException(errorMessage + ": " + toString());
+      }
+      return result;
+    }
+
     public String toString()
     {
       return
-        statusCode + " " + statusId + (message != null ? ": " + message : "");
+        statusCode + " " + statusId + (result != null ? ": " + result : "");
     }
   }
 
@@ -113,16 +122,14 @@ public class RegisterClient extends AbstractRegisters
       return null;
     }
     final int colonPos = response.indexOf(':');
-    if (colonPos < 0) {
-      throw new IOException("failed parsing server response: " + response);
-    }
-    final String statusDisplay = response.substring(0, colonPos - 1);
+    final String statusDisplay =
+      colonPos >= 0 ? response.substring(0, colonPos) : response;
     final int spacePos = statusDisplay.indexOf(' ');
     if (spacePos < 0) {
       throw new IOException("failed parsing server response status: " +
                             statusDisplay);
     }
-    final String statusCodeAsString = statusDisplay.substring(0, spacePos - 1);
+    final String statusCodeAsString = statusDisplay.substring(0, spacePos);
     final int statusCode;
     try {
       statusCode = Integer.parseInt(statusCodeAsString);
@@ -130,9 +137,10 @@ public class RegisterClient extends AbstractRegisters
       throw new IOException("failed parsing server response status code: " +
                             statusCodeAsString);
     }
-    final String statusId = statusDisplay.substring(spacePos);
-    final String message = response.substring(colonPos);
-    return new Response(statusCode, statusId, message);
+    final String statusId = statusDisplay.substring(spacePos + 1).trim();
+    final String result =
+      colonPos >= 0 ? response.substring(colonPos + 1).trim() : null;
+    return new Response(statusCode, statusId, result);
   }
 
   public synchronized String getVersion() throws IOException
@@ -141,11 +149,7 @@ public class RegisterClient extends AbstractRegisters
     if (response == null) {
       return null;
     }
-    final String message = response.getMessage();
-    if (!response.isOk()) {
-      throw new IOException("failed retrieving version: " + message);
-    }
-    return message;
+    return response.getResultOrThrowOnFailure("failed retreiving version");
   }
 
   public synchronized String getHelp() throws IOException
@@ -154,11 +158,7 @@ public class RegisterClient extends AbstractRegisters
     if (response == null) {
       return null;
     }
-    final String message = response.getMessage();
-    if (!response.isOk()) {
-      throw new IOException("failed retrieving help: " + message);
-    }
-    return message;
+    return response.getResultOrThrowOnFailure("failed retreiving help");
   }
 
   public synchronized void quit() throws IOException
@@ -179,20 +179,18 @@ public class RegisterClient extends AbstractRegisters
     if (response == null) {
       throw new IOException("missing response for address " + address);
     }
-    final String message = response.getMessage();
-    if (!response.isOk()) {
-      throw new IOException("failed retrieving provision info " +
-                            "for address " + address + ": " + message);
-    }
-    if (message == null) {
+    final String result =
+      response.getResultOrThrowOnFailure("failed retrieving provision info " +
+                                         "for address " + address);
+    if (result == null) {
       throw new IOException("missing provision info for address " + address);
     }
     final boolean provided;
     try {
-      provided = Boolean.parseBoolean(message);
+      provided = Boolean.parseBoolean(result);
     } catch (final NumberFormatException e) {
       throw new IOException("failed parsing provision info for address " +
-                            address + ": " + message);
+                            address + ": " + result);
     }
     return provided;
   }
@@ -210,15 +208,13 @@ public class RegisterClient extends AbstractRegisters
     if (response == null) {
       throw new IOException("missing response for address " + address);
     }
-    final String message = response.getMessage();
-    if (!response.isOk()) {
-      throw new IOException("failed retrieving label " +
-                            "for address " + address + ": " + message);
-    }
-    if (message == null) {
+    final String result =
+      response.getResultOrThrowOnFailure("failed retrieving label " +
+                                         "for address " + address);
+    if (result == null) {
       throw new IOException("missing label for address " + address);
     }
-    return message;
+    return result;
   }
 
   @Override
@@ -237,25 +233,22 @@ public class RegisterClient extends AbstractRegisters
     if (response == null) {
       throw new IOException("missing response for address " + address);
     }
-    final String message = response.getMessage();
-    if (!response.isOk()) {
-      throw new IOException("failed writing value " + value +
-                            "to address " + address + ": " + message);
-    }
+    response.getResultOrThrowOnFailure("failed writing value " + value +
+                                       "to address " + address);
   }
 
-  private int parseIntResult(final int address, final String message)
+  private int parseIntResult(final int address, final String result)
     throws IOException
   {
-    if (message == null) {
+    if (result == null) {
       throw new IOException("missing value for address " + address);
     }
     final int value;
     try {
-      value = Integer.parseInt(message);
+      value = Integer.parseInt(result);
     } catch (final NumberFormatException e) {
       throw new IOException("failed parsing value for address " +
-                            address + ": " + message);
+                            address + ": " + result);
     }
     return value;
   }
@@ -273,12 +266,10 @@ public class RegisterClient extends AbstractRegisters
     if (response == null) {
       throw new IOException("missing response for address " + address);
     }
-    final String message = response.getMessage();
-    if (!response.isOk()) {
-      throw new IOException("failed retrieving value " +
-                            "for address " + address + ": " + message);
-    }
-    return parseIntResult(address, message);
+    final String result =
+      response.getResultOrThrowOnFailure("failed retrieving value " +
+                                         "for address " + address);
+    return parseIntResult(address, result);
   }
 
   @Override
@@ -297,12 +288,10 @@ public class RegisterClient extends AbstractRegisters
     if (response == null) {
       throw new IOException("missing response for address " + address);
     }
-    final String message = response.getMessage();
-    if (!response.isOk()) {
-      throw new IOException("failed waiting for IRQ " +
-                            "on address " + address + ": " + message);
-    }
-    return parseIntResult(address, message);
+    final String result =
+      response.getResultOrThrowOnFailure("failed waiting for IRQ " +
+                                         "on address " + address);
+    return parseIntResult(address, result);
   }
 }
 

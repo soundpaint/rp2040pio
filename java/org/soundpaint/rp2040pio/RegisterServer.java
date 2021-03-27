@@ -160,13 +160,13 @@ public class RegisterServer
     return statusDisplay + (message != null ? ": " + message : "");
   }
 
-  private int parseUnsignedInt(final String unparsed)
+  private int parseInt(final String unparsed)
   {
     if (unparsed.startsWith("0x") ||
         unparsed.startsWith("0X")) {
       return Integer.parseUnsignedInt(unparsed.substring(2), 16);
     } else {
-      return Integer.parseUnsignedInt(unparsed);
+      return Integer.parseInt(unparsed);
     }
   }
 
@@ -204,7 +204,7 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseUnsignedInt(args[0]);
+      address = parseInt(args[0]);
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }
@@ -222,7 +222,7 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseUnsignedInt(args[0]);
+      address = parseInt(args[0]);
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }
@@ -240,13 +240,13 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseUnsignedInt(args[0]);
+      address = parseInt(args[0]);
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }
     final int value;
     try {
-      value = parseUnsignedInt(args[1]);
+      value = parseInt(args[1]);
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[1]);
     }
@@ -264,7 +264,7 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseUnsignedInt(args[0]);
+      address = parseInt(args[0]);
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }
@@ -282,20 +282,20 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseUnsignedInt(args[0]);
+      address = parseInt(args[0]);
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
     }
     final int expectedValue;
     try {
-      expectedValue = parseUnsignedInt(args[1]);
+      expectedValue = parseInt(args[1]);
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[1]);
     }
     final int mask;
     if (args.length > 2) {
       try {
-        mask = parseUnsignedInt(args[2]);
+        mask = parseInt(args[2]);
       } catch (final NumberFormatException e) {
         return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[2]);
       }
@@ -305,7 +305,7 @@ public class RegisterServer
     final int cyclesTimeout;
     if (args.length > 3) {
       try {
-        cyclesTimeout = parseUnsignedInt(args[3]);
+        cyclesTimeout = parseInt(args[3]);
       } catch (final NumberFormatException e) {
         return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[3]);
       }
@@ -315,7 +315,7 @@ public class RegisterServer
     final int millisTimeout;
     if (args.length > 4) {
       try {
-        millisTimeout = parseUnsignedInt(args[4]);
+        millisTimeout = parseInt(args[4]);
       } catch (final NumberFormatException e) {
         return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[4]);
       }
@@ -332,7 +332,7 @@ public class RegisterServer
       return null;
     }
     final char command = request.charAt(0);
-    final String unparsedArgs = request.substring(1);
+    final String unparsedArgs = request.substring(1).trim();
     final String[] args =
       unparsedArgs.length() > 0 ? unparsedArgs.split(" ") : NULL_ARGS;
     /*
@@ -378,12 +378,10 @@ public class RegisterServer
         new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
       String request;
       while ((request = in.readLine()) != null) {
-        System.out.println("Request: " + request);
         final String response = handleRequest(request.trim());
         if (response == null) {
           break;
         }
-        System.out.println("Response: " + response);
         out.println(response);
       }
       System.out.printf("connection #%d closed%n", id);
