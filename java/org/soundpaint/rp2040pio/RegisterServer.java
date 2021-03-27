@@ -110,7 +110,16 @@ public class RegisterServer
 
   private String getHelp()
   {
-    return "available commands: ?, h, q, r, v";
+    final String ls = System.lineSeparator();
+    return "available commands: " + ls +
+      "h                (help)" + ls +
+      "v                (version)" + ls +
+      "q                (quit)" + ls +
+      "r <addr>         (read address)" + ls +
+      "w <addr> <value> (write address)" + ls +
+      "i <addr> <value> (await value)" + ls +
+      "l <addr>         (show address label)" + ls +
+      "p <addr>         (check address validity)";
   }
 
   private enum ResponseStatus
@@ -170,6 +179,16 @@ public class RegisterServer
     }
   }
 
+  private int parseAddress(final String unparsed)
+  {
+    final int address = parseInt(unparsed);
+    if ((address & 0x3) != 0x0) {
+      throw new NumberFormatException("address not word-aligned: " +
+                                      String.format("0x%08x", address));
+    }
+    return address;
+  }
+
   private String handleGetVersion(final String[] args)
   {
     if (args.length > 0) {
@@ -204,9 +223,9 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseInt(args[0]);
+      address = parseAddress(args[0]);
     } catch (final NumberFormatException e) {
-      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
     }
     final boolean providesAddress = sdk.matchesProvidingRegisters(address);
     return createResponse(ResponseStatus.OK, String.valueOf(providesAddress));
@@ -222,9 +241,9 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseInt(args[0]);
+      address = parseAddress(args[0]);
     } catch (final NumberFormatException e) {
-      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
     }
     final String label = sdk.getLabelForAddress(address);
     return createResponse(ResponseStatus.OK, label);
@@ -240,15 +259,15 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseInt(args[0]);
+      address = parseAddress(args[0]);
     } catch (final NumberFormatException e) {
-      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
     }
     final int value;
     try {
       value = parseInt(args[1]);
     } catch (final NumberFormatException e) {
-      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[1]);
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
     }
     sdk.writeAddress(address, value);
     return createResponse(ResponseStatus.OK);
@@ -264,9 +283,9 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseInt(args[0]);
+      address = parseAddress(args[0]);
     } catch (final NumberFormatException e) {
-      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
     }
     final int value = sdk.readAddress(address);
     return createResponse(ResponseStatus.OK, String.valueOf(value));
@@ -282,22 +301,22 @@ public class RegisterServer
     }
     final int address;
     try {
-      address = parseInt(args[0]);
+      address = parseAddress(args[0]);
     } catch (final NumberFormatException e) {
-      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[0]);
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
     }
     final int expectedValue;
     try {
       expectedValue = parseInt(args[1]);
     } catch (final NumberFormatException e) {
-      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[1]);
+      return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
     }
     final int mask;
     if (args.length > 2) {
       try {
         mask = parseInt(args[2]);
       } catch (final NumberFormatException e) {
-        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[2]);
+        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
       }
     } else {
       mask = 0xffffffff;
@@ -307,7 +326,7 @@ public class RegisterServer
       try {
         cyclesTimeout = parseInt(args[3]);
       } catch (final NumberFormatException e) {
-        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[3]);
+        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
       }
     } else {
       cyclesTimeout = 0x0;
@@ -317,7 +336,7 @@ public class RegisterServer
       try {
         millisTimeout = parseInt(args[4]);
       } catch (final NumberFormatException e) {
-        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, args[4]);
+        return createResponse(ResponseStatus.ERR_NUMBER_EXPECTED, e.getMessage());
       }
     } else {
       millisTimeout = 0x0;

@@ -26,7 +26,7 @@ package org.soundpaint.rp2040pio;
 
 public interface Constants
 {
-  public static final String PROGRAM_ID = "RP PIO EMULATION";
+  public static final String PROGRAM_ID = "RP2040 PIO Emulator";
   public static final String VERSION_ID = "0.1";
   public static final String COPYRIGHT_INFO =
     "© 2021 by J. Reuter\nKarlsruhe, Germany";
@@ -48,7 +48,7 @@ public interface Constants
 
   public static String getProgramAndVersion()
   {
-    return getProgramId() + " " + getVersionId();
+    return getProgramId() + " Version " + getVersionId();
   }
 
   public static String getAbout()
