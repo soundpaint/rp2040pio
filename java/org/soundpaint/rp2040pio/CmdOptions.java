@@ -25,6 +25,8 @@
 package org.soundpaint.rp2040pio;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Parsing and managing command line options.
@@ -422,7 +424,8 @@ public class CmdOptions
       } else {
         throw new ParseException(this + ": '" +
                                  Flag.OFF + "' or '" +
-                                 Flag.ON + "' expected");
+                                 Flag.ON + "' expected, " +
+                                 "but found: " + strValue);
       }
     }
   }
@@ -443,7 +446,8 @@ public class CmdOptions
       } else if ("true".equals(strValue)) {
         return true;
       } else {
-        throw new ParseException(this + ": 'false' or 'true' expected");
+        throw new ParseException(this + ": 'false' or 'true' expected, " +
+                                 "but found: " + strValue);
       }
     }
   }
@@ -489,12 +493,20 @@ public class CmdOptions
 
   private final String prgName;
   private final String prgDescription;
-  private final OptionDeclaration<?>[] declarations;
+  private final List<OptionDeclaration<?>> declarations;
   private final OptionDefinition<?>[] definitions;
 
   public CmdOptions(final String prgName,
                     final String prgDescription,
                     final OptionDeclaration<?> ... declarations)
+    throws ParseException
+  {
+    this(prgName, prgDescription, Arrays.asList(declarations));
+  }
+
+  public CmdOptions(final String prgName,
+                    final String prgDescription,
+                    final List<OptionDeclaration<?>> declarations)
     throws ParseException
   {
     if (prgName == null) {
@@ -529,6 +541,10 @@ public class CmdOptions
   {
     final String ls = System.lineSeparator();
     final StringBuffer sb = new StringBuffer();
+    if (declarations.size() > 0) {
+      sb.append("Options:");
+      sb.append(ls);
+    }
     for (final OptionDeclaration<?> declaration : declarations) {
       sb.append(declaration.getHelp());
       sb.append(ls);
@@ -539,10 +555,11 @@ public class CmdOptions
   public String getFullInfo()
   {
     final String ls = System.lineSeparator();
+    final String help = getHelp();
     return
       getUsage() + ls +
       (prgDescription != null ? prgDescription + ls : "") +
-      getHelp();
+      (!help.isEmpty() ? ls + help : "");
   }
 
   private static final OptionDefinition<?>[] EMPTY_DEFINITIONS =
@@ -576,7 +593,8 @@ public class CmdOptions
     }
     if (definition instanceof FlagOptionDefinition) {
       if (strValue != null) {
-        throw new ParseException("unexpected arg for option: " + definition);
+        throw new ParseException("option " + definition + ": " +
+                                 "unexpected surplus argument: " + strValue);
       }
       definition.parseAndSet(Flag.ON.toString());
       return false;
@@ -591,8 +609,8 @@ public class CmdOptions
   private OptionDefinition<?> parseLongOptionIdentifier(final String option)
     throws ParseException
   {
-    if (option.length() < 1) {
-      throw new ParseException("long option must not be empty: --" + option);
+    if (option.isEmpty()) {
+      throw new ParseException("long option must not be empty: --");
     }
     final String name;
     final String value;
@@ -604,7 +622,7 @@ public class CmdOptions
       name = option;
       value = null;
     }
-    if (name.length() < 1) {
+    if (name.isEmpty()) {
       throw new ParseException("long option name must not be empty: --" +
                                option);
     }
@@ -627,7 +645,8 @@ public class CmdOptions
     throws ParseException
   {
     if (name.length() != 1) {
-      throw new ParseException("short option name must be a single character: " +
+      throw new ParseException("short option name: " +
+                               "expected single character, but found: " +
                                name);
     }
     OptionDefinition<?> definition = null;
@@ -653,14 +672,16 @@ public class CmdOptions
     } else if (arg.startsWith("-")) {
       return parseShortOptionIdentifier(arg.substring(1));
     } else {
-      throw new ParseException("option identifier expected: " + arg);
+      throw new ParseException("option identifier expected, but found: " + arg);
     }
   }
 
   public void parse(final String argv[]) throws ParseException
   {
+    clear();
     OptionDefinition<?> currentOption = null;
     for (final String arg : argv) {
+      if (arg.isEmpty()) continue;
       if (arg == null) {
         throw new NullPointerException("arg");
       }
@@ -681,7 +702,7 @@ public class CmdOptions
     }
     for (final OptionDefinition<?> definition : definitions) {
       if (!definition.isDefinedIfMandatory()) {
-        throw new ParseException("missing option: " +
+        throw new ParseException("mandatory option not specified: " +
                                  definition.getDeclaration());
       }
     }

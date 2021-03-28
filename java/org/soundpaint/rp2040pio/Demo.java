@@ -45,6 +45,9 @@ public class Demo
 
   public Demo(final PrintStream console) throws IOException
   {
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
     this.console = console;
     final Registers registers;
     if (RUN_REMOTELY) {

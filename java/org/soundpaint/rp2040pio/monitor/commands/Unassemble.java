@@ -1,5 +1,5 @@
 /*
- * @(#)Monitor.java 1.00 21/02/02
+ * @(#)Unassemble.java 1.00 21/03/28
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -22,62 +22,50 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio;
+package org.soundpaint.rp2040pio.monitor.commands;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import org.soundpaint.rp2040pio.sdk.GPIOSDK;
+import org.soundpaint.rp2040pio.CmdOptions;
+import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.Decoder;
+import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
-import org.soundpaint.rp2040pio.sdk.SDK;
-import org.soundpaint.rp2040pio.sdk.Program;
-import org.soundpaint.rp2040pio.sdk.ProgramParser;
 
 /**
- * Program Execution Monitor And Control
+ * Monitor "unassemble" command.
  */
-public class Monitor
+public class Unassemble extends Command
 {
-  private final PrintStream console;
-  private final SDK sdk;
+  private static final String fullName = "unassemble";
+  private static final String singleLineDescription =
+    "unassemble program memory";
+
   private final PIOSDK pioSdk;
-  private final GPIOSDK gpioSdk;
 
-  private Monitor()
+  public Unassemble(final PrintStream out, final PIOSDK pioSdk)
   {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
-
-  public Monitor(final SDK sdk)
-  {
-    if (sdk == null) {
-      throw new NullPointerException("sdk");
+    super(out, fullName, singleLineDescription,
+          new CmdOptions.OptionDeclaration<?>[] {});
+    if (pioSdk == null) {
+      throw new NullPointerException("pioSdk");
     }
-    this.sdk = sdk;
-    console = sdk.getConsole();
-    pioSdk = sdk.getPIO0SDK();
-    gpioSdk = sdk.getGPIOSDK();
-    printAbout();
+    this.pioSdk = pioSdk;
   }
 
-  private void printAbout()
-  {
-    console.println(Constants.getAbout());
-  }
-
-  public void addProgram(final String programResourcePath)
-    throws IOException
-  {
-    final Program program = ProgramParser.parse(programResourcePath);
-    pioSdk.addProgram(program);
-  }
-
-  public void dumpProgram() throws IOException
+  /**
+   * Returns true if no error occurred and the command has been
+   * executed.
+   */
+  @Override
+  protected boolean execute(final CmdOptions options) throws IOException
   {
     for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
       final PIOSDK.InstructionInfo instructionInfo =
         pioSdk.getMemoryInstruction(0, address, true);
-      System.out.println(instructionInfo.getToolTipText());
+      out.println(instructionInfo.getToolTipText());
     }
+    return true;
   }
 }
 
