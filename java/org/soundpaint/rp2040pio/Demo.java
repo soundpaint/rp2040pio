@@ -1,5 +1,5 @@
 /*
- * @(#)Main.java 1.00 21/01/31
+ * @(#)Demo.java 1.00 21/01/31
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -31,21 +31,30 @@ import org.soundpaint.rp2040pio.sdk.LocalRegisters;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class Main
+public class Demo
 {
+  private final static boolean RUN_REMOTELY = true;
+
   private final PrintStream console;
   private final SDK sdk;
 
-  private Main()
+  private Demo()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Main(final PrintStream console) throws IOException
+  public Demo(final PrintStream console) throws IOException
   {
     this.console = console;
-    final Emulator emulator = new Emulator(console);
-    final Registers registers = new LocalRegisters(emulator);
+    final Registers registers;
+    if (RUN_REMOTELY) {
+      // connect to emulator running in another JVM
+      registers = new RegisterClient();
+    } else {
+      // create and connect to emulator running within this JVM
+      final Emulator emulator = new Emulator(console);
+      registers = new LocalRegisters(emulator);
+    }
     sdk = new SDK(console, registers);
   }
 
@@ -72,11 +81,6 @@ public class Main
   public void run() throws IOException
   {
     final String programResourcePath = "/examples/squarewave.hex";
-    //final String programResourcePath = "/examples/ws2812.hex";
-    //final Monitor monitor = new Monitor(sdk);
-    //monitor.addProgram(programResourcePath);
-    //monitor.setSideSetCount(1);
-    //monitor.dumpProgram();
     final TimingDiagram diagram = new TimingDiagram(sdk);
     diagram.setProgram(programResourcePath);
     diagram.addSignal(DiagramConfig.createClockSignal("clock"));
@@ -113,7 +117,7 @@ public class Main
 
   public static void main(final String argv[]) throws IOException
   {
-    new Main(System.out).run();
+    new Demo(System.out).run();
   }
 }
 

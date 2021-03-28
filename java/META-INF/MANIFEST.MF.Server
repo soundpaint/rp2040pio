@@ -4,4 +4,4 @@ Created-By: Jürgen Reuter
 Implementation-Title: RP2040 PIO Emulator
 Specification-Vendor: Juergen Reuter
 Implementation-Vendor: Juergen Reuter
-Main-Class: org.soundpaint.rp2040pio.Main
+Main-Class: org.soundpaint.rp2040pio.EmulationServer

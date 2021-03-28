@@ -22,7 +22,7 @@
 # Author's web site: www.juergen-reuter.de
 
 JAVA_DIR=$(ROOT_DIR)/java
-BUILD_DIR=$(ROOT_DIR)/build
+ROOT_BUILD_DIR=$(ROOT_DIR)/build
 JAR_DIR=$(ROOT_DIR)/jar
 
 #  Local Variables:

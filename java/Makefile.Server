@@ -24,10 +24,11 @@
 ROOT_DIR=..
 include ../defs.mak
 
+BUILD_DIR=$(ROOT_BUILD_DIR)/EumlationServer
 COMPILE_CLASSPATH=$(JAVA_DIR):$(BUILD_DIR)
 RUN_CLASSPATH=.
 PIO_DIR=$(JAVA_DIR)/org/soundpaint/rp2040pio
-JAVA_SRC=$(wildcard $(PIO_DIR)/*.java) $(wildcard $(PIO_DIR)/*/*.java)
+JAVA_SRC=$(wildcard $(PIO_DIR)/EmulationServer.java)
 JAVA_OBJ=$(patsubst $(JAVA_DIR)/%.java,$(BUILD_DIR)/%.class,$(JAVA_SRC))
 
 IMAGES_SRC_DIR=$(JAVA_DIR)/images
@@ -40,7 +41,7 @@ EXAMPLES_OBJ_DIR=$(BUILD_DIR)/examples
 EXAMPLES_SRC=$(wildcard $(EXAMPLES_SRC_DIR)/*.hex)
 EXAMPLES_OBJ=$(patsubst $(EXAMPLES_SRC_DIR)/%,$(EXAMPLES_OBJ_DIR)/%,$(EXAMPLES_SRC))
 
-JAR_OBJ=$(JAR_DIR)/rp2040pio.jar
+JAR_OBJ=$(JAR_DIR)/rp2040pio_server.jar
 
 all: obj jar
 
@@ -66,7 +67,7 @@ jar: $(JAR_OBJ)
 
 $(JAR_OBJ): $(JAR_DIR) $(JAVA_OBJ)
 	cd $(BUILD_DIR); \
-	jar -0cvfm $(JAR_DIR)/rp2040pio.jar $(JAVA_DIR)/META-INF/MANIFEST.MF .
+	jar -0cvfm ../$(JAR_OBJ) ../$(JAVA_DIR)/META-INF/MANIFEST.MF.Server .
 
 $(IMAGES_OBJ_DIR)/%.png: $(IMAGES_SRC_DIR)/%.png
 	cp -pf $< $@
@@ -75,9 +76,6 @@ $(EXAMPLES_OBJ_DIR)/%.hex: $(EXAMPLES_SRC_DIR)/%.hex
 	cp -pf $< $@
 
 depend:
-
-tags:
-	etags *.java
 
 run: all
 	cd $(JAR_DIR) ; java -jar $(JAR_OBJ)
@@ -89,15 +87,7 @@ objclean:
 jarclean:
 	- rm -rf $(JAR_DIR)
 
-bkpclean:
-	- find $(JAVA_DIR) -name \*~ -exec /bin/rm -f {} \; -print
-
-coreclean:
-	rm -f core core.* vgcore.*
-
 clean: objclean jarclean
-
-distclean: clean bkpclean
 
 .SUFFIXES: $(SUFFIXES) .java .class
 

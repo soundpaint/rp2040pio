@@ -25,22 +25,26 @@ ROOT_DIR=.
 include defs.mak
 
 all:
-	cd java ; make all
+	cd $(JAVA_DIR) ; make -f Makefile.Server all
+	cd $(JAVA_DIR) ; make -f Makefile.Demo all
 
 run: all
-	cd java ; make run
+	cd $(JAVA_DIR) ; make -f Makefile.Server run
+
+tags:
+	- find $(JAVA_DIR) -name \*.java -exec etags {} \; -print
 
 objclean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(ROOT_BUILD_DIR)
 	rm -rf $(JAR_DIR)
 
 bkpclean:
-	cd java ; make bkpclean
+	- find $(JAVA_DIR) -name \*~ -exec /bin/rm -f {} \; -print
 	rm -f *~
 
 coreclean:
-	cd java ; make coreclean
 	rm -f core core.* vgcore.*
+	rm -f $(JAVA_DIR)/core $(JAVA_DIR)/core.* $(JAVA_DIR)/vgcore.*
 
 clean: objclean
 
