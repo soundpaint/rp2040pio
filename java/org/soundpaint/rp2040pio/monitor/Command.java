@@ -37,7 +37,7 @@ import org.soundpaint.rp2040pio.CmdOptions;
  */
 public abstract class Command
 {
-  private static final CmdOptions.FlagOptionDeclaration optHelp =
+  protected static final CmdOptions.FlagOptionDeclaration optHelp =
     CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
                                 "display this help text and exit");
 

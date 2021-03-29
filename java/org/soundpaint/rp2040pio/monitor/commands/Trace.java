@@ -58,11 +58,14 @@ public class Trace extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    for (int i = 0; i < 1; i++) {
+    final int cycles = 1;
+    for (int i = 0; i < cycles; i++) {
       sdk.triggerCyclePhase0(true);
       sdk.triggerCyclePhase1(true);
       // TODO: Print program counter of all state machines.
     }
+    out.println(cycles + " clock cycle" + (cycles != 1 ? "s" : "") +
+                " executed.");
     return true;
   }
 }

@@ -748,6 +748,17 @@ public class CmdOptions
       (StringOptionDefinition)findDefinitionForDeclaration(declaration);
     return definition != null ? definition.getValue() : null;
   }
+
+  public boolean isDefined(final OptionDeclaration<?> declaration)
+  {
+    final OptionDefinition<?> definition =
+      findDefinitionForDeclaration(declaration);
+    if (definition == null) {
+      throw new InternalError("no such declaration in this set of options: " +
+                              declaration);
+    }
+    return definition.isDefined();
+  }
 }
 
 /*

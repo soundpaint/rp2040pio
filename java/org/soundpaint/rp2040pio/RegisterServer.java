@@ -184,8 +184,9 @@ public class RegisterServer
   {
     final int address = parseInt(unparsed);
     if ((address & 0x3) != 0x0) {
-      throw new NumberFormatException("address not word-aligned: " +
-                                      String.format("0x%08x", address));
+      final String message =
+        String.format("address not word-aligned: 0x%08x", address);
+      throw new NumberFormatException(message);
     }
     return address;
   }

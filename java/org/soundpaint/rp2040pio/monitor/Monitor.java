@@ -35,6 +35,7 @@ import org.soundpaint.rp2040pio.RegisterClient;
 import org.soundpaint.rp2040pio.Registers;
 import org.soundpaint.rp2040pio.monitor.commands.Help;
 import org.soundpaint.rp2040pio.monitor.commands.Quit;
+import org.soundpaint.rp2040pio.monitor.commands.Read;
 import org.soundpaint.rp2040pio.monitor.commands.Trace;
 import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
@@ -81,6 +82,7 @@ public class Monitor
     commands.add(quit = new Quit(out));
     commands.add(new Unassemble(out, pioSdk));
     commands.add(new Trace(out, sdk));
+    commands.add(new Read(out, sdk));
     printAbout();
   }
 

@@ -177,20 +177,28 @@ public class RegisterClient extends AbstractRegisters
   {
     final Response response = getResponse("p " + address);
     if (response == null) {
-      throw new IOException("missing response for address " + address);
+      final String message =
+        String.format("missing response for address 0x%08x", address);
+      throw new IOException(message);
     }
+    final String provisionRetrievalMessage =
+      String.format("failed retrieving provision info for address 0x%08x",
+                    address);
     final String result =
-      response.getResultOrThrowOnFailure("failed retrieving provision info " +
-                                         "for address " + address);
+      response.getResultOrThrowOnFailure(provisionRetrievalMessage);
     if (result == null) {
-      throw new IOException("missing provision info for address " + address);
+      final String message =
+        String.format("missing provision info for address 0x%08x", address);
+      throw new IOException(message);
     }
     final boolean provided;
     try {
       provided = Boolean.parseBoolean(result);
     } catch (final NumberFormatException e) {
-      throw new IOException("failed parsing provision info for address " +
-                            address + ": " + result);
+      final String message =
+        String.format("failed parsing provision info for address 0x%08x: %s",
+                      address, result);
+      throw new IOException(message);
     }
     return provided;
   }
@@ -206,13 +214,18 @@ public class RegisterClient extends AbstractRegisters
   {
     final Response response = getResponse("l " + address);
     if (response == null) {
-      throw new IOException("missing response for address " + address);
+      final String message =
+        String.format("missing response for address 0x%08x", address);
+      throw new IOException(message);
     }
+    final String labelRetrievalMessage =
+      String.format("failed retrieving label for address 0x%08x", address);
     final String result =
-      response.getResultOrThrowOnFailure("failed retrieving label " +
-                                         "for address " + address);
+      response.getResultOrThrowOnFailure(labelRetrievalMessage);
     if (result == null) {
-      throw new IOException("missing label for address " + address);
+      final String message =
+        String.format("missing label for address 0x%08x", address);
+      throw new IOException(message);
     }
     return result;
   }
@@ -231,24 +244,32 @@ public class RegisterClient extends AbstractRegisters
   {
     final Response response = getResponse("w " + address + " " + value);
     if (response == null) {
-      throw new IOException("missing response for address " + address);
+      final String message =
+        String.format("missing response for address 0x%08x", address);
+      throw new IOException(message);
     }
-    response.getResultOrThrowOnFailure("failed writing value " + value +
-                                       "to address " + address);
+    final String message =
+      String.format("failed writing value 0x%04x to address 0x%08x",
+                    value, address);
+    response.getResultOrThrowOnFailure(message);
   }
 
   private int parseIntResult(final int address, final String result)
     throws IOException
   {
     if (result == null) {
-      throw new IOException("missing value for address " + address);
+      final String message =
+        String.format("missing value for address 0x%08x", address);
+      throw new IOException(message);
     }
     final int value;
     try {
       value = Integer.parseInt(result);
     } catch (final NumberFormatException e) {
-      throw new IOException("failed parsing value for address " +
-                            address + ": " + result);
+      final String message =
+        String.format("failed parsing value for address 0x%08x: %s",
+                      address, result);
+      throw new IOException(message);
     }
     return value;
   }
@@ -264,11 +285,14 @@ public class RegisterClient extends AbstractRegisters
   {
     final Response response = getResponse("r " + address);
     if (response == null) {
-      throw new IOException("missing response for address " + address);
+      final String message =
+        String.format("missing response for address 0x%08x", address);
+      throw new IOException(message);
     }
+    final String message =
+      String.format("failed retrieving value for address 0x%08x", address);
     final String result =
-      response.getResultOrThrowOnFailure("failed retrieving value " +
-                                         "for address " + address);
+      response.getResultOrThrowOnFailure(message);
     return parseIntResult(address, result);
   }
 
@@ -286,11 +310,14 @@ public class RegisterClient extends AbstractRegisters
                                           cyclesTimeout + " " +
                                           millisTimeout);
     if (response == null) {
-      throw new IOException("missing response for address " + address);
+      final String message =
+        String.format("missing response for address 0x%08x", address);
+      throw new IOException(message);
     }
+    final String message =
+      String.format("failed waiting for IRQ on address  0x%08x", address);
     final String result =
-      response.getResultOrThrowOnFailure("failed waiting for IRQ " +
-                                         "on address " + address);
+      response.getResultOrThrowOnFailure(message);
     return parseIntResult(address, result);
   }
 }
