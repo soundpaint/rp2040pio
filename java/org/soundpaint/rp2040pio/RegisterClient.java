@@ -27,8 +27,10 @@ package org.soundpaint.rp2040pio;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.function.LongSupplier;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -37,6 +39,8 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  */
 public class RegisterClient extends AbstractRegisters
 {
+  private static final String MSG_NO_CONNECTION = "no connection";
+
   private static class Response
   {
     private final int statusCode;
@@ -92,26 +96,55 @@ public class RegisterClient extends AbstractRegisters
     }
   }
 
+  private final PrintStream console;
   private final Socket socket;
   private final PrintWriter out;
   private final BufferedReader in;
+  private final LongSupplier wallClockSupplier;
 
-  public RegisterClient() throws IOException
+  public RegisterClient(final PrintStream console) throws IOException
   {
-    this(Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
+    this(console, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
   }
 
-  public RegisterClient(final int port) throws IOException
+  public RegisterClient(final PrintStream console, final int port)
+    throws IOException
   {
-    this("localhost", port);
+    this(console, "localhost", port);
   }
 
-  public RegisterClient(final String host, final int port) throws IOException
+  public RegisterClient(final PrintStream console,
+                        final String host, final int port)
+    throws IOException
   {
-    super(0x0, (short)0x0);
+    super(0x0, (short)0x0, null/* TODO */);
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
+    this.console = console;
     socket = new Socket(host, port);
     out = new PrintWriter(socket.getOutputStream(), true);
     in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    wallClockSupplier = () -> getWallClock();
+  }
+
+  @Override
+  public LongSupplier getWallClockSupplier() { return wallClockSupplier; }
+
+  private Long getWallClock()
+  {
+    try {
+      final int addressLSB =
+        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
+      final int addressMSB =
+        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
+      final int wallClockLSB = readAddress(addressLSB);
+      final int wallClockMSB = readAddress(addressMSB);
+      return (((long)wallClockMSB) << 32) | wallClockLSB;
+    } catch (final IOException e) {
+      console.println(e.getMessage());
+      return null;
+    }
   }
 
   private Response getResponse(final String request) throws IOException
@@ -143,21 +176,25 @@ public class RegisterClient extends AbstractRegisters
     return new Response(statusCode, statusId, result);
   }
 
+  private void checkResponse(final Response response) throws IOException
+  {
+    if (response == null) {
+      throw new IOException(MSG_NO_CONNECTION);
+    }
+  }
+
+  @Override
   public synchronized String getVersion() throws IOException
   {
     final Response response = getResponse("v");
-    if (response == null) {
-      return null;
-    }
+    checkResponse(response);
     return response.getResultOrThrowOnFailure("failed retreiving version");
   }
 
   public synchronized String getHelp() throws IOException
   {
     final Response response = getResponse("h");
-    if (response == null) {
-      return null;
-    }
+    checkResponse(response);
     return response.getResultOrThrowOnFailure("failed retreiving help");
   }
 
@@ -176,11 +213,7 @@ public class RegisterClient extends AbstractRegisters
   public boolean providesAddress(final int address) throws IOException
   {
     final Response response = getResponse("p " + address);
-    if (response == null) {
-      final String message =
-        String.format("missing response for address 0x%08x", address);
-      throw new IOException(message);
-    }
+    checkResponse(response);
     final String provisionRetrievalMessage =
       String.format("failed retrieving provision info for address 0x%08x",
                     address);
@@ -213,11 +246,7 @@ public class RegisterClient extends AbstractRegisters
   public String getAddressLabel(final int address) throws IOException
   {
     final Response response = getResponse("l " + address);
-    if (response == null) {
-      final String message =
-        String.format("missing response for address 0x%08x", address);
-      throw new IOException(message);
-    }
+    checkResponse(response);
     final String labelRetrievalMessage =
       String.format("failed retrieving label for address 0x%08x", address);
     final String result =
@@ -243,11 +272,7 @@ public class RegisterClient extends AbstractRegisters
                                         final int value) throws IOException
   {
     final Response response = getResponse("w " + address + " " + value);
-    if (response == null) {
-      final String message =
-        String.format("missing response for address 0x%08x", address);
-      throw new IOException(message);
-    }
+    checkResponse(response);
     final String message =
       String.format("failed writing value 0x%04x to address 0x%08x",
                     value, address);
@@ -284,11 +309,7 @@ public class RegisterClient extends AbstractRegisters
   public synchronized int readAddress(final int address) throws IOException
   {
     final Response response = getResponse("r " + address);
-    if (response == null) {
-      final String message =
-        String.format("missing response for address 0x%08x", address);
-      throw new IOException(message);
-    }
+    checkResponse(response);
     final String message =
       String.format("failed retrieving value for address 0x%08x", address);
     final String result =
@@ -309,13 +330,9 @@ public class RegisterClient extends AbstractRegisters
                                           mask + " " +
                                           cyclesTimeout + " " +
                                           millisTimeout);
-    if (response == null) {
-      final String message =
-        String.format("missing response for address 0x%08x", address);
-      throw new IOException(message);
-    }
+    checkResponse(response);
     final String message =
-      String.format("failed waiting for IRQ on address  0x%08x", address);
+      String.format("failed waiting for IRQ on address 0x%08x", address);
     final String result =
       response.getResultOrThrowOnFailure(message);
     return parseIntResult(address, result);

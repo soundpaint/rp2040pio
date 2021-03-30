@@ -41,12 +41,20 @@ public class Unassemble extends Command
   private static final String singleLineDescription =
     "unassemble program memory";
 
+  private static final CmdOptions.IntegerOptionDeclaration optStart =
+    CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", 0,
+                                   "start address");
+  private static final CmdOptions.IntegerOptionDeclaration optCount =
+    CmdOptions.createIntegerOption("COUNT", false, 'c', "count",
+                                   Constants.MEMORY_SIZE,
+                                   "number of instructions to unassemble");
+
   private final PIOSDK pioSdk;
 
   public Unassemble(final PrintStream out, final PIOSDK pioSdk)
   {
     super(out, fullName, singleLineDescription,
-          new CmdOptions.OptionDeclaration<?>[] {});
+          new CmdOptions.OptionDeclaration<?>[] { optStart, optCount });
     if (pioSdk == null) {
       throw new NullPointerException("pioSdk");
     }
@@ -60,11 +68,18 @@ public class Unassemble extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
+    final int count = options.getValue(optCount);
+    if (count == 0) return true;
+    final int startAddress = options.getValue(optStart);
+    final int stopAddress =
+      (startAddress + count) & (Constants.MEMORY_SIZE - 1);
+    int address = startAddress;
+    do {
       final PIOSDK.InstructionInfo instructionInfo =
         pioSdk.getMemoryInstruction(0, address, true);
       out.println(instructionInfo.getToolTipText());
-    }
+      address = (address + 1) & (Constants.MEMORY_SIZE - 1);
+    } while (address != stopAddress);
     return true;
   }
 }

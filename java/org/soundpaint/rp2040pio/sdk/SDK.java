@@ -136,6 +136,11 @@ public class SDK implements Constants
 
   // -------- PicoEmuRegisters convenience methods --------
 
+  public String getVersion() throws IOException
+  {
+    return registers.getVersion();
+  }
+
   public void reset() throws IOException
   {
     final int address =

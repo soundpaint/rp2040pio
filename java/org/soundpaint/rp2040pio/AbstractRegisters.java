@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
+import java.util.function.LongSupplier;
 
 public abstract class AbstractRegisters implements Registers
 {
@@ -32,10 +33,17 @@ public abstract class AbstractRegisters implements Registers
   private final short size;
   private final int addrMin;
   private final int addrMax;
+  private final LongSupplier wallClockSupplier;
 
   private AbstractRegisters()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  @Override
+  public String getVersion() throws IOException
+  {
+    return Constants.getProgramAndVersion();
   }
 
   /**
@@ -44,7 +52,8 @@ public abstract class AbstractRegisters implements Registers
    * The maximum allowed address computes as &lt;code&gt;baseAddress +
    * size * 0x4&lt;/code&gt;.
    */
-  protected AbstractRegisters(final int baseAddress, final short size)
+  protected AbstractRegisters(final int baseAddress, final short size,
+                              final LongSupplier wallClockSupplier)
   {
     if ((baseAddress & 0x3) != 0x0) {
       throw new IllegalArgumentException("base address not word-aligned: " +
@@ -64,6 +73,7 @@ public abstract class AbstractRegisters implements Registers
     }
     this.baseAddress = baseAddress;
     this.size = size;
+    this.wallClockSupplier = wallClockSupplier;
     addrMin = baseAddress;
     addrMax = baseAddress | 0x3fff;
   }
@@ -72,6 +82,17 @@ public abstract class AbstractRegisters implements Registers
   public int getBaseAddress() { return baseAddress; }
 
   public int getSize() { return size; }
+
+  public LongSupplier getWallClockSupplier() { return wallClockSupplier; }
+
+  protected void checkRegNum(final int regNum, final int limit)
+  {
+    if ((regNum < 0) || (regNum >= limit)) {
+      final String message =
+        String.format("regNum out of bounds: 0x%08x", regNum);
+      throw new InternalError(message);
+    }
+  }
 
   @Override
   public boolean providesAddress(final int address) throws IOException
@@ -208,17 +229,6 @@ public abstract class AbstractRegisters implements Registers
       (wallClock < startWallClock) && (wallClock >= stopWallClock);
   }
 
-  private long getWallClock() throws IOException
-  {
-    final int addressLSB =
-      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
-    final int addressMSB =
-      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
-    final int wallClockLSB = readAddress(addressLSB);
-    final int wallClockMSB = readAddress(addressMSB);
-    return (wallClockMSB << 32) | wallClockLSB;
-  }
-
   @Override
   public int wait(final int address, final int expectedValue, final int mask,
                   final long cyclesTimeout, final long millisTimeout)
@@ -232,14 +242,21 @@ public abstract class AbstractRegisters implements Registers
       throw new IllegalArgumentException("millisTimeout < 0: " + millisTimeout);
     }
     final int regNum = ((address - baseAddress) & ~0x3000) >>> 2;
-    final long startWallClock = getWallClock();
+    final LongSupplier wallClockSupplier = getWallClockSupplier();
+    final Long startWallClock = wallClockSupplier.getAsLong();
+    if (startWallClock == null) {
+      throw new IOException("wallClock not reachable");
+    }
     final long stopWallClock = startWallClock + cyclesTimeout;
     final long startTime = System.currentTimeMillis();
     final long stopTime = startTime + millisTimeout;
     synchronized(this) {
       int receivedValue;
       while (((receivedValue = readRegister(regNum) & mask) != expectedValue)) {
-        final long wallClock = getWallClock();
+        final Long wallClock = wallClockSupplier.getAsLong();
+        if (wallClock == null) {
+          throw new IOException("wallClock not reachable");
+        }
         if (timedOut(startWallClock, stopWallClock, wallClock)) break;
         try {
           if (millisTimeout != 0) {

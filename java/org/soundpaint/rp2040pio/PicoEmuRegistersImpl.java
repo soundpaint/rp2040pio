@@ -24,6 +24,8 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.function.LongSupplier;
+
 /**
  * Facade to additonal emulator properties of the internal subsystems
  * of a PIO that are not available via the PIORegisters facade.  This
@@ -34,8 +36,10 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
 {
   private final Emulator emulator;
 
-  public PicoEmuRegistersImpl(final Emulator emulator)
+  public PicoEmuRegistersImpl(final Emulator emulator,
+                              final LongSupplier wallClockSupplier)
   {
+    super(wallClockSupplier);
     this.emulator = emulator;
   }
 
@@ -51,9 +55,7 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
   protected void writeRegister(final int regNum, final int value,
                                final int mask, final boolean xor)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
+    checkRegNum(regNum, REGS.length);
     final Regs register = REGS[regNum];
     switch (register) {
     case PWR_UP:
@@ -82,9 +84,7 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
   @Override
   protected synchronized int readRegister(final int regNum)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
+    checkRegNum(regNum, REGS.length);
     final Regs register = REGS[regNum];
     switch (register) {
     case PWR_UP:

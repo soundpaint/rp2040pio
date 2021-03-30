@@ -48,12 +48,18 @@ public interface Constants
 
   public static String getProgramAndVersion()
   {
-    return getProgramId() + " Version " + getVersionId();
+    return
+      getProgramId() +
+      " Version " + getVersionId() +
+      " / " + System.getProperty("os.name") +
+      " " + System.getProperty("os.version");
   }
 
   public static String getAbout()
   {
-    return getProgramAndVersion() + "\n" + getCopyrightInfo();
+    return
+      getProgramAndVersion() + System.lineSeparator() +
+      getCopyrightInfo();
   }
 
   public static final int GPIO_NUM = 32;

@@ -1,5 +1,5 @@
 /*
- * @(#)Trace.java 1.00 21/03/28
+ * @(#)Read.java 1.00 21/03/29
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -31,28 +31,40 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "trace" command.
+ * Monitor "read" command for low-level read access to a register.
  */
-public class Trace extends Command
+public class Read extends Command
 {
-  private static final String fullName = "trace";
+  private static final String fullName = "read";
   private static final String singleLineDescription =
-    "trace program by performing a single clock cycle";
+    "low-level read access to a register";
 
-  private static final CmdOptions.IntegerOptionDeclaration optCycles =
-    CmdOptions.createIntegerOption("COUNT", false, 'c', "cycles", 1,
-                                   "number of cycles to apply");
+  private static final CmdOptions.IntegerOptionDeclaration optAddress =
+    CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
+                                   "address of the register to access");
 
   private final SDK sdk;
 
-  public Trace(final PrintStream out, final SDK sdk)
+  public Read(final PrintStream out, final SDK sdk)
   {
     super(out, fullName, singleLineDescription,
-          new CmdOptions.OptionDeclaration<?>[] { optCycles });
+          new CmdOptions.OptionDeclaration<?>[] { optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
     this.sdk = sdk;
+  }
+
+  @Override
+  protected void checkValidity(final CmdOptions options)
+    throws CmdOptions.ParseException
+  {
+    if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
+      if (!options.isDefined(optAddress)) {
+        throw new CmdOptions.
+          ParseException("option not specified: " + optAddress);
+      }
+    }
   }
 
   /**
@@ -62,14 +74,16 @@ public class Trace extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    final int cycles = options.getValue(optCycles);
-    for (int i = 0; i < cycles; i++) {
-      sdk.triggerCyclePhase0(true);
-      sdk.triggerCyclePhase1(true);
-      // TODO: Print program counter of all state machines.
+    final int address = options.getValue(optAddress);
+    final boolean validAddress = sdk.matchesProvidingRegisters(address);
+    if (!validAddress) {
+      final String message =
+        String.format("read from unsupported address: 0x%08x", address);
+      throw new IOException(message);
     }
-    out.println(cycles + " clock cycle" + (cycles != 1 ? "s" : "") +
-                " executed.");
+    final int value = sdk.readAddress(address);
+    final String label = sdk.getLabelForAddress(address);
+    out.printf("read %s (0x%08x): 0x%04x%n", label, address, value);
     return true;
   }
 }

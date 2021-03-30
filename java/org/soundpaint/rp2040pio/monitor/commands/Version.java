@@ -1,5 +1,5 @@
 /*
- * @(#)Quit.java 1.00 21/03/28
+ * @(#)Version.java 1.00 21/03/29
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,21 +24,29 @@
  */
 package org.soundpaint.rp2040pio.monitor.commands;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.monitor.Command;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "quit" command.
+ * Monitor "version" command.
  */
-public class Quit extends Command
+public class Version extends Command
 {
-  private static final String fullName = "quit";
-  private static final String singleLineDescription = "quit monitor";
+  private static final String fullName = "version";
+  private static final String singleLineDescription = "print emulator version";
 
-  public Quit(final PrintStream out)
+  private final SDK sdk;
+
+  public Version(final PrintStream out, final SDK sdk)
   {
     super(out, fullName, singleLineDescription);
+    if (sdk == null) {
+      throw new NullPointerException("sdk");
+    }
+    this.sdk = sdk;
   }
 
   /**
@@ -46,8 +54,9 @@ public class Quit extends Command
    * executed.
    */
   @Override
-  protected boolean execute(final CmdOptions options)
+  protected boolean execute(final CmdOptions options) throws IOException
   {
+    out.println(sdk.getVersion());
     return true;
   }
 }

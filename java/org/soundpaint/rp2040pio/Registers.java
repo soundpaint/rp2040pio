@@ -34,6 +34,7 @@ public interface Registers
   static final int REG_ALIAS_CLR_BITS = 0x3000;
 
   int getBaseAddress();
+  String getVersion() throws IOException;
   boolean providesAddress(final int address) throws IOException;
   String getAddressLabel(final int address) throws IOException;
   void writeAddress(final int address, final int value) throws IOException;

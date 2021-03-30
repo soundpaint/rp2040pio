@@ -24,6 +24,8 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.function.LongSupplier;
+
 /**
  * Facade to the internal GPIO IO Bank 0 subsystem.  The layout of
  * registers follows the list of registers in Sect. 2.19.6 of the
@@ -47,8 +49,10 @@ public class GPIOIOBank0RegistersImpl extends GPIOIOBank0Registers
 
   private final GPIO gpio;
 
-  public GPIOIOBank0RegistersImpl(final GPIO gpio)
+  public GPIOIOBank0RegistersImpl(final GPIO gpio,
+                                  final LongSupplier wallClockSupplier)
   {
+    super(wallClockSupplier);
     if (gpio == null) {
       throw new NullPointerException("gpio");
     }
@@ -67,9 +71,7 @@ public class GPIOIOBank0RegistersImpl extends GPIOIOBank0Registers
   protected void writeRegister(final int regNum, final int value,
                                final int mask, final boolean xor)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
+    checkRegNum(regNum, REGS.length);
     final Regs register = REGS[regNum];
     switch (register) {
     case GPIO0_STATUS:
@@ -198,9 +200,7 @@ public class GPIOIOBank0RegistersImpl extends GPIOIOBank0Registers
   @Override
   protected synchronized int readRegister(final int regNum)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
+    checkRegNum(regNum, REGS.length);
     final Regs register = REGS[regNum];
     switch (register) {
     case GPIO0_STATUS:

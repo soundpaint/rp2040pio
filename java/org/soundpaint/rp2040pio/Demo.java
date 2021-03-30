@@ -52,7 +52,7 @@ public class Demo
     final Registers registers;
     if (RUN_REMOTELY) {
       // connect to emulator running in another JVM
-      registers = new RegisterClient();
+      registers = new RegisterClient(console);
     } else {
       // create and connect to emulator running within this JVM
       final Emulator emulator = new Emulator(console);

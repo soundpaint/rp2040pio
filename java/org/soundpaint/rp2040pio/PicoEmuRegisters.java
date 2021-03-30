@@ -24,6 +24,8 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.function.LongSupplier;
+
 /**
  * Facade to additonal emulator properties of the internal subsystems
  * of a PIO that are not available via the PIORegisters facade.  This
@@ -125,9 +127,9 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
     return EMULATOR_BASE + 0x4 * register.ordinal();
   }
 
-  public PicoEmuRegisters()
+  public PicoEmuRegisters(final LongSupplier wallClockSupplier)
   {
-    super(EMULATOR_BASE, (short)REGS.length);
+    super(EMULATOR_BASE, (short)REGS.length, wallClockSupplier);
   }
 }
 

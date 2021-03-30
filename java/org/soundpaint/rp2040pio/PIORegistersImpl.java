@@ -24,6 +24,8 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.function.LongSupplier;
+
 /**
  * Facade to the internal subsystems of a PIO.  The layout of
  * registers follows the list of registers in Sect. 3.7 of the RP2040
@@ -34,9 +36,9 @@ public class PIORegistersImpl extends PIORegisters
 {
   private final PIO pio;
 
-  public PIORegistersImpl(final PIO pio)
+  public PIORegistersImpl(final PIO pio, final LongSupplier wallClockSupplier)
   {
-    super(pio.getIndex());
+    super(pio.getIndex(), wallClockSupplier);
     if (pio == null) {
       throw new NullPointerException("pio");
     }
@@ -113,9 +115,7 @@ public class PIORegistersImpl extends PIORegisters
   protected void writeRegister(final int regNum, final int value,
                                final int mask, final boolean xor)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
+    checkRegNum(regNum, REGS.length);
     final Regs register = REGS[regNum];
     switch (register) {
     case CTRL:
@@ -317,9 +317,7 @@ public class PIORegistersImpl extends PIORegisters
   @Override
   protected synchronized int readRegister(final int regNum)
   {
-    if ((regNum < 0) || (regNum >= REGS.length)) {
-      throw new InternalError("regNum out of bounds: " + regNum);
-    }
+    checkRegNum(regNum, REGS.length);
     final Regs register = REGS[regNum];
     switch (register) {
     case CTRL:

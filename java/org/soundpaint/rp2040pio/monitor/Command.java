@@ -37,6 +37,10 @@ import org.soundpaint.rp2040pio.CmdOptions;
  */
 public abstract class Command
 {
+  private static final List<CmdOptions.OptionDeclaration<?>>
+    EMPTY_OPTION_DECLARATIONS =
+    new ArrayList<CmdOptions.OptionDeclaration<?>>();
+
   protected static final CmdOptions.FlagOptionDeclaration optHelp =
     CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
                                 "display this help text and exit");
@@ -50,6 +54,12 @@ public abstract class Command
   private Command()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public Command(final PrintStream out, final String fullName,
+                 final String singleLineDescription)
+  {
+    this(out, fullName, singleLineDescription, EMPTY_OPTION_DECLARATIONS);
   }
 
   public Command(final PrintStream out, final String fullName,

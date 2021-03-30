@@ -103,11 +103,6 @@ public class RegisterServer
     }
   }
 
-  private String getEmulatorVersion()
-  {
-    return Constants.getProgramAndVersion();
-  }
-
   private String getHelp()
   {
     final String ls = System.lineSeparator();
@@ -191,12 +186,12 @@ public class RegisterServer
     return address;
   }
 
-  private String handleGetVersion(final String[] args)
+  private String handleGetVersion(final String[] args) throws IOException
   {
     if (args.length > 0) {
       return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[0]);
     }
-    return createResponse(ResponseStatus.OK, getEmulatorVersion());
+    return createResponse(ResponseStatus.OK, sdk.getVersion());
   }
 
   private String handleGetHelp(final String[] args)
@@ -343,8 +338,8 @@ public class RegisterServer
     } else {
       millisTimeout = 0x0;
     }
-    sdk.wait(address, mask, expectedValue, cyclesTimeout, millisTimeout);
-    return createResponse(ResponseStatus.OK);
+    final int value = sdk.readAddress(address);
+    return createResponse(ResponseStatus.OK, String.valueOf(value));
   }
 
   private String handleRequest(final String request) throws IOException

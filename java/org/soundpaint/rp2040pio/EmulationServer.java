@@ -87,7 +87,7 @@ public class EmulationServer
       if (portNumber != null) {
         if ((portNumber < 0) || (portNumber > 65535)) {
           throw new CmdOptions.
-            ParseException("port number must be in the range 0..65535");
+            ParseException("PORT must be in the range 0..65535");
         }
       }
       if ((options.getValue(optSilent) == CmdOptions.Flag.ON) &&

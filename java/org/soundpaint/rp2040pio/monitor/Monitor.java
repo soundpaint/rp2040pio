@@ -34,10 +34,14 @@ import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.RegisterClient;
 import org.soundpaint.rp2040pio.Registers;
 import org.soundpaint.rp2040pio.monitor.commands.Help;
+import org.soundpaint.rp2040pio.monitor.commands.Label;
 import org.soundpaint.rp2040pio.monitor.commands.Quit;
 import org.soundpaint.rp2040pio.monitor.commands.Read;
 import org.soundpaint.rp2040pio.monitor.commands.Trace;
 import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
+import org.soundpaint.rp2040pio.monitor.commands.Version;
+import org.soundpaint.rp2040pio.monitor.commands.Wait;
+import org.soundpaint.rp2040pio.monitor.commands.Write;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -73,16 +77,20 @@ public class Monitor
     }
     this.in = in;
     this.out = out;
-    final Registers registers = new RegisterClient();
+    final Registers registers = new RegisterClient(out);
     sdk = new SDK(out, registers);
     pioSdk = sdk.getPIO0SDK();
     gpioSdk = sdk.getGPIOSDK();
     commands = new CommandRegistry();
     commands.add(new Help(out, commands));
+    commands.add(new Label(out, sdk));
     commands.add(quit = new Quit(out));
-    commands.add(new Unassemble(out, pioSdk));
-    commands.add(new Trace(out, sdk));
     commands.add(new Read(out, sdk));
+    commands.add(new Trace(out, sdk));
+    commands.add(new Unassemble(out, pioSdk));
+    commands.add(new Version(out, sdk));
+    commands.add(new Wait(out, sdk));
+    commands.add(new Write(out, sdk));
     printAbout();
   }
 

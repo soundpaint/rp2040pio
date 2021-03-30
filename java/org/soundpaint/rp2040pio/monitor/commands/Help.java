@@ -42,8 +42,7 @@ public class Help extends Command
 
   public Help(final PrintStream out, final CommandRegistry commands)
   {
-    super(out, fullName, singleLineDescription,
-          new CmdOptions.OptionDeclaration<?>[] {});
+    super(out, fullName, singleLineDescription);
     if (commands == null) {
       throw new NullPointerException("commands");
     }
