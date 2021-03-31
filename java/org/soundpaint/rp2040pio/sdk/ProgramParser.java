@@ -360,7 +360,7 @@ public class ProgramParser implements Constants
       new Program(id, origin, wrap, wrapTarget, sideSetCount,
                   sideSetOptParsed, sideSetPinDirsParsed, instructions);
     final String message =
-      "loaded program \"" + id + "\" with " +
+      "parsed program \"" + id + "\" with " +
       address + " PIO SM instructions" +
       (origin >= 0 ? " @" + origin : "");
     System.out.println(message);

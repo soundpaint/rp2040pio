@@ -401,7 +401,7 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case INSTR_MEM29:
     case INSTR_MEM30:
     case INSTR_MEM31:
-      return pio.getMemory().get(regNum - Regs.INSTR_MEM0.ordinal());
+      return pio.getMemory().get(regNum - Regs.INSTR_MEM0.ordinal()) & 0xffff;
     case GPIO_PINS:
       return pio.getGPIO().getPins(0, GPIO_NUM);
     case GPIO_PINDIRS:

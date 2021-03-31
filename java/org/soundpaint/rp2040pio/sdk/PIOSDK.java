@@ -224,7 +224,7 @@ public class PIOSDK implements Constants
   {
     Constants.checkSmNum(smNum);
     Constants.checkSmMemAddr(address, "memory address");
-    final int instrAddress = PIORegisters.getMemoryAddress(pioNum, address);
+    final int instrAddress = PIOEmuRegisters.getMemoryAddress(pioNum, address);
     final int opCode = registers.readAddress(instrAddress) & 0xffff;
     final String addressLabel =
       String.format("%02x: %04x ", address, opCode);
@@ -384,7 +384,7 @@ public class PIOSDK implements Constants
    * performed.
    * @param allocationMask Bit mask of instruction addresses (0..31)
    * to allocate.
-   * @param origin Address where to allocate, of -1, if any address is
+   * @param origin Address where to allocate, or -1, if any address is
    * acceptable.
    * @param checkOnly If true, allocation is only checked for, but not
    * performed.  Also, if allocation is not possible, -1 is returned
@@ -402,7 +402,7 @@ public class PIOSDK implements Constants
         if (checkOnly) return -1;
         final String message =
           String.format("allocation at %02x failed", origin);
-        throw new RuntimeException(message);
+        throw new Panic(message);
       }
       for (int offset = 0; offset < MEMORY_SIZE; offset++) {
         final int allocationMaskForOffset =
@@ -417,7 +417,7 @@ public class PIOSDK implements Constants
     if (checkOnly) return -1;
     final String message =
       String.format("allocation at %02x failed", origin);
-    throw new RuntimeException(message);
+    throw new Panic(message);
   }
 
   public boolean canAddProgram(final Program program)
@@ -506,7 +506,7 @@ public class PIOSDK implements Constants
           String.format("allocation at %02x failed for program %s: " +
                         "conflicting origin: %02x",
                         offset, program, origin);
-        throw new RuntimeException(message);
+        throw new Panic(message);
       }
     }
     final int allocationMask = program.getAllocationMask();
@@ -535,7 +535,7 @@ public class PIOSDK implements Constants
           String.format("can not remove program %s from offset %02x: " +
                         "program has conflicting origin: %02x",
                         program, loadedOffset, origin);
-        throw new RuntimeException(message);
+        throw new Panic(message);
       }
     }
     final int allocationMask = program.getAllocationMask();
@@ -551,7 +551,7 @@ public class PIOSDK implements Constants
           String.format("deallocation at %02x failed for program %s: " +
                         "allocation bits corrupted",
                         loadedOffset, program);
-        throw new RuntimeException(message);
+        throw new Panic(message);
       }
       memoryAllocation &= ~allocationMaskForOffset;
       synchronized(registers) {
@@ -1041,7 +1041,7 @@ public class PIOSDK implements Constants
         final String message =
           String.format("claim failed: state machine(s) already in use: %s",
                         listMaskBits(mask));
-        throw new RuntimeException(message);
+        throw new Panic(message);
       }
       stateMachineClaimed |= mask;
     }
@@ -1064,7 +1064,7 @@ public class PIOSDK implements Constants
         if (required) {
           final String message =
             "claim failed: all state machines already in use";
-          throw new RuntimeException(message);
+          throw new Panic(message);
         }
         return -1;
       }

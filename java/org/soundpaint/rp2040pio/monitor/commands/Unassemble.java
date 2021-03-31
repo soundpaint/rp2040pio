@@ -31,6 +31,7 @@ import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
  * Monitor "unassemble" command.
@@ -41,6 +42,9 @@ public class Unassemble extends Command
   private static final String singleLineDescription =
     "unassemble program memory";
 
+  private static final CmdOptions.IntegerOptionDeclaration optPio =
+    CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
+                                   "PIO number, either 0 or 1");
   private static final CmdOptions.IntegerOptionDeclaration optStart =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", 0,
                                    "start address");
@@ -49,16 +53,47 @@ public class Unassemble extends Command
                                    Constants.MEMORY_SIZE,
                                    "number of instructions to unassemble");
 
-  private final PIOSDK pioSdk;
+  /*
+   * TODO: While a PIO's instruction memory is shared among all of the
+   * 4 state machines of that PIO, the unassembled form of the same
+   * instruction still may vary among different state machines, since
+   * the number of side-set / delay bits may vary according to the
+   * PINCTRL_SIDESET_COUNT and EXECCTR_SIDE_EN configuration of each
+   * state machine.
+   *
+   * Consequently, for unassembling program memory with correctly
+   * shown side-set and delay values, one needs to know for which
+   * state machine it is unassembled.  The selected state machine's
+   * side-set / delay configuration should then be read and used to
+   * correctly unassemble instructions.
+   *
+   * Therefore, we need another option argument for selecting the
+   * state machine (0..3), maybe with state machine 0 as default.
+   */
 
-  public Unassemble(final PrintStream out, final PIOSDK pioSdk)
+  private final SDK sdk;
+
+  public Unassemble(final PrintStream out, final SDK sdk)
   {
     super(out, fullName, singleLineDescription,
-          new CmdOptions.OptionDeclaration<?>[] { optStart, optCount });
-    if (pioSdk == null) {
-      throw new NullPointerException("pioSdk");
+          new CmdOptions.OptionDeclaration<?>[] { optPio, optStart, optCount });
+    if (sdk == null) {
+      throw new NullPointerException("sdk");
     }
-    this.pioSdk = pioSdk;
+    this.sdk = sdk;
+  }
+
+  @Override
+  protected void checkValidity(final CmdOptions options)
+    throws CmdOptions.ParseException
+  {
+    if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
+      final int pio = options.getValue(optPio);
+      if ((pio < 0) || (pio > 1)) {
+        throw new CmdOptions.
+          ParseException("PIO number must be either 0 or 1");
+      }
+    }
   }
 
   /**
@@ -68,16 +103,18 @@ public class Unassemble extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
+    final int pio = options.getValue(optPio);
     final int count = options.getValue(optCount);
     if (count == 0) return true;
     final int startAddress = options.getValue(optStart);
     final int stopAddress =
       (startAddress + count) & (Constants.MEMORY_SIZE - 1);
     int address = startAddress;
+    final PIOSDK pioSdk = pio == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     do {
       final PIOSDK.InstructionInfo instructionInfo =
         pioSdk.getMemoryInstruction(0, address, true);
-      out.println(instructionInfo.getToolTipText());
+      out.println("(pio" + pio + ") " + instructionInfo.getToolTipText());
       address = (address + 1) & (Constants.MEMORY_SIZE - 1);
     } while (address != stopAddress);
     return true;

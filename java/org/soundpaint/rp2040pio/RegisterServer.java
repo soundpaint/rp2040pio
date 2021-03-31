@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import org.soundpaint.rp2040pio.sdk.Panic;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -126,7 +127,9 @@ public class RegisterServer
     ERR_MISSING_OPERAND("missing operand", 401),
     ERR_UNPARSED_INPUT("unparsed input", 402),
     ERR_NUMBER_EXPECTED("number expected", 403),
-    ERR_UNEXPECTED("unexpected error", 404);
+    ERR_PANIC("panic", 404),
+    ERR_IO("io", 405),
+    ERR_UNEXPECTED("unexpected error", 406);
 
     private final String id;
     private final int code;
@@ -338,7 +341,8 @@ public class RegisterServer
     } else {
       millisTimeout = 0x0;
     }
-    final int value = sdk.readAddress(address);
+    final int value =
+      sdk.wait(address, expectedValue, mask, cyclesTimeout, millisTimeout);
     return createResponse(ResponseStatus.OK, String.valueOf(value));
   }
 
@@ -383,6 +387,20 @@ public class RegisterServer
     }
   }
 
+  private void handleThrowable(final PrintWriter out, final Throwable t,
+                               final ResponseStatus responseStatus,
+                               final int id)
+  {
+    if (out != null) {
+      try {
+        out.println(createResponse(responseStatus, t.getMessage()));
+      } catch (final Throwable s) {
+        // ignore
+      }
+    }
+    System.out.printf("connection #%d aborted: %s%n", id, t);
+  }
+
   private void serve(final Socket clientSocket)
   {
     final int id = connectionCounter++;
@@ -400,18 +418,14 @@ public class RegisterServer
         }
         out.println(response);
       }
-      System.out.printf("connection #%d closed%n", id);
+    } catch (final Panic p) {
+      handleThrowable(out, p, ResponseStatus.ERR_PANIC, id);
+    } catch (final IOException e) {
+      handleThrowable(out, e, ResponseStatus.ERR_IO, id);
     } catch (final Throwable t) {
-      if (out != null) {
-        try {
-          out.println(createResponse(ResponseStatus.ERR_UNEXPECTED,
-                                     t.getMessage()));
-        } catch (final Throwable s) {
-          // ignore
-        }
-      }
-      System.out.printf("connection #%d aborted: %s%n", id, t);
+      handleThrowable(out, t, ResponseStatus.ERR_UNEXPECTED, id);
     } finally {
+      System.out.printf("connection #%d closed%n", id);
       try {
         clientSocket.close();
       } catch (final IOException e) {

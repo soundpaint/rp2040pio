@@ -24,7 +24,7 @@
 ROOT_DIR=..
 include ../defs.mak
 
-BUILD_DIR=$(ROOT_BUILD_DIR)/EumlationServer
+BUILD_DIR=$(ROOT_BUILD_DIR)/EmulationServer
 COMPILE_CLASSPATH=$(JAVA_DIR):$(BUILD_DIR)
 RUN_CLASSPATH=.
 PIO_DIR=$(JAVA_DIR)/org/soundpaint/rp2040pio
