@@ -31,8 +31,12 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "wait" command for waiting for a register's bits to match
- * an expected value.
+ * Monitor command "wait" observes a register's bits and will not
+ * return until the register's value matches an expected bit pattern,
+ * or when a timeout has occurred.
+ *
+ * TODO: There is currently no way to cancel an ongoing wait command
+ * other than killing the monitor application.
  */
 public class Wait extends Command
 {
@@ -53,7 +57,7 @@ public class Wait extends Command
     CmdOptions.createIntegerOption("COUNT", false, 'c', "cycles", 0,
                                    "timeout after <COUNT> cycles or no timeout, if 0");
   private static final CmdOptions.IntegerOptionDeclaration optTime =
-    CmdOptions.createIntegerOption("COUNT", false, 't', "time", 0,
+    CmdOptions.createIntegerOption("COUNT", false, 't', "time", 100000,
                                    "timeout after <COUNT> millis or no timeout, if 0");
 
   private final SDK sdk;

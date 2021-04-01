@@ -31,7 +31,8 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "write" command for low-level write access to a register.
+ * Monitor command "write" provides low-level write access to a
+ * register.
  */
 public class Write extends Command
 {

@@ -31,7 +31,8 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "read" command for low-level read access to a register.
+ * Monitor command "read" provides low-level read access to a
+ * register.
  */
 public class Read extends Command
 {

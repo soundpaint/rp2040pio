@@ -31,7 +31,7 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "version" command.
+ * Monitor command "version" prints the emulator's version identifier.
  */
 public class Version extends Command
 {

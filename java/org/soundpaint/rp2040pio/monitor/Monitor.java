@@ -28,11 +28,15 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.ConnectException;
+import java.util.Arrays;
 import java.util.List;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.RegisterClient;
 import org.soundpaint.rp2040pio.Registers;
+import org.soundpaint.rp2040pio.monitor.commands.Enter;
 import org.soundpaint.rp2040pio.monitor.commands.Help;
 import org.soundpaint.rp2040pio.monitor.commands.Label;
 import org.soundpaint.rp2040pio.monitor.commands.Load;
@@ -55,11 +59,31 @@ import org.soundpaint.rp2040pio.sdk.ProgramParser;
  */
 public class Monitor
 {
+  private static final String PRG_NAME = "Monitor";
+  private static final String PRG_ID_AND_VERSION =
+    "Emulation Monitor Version 0.1 for " + Constants.getProgramAndVersion();
+  private static final CmdOptions.FlagOptionDeclaration optVersion =
+    CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
+                                "display version information and exit");
+  private static final CmdOptions.FlagOptionDeclaration optHelp =
+    CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
+                                "display this help text and exit");
+  private static final CmdOptions.IntegerOptionDeclaration optPort =
+    CmdOptions.createIntegerOption("PORT", false, 'p', "port",
+                                   Constants.
+                                   REGISTER_SERVER_DEFAULT_PORT_NUMBER,
+                                   "use PORT as server port number");
+  private static final List<CmdOptions.OptionDeclaration<?>>
+    optionDeclarations =
+    Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
+                  { optVersion, optHelp, optPort });
+
   private final BufferedReader in;
-  private final PrintStream out;
+  private final PrintStream console;
   private final SDK sdk;
   private final PIOSDK pioSdk;
   private final GPIOSDK gpioSdk;
+  private final CmdOptions options;
   private final CommandRegistry commands;
   private final Command quit;
 
@@ -68,48 +92,124 @@ public class Monitor
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Monitor(final BufferedReader in, final PrintStream out)
-    throws IOException
+  public Monitor(final BufferedReader in, final PrintStream console,
+                 final String[] argv)
   {
     if (in == null) {
       throw new NullPointerException("in");
     }
-    if (out == null) {
-      throw new NullPointerException("out");
+    if (console == null) {
+      throw new NullPointerException("console");
     }
     this.in = in;
-    this.out = out;
-    final Registers registers = new RegisterClient(out);
-    sdk = new SDK(out, registers);
+    this.console = console;
+    options = parseArgs(argv);
+    printAbout();
+    final Registers registers = connect();
+    sdk = new SDK(console, registers);
     pioSdk = sdk.getPIO0SDK();
     gpioSdk = sdk.getGPIOSDK();
-    commands = new CommandRegistry();
-    commands.add(new Help(out, commands));
-    commands.add(new Label(out, sdk));
-    commands.add(new Load(out, sdk));
-    commands.add(quit = new Quit(out));
-    commands.add(new Read(out, sdk));
-    commands.add(new Reset(out, sdk));
-    commands.add(new Trace(out, sdk));
-    commands.add(new Unassemble(out, sdk));
-    commands.add(new Version(out, sdk));
-    commands.add(new Wait(out, sdk));
-    commands.add(new Write(out, sdk));
-    printAbout();
+    commands = installCommands(console, in, sdk, quit = new Quit(console));
   }
 
-  private void run() throws IOException
+  private CommandRegistry installCommands(final PrintStream console,
+                                          final BufferedReader in,
+                                          final SDK sdk,
+                                          final Command quit)
   {
-    boolean quit = false;
-    while (!quit) {
-      out.print("> ");
-      final String commandLine = in.readLine().trim();
-      if (!commandLine.isEmpty()) {
-        quit = parseAndExecute(commandLine);
-      }
+    final CommandRegistry commands = new CommandRegistry();
+    commands.add(new Enter(console, sdk, in));
+    commands.add(new Help(console, commands));
+    commands.add(new Label(console, sdk));
+    commands.add(new Load(console, sdk));
+    commands.add(quit);
+    commands.add(new Read(console, sdk));
+    commands.add(new Reset(console, sdk));
+    commands.add(new Trace(console, sdk));
+    commands.add(new Unassemble(console, sdk));
+    commands.add(new Version(console, sdk));
+    commands.add(new Wait(console, sdk));
+    commands.add(new Write(console, sdk));
+    return commands;
+  }
+
+  private CmdOptions parseArgs(final String argv[])
+  {
+    final CmdOptions options;
+    try {
+      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION,
+                               optionDeclarations);
+      options.parse(argv);
+      checkValidity(options);
+    } catch (final CmdOptions.ParseException e) {
+      console.println(e.getMessage());
+      System.exit(-1);
+      throw new InternalError();
     }
-    out.println("bye");
-    System.exit(0);
+    if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
+      console.println(PRG_ID_AND_VERSION);
+      System.exit(0);
+      throw new InternalError();
+    }
+    if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
+      console.println(options.getFullInfo());
+      System.exit(0);
+      throw new InternalError();
+    }
+    return options;
+  }
+
+  private void checkValidity(final CmdOptions options)
+    throws CmdOptions.ParseException
+  {
+    final int port = options.getValue(optPort);
+    if ((port < 0) || (port > 65535)) {
+      throw new CmdOptions.
+        ParseException("PORT must be in the range 0..65535");
+    }
+  }
+
+  private void printAbout()
+  {
+    console.println("Monitor Control Program");
+    console.println(Constants.getAbout());
+    console.println();
+    console.println("For a list of available commands, enter 'help'.");
+  }
+
+  private Registers connect()
+  {
+    final int port = options.getValue(optPort);
+    try {
+      console.printf("connecting to emulation server at port %d...%n", port);
+      return new RegisterClient(console, port);
+    } catch (final IOException e) {
+      console.println("failed to connect to emulation server: " +
+                      e.getMessage());
+      console.println("check that emulation server runs at port address " +
+                      port);
+      System.exit(-1);
+      throw new InternalError();
+    }
+  }
+
+  private void run()
+  {
+    try {
+      boolean quit = false;
+      while (!quit) {
+        console.print("> ");
+        final String commandLine = in.readLine().trim();
+        if (!commandLine.isEmpty()) {
+          quit = parseAndExecute(commandLine);
+        }
+      }
+      console.println("bye");
+      System.exit(0);
+    } catch (final IOException e) {
+      console.println(e.getMessage());
+      System.exit(-1);
+    }
   }
 
   private boolean parseAndExecute(final String commandLine)
@@ -121,12 +221,12 @@ public class Monitor
       commandLine.substring(0, spacePos).trim();
     final List<Command> matchingCommands = commands.lookup(commandToken);
     if ((matchingCommands == null) || (matchingCommands.size() == 0)) {
-      out.println("unknown command: " + commandToken);
+      console.println("unknown command: " + commandToken);
       return false;
     }
     if (matchingCommands.size() > 1) {
-      out.println("ambiguous command: " + commandToken);
-      out.println("possible resolutions: " + matchingCommands);
+      console.println("ambiguous command: " + commandToken);
+      console.println("possible resolutions: " + matchingCommands);
       return false;
     }
     final Command command = matchingCommands.get(0);
@@ -135,13 +235,6 @@ public class Monitor
     final String[] argv = args.split(" ");
     final boolean executed = command.parseAndExecute(argv);
     return (command == quit) && executed;
-  }
-
-  private void printAbout()
-  {
-    out.println(Constants.getAbout());
-    out.println();
-    out.println("For a list of available commands, enter 'help'.");
   }
 
   public void addProgram(final String programResourcePath)
@@ -159,17 +252,17 @@ public class Monitor
     for (int i = 0; i < cycles; i++) {
       sdk.triggerCyclePhase0(true);
       sdk.triggerCyclePhase1(true);
-      System.out.println(sdk.readAddress(address) + " " +
-                         gpioSdk.asBitArrayDisplay());
+      console.println(sdk.readAddress(address) + " " +
+                      gpioSdk.asBitArrayDisplay());
     }
     pioSdk.smSetEnabled(0, false);
   }
 
-  public static void main(final String argv[]) throws IOException
+  public static void main(final String argv[])
   {
     final BufferedReader in =
       new BufferedReader(new InputStreamReader(System.in));
-    new Monitor(in, System.out).run();
+    new Monitor(in, System.out, argv).run();
   }
 }
 

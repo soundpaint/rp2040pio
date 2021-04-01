@@ -34,7 +34,8 @@ import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "unassemble" command.
+ * Monitor command "unassemble" displays instructions of a PIO's
+ * instruction memory in a human-readable form.
  */
 public class Unassemble extends Command
 {
@@ -45,6 +46,9 @@ public class Unassemble extends Command
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
                                    "PIO number, either 0 or 1");
+  private static final CmdOptions.IntegerOptionDeclaration optSm =
+    CmdOptions.createIntegerOption("NUMBER", false, 's', "sm", 0,
+                                   "SM number, one of 0, 1, 2 or 3");
   private static final CmdOptions.IntegerOptionDeclaration optStart =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", 0,
                                    "start address");
@@ -76,7 +80,8 @@ public class Unassemble extends Command
   public Unassemble(final PrintStream out, final SDK sdk)
   {
     super(out, fullName, singleLineDescription,
-          new CmdOptions.OptionDeclaration<?>[] { optPio, optStart, optCount });
+          new CmdOptions.OptionDeclaration<?>[]
+          { optPio, optSm, optStart, optCount });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -88,10 +93,15 @@ public class Unassemble extends Command
     throws CmdOptions.ParseException
   {
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
-      final int pio = options.getValue(optPio);
-      if ((pio < 0) || (pio > 1)) {
+      final int pioNum = options.getValue(optPio);
+      if ((pioNum < 0) || (pioNum > 1)) {
         throw new CmdOptions.
           ParseException("PIO number must be either 0 or 1");
+      }
+      final int smNum = options.getValue(optSm);
+      if ((smNum < 0) || (smNum > 1)) {
+        throw new CmdOptions.
+          ParseException("SM number must be one of 0, 1, 2 or 3");
       }
     }
   }
@@ -103,18 +113,19 @@ public class Unassemble extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    final int pio = options.getValue(optPio);
+    final int pioNum = options.getValue(optPio);
+    final int smNum = options.getValue(optSm);
     final int count = options.getValue(optCount);
     if (count == 0) return true;
     final int startAddress = options.getValue(optStart);
     final int stopAddress =
       (startAddress + count) & (Constants.MEMORY_SIZE - 1);
     int address = startAddress;
-    final PIOSDK pioSdk = pio == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     do {
       final PIOSDK.InstructionInfo instructionInfo =
-        pioSdk.getMemoryInstruction(0, address, true);
-      out.println("(pio" + pio + ") " + instructionInfo.getToolTipText());
+        pioSdk.getMemoryInstruction(smNum, address, true, true);
+      out.println("(pio" + pioNum + ") " + instructionInfo.getToolTipText());
       address = (address + 1) & (Constants.MEMORY_SIZE - 1);
     } while (address != stopAddress);
     return true;

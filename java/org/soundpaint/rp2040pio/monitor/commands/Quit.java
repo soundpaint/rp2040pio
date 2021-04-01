@@ -29,7 +29,7 @@ import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.monitor.Command;
 
 /**
- * Monitor "quit" command.
+ * Monitor command "quit" quits the monitor application.
  */
 public class Quit extends Command
 {

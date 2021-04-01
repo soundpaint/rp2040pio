@@ -31,7 +31,8 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "trace" command.
+ * Monitor command "trace" lets the emulator execute clock cycles step
+ * by step.
  */
 public class Trace extends Command
 {

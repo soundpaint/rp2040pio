@@ -217,17 +217,20 @@ public class PIOSDK implements Constants
    * the side set / delay settings has an impact on interpretation of
    * the instruction even for disassembling.
    */
-  public synchronized InstructionInfo getMemoryInstruction(final int smNum,
-                                                           final int address,
-                                                           final boolean format)
+  public synchronized InstructionInfo
+    getMemoryInstruction(final int smNum,
+                         final int address,
+                         final boolean showAddress,
+                         final boolean format)
     throws IOException
   {
     Constants.checkSmNum(smNum);
     Constants.checkSmMemAddr(address, "memory address");
     final int instrAddress = PIOEmuRegisters.getMemoryAddress(pioNum, address);
     final int opCode = registers.readAddress(instrAddress) & 0xffff;
+    final String formattedOpCode = String.format("%04x ", opCode);
     final String addressLabel =
-      String.format("%02x: %04x ", address, opCode);
+      (showAddress ? String.format("%02x: ", address) : "") + formattedOpCode;
     final boolean isDelayCycle = false;
     final int delay = 0;
     return

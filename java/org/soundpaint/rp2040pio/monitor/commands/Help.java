@@ -30,7 +30,8 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.monitor.CommandRegistry;
 
 /**
- * Monitor "help" command.
+ * Monitor command "help" prints a list of all available monitor
+ * commands.
  */
 public class Help extends Command
 {

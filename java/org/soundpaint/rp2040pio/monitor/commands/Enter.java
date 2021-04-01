@@ -1,5 +1,5 @@
 /*
- * @(#)Load.java 1.00 21/03/31
+ * @(#)Enter.java 1.00 21/03/31
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,43 +24,49 @@
  */
 package org.soundpaint.rp2040pio.monitor.commands;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import org.soundpaint.rp2040pio.CmdOptions;
+import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
+import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor command "load" loads a program from a file and stores it in
- * a PIO's memory.
+ * Monitor command "enter" lets the user enter instruction opcodes to
+ * be stored in a PIO's program memory.
  */
-public class Load extends Command
+public class Enter extends Command
 {
-  private static final String fullName = "load";
-  private static final String singleLineDescription = "load program from file";
-  private static final String defaultPath = "/examples/squarewave.hex";
+  private static final String fullName = "enter";
+  private static final String singleLineDescription =
+    "enter instruction opcodes; exit by entering an empty line";
 
   private final SDK sdk;
+  private final BufferedReader in;
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
                                    "PIO number, either 0 or 1");
-  private static final CmdOptions.StringOptionDeclaration optFile =
-    CmdOptions.createStringOption("STRING", false, 'f', "file", defaultPath,
-                                  "path of hex dump file to load");
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
-                                   "preferred program start address");
+                                   "start address");
 
-  public Load(final PrintStream out, final SDK sdk)
+  public Enter(final PrintStream out, final SDK sdk, final BufferedReader in)
   {
     super(out, fullName, singleLineDescription,
-          new CmdOptions.OptionDeclaration<?>[] { optPio, optFile, optAddress });
+          new CmdOptions.OptionDeclaration<?>[] { optPio, optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
+    if (in == null) {
+      throw new NullPointerException("in");
+    }
     this.sdk = sdk;
+    this.in = in;
   }
 
   @Override
@@ -68,14 +74,10 @@ public class Load extends Command
     throws CmdOptions.ParseException
   {
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
-      final int pio = options.getValue(optPio);
-      if ((pio < 0) || (pio > 1)) {
+      final int pioNum = options.getValue(optPio);
+      if ((pioNum < 0) || (pioNum > 1)) {
         throw new CmdOptions.
           ParseException("PIO number must be either 0 or 1");
-      }
-      if (!options.isDefined(optFile)) {
-        throw new CmdOptions.
-          ParseException("option not specified: " + optFile);
       }
     }
   }
@@ -87,15 +89,36 @@ public class Load extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    final int pio = options.getValue(optPio);
-    final String resourcePath = options.getValue(optFile);
-    final Integer preferredAddress = options.getValue(optAddress);
-    final PIOSDK pioSdk = pio == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-    final int assignedAddress =
-      preferredAddress != null ?
-      pioSdk.addProgramAtOffset(resourcePath, preferredAddress) :
-      pioSdk.addProgram(resourcePath);
-    out.printf("stored program at address 0x%02x%n", assignedAddress);
+    final int pioNum = options.getValue(optPio);
+    final Integer startAddress = options.getValue(optAddress);
+    int address =
+      startAddress != null ?
+      startAddress & Constants.MEMORY_SIZE - 1 :
+      0;
+    out.println("per input line, enter 16 bit hex word without '0x' prefix");
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    int count = 0;
+    while (true) {
+      final int currentValue =
+        sdk.readAddress(PIOEmuRegisters.getMemoryAddress(pioNum, address));
+      out.printf("(pio%d) %02x: (%04x) ", pioNum, address, currentValue);
+      final String line = in.readLine().trim();
+      if ((line == null) || line.isEmpty()) break;
+      try {
+        final int value = Integer.parseInt(line, 16);
+        sdk.writeAddress(PIORegisters.getMemoryAddress(pioNum, address), value);
+        //storeOpCode(address, value, pioNum);
+        final PIOSDK.InstructionInfo instructionInfo =
+          pioSdk.getMemoryInstruction(0, address, false, true);
+        out.println("                  " + instructionInfo.getToolTipText());
+      } catch (final NumberFormatException e) {
+        out.println("not a valid 16 bit word: " + line);
+        continue;
+      }
+      address = (address + 1) & Constants.MEMORY_SIZE - 1;
+      count++;
+    }
+    out.printf("entered %d words%n", count);
     return true;
   }
 }

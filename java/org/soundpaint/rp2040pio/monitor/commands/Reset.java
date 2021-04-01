@@ -31,7 +31,7 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "reset" command initiates a full reset of the emulator's
+ * Monitor command "reset" initiates a full reset of the emulator's
  * complete internal state.
  */
 public class Reset extends Command

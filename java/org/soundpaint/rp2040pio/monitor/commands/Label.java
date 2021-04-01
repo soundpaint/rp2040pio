@@ -31,7 +31,7 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor "label" command for displaying a register's label.
+ * Monitor command "label" displays a register's name, if available.
  */
 public class Label extends Command
 {
