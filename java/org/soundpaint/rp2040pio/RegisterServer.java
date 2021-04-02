@@ -27,6 +27,7 @@ package org.soundpaint.rp2040pio;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -65,6 +66,7 @@ public class RegisterServer
 {
   private static final String[] NULL_ARGS = new String[0];
 
+  private final PrintStream console;
   private final SDK sdk;
   private final int portNumber;
   private final ServerSocket serverSocket;
@@ -75,19 +77,29 @@ public class RegisterServer
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public RegisterServer(final SDK sdk) throws IOException
+  public RegisterServer(final PrintStream console, final SDK sdk)
+    throws IOException
   {
-    this(sdk, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
+    this(console, sdk, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
   }
 
-  public RegisterServer(final SDK sdk, final int portNumber) throws IOException
+  public RegisterServer(final PrintStream console, final SDK sdk,
+                        final int portNumber)
+    throws IOException
   {
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
+    if (sdk == null) {
+      throw new NullPointerException("sdk");
+    }
+    this.console = console;
     this.sdk = sdk;
     this.portNumber = portNumber;
     serverSocket = new ServerSocket(portNumber);
     connectionCounter = 0;
-    // TODO: Maybe introduce pool of client threads to limit maximum
-    // number of connections.
+    // TODO: Maybe introduce pool of reusable client threads to limit
+    // maximum number of simultaneously open connections.
     new Thread(() -> listen(), "RegisterServer Client Thread").start();
   }
 
@@ -387,27 +399,28 @@ public class RegisterServer
     }
   }
 
-  private void handleThrowable(final PrintWriter out, final Throwable t,
+  private void handleThrowable(final PrintWriter clientOut, final Throwable t,
                                final ResponseStatus responseStatus,
                                final int id)
   {
-    if (out != null) {
+    if (clientOut != null) {
       try {
-        out.println(createResponse(responseStatus, t.getMessage()));
+        clientOut.println(createResponse(responseStatus, t.getMessage()));
       } catch (final Throwable s) {
         // ignore
       }
     }
-    System.out.printf("connection #%d aborted: %s%n", id, t);
+    t.printStackTrace(console);
+    console.printf("connection #%d aborted: %s%n", id, t);
   }
 
   private void serve(final Socket clientSocket)
   {
     final int id = connectionCounter++;
-    System.out.printf("connection #%d opened%n", id);
-    PrintWriter out = null;
+    console.printf("connection #%d opened%n", id);
+    PrintWriter clientOut = null;
     try {
-      out = new PrintWriter(clientSocket.getOutputStream(), true);
+      clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
       final BufferedReader in =
         new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
       String request;
@@ -416,20 +429,20 @@ public class RegisterServer
         if (response == null) {
           break;
         }
-        out.println(response);
+        clientOut.println(response);
       }
     } catch (final Panic p) {
-      handleThrowable(out, p, ResponseStatus.ERR_PANIC, id);
+      handleThrowable(clientOut, p, ResponseStatus.ERR_PANIC, id);
     } catch (final IOException e) {
-      handleThrowable(out, e, ResponseStatus.ERR_IO, id);
+      handleThrowable(clientOut, e, ResponseStatus.ERR_IO, id);
     } catch (final Throwable t) {
-      handleThrowable(out, t, ResponseStatus.ERR_UNEXPECTED, id);
+      handleThrowable(clientOut, t, ResponseStatus.ERR_UNEXPECTED, id);
     } finally {
-      System.out.printf("connection #%d closed%n", id);
+      console.printf("connection #%d closed%n", id);
       try {
         clientSocket.close();
       } catch (final IOException e) {
-        System.out.println("warning: failed closing client socket: " + e);
+        console.println("warning: failed closing client socket: " + e);
       }
     }
   }

@@ -129,7 +129,7 @@ public class EmulationServer
       final LocalRegisters registers = new LocalRegisters(emulator);
       final SDK sdk = new SDK(console, registers);
       final int port = options.getValue(optPort);
-      final RegisterServer server = new RegisterServer(sdk, port);
+      final RegisterServer server = new RegisterServer(console, sdk, port);
       if (options.getValue(optSilent) != CmdOptions.Flag.ON) {
         console.println("started emulation server at port " + port);
       }

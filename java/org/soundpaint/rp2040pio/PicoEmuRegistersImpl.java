@@ -46,12 +46,6 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
   public Emulator getEmulator() { return emulator; }
 
   @Override
-  public String getRegisterLabel(final int regNum)
-  {
-    return getLabelForRegister(regNum);
-  }
-
-  @Override
   protected void writeRegister(final int regNum, final int value,
                                final int mask, final boolean xor)
   {

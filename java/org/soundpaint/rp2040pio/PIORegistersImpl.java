@@ -52,12 +52,6 @@ public class PIORegistersImpl extends PIORegisters
     return pio.getIndex();
   }
 
-  @Override
-  public String getRegisterLabel(final int regNum)
-  {
-    return getLabelForRegister(regNum);
-  }
-
   public int getAddress(final PIORegisters.Regs register)
   {
     return getAddress(getPIOIndex(), register);

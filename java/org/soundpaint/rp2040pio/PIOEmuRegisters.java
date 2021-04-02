@@ -182,13 +182,12 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
 
   protected static final Regs[] REGS = Regs.values();
 
+  @Override
+  @SuppressWarnings("unchecked")
+  protected <T extends Enum<T>> T[] getRegs() { return (T[])REGS; }
+
   protected static final int SM_SIZE =
     Regs.SM1_REGX.ordinal() - Regs.SM0_REGX.ordinal();
-
-  public static String getLabelForRegister(final int regNum)
-  {
-    return REGS[regNum].toString();
-  }
 
   public static int getAddress(final int pioNum,
                                final PIOEmuRegisters.Regs register)

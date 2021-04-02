@@ -147,16 +147,15 @@ public abstract class GPIOIOBank0Registers extends AbstractRegisters
 
   protected static final Regs[] REGS = Regs.values();
 
+  @Override
+  @SuppressWarnings("unchecked")
+  protected <T extends Enum<T>> T[] getRegs() { return (T[])REGS; }
+
   protected static final int GPIO_DATA_SIZE =
     Regs.GPIO1_STATUS.ordinal() - Regs.GPIO0_STATUS.ordinal();
 
   protected static final int PROC_INT_DATA_SIZE =
     Regs.PROC1_INTE0.ordinal() - Regs.PROC0_INTE0.ordinal();
-
-  public static String getLabelForRegister(final int regNum)
-  {
-    return REGS[regNum].toString();
-  }
 
   public static int getAddress(final GPIOIOBank0Registers.Regs register)
   {

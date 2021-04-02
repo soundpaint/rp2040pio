@@ -114,10 +114,9 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
 
   protected static final Regs[] REGS = Regs.values();
 
-  public static String getLabelForRegister(final int regNum)
-  {
-    return REGS[regNum].toString();
-  }
+  @Override
+  @SuppressWarnings("unchecked")
+  protected <T extends Enum<T>> T[] getRegs() { return (T[])REGS; }
 
   public static int getAddress(final PicoEmuRegisters.Regs register)
   {

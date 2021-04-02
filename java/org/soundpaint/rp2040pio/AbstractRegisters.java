@@ -116,7 +116,23 @@ public abstract class AbstractRegisters implements Registers
 
   private static AccessMethod[] ACCESS_METHODS = AccessMethod.values();
 
-  protected abstract String getRegisterLabel(final int regNum);
+  /**
+   * Returns all instance values of the subclass's REGS enum.
+   */
+  protected abstract <T extends Enum<T>> T[] getRegs();
+
+  private <T extends Enum<T>> String getRegisterLabel(final int regNum)
+  {
+    if (regNum < 0) {
+      throw new IllegalArgumentException("regNum < 0: " + regNum);
+    }
+    if (regNum > 0xfff) {
+      throw new IllegalArgumentException("regNum > 0xfff: " +
+                                         String.format("%08x", regNum));
+    }
+    final T[] regs = getRegs();
+    return regNum < regs.length ? regs[regNum].toString() : null;
+  }
 
   @Override
   public String getAddressLabel(final int address) throws IOException

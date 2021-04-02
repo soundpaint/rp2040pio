@@ -56,12 +56,6 @@ public class GPIOPadsBank0RegistersImpl extends GPIOPadsBank0Registers
   public GPIO getGPIO() { return gpio; }
 
   @Override
-  public String getRegisterLabel(final int regNum)
-  {
-    return getLabelForRegister(regNum);
-  }
-
-  @Override
   protected void writeRegister(final int regNum, final int value,
                                final int mask, final boolean xor)
   {

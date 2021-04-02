@@ -53,12 +53,6 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     return pio.getIndex();
   }
 
-  @Override
-  public String getRegisterLabel(final int regNum)
-  {
-    return getLabelForRegister(regNum);
-  }
-
   public int getAddress(final PIOEmuRegisters.Regs register)
   {
     return getAddress(getPIOIndex(), register);

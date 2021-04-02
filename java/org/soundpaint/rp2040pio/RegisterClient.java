@@ -238,8 +238,7 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  protected String getRegisterLabel(final int regNum)
-  {
+  protected <T extends Enum<T>> T[] getRegs() {
     throw new InternalError("method not applicable for this class");
   }
 

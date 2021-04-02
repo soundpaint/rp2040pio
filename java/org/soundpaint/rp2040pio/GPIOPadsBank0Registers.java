@@ -80,10 +80,9 @@ public abstract class GPIOPadsBank0Registers extends AbstractRegisters
 
   protected static final Regs[] REGS = Regs.values();
 
-  public static String getLabelForRegister(final int regNum)
-  {
-    return REGS[regNum].toString();
-  }
+  @Override
+  @SuppressWarnings("unchecked")
+  protected <T extends Enum<T>> T[] getRegs() { return (T[])REGS; }
 
   public static int getAddress(final GPIOPadsBank0Registers.Regs register)
   {
