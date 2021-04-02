@@ -46,9 +46,9 @@ public class Read extends Command
 
   private final SDK sdk;
 
-  public Read(final PrintStream out, final SDK sdk)
+  public Read(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[] { optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
@@ -84,7 +84,7 @@ public class Read extends Command
     }
     final int value = sdk.readAddress(address);
     final String label = sdk.getLabelForAddress(address);
-    out.printf("read %s (0x%08x): 0x%04x%n", label, address, value);
+    console.printf("read %s (0x%08x): 0x%04x%n", label, address, value);
     return true;
   }
 }

@@ -62,9 +62,9 @@ public class Wait extends Command
 
   private final SDK sdk;
 
-  public Wait(final PrintStream out, final SDK sdk)
+  public Wait(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[] {
             optAddress, optExpectedValue, optMask, optCycles, optTime });
     if (sdk == null) {
@@ -80,22 +80,22 @@ public class Wait extends Command
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
       if (!options.isDefined(optAddress)) {
         throw new CmdOptions.
-          ParseException("option not specified: " + optAddress);
+          ParseException("option not specified", optAddress);
       }
       if (!options.isDefined(optExpectedValue)) {
         throw new CmdOptions.
-          ParseException("option not specified: " + optExpectedValue);
+          ParseException("option not specified", optExpectedValue);
       }
-      final Integer cycles = options.getValue(optCycles);
-      if (cycles < 0) {
-        throw new CmdOptions.
-          ParseException("CYCLES must be a non-negative value");
-      }
-      final Integer time = options.getValue(optTime);
-      if (time < 0) {
-        throw new CmdOptions.
-          ParseException("TIME must be a non-negative value");
-      }
+    }
+    final int cycles = options.getValue(optCycles);
+    if (cycles < 0) {
+      throw new CmdOptions.
+        ParseException("COUNT must be a non-negative value", optCycles);
+    }
+    final int time = options.getValue(optTime);
+    if (time < 0) {
+      throw new CmdOptions.
+        ParseException("COUNT must be a non-negative value", optTime);
     }
   }
 
@@ -118,8 +118,8 @@ public class Wait extends Command
     final int cycles = options.getValue(optCycles);
     final int time = options.getValue(optTime);
     final int result = sdk.wait(address, expectedValue, mask, cycles, time);
-    out.printf("wait on 0x%08x for 0x%08x returned 0x%08x%n",
-               address, expectedValue, result);
+    console.printf("wait on 0x%08x for 0x%08x returned 0x%08x%n",
+                   address, expectedValue, result);
     return true;
   }
 }

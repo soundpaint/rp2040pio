@@ -57,29 +57,11 @@ public class Unassemble extends Command
                                    Constants.MEMORY_SIZE,
                                    "number of instructions to unassemble");
 
-  /*
-   * TODO: While a PIO's instruction memory is shared among all of the
-   * 4 state machines of that PIO, the unassembled form of the same
-   * instruction still may vary among different state machines, since
-   * the number of side-set / delay bits may vary according to the
-   * PINCTRL_SIDESET_COUNT and EXECCTR_SIDE_EN configuration of each
-   * state machine.
-   *
-   * Consequently, for unassembling program memory with correctly
-   * shown side-set and delay values, one needs to know for which
-   * state machine it is unassembled.  The selected state machine's
-   * side-set / delay configuration should then be read and used to
-   * correctly unassemble instructions.
-   *
-   * Therefore, we need another option argument for selecting the
-   * state machine (0..3), maybe with state machine 0 as default.
-   */
-
   private final SDK sdk;
 
-  public Unassemble(final PrintStream out, final SDK sdk)
+  public Unassemble(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[]
           { optPio, optSm, optStart, optCount });
     if (sdk == null) {
@@ -94,12 +76,12 @@ public class Unassemble extends Command
   {
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
       final int pioNum = options.getValue(optPio);
-      if ((pioNum < 0) || (pioNum > 1)) {
+      if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
         throw new CmdOptions.
           ParseException("PIO number must be either 0 or 1");
       }
       final int smNum = options.getValue(optSm);
-      if ((smNum < 0) || (smNum > 1)) {
+      if ((smNum < 0) || (smNum > Constants.SM_COUNT - 1)) {
         throw new CmdOptions.
           ParseException("SM number must be one of 0, 1, 2 or 3");
       }
@@ -125,7 +107,8 @@ public class Unassemble extends Command
     do {
       final PIOSDK.InstructionInfo instructionInfo =
         pioSdk.getMemoryInstruction(smNum, address, true, true);
-      out.println("(pio" + pioNum + ") " + instructionInfo.getToolTipText());
+      console.printf("(pio%d:sm%d) %s%n", pioNum, smNum,
+                     instructionInfo.getToolTipText());
       address = (address + 1) & (Constants.MEMORY_SIZE - 1);
     } while (address != stopAddress);
     return true;

@@ -89,6 +89,7 @@ public class RegisterClient extends AbstractRegisters
       return result;
     }
 
+    @Override
     public String toString()
     {
       return

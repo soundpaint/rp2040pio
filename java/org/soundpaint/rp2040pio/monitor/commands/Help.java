@@ -41,9 +41,9 @@ public class Help extends Command
 
   private final CommandRegistry commands;
 
-  public Help(final PrintStream out, final CommandRegistry commands)
+  public Help(final PrintStream console, final CommandRegistry commands)
   {
-    super(out, fullName, singleLineDescription);
+    super(console, fullName, singleLineDescription);
     if (commands == null) {
       throw new NullPointerException("commands");
     }
@@ -57,14 +57,14 @@ public class Help extends Command
   @Override
   protected boolean execute(final CmdOptions options)
   {
-    out.println("Available commands:");
+    console.println("Available commands:");
     for (final Command command : commands) {
-      out.println(String.format("  %-12s %s", command.getFullName(),
-                                command.getSingleLineDescription()));
+      console.println(String.format("  %-12s %s", command.getFullName(),
+                                    command.getSingleLineDescription()));
     }
-    out.println();
-    out.println("For detail help of a command, enter: <command> -h");
-    out.println("Command abbreviations work when unambiguity is preserved.");
+    console.println();
+    console.println("For detail help of a command, enter: <command> -h");
+    console.println("Command abbreviations work when unambiguity is preserved.");
     return true;
   }
 }

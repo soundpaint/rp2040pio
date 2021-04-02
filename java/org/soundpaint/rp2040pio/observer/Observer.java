@@ -1,5 +1,5 @@
 /*
- * @(#)Monitor.java 1.00 21/02/02
+ * @(#)Observer.java 1.00 21/04/01
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -22,46 +22,27 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio.monitor;
+package org.soundpaint.rp2040pio.observer;
 
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
-import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.RegisterClient;
 import org.soundpaint.rp2040pio.Registers;
-import org.soundpaint.rp2040pio.monitor.commands.Enable;
-import org.soundpaint.rp2040pio.monitor.commands.Enter;
-import org.soundpaint.rp2040pio.monitor.commands.Help;
-import org.soundpaint.rp2040pio.monitor.commands.Label;
-import org.soundpaint.rp2040pio.monitor.commands.Load;
-import org.soundpaint.rp2040pio.monitor.commands.Quit;
-import org.soundpaint.rp2040pio.monitor.commands.Read;
-import org.soundpaint.rp2040pio.monitor.commands.Reset;
-import org.soundpaint.rp2040pio.monitor.commands.Trace;
-import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
-import org.soundpaint.rp2040pio.monitor.commands.Version;
-import org.soundpaint.rp2040pio.monitor.commands.Wait;
-import org.soundpaint.rp2040pio.monitor.commands.Write;
-import org.soundpaint.rp2040pio.sdk.GPIOSDK;
-import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
-import org.soundpaint.rp2040pio.sdk.Program;
-import org.soundpaint.rp2040pio.sdk.ProgramParser;
 
 /**
- * Program Execution Monitor And Control
+ * Emulation Register Status Observation
  */
-public class Monitor
+public class Observer
 {
-  private static final String PRG_NAME = "Monitor";
+  private static final String PRG_NAME = "Observer";
   private static final String PRG_ID_AND_VERSION =
-    "Emulation Monitor Version 0.1 for " + Constants.getProgramAndVersion();
+    "Emulation Observer Version 0.1 for " + Constants.getProgramAndVersion();
   private static final CmdOptions.FlagOptionDeclaration optVersion =
     CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
                                 "display version information and exit");
@@ -73,65 +54,40 @@ public class Monitor
                                    Constants.
                                    REGISTER_SERVER_DEFAULT_PORT_NUMBER,
                                    "use PORT as server port number");
+  private static final CmdOptions.IntegerOptionDeclaration optAddress =
+    CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
+                                   "address of the register to observe");
+  private static final CmdOptions.IntegerOptionDeclaration optMask =
+    CmdOptions.createIntegerOption("MASK", false, 'm', "mask", 0xffffffff,
+                                   "bit mask to select bits to observe");
+  private static final CmdOptions.IntegerOptionDeclaration optRefresh =
+    CmdOptions.createIntegerOption("TIME", false, 'r', "refresh", 10000,
+                                   "autorefresh after <TIME> millis or no autorefresh, if 0");
   private static final List<CmdOptions.OptionDeclaration<?>>
     optionDeclarations =
     Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
-                  { optVersion, optHelp, optPort });
+                  { optVersion, optHelp, optPort, optAddress,
+                    optMask, optRefresh });
 
-  private final BufferedReader in;
   private final PrintStream console;
-  private final SDK sdk;
-  private final PIOSDK pioSdk;
-  private final GPIOSDK gpioSdk;
   private final CmdOptions options;
-  private final CommandRegistry commands;
-  private final Command quit;
+  private final SDK sdk;
 
-  private Monitor()
+  private Observer()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Monitor(final BufferedReader in, final PrintStream console,
-                 final String[] argv)
+  public Observer(final PrintStream console, final String[] argv)
   {
-    if (in == null) {
-      throw new NullPointerException("in");
-    }
     if (console == null) {
       throw new NullPointerException("console");
     }
-    this.in = in;
     this.console = console;
     options = parseArgs(argv);
     printAbout();
     final Registers registers = connect();
     sdk = new SDK(console, registers);
-    pioSdk = sdk.getPIO0SDK();
-    gpioSdk = sdk.getGPIOSDK();
-    commands = installCommands(console, in, sdk, quit = new Quit(console));
-  }
-
-  private CommandRegistry installCommands(final PrintStream console,
-                                          final BufferedReader in,
-                                          final SDK sdk,
-                                          final Command quit)
-  {
-    final CommandRegistry commands = new CommandRegistry();
-    commands.add(new Enable(console, sdk));
-    commands.add(new Enter(console, sdk, in));
-    commands.add(new Help(console, commands));
-    commands.add(new Label(console, sdk));
-    commands.add(new Load(console, sdk));
-    commands.add(quit);
-    commands.add(new Read(console, sdk));
-    commands.add(new Reset(console, sdk));
-    commands.add(new Trace(console, sdk));
-    commands.add(new Unassemble(console, sdk));
-    commands.add(new Version(console, sdk));
-    commands.add(new Wait(console, sdk));
-    commands.add(new Write(console, sdk));
-    return commands;
   }
 
   private CmdOptions parseArgs(final String argv[])
@@ -166,16 +122,25 @@ public class Monitor
     final int port = options.getValue(optPort);
     if ((port < 0) || (port > 65535)) {
       throw new CmdOptions.
-        ParseException("PORT must be in the range 0..65535");
+        ParseException("PORT must be in the range 0..65535", optPort);
+    }
+    if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
+      if (!options.isDefined(optAddress)) {
+        throw new CmdOptions.
+          ParseException("option not specified", optAddress);
+      }
+    }
+    final int refresh = options.getValue(optRefresh);
+    if (refresh < 0) {
+      throw new CmdOptions.
+        ParseException("TIME must be a non-negative value", optRefresh);
     }
   }
 
   private void printAbout()
   {
-    console.println("Monitor Control Program");
+    console.println("Observer App");
     console.println(Constants.getAbout());
-    console.println();
-    console.println("For a list of available commands, enter 'help'.");
   }
 
   private Registers connect()
@@ -197,52 +162,38 @@ public class Monitor
   private void run()
   {
     try {
-      boolean quit = false;
-      while (!quit) {
-        console.print("> ");
-        final String commandLine = in.readLine().trim();
-        if (!commandLine.isEmpty()) {
-          quit = parseAndExecute(commandLine);
-        }
+      final int address = options.getValue(optAddress);
+      final boolean validAddress = sdk.matchesProvidingRegisters(address);
+      if (!validAddress) {
+        final String message =
+          String.format("unsupported address: 0x%08x", address);
+        System.exit(-1);
+        throw new InternalError();
       }
-      console.println("bye");
-      System.exit(0);
+      final int mask = options.getValue(optMask);
+      final String label = sdk.getLabelForAddress(address);
+      final int refresh = options.getValue(optRefresh);
+      update(address, label, sdk.readAddress(address));
+      while (true) {
+        update(address, label, sdk.wait(address, 0xffffffff, 0x0, 1, refresh));
+        update(address, label, sdk.readAddress(address));
+      }
     } catch (final IOException e) {
       console.println(e.getMessage());
       System.exit(-1);
     }
+    System.exit(0);
   }
 
-  private boolean parseAndExecute(final String commandLine)
+  private void update(final int address, final String label, final int value)
   {
-    final int spacePos = commandLine.indexOf(' ');
-    final String commandToken =
-      spacePos < 0 ?
-      commandLine.trim() :
-      commandLine.substring(0, spacePos).trim();
-    final List<Command> matchingCommands = commands.lookup(commandToken);
-    if ((matchingCommands == null) || (matchingCommands.size() == 0)) {
-      console.println("unknown command: " + commandToken);
-      return false;
-    }
-    if (matchingCommands.size() > 1) {
-      console.println("ambiguous command: " + commandToken);
-      console.println("possible resolutions: " + matchingCommands);
-      return false;
-    }
-    final Command command = matchingCommands.get(0);
-    final String args =
-      spacePos < 0 ? "" : commandLine.substring(spacePos + 1).trim();
-    final String[] argv = args.split(" ");
-    final boolean executed = command.parseAndExecute(argv);
-    return (command == quit) && executed;
+    console.printf("wait on %s (0x%08x) returned 0x%08x%n",
+                   label, address, value);
   }
 
   public static void main(final String argv[])
   {
-    final BufferedReader in =
-      new BufferedReader(new InputStreamReader(System.in));
-    new Monitor(in, System.out, argv).run();
+    new Observer(System.out, argv).run();
   }
 }
 

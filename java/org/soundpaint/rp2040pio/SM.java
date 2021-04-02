@@ -218,6 +218,12 @@ public class SM implements Constants
       }
       this.pendingDelay = delay;
     }
+
+    @Override
+    public String toString()
+    {
+      return String.format("Status(SM%d)", SM.this.num);
+    }
   }
 
   private SM()

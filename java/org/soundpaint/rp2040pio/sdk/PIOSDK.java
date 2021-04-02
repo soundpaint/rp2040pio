@@ -606,6 +606,15 @@ public class PIOSDK implements Constants
     smExec(smNum, (short)jmpInstruction);
   }
 
+  public boolean smGetEnabled(final int smNum)
+    throws IOException
+  {
+    Constants.checkSmNum(smNum);
+    final int address = PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
+    final int ctrl = registers.readAddress(address);
+    return (ctrl & (0x1 << smNum)) != 0x0;
+  }
+
   public void smSetEnabled(final int smNum, final boolean enabled)
     throws IOException
   {

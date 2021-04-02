@@ -26,16 +26,42 @@ package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.sdk.LocalRegisters;
-import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
+/**
+ * Draws a demo timing diagram of a selected set of PIO signals and
+ * generated from a specific PIO program.  By now, most of the
+ * configuration of this demo is hard-wired in order to make it
+ * running out of the box.
+ */
 public class Demo
 {
+  private static final String PRG_NAME = "Observer";
+  private static final String PRG_ID_AND_VERSION =
+    "Emulation Observer Version 0.1 for " + Constants.getProgramAndVersion();
+  private static final CmdOptions.FlagOptionDeclaration optVersion =
+    CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
+                                "display version information and exit");
+  private static final CmdOptions.FlagOptionDeclaration optHelp =
+    CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
+                                "display this help text and exit");
+  private static final CmdOptions.IntegerOptionDeclaration optPort =
+    CmdOptions.createIntegerOption("PORT", false, 'p', "port",
+                                   Constants.
+                                   REGISTER_SERVER_DEFAULT_PORT_NUMBER,
+                                   "use PORT as server port number");
+  private static final List<CmdOptions.OptionDeclaration<?>>
+    optionDeclarations =
+    Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
+                  { optVersion, optHelp, optPort });
   private final static boolean RUN_REMOTELY = true;
 
   private final PrintStream console;
+  private final CmdOptions options;
   private final SDK sdk;
 
   private Demo()
@@ -43,16 +69,18 @@ public class Demo
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Demo(final PrintStream console) throws IOException
+  public Demo(final PrintStream console, final String[] argv)
   {
     if (console == null) {
       throw new NullPointerException("console");
     }
     this.console = console;
+    options = parseArgs(argv);
+    printAbout();
     final Registers registers;
     if (RUN_REMOTELY) {
       // connect to emulator running in another JVM
-      registers = new RegisterClient(console);
+      registers = connect();
     } else {
       // create and connect to emulator running within this JVM
       final Emulator emulator = new Emulator(console);
@@ -61,9 +89,67 @@ public class Demo
     sdk = new SDK(console, registers);
   }
 
-  public static Supplier<Boolean> createDelayFilter(final SDK sdk,
-                                                    final int pioNum,
-                                                    final int smNum)
+  private CmdOptions parseArgs(final String argv[])
+  {
+    final CmdOptions options;
+    try {
+      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION,
+                               optionDeclarations);
+      options.parse(argv);
+      checkValidity(options);
+    } catch (final CmdOptions.ParseException e) {
+      console.println(e.getMessage());
+      System.exit(-1);
+      throw new InternalError();
+    }
+    if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
+      console.println(PRG_ID_AND_VERSION);
+      System.exit(0);
+      throw new InternalError();
+    }
+    if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
+      console.println(options.getFullInfo());
+      System.exit(0);
+      throw new InternalError();
+    }
+    return options;
+  }
+
+  private void checkValidity(final CmdOptions options)
+    throws CmdOptions.ParseException
+  {
+    final int port = options.getValue(optPort);
+    if ((port < 0) || (port > 65535)) {
+      throw new CmdOptions.
+        ParseException("PORT must be in the range 0..65535");
+    }
+  }
+
+  private void printAbout()
+  {
+    console.println("Demo Timing Diagram App");
+    console.println(Constants.getAbout());
+  }
+
+  private Registers connect()
+  {
+    final int port = options.getValue(optPort);
+    try {
+      console.printf("connecting to emulation server at port %d...%n", port);
+      return new RegisterClient(console, port);
+    } catch (final IOException e) {
+      console.println("failed to connect to emulation server: " +
+                      e.getMessage());
+      console.println("check that emulation server runs at port address " +
+                      port);
+      System.exit(-1);
+      throw new InternalError();
+    }
+  }
+
+  private static Supplier<Boolean> createDelayFilter(final SDK sdk,
+                                                     final int pioNum,
+                                                     final int smNum)
   {
     final Supplier<Boolean> displayFilter = () -> {
       final int smDelayCycleAddress =
@@ -81,7 +167,17 @@ public class Demo
     return displayFilter;
   }
 
-  public void run() throws IOException
+  private void run()
+  {
+    try {
+      createDiagram();
+    } catch (final IOException e) {
+      console.println(e.getMessage());
+      System.exit(-1);
+    }
+  }
+
+  private void createDiagram() throws IOException
   {
     final String programResourcePath = "/examples/squarewave.hex";
     final TimingDiagram diagram = new TimingDiagram(sdk);
@@ -118,9 +214,9 @@ public class Demo
     diagram.create();
   }
 
-  public static void main(final String argv[]) throws IOException
+  public static void main(final String argv[])
   {
-    new Demo(System.out).run();
+    new Demo(System.out, argv).run();
   }
 }
 

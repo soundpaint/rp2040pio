@@ -27,6 +27,8 @@ package org.soundpaint.rp2040pio.monitor.commands;
 import java.io.IOException;
 import java.io.PrintStream;
 import org.soundpaint.rp2040pio.CmdOptions;
+import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -43,12 +45,23 @@ public class Trace extends Command
   private static final CmdOptions.IntegerOptionDeclaration optCycles =
     CmdOptions.createIntegerOption("COUNT", false, 'c', "cycles", 1,
                                    "number of cycles to apply");
+  private static final int[][] addressPioSmPc = {{
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC),
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM1_PC),
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM2_PC),
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM3_PC)
+    }, {
+      PIOEmuRegisters.getAddress(1, PIOEmuRegisters.Regs.SM0_PC),
+      PIOEmuRegisters.getAddress(1, PIOEmuRegisters.Regs.SM1_PC),
+      PIOEmuRegisters.getAddress(1, PIOEmuRegisters.Regs.SM2_PC),
+      PIOEmuRegisters.getAddress(1, PIOEmuRegisters.Regs.SM3_PC)
+    }};
 
   private final SDK sdk;
 
-  public Trace(final PrintStream out, final SDK sdk)
+  public Trace(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[] { optCycles });
     if (sdk == null) {
       throw new NullPointerException("sdk");
@@ -67,10 +80,16 @@ public class Trace extends Command
     for (int i = 0; i < cycles; i++) {
       sdk.triggerCyclePhase0(true);
       sdk.triggerCyclePhase1(true);
-      // TODO: Print program counter of all state machines.
+      for (int pioNum = 0; pioNum < Constants.PIO_NUM; pioNum++) {
+        for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+          console.printf("(pio%d:sm%d) PC=%02x%n", pioNum, smNum,
+                         sdk.readAddress(addressPioSmPc[pioNum][smNum]));
+        }
+      }
+      // TODO: Print gpioSdk.asBitArrayDisplay()) ?
     }
-    out.println(cycles + " clock cycle" + (cycles != 1 ? "s" : "") +
-                " executed.");
+    console.println(cycles + " clock cycle" + (cycles != 1 ? "s" : "") +
+                    " executed.");
     return true;
   }
 }

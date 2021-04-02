@@ -40,9 +40,9 @@ public class Version extends Command
 
   private final SDK sdk;
 
-  public Version(final PrintStream out, final SDK sdk)
+  public Version(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription);
+    super(console, fullName, singleLineDescription);
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -56,7 +56,7 @@ public class Version extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    out.println(sdk.getVersion());
+    console.println(sdk.getVersion());
     return true;
   }
 }

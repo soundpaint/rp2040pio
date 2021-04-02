@@ -49,9 +49,9 @@ public class Write extends Command
 
   private final SDK sdk;
 
-  public Write(final PrintStream out, final SDK sdk)
+  public Write(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[] { optAddress, optValue });
     if (sdk == null) {
       throw new NullPointerException("sdk");
@@ -92,7 +92,7 @@ public class Write extends Command
     }
     sdk.writeAddress(address, value);
     final String label = sdk.getLabelForAddress(address);
-    out.printf("wrote 0x%04x to %s (0x%08x)%n", value, label, address);
+    console.printf("wrote 0x%04x to %s (0x%08x)%n", value, label, address);
     return true;
   }
 }

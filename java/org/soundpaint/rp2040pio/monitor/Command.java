@@ -45,7 +45,7 @@ public abstract class Command
     CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
                                 "display this help text and exit");
 
-  protected final PrintStream out;
+  protected final PrintStream console;
   private final String fullName;
   private final String singleLineDescription;
   private final List<CmdOptions.OptionDeclaration<?>> optionDeclarations;
@@ -56,26 +56,26 @@ public abstract class Command
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Command(final PrintStream out, final String fullName,
+  public Command(final PrintStream console, final String fullName,
                  final String singleLineDescription)
   {
-    this(out, fullName, singleLineDescription, EMPTY_OPTION_DECLARATIONS);
+    this(console, fullName, singleLineDescription, EMPTY_OPTION_DECLARATIONS);
   }
 
-  public Command(final PrintStream out, final String fullName,
+  public Command(final PrintStream console, final String fullName,
                  final String singleLineDescription,
                  final CmdOptions.OptionDeclaration<?>[] optionDeclarations)
   {
-    this(out, fullName, singleLineDescription,
+    this(console, fullName, singleLineDescription,
          Arrays.asList(optionDeclarations));
   }
 
-  public Command(final PrintStream out, final String fullName,
+  public Command(final PrintStream console, final String fullName,
                  final String singleLineDescription,
                  final List<CmdOptions.OptionDeclaration<?>> optionDeclarations)
   {
-    if (out == null) {
-      throw new NullPointerException("out");
+    if (console == null) {
+      throw new NullPointerException("console");
     }
     if (fullName == null) {
       throw new NullPointerException("fullName");
@@ -94,7 +94,7 @@ public abstract class Command
         throw new NullPointerException("null value in optionDeclarations");
       }
     }
-    this.out = out;
+    this.console = console;
     this.fullName = fullName;
     this.singleLineDescription = singleLineDescription;
     this.optionDeclarations = new ArrayList<CmdOptions.OptionDeclaration<?>>();
@@ -135,15 +135,12 @@ public abstract class Command
       options.parse(argv);
       checkValidity(options);
       if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
-        out.println(options.getFullInfo());
+        console.println(options.getFullInfo());
         return false;
       }
       return execute(options);
-    } catch (final CmdOptions.ParseException e) {
-      out.println(e.getMessage());
-      return false;
-    } catch (final IOException e) {
-      out.println(e.getMessage());
+    } catch (final CmdOptions.ParseException | IOException e) {
+      console.println(e.getMessage());
       return false;
     }
   }

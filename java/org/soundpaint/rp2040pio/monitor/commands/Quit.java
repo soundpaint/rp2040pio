@@ -36,9 +36,9 @@ public class Quit extends Command
   private static final String fullName = "quit";
   private static final String singleLineDescription = "quit monitor";
 
-  public Quit(final PrintStream out)
+  public Quit(final PrintStream console)
   {
-    super(out, fullName, singleLineDescription);
+    super(console, fullName, singleLineDescription);
   }
 
   /**

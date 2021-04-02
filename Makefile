@@ -27,6 +27,7 @@ include defs.mak
 all:
 	cd $(JAVA_DIR) ; make -f Makefile.Server all
 	cd $(JAVA_DIR) ; make -f Makefile.Monitor all
+	cd $(JAVA_DIR) ; make -f Makefile.Observer all
 	cd $(JAVA_DIR) ; make -f Makefile.Demo all
 
 run: all

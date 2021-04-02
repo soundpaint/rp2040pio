@@ -156,6 +156,7 @@ public class PIO implements Constants, Clock.TransitionListener
     memory.reset();
     irq.reset();
     for (final SM sm : sms) sm.reset();
+    smEnabled = 0x0;
   }
 
   public int getIndex()

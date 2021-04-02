@@ -45,9 +45,9 @@ public class Label extends Command
 
   private final SDK sdk;
 
-  public Label(final PrintStream out, final SDK sdk)
+  public Label(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[] { optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
@@ -81,7 +81,7 @@ public class Label extends Command
       throw new IOException(message);
     }
     final String label = sdk.getLabelForAddress(address);
-    out.printf("%s (0x%08x)%n" , label, address);
+    console.printf("%s (0x%08x)%n" , label, address);
     return true;
   }
 }

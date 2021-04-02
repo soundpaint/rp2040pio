@@ -53,10 +53,11 @@ public class Load extends Command
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
                                    "preferred program start address");
 
-  public Load(final PrintStream out, final SDK sdk)
+  public Load(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription,
-          new CmdOptions.OptionDeclaration<?>[] { optPio, optFile, optAddress });
+    super(console, fullName, singleLineDescription,
+          new CmdOptions.OptionDeclaration<?>[]
+          { optPio, optFile, optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -87,15 +88,16 @@ public class Load extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    final int pio = options.getValue(optPio);
+    final int pioNum = options.getValue(optPio);
     final String resourcePath = options.getValue(optFile);
-    final Integer preferredAddress = options.getValue(optAddress);
-    final PIOSDK pioSdk = pio == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    final Integer optAddressValue = options.getValue(optAddress);
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     final int assignedAddress =
-      preferredAddress != null ?
-      pioSdk.addProgramAtOffset(resourcePath, preferredAddress) :
+      optAddressValue != null ?
+      pioSdk.addProgramAtOffset(resourcePath, optAddressValue) :
       pioSdk.addProgram(resourcePath);
-    out.printf("stored program at address 0x%02x%n", assignedAddress);
+    console.printf("stored program at PIO %d, address 0x%02x%n",
+                   pioNum, assignedAddress);
     return true;
   }
 }

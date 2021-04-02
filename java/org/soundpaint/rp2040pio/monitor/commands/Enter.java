@@ -55,9 +55,10 @@ public class Enter extends Command
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
                                    "start address");
 
-  public Enter(final PrintStream out, final SDK sdk, final BufferedReader in)
+  public Enter(final PrintStream console, final SDK sdk,
+               final BufferedReader in)
   {
-    super(out, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[] { optPio, optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
@@ -75,7 +76,7 @@ public class Enter extends Command
   {
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
       final int pioNum = options.getValue(optPio);
-      if ((pioNum < 0) || (pioNum > 1)) {
+      if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
         throw new CmdOptions.
           ParseException("PIO number must be either 0 or 1");
       }
@@ -90,35 +91,36 @@ public class Enter extends Command
   protected boolean execute(final CmdOptions options) throws IOException
   {
     final int pioNum = options.getValue(optPio);
-    final Integer startAddress = options.getValue(optAddress);
+    final Integer optAddressValue = options.getValue(optAddress);
     int address =
-      startAddress != null ?
-      startAddress & Constants.MEMORY_SIZE - 1 :
+      optAddressValue != null ?
+      optAddressValue & Constants.MEMORY_SIZE - 1 :
       0;
-    out.println("per input line, enter 16 bit hex word without '0x' prefix");
+    console.println("per input line, " +
+                    "enter 16 bit hex word without '0x' prefix");
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     int count = 0;
     while (true) {
       final int currentValue =
         sdk.readAddress(PIOEmuRegisters.getMemoryAddress(pioNum, address));
-      out.printf("(pio%d) %02x: (%04x) ", pioNum, address, currentValue);
+      console.printf("(pio%d) %02x: (%04x) ", pioNum, address, currentValue);
       final String line = in.readLine().trim();
       if ((line == null) || line.isEmpty()) break;
       try {
         final int value = Integer.parseInt(line, 16);
         sdk.writeAddress(PIORegisters.getMemoryAddress(pioNum, address), value);
-        //storeOpCode(address, value, pioNum);
         final PIOSDK.InstructionInfo instructionInfo =
           pioSdk.getMemoryInstruction(0, address, false, true);
-        out.println("                  " + instructionInfo.getToolTipText());
+        console.printf("                  %s%n",
+                       instructionInfo.getToolTipText());
       } catch (final NumberFormatException e) {
-        out.println("not a valid 16 bit word: " + line);
+        console.printf("not a valid 16 bit word: %s%n", line);
         continue;
       }
       address = (address + 1) & Constants.MEMORY_SIZE - 1;
       count++;
     }
-    out.printf("entered %d words%n", count);
+    console.printf("entered %d words%n", count);
     return true;
   }
 }

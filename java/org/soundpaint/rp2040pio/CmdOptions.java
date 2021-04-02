@@ -202,11 +202,12 @@ public class CmdOptions
     public BooleanOptionDeclaration(final boolean mandatory,
                                     final Character shortName,
                                     final String longName,
-                                    final boolean defaultValue,
+                                    final Boolean defaultValue,
                                     final String description)
     {
       super(null, mandatory, shortName, longName,
-            String.valueOf(defaultValue), description);
+            defaultValue != null ? String.valueOf(defaultValue) : null,
+            description);
     }
 
     String getDefaultTypeName() { return "BOOLEAN"; }
@@ -221,7 +222,7 @@ public class CmdOptions
     createBooleanOption(final boolean mandatory,
                         final Character shortName,
                         final String longName,
-                        final boolean defaultValue,
+                        final Boolean defaultValue,
                         final String description)
   {
     return new BooleanOptionDeclaration(mandatory, shortName, longName,
@@ -301,19 +302,51 @@ public class CmdOptions
   {
     private static final long serialVersionUID = 7201021940370903355L;
 
+    private final OptionDeclaration<?> optionDeclaration;
+
     public ParseException(final String message)
     {
+      this(message, (OptionDeclaration<?>)null);
+    }
+
+    public ParseException(final String message,
+                          final OptionDeclaration<?> optionDeclaration)
+    {
       super(message);
+      this.optionDeclaration = optionDeclaration;
     }
 
     public ParseException(final String message, final Throwable cause)
     {
+      this(message, cause, null);
+    }
+
+    public ParseException(final String message, final Throwable cause,
+                          final OptionDeclaration<?> optionDeclaration)
+    {
       super(message, cause);
+      this.optionDeclaration = optionDeclaration;
     }
 
     public ParseException(final Throwable cause)
     {
+      this(cause, null);
+    }
+
+    public ParseException(final Throwable cause,
+                          final OptionDeclaration<?> optionDeclaration)
+    {
       super(cause);
+      this.optionDeclaration = optionDeclaration;
+    }
+
+    @Override
+    public String getMessage()
+    {
+      return
+        (optionDeclaration != null ?
+         "option " + optionDeclaration + ": " : "") +
+        super.getMessage();
     }
   }
 
@@ -341,7 +374,7 @@ public class CmdOptions
       return parsedValue;
     }
 
-    private OptionDeclaration<T> getDeclaration()
+    protected OptionDeclaration<T> getDeclaration()
     {
       return declaration;
     }
@@ -422,10 +455,10 @@ public class CmdOptions
       } else if (Flag.ON.toString().equals(strValue)) {
         return Flag.ON;
       } else {
-        throw new ParseException(this + ": '" +
-                                 Flag.OFF + "' or '" +
-                                 Flag.ON + "' expected, " +
-                                 "but found: " + strValue);
+        throw new ParseException("'" + Flag.OFF + "' or " +
+                                 "'" + Flag.ON + "' expected, " +
+                                 "but found: " + strValue,
+                                 getDeclaration());
       }
     }
   }
@@ -446,8 +479,9 @@ public class CmdOptions
       } else if ("true".equals(strValue)) {
         return true;
       } else {
-        throw new ParseException(this + ": 'false' or 'true' expected, " +
-                                 "but found: " + strValue);
+        throw new ParseException("'false' or 'true' expected, " +
+                                 "but found: " + strValue,
+                                 getDeclaration());
       }
     }
   }
@@ -470,8 +504,8 @@ public class CmdOptions
           return Integer.parseInt(strValue);
         }
       } catch (final NumberFormatException e) {
-        throw new ParseException(this + ": " +
-                                 "integer value expected: " + e.getMessage());
+        throw new ParseException("integer value expected: " + e.getMessage(),
+                                 getDeclaration());
       }
     }
   }
@@ -588,13 +622,13 @@ public class CmdOptions
     throws ParseException
   {
     if (definition.isParsed()) {
-      throw new ParseException("option redefined: " +
+      throw new ParseException("option redefined",
                                definition.getDeclaration());
     }
     if (definition instanceof FlagOptionDefinition) {
       if (strValue != null) {
-        throw new ParseException("option " + definition + ": " +
-                                 "unexpected surplus argument: " + strValue);
+        throw new ParseException("unexpected surplus argument: " + strValue,
+                                 definition.getDeclaration());
       }
       definition.parseAndSet(Flag.ON.toString());
       return false;
@@ -687,7 +721,7 @@ public class CmdOptions
       }
       if (currentOption != null) {
         if (currentOption.isParsed()) {
-          throw new ParseException("option redefined: " +
+          throw new ParseException("option redefined",
                                    currentOption.getDeclaration());
         }
         currentOption.parseAndSet(arg);
@@ -697,12 +731,12 @@ public class CmdOptions
       }
     }
     if (currentOption != null) {
-      throw new ParseException("missing argument for option: " +
+      throw new ParseException("missing argument",
                                currentOption.getDeclaration());
     }
     for (final OptionDefinition<?> definition : definitions) {
       if (!definition.isDefinedIfMandatory()) {
-        throw new ParseException("mandatory option not specified: " +
+        throw new ParseException("mandatory option not specified",
                                  definition.getDeclaration());
       }
     }

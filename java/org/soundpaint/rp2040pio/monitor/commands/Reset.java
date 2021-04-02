@@ -41,9 +41,9 @@ public class Reset extends Command
 
   private final SDK sdk;
 
-  public Reset(final PrintStream out, final SDK sdk)
+  public Reset(final PrintStream console, final SDK sdk)
   {
-    super(out, fullName, singleLineDescription);
+    super(console, fullName, singleLineDescription);
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -58,7 +58,7 @@ public class Reset extends Command
   protected boolean execute(final CmdOptions options) throws IOException
   {
     sdk.reset();
-    out.println("emulator successfully reset");
+    console.println("emulator successfully reset");
     return true;
   }
 }
