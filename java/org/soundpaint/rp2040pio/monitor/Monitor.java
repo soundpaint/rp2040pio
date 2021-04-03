@@ -45,10 +45,12 @@ import org.soundpaint.rp2040pio.monitor.commands.Read;
 import org.soundpaint.rp2040pio.monitor.commands.Reset;
 import org.soundpaint.rp2040pio.monitor.commands.Trace;
 import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
+import org.soundpaint.rp2040pio.monitor.commands.Unload;
 import org.soundpaint.rp2040pio.monitor.commands.Version;
 import org.soundpaint.rp2040pio.monitor.commands.Wait;
 import org.soundpaint.rp2040pio.monitor.commands.Write;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
+import org.soundpaint.rp2040pio.sdk.Panic;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 import org.soundpaint.rp2040pio.sdk.Program;
@@ -77,6 +79,10 @@ public class Monitor
     optionDeclarations =
     Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
                   { optVersion, optHelp, optPort });
+  private static final String panicInfo =
+    "The system may be now in a corrupted state.%n" +
+    "You may consider to fully reset the emulator with%n" +
+    "the \"reset\" commmand, if unexpected behavior shows up.%n";
 
   private final BufferedReader in;
   private final PrintStream console;
@@ -128,6 +134,7 @@ public class Monitor
     commands.add(new Reset(console, sdk));
     commands.add(new Trace(console, sdk));
     commands.add(new Unassemble(console, sdk));
+    commands.add(new Unload(console, sdk));
     commands.add(new Version(console, sdk));
     commands.add(new Wait(console, sdk));
     commands.add(new Write(console, sdk));
@@ -138,7 +145,7 @@ public class Monitor
   {
     final CmdOptions options;
     try {
-      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION,
+      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION, null,
                                optionDeclarations);
       options.parse(argv);
       checkValidity(options);
@@ -202,7 +209,12 @@ public class Monitor
         console.print("> ");
         final String commandLine = in.readLine().trim();
         if (!commandLine.isEmpty()) {
-          quit = parseAndExecute(commandLine);
+          try {
+            quit = parseAndExecute(commandLine);
+          } catch (final Panic e) {
+            console.println(e.getMessage());
+            console.printf(panicInfo);
+          }
         }
       }
       console.println("bye");

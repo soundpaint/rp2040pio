@@ -38,6 +38,9 @@ public class Help extends Command
   private static final String fullName = "help";
   private static final String singleLineDescription =
     "list all available monitor commands";
+  private static final String helpNotes =
+    "For detail help of a command, enter: <command> -h.%n" +
+    "Commands may be abbreviated as long as unambiguity is preserved.%n";
 
   private final CommandRegistry commands;
 
@@ -59,12 +62,11 @@ public class Help extends Command
   {
     console.println("Available commands:");
     for (final Command command : commands) {
-      console.println(String.format("  %-12s %s", command.getFullName(),
-                                    command.getSingleLineDescription()));
+      console.printf("  %-12s %s%n", command.getFullName(),
+                     command.getSingleLineDescription());
     }
     console.println();
-    console.println("For detail help of a command, enter: <command> -h");
-    console.println("Command abbreviations work when unambiguity is preserved.");
+    console.printf(helpNotes);
     return true;
   }
 }

@@ -331,6 +331,12 @@ public class PIOSDK implements Constants
    */
   private Integer stateMachineClaimed = 0x0;
 
+  public void reset()
+  {
+    memoryAllocation = 0;
+    stateMachineClaimed = 0;
+  }
+
   public void smSetConfig(final int smNum, final SMConfig smConfig)
     throws IOException
   {
@@ -398,7 +404,7 @@ public class PIOSDK implements Constants
   {
     synchronized(memoryAllocation) {
       if (origin >= 0) {
-        if ((memoryAllocation & ~allocationMask) == 0x0) {
+        if ((memoryAllocation & allocationMask) == 0x0) {
           if (!checkOnly) memoryAllocation |= allocationMask;
           return origin;
         }
@@ -411,8 +417,8 @@ public class PIOSDK implements Constants
         final int allocationMaskForOffset =
           (allocationMask << offset) |
           (allocationMask << (offset - MEMORY_SIZE));
-        if ((memoryAllocation & ~allocationMaskForOffset) == 0x0) {
-          if (!checkOnly) memoryAllocation |= allocationMask;
+        if ((memoryAllocation & allocationMaskForOffset) == 0x0) {
+          if (!checkOnly) memoryAllocation |= allocationMaskForOffset;
           return offset;
         }
       }
@@ -422,6 +428,8 @@ public class PIOSDK implements Constants
       String.format("allocation at %02x failed", origin);
     throw new Panic(message);
   }
+
+  public int getMemoryAllocation() { return memoryAllocation; }
 
   public boolean canAddProgram(final Program program)
   {
@@ -523,6 +531,12 @@ public class PIOSDK implements Constants
     return address;
   }
 
+  public void removeProgram(final String resourcePath, final int loadedOffset)
+    throws IOException
+  {
+    removeProgram(ProgramParser.parse(resourcePath), loadedOffset);
+  }
+
   public void removeProgram(final Program program, final int loadedOffset)
     throws IOException
   {
@@ -548,7 +562,7 @@ public class PIOSDK implements Constants
       (allocationMask << loadedOffset) |
       (allocationMask << (loadedOffset - MEMORY_SIZE));
     synchronized(memoryAllocation) {
-      if ((memoryAllocation &= ~allocationMaskForOffset) !=
+      if ((memoryAllocation & allocationMaskForOffset) !=
           allocationMaskForOffset) {
         final String message =
           String.format("deallocation at %02x failed for program %s: " +

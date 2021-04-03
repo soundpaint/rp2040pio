@@ -48,6 +48,7 @@ public abstract class Command
   protected final PrintStream console;
   private final String fullName;
   private final String singleLineDescription;
+  private final String notes;
   private final List<CmdOptions.OptionDeclaration<?>> optionDeclarations;
   private final CmdOptions options;
 
@@ -59,7 +60,15 @@ public abstract class Command
   public Command(final PrintStream console, final String fullName,
                  final String singleLineDescription)
   {
-    this(console, fullName, singleLineDescription, EMPTY_OPTION_DECLARATIONS);
+    this(console, fullName, singleLineDescription, null,
+         EMPTY_OPTION_DECLARATIONS);
+  }
+
+  public Command(final PrintStream console, final String fullName,
+                 final String singleLineDescription, final String notes)
+  {
+    this(console, fullName, singleLineDescription, notes,
+         EMPTY_OPTION_DECLARATIONS);
   }
 
   public Command(final PrintStream console, final String fullName,
@@ -71,7 +80,22 @@ public abstract class Command
   }
 
   public Command(final PrintStream console, final String fullName,
+                 final String singleLineDescription, final String notes,
+                 final CmdOptions.OptionDeclaration<?>[] optionDeclarations)
+  {
+    this(console, fullName, singleLineDescription, notes,
+         Arrays.asList(optionDeclarations));
+  }
+
+  public Command(final PrintStream console, final String fullName,
                  final String singleLineDescription,
+                 final List<CmdOptions.OptionDeclaration<?>> optionDeclarations)
+  {
+    this(console, fullName, singleLineDescription, null, optionDeclarations);
+  }
+
+  public Command(final PrintStream console, final String fullName,
+                 final String singleLineDescription, final String notes,
                  final List<CmdOptions.OptionDeclaration<?>> optionDeclarations)
   {
     if (console == null) {
@@ -97,12 +121,13 @@ public abstract class Command
     this.console = console;
     this.fullName = fullName;
     this.singleLineDescription = singleLineDescription;
+    this.notes = notes;
     this.optionDeclarations = new ArrayList<CmdOptions.OptionDeclaration<?>>();
     this.optionDeclarations.addAll(optionDeclarations);
     this.optionDeclarations.add(optHelp);
     try {
       options =
-        new CmdOptions(fullName, singleLineDescription,
+        new CmdOptions(fullName, singleLineDescription, notes,
                        this.optionDeclarations);
     } catch (final CmdOptions.ParseException e) {
       throw new InternalError("unexpected command configuration error");
@@ -117,6 +142,11 @@ public abstract class Command
   public String getSingleLineDescription()
   {
     return singleLineDescription;
+  }
+
+  public String getNotes()
+  {
+    return notes;
   }
 
   public Iterator<CmdOptions.OptionDeclaration<?>>

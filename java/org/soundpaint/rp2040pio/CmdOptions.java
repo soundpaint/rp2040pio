@@ -526,20 +526,24 @@ public class CmdOptions
   }
 
   private final String prgName;
-  private final String prgDescription;
+  private final String prgSingleLineDescription;
+  private final String prgNotes;
   private final List<OptionDeclaration<?>> declarations;
   private final OptionDefinition<?>[] definitions;
 
   public CmdOptions(final String prgName,
-                    final String prgDescription,
+                    final String prgSingleLineDescription,
+                    final String prgNotes,
                     final OptionDeclaration<?> ... declarations)
     throws ParseException
   {
-    this(prgName, prgDescription, Arrays.asList(declarations));
+    this(prgName, prgSingleLineDescription, prgNotes,
+         Arrays.asList(declarations));
   }
 
   public CmdOptions(final String prgName,
-                    final String prgDescription,
+                    final String prgSingleLineDescription,
+                    final String prgNotes,
                     final List<OptionDeclaration<?>> declarations)
     throws ParseException
   {
@@ -550,7 +554,8 @@ public class CmdOptions
       throw new NullPointerException("declarations");
     }
     this.prgName = prgName;
-    this.prgDescription = prgDescription;
+    this.prgSingleLineDescription = prgSingleLineDescription;
+    this.prgNotes = prgNotes;
     this.declarations = declarations;
     definitions = createDefinitions();
   }
@@ -560,9 +565,14 @@ public class CmdOptions
     return prgName;
   }
 
-  private String getPrgDescription()
+  private String getPrgSingleLineDescription()
   {
-    return prgDescription;
+    return prgSingleLineDescription;
+  }
+
+  private String getPrgNotes()
+  {
+    return prgNotes;
   }
 
   public String getUsage()
@@ -583,6 +593,9 @@ public class CmdOptions
       sb.append(declaration.getHelp());
       sb.append(ls);
     }
+    if (prgNotes != null) {
+      sb.append(String.format("%nNotes:%n" + prgNotes + "%n"));
+    }
     return sb.toString();
   }
 
@@ -592,7 +605,7 @@ public class CmdOptions
     final String help = getHelp();
     return
       getUsage() + ls +
-      (prgDescription != null ? prgDescription + ls : "") +
+      (prgSingleLineDescription != null ? prgSingleLineDescription + ls : "") +
       (!help.isEmpty() ? ls + help : "");
   }
 

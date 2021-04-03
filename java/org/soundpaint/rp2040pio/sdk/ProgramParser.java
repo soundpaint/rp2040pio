@@ -25,6 +25,8 @@
 package org.soundpaint.rp2040pio.sdk;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -75,11 +77,7 @@ public class ProgramParser implements Constants
     }
     this.resourcePath = resourcePath;
     address = -1;
-    final InputStream in = Constants.class.getResourceAsStream(resourcePath);
-    if (in == null) {
-      throw parseException("resource not found: " + resourcePath);
-    }
-    reader = new BufferedReader(new InputStreamReader(in));
+    reader = getReaderForResourcePath(resourcePath);
     instructions = new short[MEMORY_SIZE];
     lineIndex = 0;
     address = 0;
@@ -88,6 +86,30 @@ public class ProgramParser implements Constants
     wrap = MEMORY_SIZE - 1;
     wrapTarget = 0;
     sideSetCount = 0;
+  }
+
+  private BufferedReader getReaderForResourcePath(final String resourcePath)
+    throws IOException
+  {
+    final InputStream in = getStreamForResourcePath(resourcePath);
+    return new BufferedReader(new InputStreamReader(in));
+  }
+
+  private InputStream getStreamForResourcePath(final String resourcePath)
+    throws IOException
+  {
+    final InputStream fromFile;
+    try {
+      fromFile = new FileInputStream(resourcePath);
+    } catch(final FileNotFoundException e) {
+      final InputStream fromResource =
+        Constants.class.getResourceAsStream(resourcePath);
+      if (fromResource == null) {
+        throw parseException("resource not found: " + resourcePath);
+      }
+      return fromResource;
+    }
+    return fromFile;
   }
 
   private ParseException parseException(final String message)
@@ -356,9 +378,11 @@ public class ProgramParser implements Constants
       wrapTarget =
         origin >= 0 ? ((origin + address - 1) % MEMORY_SIZE) : address - 1;
     }
+    final short[] trimmedInstructions = new short[address];
+    System.arraycopy(instructions, 0, trimmedInstructions, 0, address);
     final Program program =
       new Program(id, origin, wrap, wrapTarget, sideSetCount,
-                  sideSetOptParsed, sideSetPinDirsParsed, instructions);
+                  sideSetOptParsed, sideSetPinDirsParsed, trimmedInstructions);
     final String message =
       "parsed program \"" + id + "\" with " +
       address + " PIO SM instructions" +

@@ -119,7 +119,7 @@ public class Program implements Constants
     this.sideSetCount = sideSetCount;
     this.sideSetOpt = sideSetOpt;
     this.sideSetPinDirs = sideSetPinDirs;
-    final int mask = (0x1 << length) - 1;
+    final int mask = (length < 32 ? (0x1 << length) : 0) - 1;
     allocationMask =
       origin >= 0 ?
       mask << origin | (mask << (origin - MEMORY_SIZE)) :

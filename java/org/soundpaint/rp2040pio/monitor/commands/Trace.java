@@ -40,7 +40,7 @@ public class Trace extends Command
 {
   private static final String fullName = "trace";
   private static final String singleLineDescription =
-    "trace program by performing a single clock cycle";
+    "trace program by performing a number of clock cycles";
 
   private static final CmdOptions.IntegerOptionDeclaration optCycles =
     CmdOptions.createIntegerOption("COUNT", false, 'c', "cycles", 1,

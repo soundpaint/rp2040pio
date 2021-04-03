@@ -79,7 +79,7 @@ public class EmulationServer
   {
     final CmdOptions options;
     try {
-      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION,
+      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION, null,
                                optionDeclarations);
       options.parse(argv);
       checkValidity(options);

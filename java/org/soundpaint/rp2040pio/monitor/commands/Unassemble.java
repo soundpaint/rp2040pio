@@ -42,6 +42,23 @@ public class Unassemble extends Command
   private static final String fullName = "unassemble";
   private static final String singleLineDescription =
     "unassemble program memory";
+  private static final String notes =
+    "Memory locations marked as allocated are prefixed with leading 'X'.%n" +
+    "%n" +
+    "Note that tracking memory allocation is not a feature of the%n" +
+    "RP2040, but local to this monitor instance, just to avoid%n" +
+    "accidentally overwriting your own PIO programs.  Other applications%n" +
+    "that concurrently access the RP2040 will therefore ignore%n" +
+    "this instance's allocation tracking and may arbitrarily%n" +
+    "overwrite allocated PIO memory, using their own allocation scheme.%n" +
+    "%n" +
+    "Note that the same PIO program may unassemble to differently%n" +
+    "displayed instructions for different state machines, since%n" +
+    "some settings specific to a particular state machine, such as%n" +
+    "side-set count, will affect interpretation of op-codes.%n" +
+    "Therefore, the unassemble command supports the \"sm\" argument%n" +
+    "for displaying the instructions as interpreted by the selected%n" +
+    "state machine, according to its current settings.";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
@@ -61,7 +78,7 @@ public class Unassemble extends Command
 
   public Unassemble(final PrintStream console, final SDK sdk)
   {
-    super(console, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
           { optPio, optSm, optStart, optCount });
     if (sdk == null) {
@@ -104,11 +121,14 @@ public class Unassemble extends Command
       (startAddress + count) & (Constants.MEMORY_SIZE - 1);
     int address = startAddress;
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    final int memoryAllocation = pioSdk.getMemoryAllocation();
     do {
       final PIOSDK.InstructionInfo instructionInfo =
         pioSdk.getMemoryInstruction(smNum, address, true, true);
-      console.printf("(pio%d:sm%d) %s%n", pioNum, smNum,
-                     instructionInfo.getToolTipText());
+      final boolean isAllocated = ((memoryAllocation >>> address) & 0x1) != 0x0;
+      console.printf("%s (pio%d:sm%d) %s%n",
+                     (isAllocated ? "X" : " "),
+                     pioNum, smNum, instructionInfo.getToolTipText());
       address = (address + 1) & (Constants.MEMORY_SIZE - 1);
     } while (address != stopAddress);
     return true;
