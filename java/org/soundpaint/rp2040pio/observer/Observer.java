@@ -167,6 +167,7 @@ public class Observer
       if (!validAddress) {
         final String message =
           String.format("unsupported address: 0x%08x", address);
+        console.println(message);
         System.exit(-1);
         throw new InternalError();
       }

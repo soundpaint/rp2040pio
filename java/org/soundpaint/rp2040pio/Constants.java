@@ -144,6 +144,8 @@ public interface Constants
   public static final int SM0_EXECCTRL_EXEC_STALLED_BITS = 0x80000000;
   public static final int SM0_EXECCTRL_SIDE_EN_LSB = 30;
   public static final int SM0_EXECCTRL_SIDE_EN_BITS = 0x40000000;
+  public static final int SM0_EXECCTRL_SIDE_PINDIR_LSB = 29;
+  public static final int SM0_EXECCTRL_SIDE_PINDIR_BITS = 0x20000000;
   public static final int SM0_EXECCTRL_WRAP_TOP_LSB = 12;
   public static final int SM0_EXECCTRL_WRAP_TOP_BITS = 0x0001f000;
   public static final int SM0_EXECCTRL_WRAP_BOTTOM_LSB = 7;

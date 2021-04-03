@@ -26,7 +26,9 @@ package org.soundpaint.rp2040pio;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Parsing and managing command line options.
@@ -84,7 +86,7 @@ public class CmdOptions
     private String getShortNameAsString()
     {
       return
-        shortName != null ? shortName.toString() : null;
+        shortName != null ? String.valueOf(shortName) : null;
     }
 
     private String getLongName()
@@ -557,6 +559,8 @@ public class CmdOptions
     this.prgSingleLineDescription = prgSingleLineDescription;
     this.prgNotes = prgNotes;
     this.declarations = declarations;
+    checkShortNamesAreUnique();
+    checkLongNamesAreUnique();
     definitions = createDefinitions();
   }
 
@@ -607,6 +611,42 @@ public class CmdOptions
       getUsage() + ls +
       (prgSingleLineDescription != null ? prgSingleLineDescription + ls : "") +
       (!help.isEmpty() ? ls + help : "");
+  }
+
+  private void checkShortNamesAreUnique()
+  {
+    final Map<Character, OptionDeclaration<?>> shortName2Declaration =
+      new HashMap<Character, OptionDeclaration<?>>();
+    for (final OptionDeclaration<?> declaration : declarations) {
+      final Character shortName = declaration.getShortName();
+      if (shortName2Declaration.containsKey(shortName)) {
+        final OptionDeclaration<?> otherDeclaration =
+          shortName2Declaration.get(shortName);
+        final String message =
+          String.format("duplicate short name '%s' for options:%n%s%n%s",
+                        shortName, declaration, otherDeclaration);
+        throw new IllegalArgumentException(message);
+      }
+      shortName2Declaration.put(shortName, declaration);
+    }
+  }
+
+  private void checkLongNamesAreUnique()
+  {
+    final Map<String, OptionDeclaration<?>> longName2Declaration =
+      new HashMap<String, OptionDeclaration<?>>();
+    for (final OptionDeclaration<?> declaration : declarations) {
+      final String longName = declaration.getLongName();
+      if (longName2Declaration.containsKey(longName)) {
+        final OptionDeclaration<?> otherDeclaration =
+          longName2Declaration.get(longName);
+        final String message =
+          String.format("duplicate long name \"%s\" for options:%n%s%n%s",
+                        longName, declaration, otherDeclaration);
+        throw new IllegalArgumentException(message);
+      }
+      longName2Declaration.put(longName, declaration);
+    }
   }
 
   private static final OptionDefinition<?>[] EMPTY_DEFINITIONS =
@@ -688,7 +728,8 @@ public class CmdOptions
     }
   }
 
-  private OptionDefinition<?> parseShortOptionIdentifier(final String name)
+  private OptionDefinition<?> parseShortOptionIdentifier(final boolean plus,
+                                                         final String name)
     throws ParseException
   {
     if (name.length() != 1) {
@@ -705,6 +746,14 @@ public class CmdOptions
       }
     }
     if (definition != null) {
+      if (definition.getDeclaration() instanceof BooleanOptionDeclaration) {
+        final String value = plus ? "true" : "false";
+        return updateDefinition(definition, value) ? definition : null;
+      }
+      if (plus) {
+        throw new ParseException("'+' valid only on Boolean options: " +
+                                 name);
+      }
       return updateDefinition(definition, null) ? definition : null;
     } else {
       throw new ParseException("unknown short option name: " + name);
@@ -717,7 +766,9 @@ public class CmdOptions
     if (arg.startsWith("--")) {
       return parseLongOptionIdentifier(arg.substring(2));
     } else if (arg.startsWith("-")) {
-      return parseShortOptionIdentifier(arg.substring(1));
+      return parseShortOptionIdentifier(false, arg.substring(1));
+    } else if (arg.startsWith("+")) {
+      return parseShortOptionIdentifier(true, arg.substring(1));
     } else {
       throw new ParseException("option identifier expected, but found: " + arg);
     }

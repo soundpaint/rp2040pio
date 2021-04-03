@@ -43,6 +43,7 @@ import org.soundpaint.rp2040pio.monitor.commands.Load;
 import org.soundpaint.rp2040pio.monitor.commands.Quit;
 import org.soundpaint.rp2040pio.monitor.commands.Read;
 import org.soundpaint.rp2040pio.monitor.commands.Reset;
+import org.soundpaint.rp2040pio.monitor.commands.SideSet;
 import org.soundpaint.rp2040pio.monitor.commands.Trace;
 import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
 import org.soundpaint.rp2040pio.monitor.commands.Unload;
@@ -83,6 +84,8 @@ public class Monitor
     "The system may be now in a corrupted state.%n" +
     "You may consider to fully reset the emulator with%n" +
     "the \"reset\" commmand, if unexpected behavior shows up.%n";
+  private static final String commandHint =
+    "For a list of available commands, enter 'help'.";
 
   private final BufferedReader in;
   private final PrintStream console;
@@ -132,6 +135,7 @@ public class Monitor
     commands.add(quit);
     commands.add(new Read(console, sdk));
     commands.add(new Reset(console, sdk));
+    commands.add(new SideSet(console, sdk));
     commands.add(new Trace(console, sdk));
     commands.add(new Unassemble(console, sdk));
     commands.add(new Unload(console, sdk));
@@ -182,7 +186,7 @@ public class Monitor
     console.println("Monitor Control Program");
     console.println(Constants.getAbout());
     console.println();
-    console.println("For a list of available commands, enter 'help'.");
+    console.println(commandHint);
   }
 
   private Registers connect()
@@ -235,6 +239,7 @@ public class Monitor
     final List<Command> matchingCommands = commands.lookup(commandToken);
     if ((matchingCommands == null) || (matchingCommands.size() == 0)) {
       console.println("unknown command: " + commandToken);
+      console.println(commandHint);
       return false;
     }
     if (matchingCommands.size() > 1) {

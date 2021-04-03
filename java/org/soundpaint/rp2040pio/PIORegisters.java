@@ -161,7 +161,7 @@ public abstract class PIORegisters extends AbstractRegisters
     }
     return
       Constants.getPIOBaseAddress(pioNum) +
-      0x4 * register.ordinal() + smNum * SM_SIZE;
+      0x4 * (register.ordinal() + smNum * SM_SIZE);
   }
 
   public static int getMemoryAddress(final int pioNum,

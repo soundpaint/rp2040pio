@@ -122,6 +122,28 @@ public class SDK implements Constants
     registers.wait(EMULATOR_BASE, 0xffffffff, 0x0, 1, 0);
   }
 
+  public void hwSetBits(final int address, final int mask) throws IOException
+  {
+    registers.hwSetBits(address, mask);
+  }
+
+  public void hwClearBits(final int address, final int mask) throws IOException
+  {
+    registers.hwClearBits(address, mask);
+  }
+
+  public void hwXorBits(final int address, final int mask) throws IOException
+  {
+    registers.hwXorBits(address, mask);
+  }
+
+  public void hwWriteMasked(final int address, final int values,
+                            final int writeMask)
+    throws IOException
+  {
+    registers.hwWriteMasked(address, values, writeMask);
+  }
+
   // -------- address helpers --------
 
   public boolean matchesProvidingRegisters(final int address) throws IOException

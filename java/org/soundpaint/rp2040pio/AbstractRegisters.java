@@ -55,10 +55,7 @@ public abstract class AbstractRegisters implements Registers
   protected AbstractRegisters(final int baseAddress, final short size,
                               final LongSupplier wallClockSupplier)
   {
-    if ((baseAddress & 0x3) != 0x0) {
-      throw new IllegalArgumentException("base address not word-aligned: " +
-                                         String.format("0x%08x", baseAddress));
-    }
+    checkAddressAligned(baseAddress);
     if ((baseAddress & 0x3fff) != 0x0) {
       throw new IllegalArgumentException("base address not conforming to " +
                                          "model of register access methods: " +
@@ -97,10 +94,7 @@ public abstract class AbstractRegisters implements Registers
   @Override
   public boolean providesAddress(final int address) throws IOException
   {
-    if ((address & 0x3) != 0x0) {
-      throw new IllegalArgumentException("address not word-aligned: " +
-                                         String.format("0x%08x", address));
-    }
+    checkAddressAligned(address);
     /*
      * Work around signed vs. unsigned int / wrap issues by comparing
      * address offset against address range rather than comparing

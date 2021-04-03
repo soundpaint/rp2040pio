@@ -44,6 +44,10 @@ public class Enter extends Command
   private static final String fullName = "enter";
   private static final String singleLineDescription =
     "enter instruction opcodes; exit by entering an empty line";
+  private static final String enterInstructions =
+    "Per input line, enter 16 bit hex intruction word without '0x' prefix.%n" +
+    "Enter \".\" to keep current instruction word.%n" +
+    "Enter empty line to quit enter mode.%n";
 
   private final SDK sdk;
   private final BufferedReader in;
@@ -83,6 +87,32 @@ public class Enter extends Command
     }
   }
 
+  private void unassemble(final int pioNum, final PIOSDK pioSdk,
+                          final int address)
+    throws IOException
+  {
+    final PIOSDK.InstructionInfo instructionInfo =
+      pioSdk.getMemoryInstruction(pioNum, address, false, true);
+    console.printf("(pio%d) %02x:        %s%n", pioNum, address,
+                   instructionInfo.getToolTipText());
+  }
+
+  private boolean enterWord(final int pioNum, final PIOSDK pioSdk,
+                            final int address, final String line)
+    throws IOException
+  {
+    try {
+      final int value = Integer.parseInt(line, 16);
+      sdk.writeAddress(PIORegisters.getMemoryAddress(pioNum, address), value);
+      unassemble(pioNum, pioSdk, address);
+      return true;
+    } catch (final NumberFormatException e) {
+      console.printf("error: expected 16 bit hex value or '.' or empty line, " +
+                     "but got: %s%n", line);
+      return false;
+    }
+  }
+
   /**
    * Returns true if no error occurred and the command has been
    * executed.
@@ -96,26 +126,18 @@ public class Enter extends Command
       optAddressValue != null ?
       optAddressValue & Constants.MEMORY_SIZE - 1 :
       0;
-    console.println("per input line, " +
-                    "enter 16 bit hex word without '0x' prefix");
+    console.printf(enterInstructions);
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     int count = 0;
     while (true) {
+      unassemble(pioNum, pioSdk, address);
       final int currentValue =
         sdk.readAddress(PIOEmuRegisters.getMemoryAddress(pioNum, address));
       console.printf("(pio%d) %02x: (%04x) ", pioNum, address, currentValue);
       final String line = in.readLine().trim();
       if ((line == null) || line.isEmpty()) break;
-      try {
-        final int value = Integer.parseInt(line, 16);
-        sdk.writeAddress(PIORegisters.getMemoryAddress(pioNum, address), value);
-        final PIOSDK.InstructionInfo instructionInfo =
-          pioSdk.getMemoryInstruction(0, address, false, true);
-        console.printf("                  %s%n",
-                       instructionInfo.getToolTipText());
-      } catch (final NumberFormatException e) {
-        console.printf("not a valid 16 bit word: %s%n", line);
-        continue;
+      if (!line.equals(".")) {
+        if (!enterWord(pioNum, pioSdk, address, line)) continue;
       }
       address = (address + 1) & Constants.MEMORY_SIZE - 1;
       count++;
