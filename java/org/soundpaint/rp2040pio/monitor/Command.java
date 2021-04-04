@@ -44,6 +44,9 @@ public abstract class Command
   protected static final CmdOptions.FlagOptionDeclaration optHelp =
     CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
                                 "display this help text and exit");
+  protected static final String helpNotes =
+    "For detail help of a command, enter: <command> -h.%n" +
+    "Commands may be abbreviated as long as unambiguity is preserved.%n";
 
   protected final PrintStream console;
   private final String fullName;
@@ -159,10 +162,10 @@ public abstract class Command
    * Returns true if no error occurred and the command has been
    * executed.
    */
-  public boolean parseAndExecute(final String argv[])
+  public boolean parseAndExecute(final String args)
   {
     try {
-      options.parse(argv);
+      options.parse(args);
       checkValidity(options);
       if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
         console.println(options.getFullInfo());
@@ -170,7 +173,8 @@ public abstract class Command
       }
       return execute(options);
     } catch (final CmdOptions.ParseException | IOException e) {
-      console.println(e.getMessage());
+      console.printf("%s:%n%s%n", this, e.getMessage());
+      console.printf(helpNotes);
       return false;
     }
   }

@@ -38,9 +38,6 @@ public class Help extends Command
   private static final String fullName = "help";
   private static final String singleLineDescription =
     "list all available monitor commands";
-  private static final String helpNotes =
-    "For detail help of a command, enter: <command> -h.%n" +
-    "Commands may be abbreviated as long as unambiguity is preserved.%n";
 
   private final CommandRegistry commands;
 

@@ -29,6 +29,7 @@ import java.io.PrintStream;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
@@ -66,6 +67,8 @@ public class Unassemble extends Command
   private static final String wrapTargetSymbol = "→ ";
   private static final String selfWrapSymbol = "↔ ";
   private static final String noWrapSymbol = "  ";
+  private static final String breakPointSymbol = "🛑";
+  private static final String noBreakPointSymbol = "  ";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
@@ -138,6 +141,10 @@ public class Unassemble extends Command
     final int wrapTarget =
       (execCtrl & Constants.SM0_EXECCTRL_WRAP_BOTTOM_BITS) >>>
       Constants.SM0_EXECCTRL_WRAP_BOTTOM_LSB;
+    final int addressBreakPoints =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_BREAKPOINTS);
+    final int breakPoints = sdk.readAddress(addressBreakPoints);
     do {
       final PIOSDK.InstructionInfo instructionInfo =
         pioSdk.getMemoryInstruction(smNum, address, true, true);
@@ -148,8 +155,10 @@ public class Unassemble extends Command
         isWrap ?
         (isWrapTarget ? selfWrapSymbol : wrapSymbol) :
         (isWrapTarget ? wrapTargetSymbol : noWrapSymbol);
-      console.printf("(pio%d:sm%d) %s  %s%s%n",
+      final boolean isBreakPoint = ((breakPoints >>> address) & 0x1) != 0x0;
+      console.printf("(pio%d:sm%d) %s %s  %s%s%n",
                      pioNum, smNum,
+                     (isBreakPoint ? breakPointSymbol : noBreakPointSymbol),
                      (isAllocated ? lockedSymbol : unlockedSymbol),
                      displayWrap,
                      instructionInfo.getToolTipText());

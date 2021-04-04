@@ -452,9 +452,10 @@ public class CmdOptions
     @Override
     Flag parse(final String strValue) throws ParseException
     {
-      if (Flag.OFF.toString().equals(strValue)) {
+      final String normalizedStrValue = strValue.trim();
+      if (Flag.OFF.toString().equals(normalizedStrValue)) {
         return Flag.OFF;
-      } else if (Flag.ON.toString().equals(strValue)) {
+      } else if (Flag.ON.toString().equals(normalizedStrValue)) {
         return Flag.ON;
       } else {
         throw new ParseException("'" + Flag.OFF + "' or " +
@@ -476,9 +477,10 @@ public class CmdOptions
     @Override
     Boolean parse(final String strValue) throws ParseException
     {
-      if ("false".equals(strValue)) {
+      final String normalizedStrValue = strValue.trim();
+      if ("false".equals(normalizedStrValue)) {
         return false;
-      } else if ("true".equals(strValue)) {
+      } else if ("true".equals(normalizedStrValue)) {
         return true;
       } else {
         throw new ParseException("'false' or 'true' expected, " +
@@ -499,11 +501,12 @@ public class CmdOptions
     @Override
     Integer parse(final String strValue) throws ParseException
     {
+      final String normalizedStrValue = strValue.toLowerCase().trim();
       try {
-        if (strValue.startsWith("0x") || strValue.startsWith("0X")) {
-          return Integer.parseUnsignedInt(strValue.substring(2), 16);
+        if (normalizedStrValue.startsWith("0x")) {
+          return Integer.parseUnsignedInt(normalizedStrValue.substring(2), 16);
         } else {
-          return Integer.parseInt(strValue);
+          return Integer.parseInt(normalizedStrValue);
         }
       } catch (final NumberFormatException e) {
         throw new ParseException("integer value expected: " + e.getMessage(),
@@ -774,12 +777,79 @@ public class CmdOptions
     }
   }
 
+  private static boolean isWhiteSpace(final char ch)
+  {
+    return
+      (ch <= ' ') ||
+      (ch == '\t') ||
+      (ch == '\n') ||
+      (ch == '\r');
+  }
+
+  private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
+  private static String[] splitArgs(final String args) throws ParseException
+  {
+    if ((args == null) || args.isEmpty()) {
+      return EMPTY_STRING_ARRAY;
+    }
+    final List<String> argv = new ArrayList<String>();
+    final StringBuffer token = new StringBuffer();
+    boolean inToken = false;
+    boolean quoted = false;
+    boolean escaped = false;
+    for (int pos = 0; pos < args.length(); pos++) {
+      final char ch = args.charAt(pos);
+      if (!inToken) {
+        if (isWhiteSpace(ch)) continue;
+        token.setLength(0);
+        inToken = true;
+      }
+      if (escaped) {
+        if ((ch != ' ') && (ch != '\\') && (ch != '"')) {
+          throw new ParseException("unsupported escaped character: " + ch);
+        }
+        token.append(ch);
+        escaped = false;
+        continue;
+      }
+      if (ch == '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch == '"') {
+        quoted = !quoted;
+        continue;
+      }
+      if ((ch == ' ') && !quoted) {
+        inToken = false;
+        argv.add(token.toString());
+        continue;
+      }
+      token.append(ch);
+    }
+    if (escaped) {
+      throw new ParseException("premature end of line after escape symbol");
+    }
+    if (quoted) {
+      throw new ParseException("missing closing quotation marks");
+    }
+    if (inToken) {
+      argv.add(token.toString());
+    }
+    return argv.toArray(EMPTY_STRING_ARRAY);
+  }
+
+  public void parse(final String args) throws ParseException
+  {
+    parse(splitArgs(args));
+  }
+
   public void parse(final String argv[]) throws ParseException
   {
     clear();
     OptionDefinition<?> currentOption = null;
     for (final String arg : argv) {
-      if (arg.isEmpty()) continue;
       if (arg == null) {
         throw new NullPointerException("arg");
       }

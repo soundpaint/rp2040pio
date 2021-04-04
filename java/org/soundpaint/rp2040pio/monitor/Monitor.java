@@ -35,8 +35,10 @@ import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.RegisterClient;
 import org.soundpaint.rp2040pio.Registers;
+import org.soundpaint.rp2040pio.monitor.commands.BreakPoints;
 import org.soundpaint.rp2040pio.monitor.commands.Enable;
 import org.soundpaint.rp2040pio.monitor.commands.Enter;
+import org.soundpaint.rp2040pio.monitor.commands.Execute;
 import org.soundpaint.rp2040pio.monitor.commands.Help;
 import org.soundpaint.rp2040pio.monitor.commands.Label;
 import org.soundpaint.rp2040pio.monitor.commands.Load;
@@ -128,8 +130,10 @@ public class Monitor
                                           final Command quit)
   {
     final CommandRegistry commands = new CommandRegistry();
+    commands.add(new BreakPoints(console, sdk));
     commands.add(new Enable(console, sdk));
     commands.add(new Enter(console, sdk, in));
+    commands.add(new Execute(console, sdk));
     commands.add(new Help(console, commands));
     commands.add(new Label(console, sdk));
     commands.add(new Load(console, sdk));
@@ -213,7 +217,7 @@ public class Monitor
       boolean quit = false;
       while (!quit) {
         console.print("> ");
-        final String commandLine = in.readLine().trim();
+        final String commandLine = in.readLine();
         if (!commandLine.isEmpty()) {
           try {
             quit = parseAndExecute(commandLine);
@@ -235,9 +239,7 @@ public class Monitor
   {
     final int spacePos = commandLine.indexOf(' ');
     final String commandToken =
-      spacePos < 0 ?
-      commandLine.trim() :
-      commandLine.substring(0, spacePos).trim();
+      (spacePos < 0 ? commandLine : commandLine.substring(0, spacePos)).trim();
     final List<Command> matchingCommands = commands.lookup(commandToken);
     if ((matchingCommands == null) || (matchingCommands.size() == 0)) {
       console.println("unknown command: " + commandToken);
@@ -250,10 +252,8 @@ public class Monitor
       return false;
     }
     final Command command = matchingCommands.get(0);
-    final String args =
-      spacePos < 0 ? "" : commandLine.substring(spacePos + 1).trim();
-    final String[] argv = args.split(" ");
-    final boolean executed = command.parseAndExecute(argv);
+    final String args = spacePos < 0 ? "" : commandLine.substring(spacePos + 1);
+    final boolean executed = command.parseAndExecute(args);
     return (command == quit) && executed;
   }
 

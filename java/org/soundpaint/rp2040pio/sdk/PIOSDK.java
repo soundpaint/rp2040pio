@@ -131,7 +131,7 @@ public class PIOSDK implements Constants
    * instruction.  Therefore, use of this decoder and access to
    * instances of Instruction objects must be serialized.
    */
-  private synchronized InstructionInfo
+  public synchronized InstructionInfo
     getInstructionFromOpCode(final int smNum,
                              final String addressLabel, final int opCode,
                              final boolean format,

@@ -100,6 +100,37 @@ public class Enable extends Command
     }
   }
 
+  private void displayEnableStatus(final int pioNumFirst,
+                                   final int pioNumLast,
+                                   final int smNumFirst,
+                                   final int smNumLast)
+    throws IOException
+  {
+    for (int pioNum = pioNumFirst; pioNum <= pioNumLast; pioNum++) {
+      final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+      for (int smNum = smNumFirst; smNum <= smNumLast; smNum++) {
+        final boolean enabled = pioSdk.smGetEnabled(smNum);
+        console.printf("(pio%d:sm%d) %s%n", pioNum, smNum,
+                       enabled ? "enabled" : "disabled");
+      }
+    }
+  }
+
+  private void setEnableStatus(final int pioNumFirst,
+                               final int pioNumLast,
+                               final int smNumFirst,
+                               final int smNumLast,
+                               final boolean enable)
+    throws IOException
+  {
+    for (int pioNum = pioNumFirst; pioNum <= pioNumLast; pioNum++) {
+      final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+      for (int smNum = smNumFirst; smNum <= smNumLast; smNum++) {
+        pioSdk.smSetEnabled(smNum, enable);
+      }
+    }
+  }
+
   /**
    * Returns true if no error occurred and the command has been
    * executed.
@@ -117,22 +148,10 @@ public class Enable extends Command
     final int smNumLast =
       optSmValue != null ? optSmValue : Constants.SM_COUNT - 1;
     if (optEnableValue != null) {
-      final boolean enable = optEnableValue;
-      for (int pioNum = pioNumFirst; pioNum <= pioNumLast; pioNum++) {
-        final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-        for (int smNum = smNumFirst; smNum <= smNumLast; smNum++) {
-          pioSdk.smSetEnabled(smNum, enable);
-        }
-      }
+      setEnableStatus(pioNumFirst, pioNumLast, smNumFirst, smNumLast,
+                      optEnableValue);
     } else {
-      for (int pioNum = pioNumFirst; pioNum <= pioNumLast; pioNum++) {
-        final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-        for (int smNum = smNumFirst; smNum <= smNumLast; smNum++) {
-          final boolean enabled = pioSdk.smGetEnabled(smNum);
-          console.printf("(pio%d:sm%d) %s%n", pioNum, smNum,
-                         enabled ? "enabled" : "disabled");
-        }
-      }
+      displayEnableStatus(pioNumFirst, pioNumLast, smNumFirst, smNumLast);
     }
     return true;
   }
