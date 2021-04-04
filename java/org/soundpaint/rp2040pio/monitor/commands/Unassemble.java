@@ -29,6 +29,7 @@ import java.io.PrintStream;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
+import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -59,6 +60,12 @@ public class Unassemble extends Command
     "Therefore, the unassemble command supports the \"sm\" argument%n" +
     "for displaying the instructions as interpreted by the selected%n" +
     "state machine, according to its current settings.";
+  private static final String lockedSymbol = "🔒";
+  private static final String unlockedSymbol = "  ";
+  private static final String wrapSymbol = "← ";
+  private static final String wrapTargetSymbol = "→ ";
+  private static final String selfWrapSymbol = "↔ ";
+  private static final String noWrapSymbol = "  ";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
@@ -122,13 +129,30 @@ public class Unassemble extends Command
     int address = startAddress;
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     final int memoryAllocation = pioSdk.getMemoryAllocation();
+    final int addressExecCtrl =
+      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
+    final int execCtrl = sdk.readAddress(addressExecCtrl);
+    final int wrap =
+      (execCtrl & Constants.SM0_EXECCTRL_WRAP_TOP_BITS) >>>
+      Constants.SM0_EXECCTRL_WRAP_TOP_LSB;
+    final int wrapTarget =
+      (execCtrl & Constants.SM0_EXECCTRL_WRAP_BOTTOM_BITS) >>>
+      Constants.SM0_EXECCTRL_WRAP_BOTTOM_LSB;
     do {
       final PIOSDK.InstructionInfo instructionInfo =
         pioSdk.getMemoryInstruction(smNum, address, true, true);
       final boolean isAllocated = ((memoryAllocation >>> address) & 0x1) != 0x0;
-      console.printf("%s (pio%d:sm%d) %s%n",
-                     (isAllocated ? "X" : " "),
-                     pioNum, smNum, instructionInfo.getToolTipText());
+      final boolean isWrap = address == wrap;
+      final boolean isWrapTarget = address == wrapTarget;
+      final String displayWrap =
+        isWrap ?
+        (isWrapTarget ? selfWrapSymbol : wrapSymbol) :
+        (isWrapTarget ? wrapTargetSymbol : noWrapSymbol);
+      console.printf("(pio%d:sm%d) %s  %s%s%n",
+                     pioNum, smNum,
+                     (isAllocated ? lockedSymbol : unlockedSymbol),
+                     displayWrap,
+                     instructionInfo.getToolTipText());
       address = (address + 1) & (Constants.MEMORY_SIZE - 1);
     } while (address != stopAddress);
     return true;

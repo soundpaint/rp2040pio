@@ -49,6 +49,7 @@ import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
 import org.soundpaint.rp2040pio.monitor.commands.Unload;
 import org.soundpaint.rp2040pio.monitor.commands.Version;
 import org.soundpaint.rp2040pio.monitor.commands.Wait;
+import org.soundpaint.rp2040pio.monitor.commands.Wrap;
 import org.soundpaint.rp2040pio.monitor.commands.Write;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.Panic;
@@ -141,6 +142,7 @@ public class Monitor
     commands.add(new Unload(console, sdk));
     commands.add(new Version(console, sdk));
     commands.add(new Wait(console, sdk));
+    commands.add(new Wrap(console, sdk));
     commands.add(new Write(console, sdk));
     return commands;
   }

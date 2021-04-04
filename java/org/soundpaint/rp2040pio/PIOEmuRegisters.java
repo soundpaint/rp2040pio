@@ -237,7 +237,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     }
     return
       Constants.getPIOEmuAddress(pioNum) +
-      0x4 * register.ordinal() + smNum * SM_SIZE;
+      0x4 * (register.ordinal() + smNum * SM_SIZE);
   }
 
   public static int getFIFOMemAddress(final int pioNum, final int address)

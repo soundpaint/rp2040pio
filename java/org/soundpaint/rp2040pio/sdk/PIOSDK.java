@@ -472,6 +472,9 @@ public class PIOSDK implements Constants
       for (int index = 0; index < length; index++) {
         final short instruction = program.getInstruction(index);
         final int memoryAddress = (addressOffset + index) & 0x1f;
+        // TODO: FIXME: Code relocation: When (addressOffset != 0),
+        // JMP commands need their absolute target address to be
+        // adjusted according to the offset.
         registers.writeAddress(PIORegisters.
                                getMemoryAddress(pioNum, memoryAddress),
                                instruction);
