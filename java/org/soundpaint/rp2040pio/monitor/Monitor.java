@@ -34,7 +34,6 @@ import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.RegisterClient;
-import org.soundpaint.rp2040pio.Registers;
 import org.soundpaint.rp2040pio.monitor.commands.BreakPoints;
 import org.soundpaint.rp2040pio.monitor.commands.Enable;
 import org.soundpaint.rp2040pio.monitor.commands.Enter;
@@ -44,6 +43,7 @@ import org.soundpaint.rp2040pio.monitor.commands.Label;
 import org.soundpaint.rp2040pio.monitor.commands.Load;
 import org.soundpaint.rp2040pio.monitor.commands.Quit;
 import org.soundpaint.rp2040pio.monitor.commands.Read;
+import org.soundpaint.rp2040pio.monitor.commands.Registers;
 import org.soundpaint.rp2040pio.monitor.commands.Reset;
 import org.soundpaint.rp2040pio.monitor.commands.SideSet;
 import org.soundpaint.rp2040pio.monitor.commands.Trace;
@@ -117,8 +117,7 @@ public class Monitor
     this.console = console;
     options = parseArgs(argv);
     printAbout();
-    final Registers registers = connect();
-    sdk = new SDK(console, registers);
+    sdk = new SDK(console, connect());
     pioSdk = sdk.getPIO0SDK();
     gpioSdk = sdk.getGPIOSDK();
     commands = installCommands(console, in, sdk, quit = new Quit(console));
@@ -139,6 +138,7 @@ public class Monitor
     commands.add(new Load(console, sdk));
     commands.add(quit);
     commands.add(new Read(console, sdk));
+    commands.add(new Registers(console, sdk));
     commands.add(new Reset(console, sdk));
     commands.add(new SideSet(console, sdk));
     commands.add(new Trace(console, sdk));
@@ -195,7 +195,7 @@ public class Monitor
     console.println(commandHint);
   }
 
-  private Registers connect()
+  private RegisterClient connect()
   {
     final int port = options.getValue(optPort);
     try {

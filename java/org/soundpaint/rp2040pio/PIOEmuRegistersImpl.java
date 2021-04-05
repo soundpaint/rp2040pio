@@ -84,12 +84,16 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM1_REGX:
     case SM2_REGX:
     case SM3_REGX:
-      break; // (for now) read-only address
+      pio.getSM((regNum - Regs.SM0_REGX.ordinal()) / SM_SIZE).
+        setX(value, mask, xor);
+      break;
     case SM0_REGY:
     case SM1_REGY:
     case SM2_REGY:
     case SM3_REGY:
-      break; // (for now) read-only address
+      pio.getSM((regNum - Regs.SM0_REGY.ordinal()) / SM_SIZE).
+        setY(value, mask, xor);
+      break;
     case SM0_PC:
     case SM1_PC:
     case SM2_PC:
@@ -99,22 +103,30 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM1_ISR:
     case SM2_ISR:
     case SM3_ISR:
-      break; // (for now) read-only address
+      pio.getSM((regNum - Regs.SM0_ISR.ordinal()) / SM_SIZE).
+        setISRValue(value, mask, xor);
+      break;
     case SM0_ISR_SHIFT_COUNT:
     case SM1_ISR_SHIFT_COUNT:
     case SM2_ISR_SHIFT_COUNT:
     case SM3_ISR_SHIFT_COUNT:
-      break; // (for now) read-only address
+      pio.getSM((regNum - Regs.SM0_ISR_SHIFT_COUNT.ordinal()) / SM_SIZE).
+        setISRShiftCount(value, mask, xor);
+      break;
     case SM0_OSR:
     case SM1_OSR:
     case SM2_OSR:
     case SM3_OSR:
-      break; // (for now) read-only address
+      pio.getSM((regNum - Regs.SM0_OSR.ordinal()) / SM_SIZE).
+        setOSRValue(value, mask, xor);
+      break;
     case SM0_OSR_SHIFT_COUNT:
     case SM1_OSR_SHIFT_COUNT:
     case SM2_OSR_SHIFT_COUNT:
     case SM3_OSR_SHIFT_COUNT:
-      break; // (for now) read-only address
+      pio.getSM((regNum - Regs.SM0_OSR_SHIFT_COUNT.ordinal()) / SM_SIZE).
+        setOSRShiftCount(value, mask, xor);
+      break;
     case SM0_FIFO_MEM0:
     case SM0_FIFO_MEM1:
     case SM0_FIFO_MEM2:

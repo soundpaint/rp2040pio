@@ -504,6 +504,11 @@ public class SM implements Constants
     status.isrValue = value;
   }
 
+  public void setISRValue(final int value, final int mask, final boolean xor)
+  {
+    status.isrValue = Constants.hwSetBits(status.isrValue, value, mask, xor);
+  }
+
   public boolean shiftISRLeft(final int bitCount, final int data)
   {
     // TODO: Clarify: Shift ISR always or only if not (isrFull &&
@@ -526,11 +531,23 @@ public class SM implements Constants
 
   public int getISRShiftCount() { return status.isrShiftCount; }
 
+  public void setISRShiftCount(final int value, final int mask,
+                               final boolean xor)
+  {
+    status.isrShiftCount =
+      Constants.hwSetBits(status.isrShiftCount, value, mask, xor);
+  }
+
   public int getOSRValue() { return status.osrValue; }
 
   public void setOSRValue(final int value)
   {
     status.osrValue = value;
+  }
+
+  public void setOSRValue(final int value, final int mask, final boolean xor)
+  {
+    status.osrValue = Constants.hwSetBits(status.osrValue, value, mask, xor);
   }
 
   public boolean shiftOSRLeft(final int bitCount,
@@ -559,6 +576,13 @@ public class SM implements Constants
   }
 
   public int getOSRShiftCount() { return status.osrShiftCount; }
+
+  public void setOSRShiftCount(final int value, final int mask,
+                               final boolean xor)
+  {
+    status.osrShiftCount =
+      Constants.hwSetBits(status.osrShiftCount, value, mask, xor);
+  }
 
   public void setSideSetCount(final int count)
   {
@@ -593,6 +617,11 @@ public class SM implements Constants
     status.regX = value;
   }
 
+  public void setX(final int value, final int mask, final boolean xor)
+  {
+    status.regX = Constants.hwSetBits(status.regX, value, mask, xor);
+  }
+
   private void decX()
   {
     status.regX--;
@@ -603,6 +632,11 @@ public class SM implements Constants
   public void setY(final int value)
   {
     status.regY = value;
+  }
+
+  public void setY(final int value, final int mask, final boolean xor)
+  {
+    status.regY = Constants.hwSetBits(status.regY, value, mask, xor);
   }
 
   private void decY()
