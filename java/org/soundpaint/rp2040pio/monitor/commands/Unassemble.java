@@ -126,11 +126,17 @@ public class Unassemble extends Command
     final int smNum = options.getValue(optSm);
     final int count = options.getValue(optCount);
     if (count == 0) return true;
-    final int startAddress = options.getValue(optStart);
+    final int startAddress =
+      options.getValue(optStart) & (Constants.MEMORY_SIZE - 1);
     final int stopAddress =
       (startAddress + count) & (Constants.MEMORY_SIZE - 1);
     int address = startAddress;
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    final int addressAddr =
+      PIORegisters.getSMAddress(pioNum, smNum,
+                                PIORegisters.Regs.SM0_ADDR);
+    final int addrValue =
+      sdk.readAddress(addressAddr) & (Constants.MEMORY_SIZE - 1);
     final int memoryAllocation = pioSdk.getMemoryAllocation();
     final int addressExecCtrl =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
@@ -146,6 +152,7 @@ public class Unassemble extends Command
                                    PIOEmuRegisters.Regs.SM0_BREAKPOINTS);
     final int breakPoints = sdk.readAddress(addressBreakPoints);
     do {
+      final boolean isCurrentAddr = address == addrValue;
       final PIOSDK.InstructionInfo instructionInfo =
         pioSdk.getMemoryInstruction(smNum, address, true, true);
       final boolean isAllocated = ((memoryAllocation >>> address) & 0x1) != 0x0;
@@ -156,12 +163,18 @@ public class Unassemble extends Command
         (isWrapTarget ? selfWrapSymbol : wrapSymbol) :
         (isWrapTarget ? wrapTargetSymbol : noWrapSymbol);
       final boolean isBreakPoint = ((breakPoints >>> address) & 0x1) != 0x0;
+      if (isCurrentAddr) {
+        console.printf("\u001b[38;5;196m");
+      }
       console.printf("(pio%d:sm%d) %s %s  %s%s%n",
                      pioNum, smNum,
                      (isBreakPoint ? breakPointSymbol : noBreakPointSymbol),
                      (isAllocated ? lockedSymbol : unlockedSymbol),
                      displayWrap,
                      instructionInfo.getToolTipText());
+      if (isCurrentAddr) {
+        console.printf("\u001b[0m");
+      }
       address = (address + 1) & (Constants.MEMORY_SIZE - 1);
     } while (address != stopAddress);
     return true;

@@ -84,6 +84,7 @@ public class FIFO implements Constants
   {
     if (join == regSHIFTCTRL_FJOIN_RX)
       return;
+    regSHIFTCTRL_FJOIN_RX = join;
     rx.clear();
     tx.clear();
     notifyAll();
@@ -167,6 +168,7 @@ public class FIFO implements Constants
   {
     if (join == regSHIFTCTRL_FJOIN_TX)
       return;
+    regSHIFTCTRL_FJOIN_TX = join;
     rx.clear();
     tx.clear();
     notifyAll();
@@ -266,6 +268,12 @@ public class FIFO implements Constants
     }
     return
       address - FIFO_DEPTH < tx.size() ? tx.get(address - FIFO_DEPTH) : 0;
+  }
+
+  public void setMemValue(final int address, final int value)
+  {
+    // TODO: Replace LinkedList FIFOs with static buffer, to be able
+    // to implement this method.
   }
 }
 

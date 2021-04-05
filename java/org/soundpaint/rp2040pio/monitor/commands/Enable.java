@@ -127,6 +127,8 @@ public class Enable extends Command
       final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
       for (int smNum = smNumFirst; smNum <= smNumLast; smNum++) {
         pioSdk.smSetEnabled(smNum, enable);
+        console.printf("(pio%d:sm%d) %s%n", pioNum, smNum,
+                       enable ? "enabled" : "disabled");
       }
     }
   }

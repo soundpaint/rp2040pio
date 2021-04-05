@@ -63,14 +63,24 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     return getSMAddress(getPIOIndex(), smNum, register);
   }
 
-  public int getFIFOMemAddress(final int address)
+  public int getFIFOMemAddress(final int smNum, final int address)
   {
-    return getFIFOMemAddress(getPIOIndex(), address);
+    return getFIFOMemAddress(getPIOIndex(), smNum, address);
   }
 
   public int getMemoryAddress(final int memoryAddress)
   {
     return getMemoryAddress(getPIOIndex(), memoryAddress);
+  }
+
+  private void setFIFOMemValue(final int regsOffset)
+  {
+    final int smNum = regsOffset / SM_SIZE;
+    Constants.checkSmNum(smNum);
+    final int address = regsOffset - SM_SIZE * smNum;
+    final FIFO fifo = pio.getSM(smNum).getFIFO();
+    final int value = fifo.getMemValue(address);
+    fifo.setMemValue(address, Constants.hwSetBits(value, mask, xor));
   }
 
   @Override
@@ -159,7 +169,8 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM3_FIFO_MEM5:
     case SM3_FIFO_MEM6:
     case SM3_FIFO_MEM7:
-      break; // (for now) read-only address
+      setFIFOMemValue(regNum - Regs.SM0_FIFO_MEM0.ordinal(), value, mask, xor);
+      break;
     case SM0_DELAY:
     case SM1_DELAY:
     case SM2_DELAY:

@@ -38,6 +38,7 @@ import org.soundpaint.rp2040pio.monitor.commands.BreakPoints;
 import org.soundpaint.rp2040pio.monitor.commands.Enable;
 import org.soundpaint.rp2040pio.monitor.commands.Enter;
 import org.soundpaint.rp2040pio.monitor.commands.Execute;
+import org.soundpaint.rp2040pio.monitor.commands.Fifo;
 import org.soundpaint.rp2040pio.monitor.commands.Help;
 import org.soundpaint.rp2040pio.monitor.commands.Label;
 import org.soundpaint.rp2040pio.monitor.commands.Load;
@@ -133,6 +134,7 @@ public class Monitor
     commands.add(new Enable(console, sdk));
     commands.add(new Enter(console, sdk, in));
     commands.add(new Execute(console, sdk));
+    commands.add(new Fifo(console, sdk));
     commands.add(new Help(console, commands));
     commands.add(new Label(console, sdk));
     commands.add(new Load(console, sdk));
@@ -229,8 +231,11 @@ public class Monitor
       }
       console.println("bye");
       System.exit(0);
-    } catch (final IOException e) {
-      console.println(e.getMessage());
+    } catch (final IOException | RuntimeException e) {
+      console.printf("fatal error: %s%n", e.getMessage());
+      console.println();
+      console.println("detailed debug information:");
+      e.printStackTrace(console);
       System.exit(-1);
     }
   }
