@@ -130,7 +130,6 @@ public class Unassemble extends Command
       options.getValue(optStart) & (Constants.MEMORY_SIZE - 1);
     final int stopAddress =
       (startAddress + count) & (Constants.MEMORY_SIZE - 1);
-    int address = startAddress;
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     final int addressAddr =
       PIORegisters.getSMAddress(pioNum, smNum,
@@ -151,6 +150,7 @@ public class Unassemble extends Command
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_BREAKPOINTS);
     final int breakPoints = sdk.readAddress(addressBreakPoints);
+    int address = startAddress;
     do {
       final boolean isCurrentAddr = address == addrValue;
       final PIOSDK.InstructionInfo instructionInfo =

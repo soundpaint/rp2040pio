@@ -27,6 +27,7 @@ package org.soundpaint.rp2040pio.monitor.commands;
 import java.io.IOException;
 import java.io.PrintStream;
 import org.soundpaint.rp2040pio.CmdOptions;
+import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -79,7 +80,7 @@ public class Load extends Command
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
                                    "PIO number, either 0 or 1");
   private static final CmdOptions.StringOptionDeclaration optFile =
-    CmdOptions.createStringOption("STRING", false, 'f', "file", defaultPath,
+    CmdOptions.createStringOption("PATH", false, 'f', "file", defaultPath,
                                   "path of hex dump file to load");
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
@@ -101,8 +102,8 @@ public class Load extends Command
     throws CmdOptions.ParseException
   {
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
-      final int pio = options.getValue(optPio);
-      if ((pio < 0) || (pio > 1)) {
+      final int pioNum = options.getValue(optPio);
+      if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
         throw new CmdOptions.
           ParseException("PIO number must be either 0 or 1");
       }

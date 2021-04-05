@@ -46,6 +46,7 @@ import org.soundpaint.rp2040pio.monitor.commands.Quit;
 import org.soundpaint.rp2040pio.monitor.commands.Read;
 import org.soundpaint.rp2040pio.monitor.commands.Registers;
 import org.soundpaint.rp2040pio.monitor.commands.Reset;
+import org.soundpaint.rp2040pio.monitor.commands.Save;
 import org.soundpaint.rp2040pio.monitor.commands.SideSet;
 import org.soundpaint.rp2040pio.monitor.commands.Trace;
 import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
@@ -142,6 +143,7 @@ public class Monitor
     commands.add(new Read(console, sdk));
     commands.add(new Registers(console, sdk));
     commands.add(new Reset(console, sdk));
+    commands.add(new Save(console, sdk));
     commands.add(new SideSet(console, sdk));
     commands.add(new Trace(console, sdk));
     commands.add(new Unassemble(console, sdk));

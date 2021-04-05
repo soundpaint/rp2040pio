@@ -73,14 +73,16 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     return getMemoryAddress(getPIOIndex(), memoryAddress);
   }
 
-  private void setFIFOMemValue(final int regsOffset)
+  private void setFIFOMemValue(final int regsOffset, final int value,
+                               final int mask, final boolean xor)
   {
     final int smNum = regsOffset / SM_SIZE;
     Constants.checkSmNum(smNum);
     final int address = regsOffset - SM_SIZE * smNum;
     final FIFO fifo = pio.getSM(smNum).getFIFO();
-    final int value = fifo.getMemValue(address);
-    fifo.setMemValue(address, Constants.hwSetBits(value, mask, xor));
+    fifo.setMemValue(address,
+                     Constants.hwSetBits(fifo.getMemValue(address),
+                                         value, mask, xor));
   }
 
   @Override
