@@ -132,7 +132,7 @@ public class Trace extends Command
     throws IOException
   {
     final String gpioPinBits = sdk.getGPIOSDK().asBitArrayDisplay();
-    console.printf("           %s%n", gpioPinBits);
+    console.printf("(pio*:sm*) %s%n", gpioPinBits);
   }
 
   /**

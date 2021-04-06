@@ -51,11 +51,11 @@ public class GPIO implements Constants
       function = GPIO_Function.NULL;
     }
 
-    public char toChar()
+    public String toChar()
     {
       final Bit level = getLevel(num);
       final Direction direction = getDirection(num);
-      return level != null ? level.toChar(direction) : '?';
+      return level != null ? level.toChar(direction) : "?";
     }
   }
 

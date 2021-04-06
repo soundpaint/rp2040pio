@@ -63,12 +63,12 @@ public class PinState
     this.level = level;
   }
 
-  public static char toChar(final Direction direction, final Bit level)
+  public static String toChar(final Direction direction, final Bit level)
   {
     return level.toChar(direction);
   }
 
-  public char toChar()
+  public String toChar()
   {
     return toChar(direction, level);
   }

@@ -93,7 +93,7 @@ public class Enter extends Command
   {
     final PIOSDK.InstructionInfo instructionInfo =
       pioSdk.getMemoryInstruction(pioNum, address, false, true);
-    console.printf("(pio%d) %02x:        %s%n", pioNum, address,
+    console.printf("(pio%d:sm*) %02x:        %s%n", pioNum, address,
                    instructionInfo.getToolTipText());
   }
 
@@ -133,7 +133,8 @@ public class Enter extends Command
       unassemble(pioNum, pioSdk, address);
       final int currentValue =
         sdk.readAddress(PIOEmuRegisters.getMemoryAddress(pioNum, address));
-      console.printf("(pio%d) %02x: (%04x) ", pioNum, address, currentValue);
+      console.printf("(pio%d:sm*) %02x: (%04x) ",
+                     pioNum, address, currentValue);
       final String line = in.readLine().trim();
       if ((line == null) || line.isEmpty()) break;
       if (!line.equals(".")) {

@@ -101,14 +101,14 @@ public class Gpio extends Command
   private void displayGpio() throws IOException
   {
     final String gpioPinBits = sdk.getGPIOSDK().asBitArrayDisplay();
-    console.printf("           %s%n", gpioPinBits);
+    console.printf("(pio*:sm*) %s%n", gpioPinBits);
   }
 
   private void initGpio(final int pioNum, final int gpioNum) throws IOException
   {
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     pioSdk.gpioInit(gpioNum);
-    console.printf("(pio%d)     initialized GPIO pin %02x%n", pioNum, gpioNum);
+    console.printf("(pio%d:sm*) initialized GPIO pin %02x%n", pioNum, gpioNum);
   }
 
   /**

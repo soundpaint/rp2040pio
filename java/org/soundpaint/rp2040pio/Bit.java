@@ -29,17 +29,17 @@ package org.soundpaint.rp2040pio;
  */
 public enum Bit
 {
-  LOW(0, '0', '⁰', '₀'),
-  HIGH(1, '1', '¹', '₁');
+  LOW(0, '0', "\u001b[30;42m0\u001b[0m", "\u001b[37;41m0\u001b[0m"),
+  HIGH(1, '1', "\u001b[30;42m1\u001b[0m", "\u001b[37;41m1\u001b[0m");
 
   private final int value;
   private final char charLabel;
-  private final char superScriptLabel;
-  private final char subScriptLabel;
+  private final String superScriptLabel;
+  private final String subScriptLabel;
   private final String stringLabel;
 
   private Bit(final int value, final char charLabel,
-              final char superScriptLabel, final char subScriptLabel)
+              final String superScriptLabel, final String subScriptLabel)
   {
     this.value = value;
     this.charLabel = charLabel;
@@ -69,14 +69,9 @@ public enum Bit
     return defaultValue;
   }
 
-  public char toChar()
+  public String toChar(final Direction direction)
   {
-    return toChar(null);
-  }
-
-  public char toChar(final Direction direction)
-  {
-    if (direction == null) return charLabel;
+    if (direction == null) return String.valueOf(charLabel);
     return direction == Direction.IN ? superScriptLabel : subScriptLabel;
   }
 
