@@ -177,16 +177,56 @@ public class GPIO implements Constants
     return Bit.LOW;
   }
 
-  public Bit getOeToPad(final int gpio)
+  public Direction getOeToPad(final int gpio)
   {
-    // not implemented by this emulator
-    return Bit.LOW;
+    switch (getFunction(gpio)) {
+    case XIP:
+    case SPI:
+    case UART:
+    case I2C:
+    case PWM:
+    case SIO:
+      // not implemented by this emulator
+      return Direction.IN;
+    case PIO0:
+      return pio0.getOeToPad(gpio);
+    case PIO1:
+      return pio1.getOeToPad(gpio);
+    case GPCK:
+    case USB:
+      // not implemented by this emulator
+      return Direction.IN;
+    case NULL:
+      return Direction.IN;
+    default:
+      throw new InternalError("unexpected case fall-through");
+    }
   }
 
-  public Bit getOeFromPeripheral(final int gpio)
+  public Direction getOeFromPeripheral(final int gpio)
   {
-    // not implemented by this emulator
-    return Bit.LOW;
+    switch (getFunction(gpio)) {
+    case XIP:
+    case SPI:
+    case UART:
+    case I2C:
+    case PWM:
+    case SIO:
+      // not implemented by this emulator
+      return Direction.IN;
+    case PIO0:
+      return pio0.getOeFromPeripheral(gpio);
+    case PIO1:
+      return pio1.getOeFromPeripheral(gpio);
+    case GPCK:
+    case USB:
+      // not implemented by this emulator
+      return Direction.IN;
+    case NULL:
+      return Direction.IN;
+    default:
+      throw new InternalError("unexpected case fall-through");
+    }
   }
 
   public Bit getOutToPad(final int gpio)
@@ -332,16 +372,6 @@ public class GPIO implements Constants
   public int getInputSyncByPass()
   {
     return regINPUT_SYNC_BYPASS;
-  }
-
-  public String asBitArrayDisplay()
-  {
-    final StringBuffer s = new StringBuffer();
-    for (final Terminal terminal : terminals) {
-      s.append(terminal.toChar());
-      if ((s.length() + 1) % 9 == 0) s.append(' ');
-    }
-    return s.toString();
   }
 }
 

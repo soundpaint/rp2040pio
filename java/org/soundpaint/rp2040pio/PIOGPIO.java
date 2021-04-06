@@ -29,29 +29,8 @@ package org.soundpaint.rp2040pio;
  */
 public class PIOGPIO implements Constants
 {
-  private static class State
-  {
-    private Direction direction;
-    private Bit level;
-
-    public void reset()
-    {
-      direction = Direction.IN;
-      level = Bit.LOW;
-    }
-
-    public char toChar()
-    {
-      if (direction == Direction.IN) {
-        return level == Bit.HIGH ? '¹' : '⁰';
-      } else {
-        return level == Bit.HIGH ? '₁' : '₀';
-      }
-    }
-  }
-
   private final GPIO gpio;
-  private final State[] states;
+  private final PinState[] states;
 
   private PIOGPIO()
   {
@@ -64,9 +43,9 @@ public class PIOGPIO implements Constants
       throw new NullPointerException("gpio");
     }
     this.gpio = gpio;
-    states = new State[GPIO_NUM];
+    states = new PinState[GPIO_NUM];
     for (int port = 0; port < states.length; port++) {
-      states[port] = new State();
+      states[port] = new PinState();
     }
     reset();
   }
@@ -86,7 +65,7 @@ public class PIOGPIO implements Constants
       throw new NullPointerException("level");
     }
     Constants.checkGpioPin(port, "GPIO port");
-    states[port].level = level;
+    states[port].setLevel(level);
   }
 
   public Bit getLevel(final int port)
@@ -94,7 +73,7 @@ public class PIOGPIO implements Constants
     // TODO: Clarify what happens when reading from a GPIO with pin
     // direction set to OUT.
     Constants.checkGpioPin(port, "GPIO port");
-    return states[port].level;
+    return states[port].getLevel();
   }
 
   public void setDirection(final int port, final Direction direction)
@@ -103,13 +82,13 @@ public class PIOGPIO implements Constants
       throw new NullPointerException("direction");
     }
     Constants.checkGpioPin(port, "GPIO port");
-    states[port].direction = direction;
+    states[port].setDirection(direction);
   }
 
   public Direction getDirection(final int port)
   {
     Constants.checkGpioPin(port, "GPIO port");
-    return states[port].direction;
+    return states[port].getDirection();
   }
 
   public int getPins(final int base, final int count)
@@ -154,6 +133,19 @@ public class PIOGPIO implements Constants
     }
   }
 
+  public Direction getOeToPad(final int gpio)
+  {
+    final Direction beforeRegisterOverride = getOeFromPeripheral(gpio);
+    // TODO: Check if we need to implement register override.
+    final Direction afterRegisterOverride = beforeRegisterOverride;
+    return afterRegisterOverride;
+  }
+
+  public Direction getOeFromPeripheral(final int gpio)
+  {
+    return getDirection(gpio);
+  }
+
   public Bit getOutToPad(final int gpio)
   {
     final Bit beforeRegisterOverride = getOutFromPeripheral(gpio);
@@ -165,16 +157,6 @@ public class PIOGPIO implements Constants
   public Bit getOutFromPeripheral(final int gpio)
   {
     return getLevel(gpio);
-  }
-
-  public String asBitArrayDisplay()
-  {
-    final StringBuffer s = new StringBuffer();
-    for (final State state : states) {
-      s.append(state.toChar());
-      if ((s.length() + 1) % 9 == 0) s.append(' ');
-    }
-    return s.toString();
   }
 }
 

@@ -437,6 +437,10 @@ public class CmdOptions
       this.displayValue = displayValue;
     }
 
+    public boolean isOff() { return this == OFF; }
+
+    public boolean isOn() { return this == ON; }
+
     @Override
     public String toString() { return displayValue; }
   }
@@ -889,8 +893,18 @@ public class CmdOptions
     return null;
   }
 
+  private void checkForDeclaration(final OptionDeclaration<?> declaration)
+  {
+    if (!declarations.contains(declaration)) {
+      final String message =
+        String.format("unregistered declaration: %s", declaration);
+      throw new IllegalArgumentException(message);
+    }
+  }
+
   public Flag getValue(final FlagOptionDeclaration declaration)
   {
+    checkForDeclaration(declaration);
     final FlagOptionDefinition definition =
       (FlagOptionDefinition)findDefinitionForDeclaration(declaration);
     return definition != null ? definition.getValue() : null;
@@ -898,6 +912,7 @@ public class CmdOptions
 
   public Boolean getValue(final BooleanOptionDeclaration declaration)
   {
+    checkForDeclaration(declaration);
     final BooleanOptionDefinition definition =
       (BooleanOptionDefinition)findDefinitionForDeclaration(declaration);
     return definition != null ? definition.getValue() : null;
@@ -905,6 +920,7 @@ public class CmdOptions
 
   public Integer getValue(final IntegerOptionDeclaration declaration)
   {
+    checkForDeclaration(declaration);
     final IntegerOptionDefinition definition =
       (IntegerOptionDefinition)findDefinitionForDeclaration(declaration);
     return definition != null ? definition.getValue() : null;
@@ -912,6 +928,7 @@ public class CmdOptions
 
   public String getValue(final StringOptionDeclaration declaration)
   {
+    checkForDeclaration(declaration);
     final StringOptionDefinition definition =
       (StringOptionDefinition)findDefinitionForDeclaration(declaration);
     return definition != null ? definition.getValue() : null;

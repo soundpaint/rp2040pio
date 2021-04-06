@@ -39,6 +39,7 @@ import org.soundpaint.rp2040pio.monitor.commands.Enable;
 import org.soundpaint.rp2040pio.monitor.commands.Enter;
 import org.soundpaint.rp2040pio.monitor.commands.Execute;
 import org.soundpaint.rp2040pio.monitor.commands.Fifo;
+import org.soundpaint.rp2040pio.monitor.commands.Gpio;
 import org.soundpaint.rp2040pio.monitor.commands.Help;
 import org.soundpaint.rp2040pio.monitor.commands.Label;
 import org.soundpaint.rp2040pio.monitor.commands.Load;
@@ -136,6 +137,7 @@ public class Monitor
     commands.add(new Enter(console, sdk, in));
     commands.add(new Execute(console, sdk));
     commands.add(new Fifo(console, sdk));
+    commands.add(new Gpio(console, sdk));
     commands.add(new Help(console, commands));
     commands.add(new Label(console, sdk));
     commands.add(new Load(console, sdk));

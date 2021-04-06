@@ -27,8 +27,10 @@ package org.soundpaint.rp2040pio.sdk;
 import java.io.IOException;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Bit;
+import org.soundpaint.rp2040pio.Direction;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
+import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.Registers;
 
 /**
@@ -67,10 +69,28 @@ public class GPIOSDK implements Constants
     registers.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
   }
 
-  public String asBitArrayDisplay()
+  public String asBitArrayDisplay() throws IOException
   {
-    // return gpio.asBitArrayDisplay(); // TODO
-    throw new InternalError("not yet implemented");
+    final StringBuffer gpioPinBits = new StringBuffer();
+    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM - 1; gpioNum++) {
+      if (((gpioNum & 0x7) == 0) && (gpioNum > 0)) {
+        gpioPinBits.append(' ');
+      }
+      final int gpioStatusAddress =
+        GPIOIOBank0Registers.
+        getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
+      final int gpioStatusValue = registers.readAddress(gpioStatusAddress);
+      final int gpioOeFromPeri =
+        (gpioStatusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
+        Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;
+      final Direction oeValue = Direction.fromValue(gpioOeFromPeri);
+      final int gpioOutFromPeri =
+        (gpioStatusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
+        Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
+      final Bit outValue = Bit.fromValue(gpioOutFromPeri);
+      gpioPinBits.append(PinState.toChar(oeValue, outValue));
+    }
+    return gpioPinBits.toString();
   }
 }
 

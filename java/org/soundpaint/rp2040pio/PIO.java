@@ -285,6 +285,16 @@ public class PIO implements Constants, Clock.TransitionListener
     return (smEnabled & (0x1 << smNum)) != 0x0;
   }
 
+  public Direction getOeToPad(final int gpio)
+  {
+    return pioGpio.getOeToPad(gpio);
+  }
+
+  public Direction getOeFromPeripheral(final int gpio)
+  {
+    return pioGpio.getOeFromPeripheral(gpio);
+  }
+
   public Bit getOutToPad(final int gpio)
   {
     return pioGpio.getOutToPad(gpio);
