@@ -33,6 +33,7 @@ import org.soundpaint.rp2040pio.Direction;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.monitor.Command;
+import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -55,22 +56,59 @@ public class Gpio extends Command
     "the RP2040's GPIO pins, but (as of now) neither a specific PIO's%n" +
     "GPIO status, nor the GPIO status individual for each SM.%n";
 
+  private static final CmdOptions.IntegerOptionDeclaration optPio =
+    CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
+                                   "PIO number, either 0 or 1");
+  private static final CmdOptions.IntegerOptionDeclaration optInit =
+    CmdOptions.createIntegerOption("NUMBER", false, 'i', "init", null,
+                                   "GPIO pin number (0..31)");
+
   private final SDK sdk;
 
   public Gpio(final PrintStream console, final SDK sdk)
   {
-    super(console, fullName, singleLineDescription, notes);
+    super(console, fullName, singleLineDescription, notes,
+          new CmdOptions.OptionDeclaration<?>[] { optPio, optInit });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
     this.sdk = sdk;
   }
 
-  private void displayGpio()
-    throws IOException
+  @Override
+  protected void checkValidity(final CmdOptions options)
+    throws CmdOptions.ParseException
+  {
+    if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
+      final int pioNum = options.getValue(optPio);
+      if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
+        throw new CmdOptions.
+          ParseException("PIO number must be either 0 or 1");
+      }
+      final Integer optInitValue = options.getValue(optInit);
+      if (optInitValue != null) {
+        final int gpioNum = optInitValue;
+        if ((gpioNum < 0) || (gpioNum > Constants.GPIO_NUM - 1)) {
+          final String message =
+            String.format("GPIO number must be in the range 0x00..0x%02x",
+                          Constants.GPIO_NUM - 1);
+          throw new CmdOptions.ParseException(message);
+        }
+      }
+    }
+  }
+
+  private void displayGpio() throws IOException
   {
     final String gpioPinBits = sdk.getGPIOSDK().asBitArrayDisplay();
     console.printf("           %s%n", gpioPinBits);
+  }
+
+  private void initGpio(final int pioNum, final int gpioNum) throws IOException
+  {
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    pioSdk.gpioInit(gpioNum);
+    console.printf("(pio%d)     initialized GPIO pin %02x%n", pioNum, gpioNum);
   }
 
   /**
@@ -80,7 +118,13 @@ public class Gpio extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    displayGpio();
+    final int pioNum = options.getValue(optPio);
+    final Integer optInitValue = options.getValue(optInit);
+    if (optInitValue == null) {
+      displayGpio();
+    } else {
+      initGpio(pioNum, optInitValue);
+    }
     return true;
   }
 }
