@@ -22,7 +22,7 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio;
+package org.soundpaint.rp2040pio.diagram;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +30,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.soundpaint.rp2040pio.Bit;
+import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -339,33 +341,10 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     }
   }
 
-  public static DiagramConfig.ClockSignal createClockSignal(final String label)
+  public static ClockSignal createClockSignal(final String label)
     throws IOException
   {
-    return new DiagramConfig.ClockSignal(label);
-  }
-
-  public static ValuedSignal<String>
-    createPCStateSignal(final String label, final PIO pio, final int smNum,
-                        final boolean hideDelayCycles)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("smNum < 0: " + smNum);
-    }
-    if (smNum > SM_COUNT - 1) {
-      throw new IllegalArgumentException("smNum > " +
-                                         (SM_COUNT - 1) + ": " +
-                                         smNum);
-    }
-    final SM sm = pio.getSM(smNum);
-    final String signalLabel = label != null ? label : "SM" + smNum + "_PC";
-    final Supplier<String> valueGetter = () -> {
-      if (hideDelayCycles && sm.isDelayCycle())
-        return null;
-      else
-        return String.format("%02x", sm.getPC());
-    };
-    return new DiagramConfig.ValuedSignal<String>(signalLabel, valueGetter);
+    return new ClockSignal(label);
   }
 
   private static final String[] MNEMONIC =
@@ -403,36 +382,6 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     instructionSignal.setToolTipTexter((instructionInfo) ->
                                        instructionInfo.getToolTipText());
     return instructionSignal;
-  }
-
-  public static ValuedSignal<Bit>
-    createGPIOValueSignal(final String label, final GPIO gpio, final int pin)
-  {
-    if (pin < 0) {
-      throw new IllegalArgumentException("pin < 0: " + pin);
-    }
-    if (pin > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("pin > " +
-                                         (GPIO_NUM - 1) + ": " + pin);
-    }
-    final String signalLabel = label != null ? label : "GPIO " + pin;
-    return
-      new DiagramConfig.ValuedSignal<Bit>(signalLabel, () -> gpio.getLevel(pin));
-  }
-
-  public static BitSignal
-    createGPIOBitSignal(final String label, final GPIO gpio, final int pin)
-  {
-    if (pin < 0) {
-      throw new IllegalArgumentException("pin < 0: " + pin);
-    }
-    if (pin > GPIO_NUM - 1) {
-      throw new IllegalArgumentException("pin > " +
-                                         (GPIO_NUM - 1) + ": " + pin);
-    }
-    final String signalLabel = label != null ? label : "GPIO " + pin;
-    return
-      new DiagramConfig.BitSignal(signalLabel, () -> gpio.getLevel(pin));
   }
 
   private static String createSignalLabel(final SDK sdk, final String label,
@@ -473,7 +422,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
         return null;
       }
     };
-    return new DiagramConfig.BitSignal(signalLabel, supplier);
+    return new BitSignal(signalLabel, supplier);
   }
 
   public static ValuedSignal<Integer>
@@ -513,7 +462,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
         return null;
       }
     };
-    return new DiagramConfig.ValuedSignal<Integer>(signalLabel, supplier);
+    return new ValuedSignal<Integer>(signalLabel, supplier);
   }
 
   private final List<Signal> signals;

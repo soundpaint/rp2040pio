@@ -22,13 +22,21 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio;
+package org.soundpaint.rp2040pio.diagram;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+import org.soundpaint.rp2040pio.CmdOptions;
+import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.Emulator;
+import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
+import org.soundpaint.rp2040pio.PIORegisters;
+import org.soundpaint.rp2040pio.RegisterClient;
+import org.soundpaint.rp2040pio.Registers;
 import org.soundpaint.rp2040pio.sdk.LocalRegisters;
 import org.soundpaint.rp2040pio.sdk.SDK;
 

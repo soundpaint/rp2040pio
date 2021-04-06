@@ -22,7 +22,7 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio;
+package org.soundpaint.rp2040pio.diagram;
 
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
@@ -47,6 +47,7 @@ import java.util.function.Supplier;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.sdk.Program;
 import org.soundpaint.rp2040pio.sdk.ProgramParser;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;

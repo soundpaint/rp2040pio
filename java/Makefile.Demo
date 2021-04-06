@@ -28,7 +28,7 @@ BUILD_DIR=$(ROOT_BUILD_DIR)/Demo
 COMPILE_CLASSPATH=$(JAVA_DIR):$(BUILD_DIR)
 RUN_CLASSPATH=.
 PIO_DIR=$(JAVA_DIR)/org/soundpaint/rp2040pio
-JAVA_SRC=$(wildcard $(PIO_DIR)/Demo.java)
+JAVA_SRC=$(wildcard $(PIO_DIR)/diagram/Demo.java)
 JAVA_OBJ=$(patsubst $(JAVA_DIR)/%.java,$(BUILD_DIR)/%.class,$(JAVA_SRC))
 
 IMAGES_SRC_DIR=$(JAVA_DIR)/images

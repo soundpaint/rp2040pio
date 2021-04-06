@@ -22,7 +22,7 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio;
+package org.soundpaint.rp2040pio.diagram;
 
 import java.awt.Dimension;
 import java.awt.Frame;
