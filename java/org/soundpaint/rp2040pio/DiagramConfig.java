@@ -50,16 +50,47 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     String getPreviousRenderedValue();
     String getToolTipText();
     String getPreviousToolTipText();
+    void record();
+    void rewind();
+  }
+
+  private static class SignalRecord<T>
+  {
+    private T previousValue;
+    private T value;
+    private int notChangedSince;
+
+    private SignalRecord()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    private SignalRecord(final T previousValue, final T value,
+                         final int notChangedSince)
+    {
+      this.previousValue = previousValue;
+      this.value = value;
+      this.notChangedSince = notChangedSince;
+    }
+
+    @Override
+    public String toString()
+    {
+      return String.format("SignalRecord(prev=%s,curr=%s,notChangedSince=%d",
+                           previousValue, value, notChangedSince);
+    }
   }
 
   private abstract static class AbstractSignal<T> implements Signal
   {
+    private List<SignalRecord<T>> signalRecords;
     private final String label;
     private T previousValue;
     private T value;
     private int notChangedSince;
     private Function<T, String> renderer;
     private Function<T, String> toolTipTexter;
+    private int replayIndex;
 
     private AbstractSignal()
     {
@@ -71,6 +102,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       if (label == null) {
         throw new NullPointerException("label");
       }
+      this.signalRecords = new ArrayList<SignalRecord<T>>();
       this.label = label;
       this.renderer = null;
       this.toolTipTexter = null;
@@ -82,6 +114,12 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       previousValue = null;
       value = null;
       notChangedSince = 0;
+      signalRecords.clear();
+    }
+
+    public void rewind()
+    {
+      replayIndex = 0;
     }
 
     @Override
@@ -103,7 +141,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       return !isClock() && !isBinary();
     }
 
-    protected void update(final T value, final boolean enforceChanged)
+    protected void record(final T value, final boolean enforceChanged)
     {
       this.previousValue = this.value;
       this.value = value;
@@ -114,6 +152,18 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       } else {
         notChangedSince++;
       }
+      signalRecords.
+        add(new SignalRecord<T>(previousValue, value, notChangedSince));
+    }
+
+    public boolean update()
+    {
+      if (replayIndex >= signalRecords.size()) return false;
+      final SignalRecord<T> signalRecord = signalRecords.get(replayIndex++);
+      this.previousValue = signalRecord.previousValue;
+      this.value = signalRecord.value;
+      this.notChangedSince = signalRecord.notChangedSince;
+      return true;
     }
 
     @Override
@@ -208,6 +258,9 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     public void reset() {}
 
     @Override
+    public void record() {}
+
+    @Override
     public boolean isClock() { return true; }
 
     @Override
@@ -248,11 +301,12 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       this.changeInfoGetter = changeInfoGetter;
     }
 
-    public void update()
+    @Override
+    public void record()
     {
       final boolean enforceChanged =
         changeInfoGetter != null ? changeInfoGetter.get() : false;
-      update(valueGetter.get(), enforceChanged);
+      record(valueGetter.get(), enforceChanged);
     }
   }
 

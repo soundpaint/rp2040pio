@@ -168,7 +168,13 @@ public class LocalRegisters extends AbstractRegisters
   public String getAddressLabel(final int address) throws IOException
   {
     final AbstractRegisters registers = getProvidingRegisters(address);
-    return registers != null ? registers.getAddressLabel(address) : null;
+    if (registers != null) {
+      return registers.getAddressLabel(address);
+    }
+    final String message =
+      String.format("requesting label for unsupported address: %08x",
+                    address);
+    throw new IOException(message);
   }
 
   @Override
@@ -185,12 +191,20 @@ public class LocalRegisters extends AbstractRegisters
   {
     final AbstractRegisters registers = getProvidingRegisters(address);
     if (registers != null) {
-      registers.writeAddress(address, value);
-    } else {
-      emulator.getConsole().
-        println("warning: write ignored for unsupported address: " +
-                String.format("%08x", address));
+      try {
+        registers.writeAddress(address, value);
+      } catch (final Throwable t) {
+        final String message = t.getMessage();
+        emulator.getConsole().
+          printf("warning: internal error occurred: %s%n", message);
+        t.printStackTrace(emulator.getConsole());
+        throw new IOException(message);
+      }
+      return;
     }
+    final String message =
+      String.format("write on unsupported address: %08x", address);
+    throw new IOException(message);
   }
 
   @Override
@@ -204,13 +218,19 @@ public class LocalRegisters extends AbstractRegisters
   {
     final AbstractRegisters registers = getProvidingRegisters(address);
     if (registers != null) {
-      return registers.readAddress(address);
-    } else {
-      emulator.getConsole().
-        println("warning: returning 0 for read from unsupported address: " +
-                String.format("%08x", address));
-      return 0;
+      try {
+        return registers.readAddress(address);
+      } catch (final Throwable t) {
+        final String message = t.getMessage();
+        emulator.getConsole().
+          printf("warning: internal error occurred: %s%n", message);
+        t.printStackTrace(emulator.getConsole());
+        throw new IOException(message);
+      }
     }
+    final String message =
+      String.format("read from unsupported address: %08x", address);
+    throw new IOException(message);
   }
 
   @Override
@@ -223,7 +243,9 @@ public class LocalRegisters extends AbstractRegisters
       return registers.wait(address, expectedValue, mask,
                             cyclesTimeout, millisTimeout);
     }
-    return 0;
+    final String message =
+      String.format("wait on unsupported address: %08x", address);
+    throw new IOException(message);
   }
 }
 

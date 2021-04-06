@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -39,11 +40,13 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.sdk.Program;
 import org.soundpaint.rp2040pio.sdk.ProgramParser;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
@@ -64,8 +67,10 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * SMx.SIGNAL_NAME=(SIGNAL|BIT)
  * GPIOx=(SIGNAL|BIT)
  */
-public class TimingDiagram implements Constants
+public class TimingDiagram extends JFrame implements Constants
 {
+  private static final long serialVersionUID = -8853990994193814003L;
+
   private static final double TOP_MARGIN = 16.0;
   private static final double BOTTOM_MARGIN = 16.0;
   private static final double LEFT_MARGIN = 200.0;
@@ -101,10 +106,10 @@ public class TimingDiagram implements Constants
   private static final TexturePaint FILL_PAINT =
     new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
 
+  private final PrintStream console;
   private final SDK sdk;
   private final PIOSDK pioSdk;
   private final DiagramConfig diagramConfig;
-  private final JFrame frame;
   private final JPanel panel;
   private final List<ToolTip> toolTips;
   private Program program;
@@ -141,17 +146,22 @@ public class TimingDiagram implements Constants
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public TimingDiagram(final SDK sdk)
+  public TimingDiagram(final PrintStream console, final SDK sdk)
+    throws IOException
   {
+    super("Timing Diagram");
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
+    this.console = console;
     this.sdk = sdk;
     pioSdk = sdk.getPIO0SDK();
     diagramConfig = new DiagramConfig();
-    frame = new JFrame("Timing Diagram");
-    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    frame.getContentPane().add(panel = new JPanel() {
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    getContentPane().add(panel = new JPanel() {
         @Override
         public void paint(final Graphics g)
         {
@@ -167,6 +177,7 @@ public class TimingDiagram implements Constants
           return getDiagramToolTipText(event);
         }
       });
+    getContentPane().add(new ActionPanel(this), BorderLayout.SOUTH);
     panel.setToolTipText("");
     toolTips = new ArrayList<ToolTip>();
     program = null;
@@ -267,11 +278,11 @@ public class TimingDiagram implements Constants
     return (int)(y + BOTTOM_MARGIN);
   }
 
-  public void create()
+  public void create() throws IOException
   {
     panel.setPreferredSize(new Dimension(640, getPreferredHeight()));
-    frame.pack();
-    frame.setVisible(true);
+    pack();
+    setVisible(true);
   }
 
   private void paintGridLine(final Graphics2D g, final double x,
@@ -311,7 +322,7 @@ public class TimingDiagram implements Constants
                                    final boolean rightBorder)
   {
     if (rightBorder) return;
-    signal.update();
+    if (!signal.update()) return;
     final double y =
       yBottom - (signal.asBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
     final double xStable = xStart + SIGNAL_SETUP_X;
@@ -362,7 +373,7 @@ public class TimingDiagram implements Constants
     // reached
     final int notChangedSince =
       signal.notChangedSince(); // safe prior to signal update
-    signal.update();
+    if (!signal.update()) return;
 
     if (!leftBorder && (signal.changed() || rightBorder)) {
       // signal changed => go for printing label of completed value;
@@ -453,7 +464,15 @@ public class TimingDiagram implements Constants
     }
   }
 
-  private void restartEmulation() throws IOException
+  public void clear()
+  {
+    for (final DiagramConfig.Signal signal : diagramConfig) {
+      signal.reset();
+    }
+    SwingUtilities.invokeLater(() -> panel.repaint());
+  }
+
+  public void createSnapShot(final int stopCycle) throws IOException
   {
     sdk.reset();
     if (program != null) {
@@ -461,11 +480,29 @@ public class TimingDiagram implements Constants
     }
     pioSdk.setSmMaskEnabled((1 << SM_COUNT) - 1, false);
     pioSdk.restartSmMask(SM_COUNT - 1);
+    // TODO: Enabling SM should be part of configuration and
+    // replayed, whenever the simulation is restarted.
+    pioSdk.setSmMaskEnabled(1, true);
     for (int pin = 0; pin < Constants.GPIO_NUM; pin++) {
       pioSdk.gpioInit(pin);
     }
     for (final DiagramConfig.Signal signal : diagramConfig) {
       signal.reset();
+    }
+    for (int cycle = 0; cycle < stopCycle; cycle++) {
+      sdk.triggerCyclePhase0(true);
+      for (final DiagramConfig.Signal signal : diagramConfig) {
+        signal.record();
+      }
+      sdk.triggerCyclePhase1(true);
+    }
+    SwingUtilities.invokeLater(() -> panel.repaint());
+  }
+
+  private void restartEmulation()
+  {
+    for (final DiagramConfig.Signal signal : diagramConfig) {
+      signal.rewind();
     }
   }
 
@@ -479,17 +516,12 @@ public class TimingDiagram implements Constants
     final int stopCycle =
       (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / CLOCK_CYCLE_WIDTH + 1);
     restartEmulation();
-    // TODO: Enabling SM should be part of configuration and
-    // replayed, whenever the simulation is restarted.
-    pioSdk.setSmMaskEnabled(1, true);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
-      sdk.triggerCyclePhase0(true);
       final double x = LEFT_MARGIN + cycle * CLOCK_CYCLE_WIDTH;
       final boolean leftBorder = cycle == 0;
       final boolean rightBorder = cycle + 1 == stopCycle;
       paintGridLine(g, x, height);
       paintSignalsCycle(panel, g, x, leftBorder, rightBorder);
-      sdk.triggerCyclePhase1(true);
     }
     paintGridLine(g, LEFT_MARGIN + stopCycle * CLOCK_CYCLE_WIDTH, height);
   }

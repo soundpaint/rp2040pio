@@ -833,14 +833,40 @@ public class SM implements Constants
     return memory.get(status.regADDR);
   }
 
-  public int getInstruction()
+  public int getOpCode()
   {
     /*
      * TODO / FIXME: getOpCode() works only for instructions created
      * from a call to decode(), but will return 0 for synthesized
      * ones.
      */
-    return status.instruction.getOpCode();
+    final Instruction instruction = status.instruction;
+    if (instruction == null) {
+      /*
+       * Trying to access instruction before any decode has been
+       * executed.
+       *
+       * TODO: The RP2040 datasheet is unclear for this situation:
+       * Table 378 "CTRL Register" states for CTRL_SM_ENABLE:
+       *
+       * "When disabled, a state machine will cease executing
+       * instructions, except those written directly to SMx_INSTR by
+       * the system"
+       *
+       * And Table 395 "SMx_INSTR Registers" does *not* provide a
+       * reset value for SMx_INSTR.
+       *
+       * This means, at startup, as long as a state machine has not
+       * yet been enabled and therefore no instruction has been
+       * fetched and decoded so far, the value of register SMx_INSTR
+       * upon read access is undefined.
+       *
+       * For this specific case, we assume that SMx_INSTR will return
+       * a value of 0.
+       */
+      return 0;
+    }
+    return instruction.getOpCode();
   }
 
   public void insertDMAInstruction(final int instruction)
@@ -890,11 +916,6 @@ public class SM implements Constants
     return status.pendingDelay;
   }
 
-  private void printTrace()
-  {
-    console.println("SM" + num + ": " + status.instruction);
-  }
-
   private void fetchAndDecode() throws Decoder.DecodeException
   {
     synchronized(memory.FETCH_LOCK) {
@@ -904,13 +925,14 @@ public class SM implements Constants
       }
       status.isDelayCycle = false;
       final short word = fetch();
-      status.instruction =
+      final Instruction instruction =
         decoder.decode(word,
                        status.regPINCTRL_SIDESET_COUNT,
                        status.regEXECCTRL_SIDE_EN);
       if (((status.regTRACEPOINTS >>> status.regADDR) & 0x1) != 0x0) {
-        printTrace();
+        console.println("SM" + num + ": " + instruction);
       }
+      status.instruction = instruction;
     }
   }
 
@@ -918,7 +940,13 @@ public class SM implements Constants
   {
     if (status.isDelayCycle)
       return;
-    status.resultState = status.instruction.execute(this);
+    final Instruction instruction = status.instruction;
+    if (instruction == null) {
+      throw new InternalError("seems emulator started with falling " +
+                              "clock edge:  can not execute instruction " +
+                              "before decode");
+    }
+    status.resultState = instruction.execute(this);
     if (status.resultState == Instruction.ResultState.COMPLETE) {
       // Sect. 3.4.2.2: "Delay cycles ... take place after ... the
       // program counter is updated" (though this specifically refers
@@ -927,7 +955,7 @@ public class SM implements Constants
       updatePC();
     }
     if (status.resultState != Instruction.ResultState.STALL) {
-      status.setPendingDelay(status.instruction.getDelay());
+      status.setPendingDelay(instruction.getDelay());
     }
   }
 
@@ -938,7 +966,20 @@ public class SM implements Constants
 
   public int getDelay()
   {
-    return status.instruction.getDelay();
+    final Instruction instruction = status.instruction;
+    if (instruction == null) {
+      /*
+       * Trying to access instruction before any decode has been
+       * executed.
+       *
+       * TODO: The RP2040 datasheet is unclear for this situation; for
+       * details, see method #getOpCode().
+       *
+       * For this specific case, we assume a delay value of 0.
+       */
+      return 0;
+    }
+    return instruction.getDelay();
   }
 
   public boolean isDelayCycle()

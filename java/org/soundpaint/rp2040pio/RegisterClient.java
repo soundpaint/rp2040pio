@@ -43,6 +43,7 @@ public class RegisterClient extends AbstractRegisters
 
   private static class Response
   {
+    private final PrintStream console;
     private final int statusCode;
     private final String statusId;
     private final String result;
@@ -52,9 +53,14 @@ public class RegisterClient extends AbstractRegisters
       throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    private Response(final int statusCode, final String statusId,
+    private Response(final PrintStream console,
+                     final int statusCode, final String statusId,
                      final String result)
     {
+      if (console == null) {
+        throw new NullPointerException("console");
+      }
+      this.console = console;
       this.statusCode = statusCode;
       this.statusId = statusId;
       this.result = result;
@@ -84,7 +90,9 @@ public class RegisterClient extends AbstractRegisters
       throws IOException
     {
       if (!isOk()) {
-        throw new IOException(errorMessage + ": " + toString());
+        final String responseMessage = errorMessage + ": " + toString();
+        console.println(responseMessage);
+        throw new IOException(responseMessage);
       }
       return result;
     }
@@ -174,7 +182,7 @@ public class RegisterClient extends AbstractRegisters
     final String statusId = statusDisplay.substring(spacePos + 1).trim();
     final String result =
       colonPos >= 0 ? response.substring(colonPos + 1).trim() : null;
-    return new Response(statusCode, statusId, result);
+    return new Response(console, statusCode, statusId, result);
   }
 
   private void checkResponse(final Response response) throws IOException

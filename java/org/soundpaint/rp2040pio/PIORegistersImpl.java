@@ -408,7 +408,7 @@ public class PIORegistersImpl extends PIORegisters
     case SM3_INSTR:
       return
         pio.getSM((regNum - Regs.SM0_INSTR.ordinal()) / SM_SIZE).
-        getInstruction();
+        getOpCode();
     case SM0_PINCTRL:
     case SM1_PINCTRL:
     case SM2_PINCTRL:

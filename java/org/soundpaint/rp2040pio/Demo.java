@@ -180,7 +180,7 @@ public class Demo
   private void createDiagram() throws IOException
   {
     final String programResourcePath = "/examples/squarewave.hex";
-    final TimingDiagram diagram = new TimingDiagram(sdk);
+    final TimingDiagram diagram = new TimingDiagram(console, sdk);
     diagram.setProgram(programResourcePath);
     diagram.addSignal(DiagramConfig.createClockSignal("clock"));
 
