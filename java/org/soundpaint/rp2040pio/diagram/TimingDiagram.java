@@ -25,8 +25,10 @@
 package org.soundpaint.rp2040pio.diagram;
 
 import java.awt.BorderLayout;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -55,6 +57,11 @@ public class TimingDiagram extends JFrame implements Constants
 {
   private static final long serialVersionUID = -8853990994193814003L;
 
+  public static String getAboutText()
+  {
+    return String.format("Timing Diagram App%n%s%n", Constants.getAbout());
+  }
+
   private final PrintStream console;
   private final SDK sdk;
   private final PIOSDK pioSdk;
@@ -80,8 +87,9 @@ public class TimingDiagram extends JFrame implements Constants
     this.console = console;
     this.sdk = sdk;
     pioSdk = sdk.getPIO0SDK();
-    diagramConfig = new DiagramConfig();
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setJMenuBar(new MenuBar(this));
+    diagramConfig = new DiagramConfig();
     getContentPane().add(diagramPanel = new DiagramPanel(diagramConfig));
     getContentPane().add(new ActionPanel(this), BorderLayout.SOUTH);
     program = null;
@@ -189,7 +197,9 @@ public class TimingDiagram extends JFrame implements Constants
     for (int cycle = 0; cycle < stopCycle; cycle++) {
       sdk.triggerCyclePhase0(true);
       for (final DiagramConfig.Signal signal : diagramConfig) {
-        signal.record();
+        if (signal.getVisible()) {
+          signal.record();
+        }
       }
       sdk.triggerCyclePhase1(true);
     }
@@ -200,6 +210,29 @@ public class TimingDiagram extends JFrame implements Constants
     throws IOException
   {
     program = ProgramParser.parse(programResourcePath);
+  }
+
+  public void close()
+  {
+    final WindowEvent closeEvent =
+      new WindowEvent(this, WindowEvent.WINDOW_CLOSING);
+    dispatchEvent(closeEvent);
+  }
+
+  public void fillInCurrentSignals(final List<DiagramConfig.Signal> signals)
+  {
+    signals.clear();
+    for (final DiagramConfig.Signal signal : diagramConfig) {
+      signals.add(signal);
+    }
+  }
+
+  public void updateListOfSignals(final List<DiagramConfig.Signal> signals)
+  {
+    diagramConfig.clear();
+    for (final DiagramConfig.Signal signal : signals) {
+      diagramConfig.addSignal(signal);
+    }
   }
 }
 

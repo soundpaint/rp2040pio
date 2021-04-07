@@ -1,5 +1,5 @@
 /*
- * @(#)Demo.java 1.00 21/01/31
+ * @(#)Main.java 1.00 21/01/31
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -41,16 +41,16 @@ import org.soundpaint.rp2040pio.sdk.LocalRegisters;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Draws a demo timing diagram of a selected set of PIO signals and
+ * Draws a timing diagram of a selected set of PIO signals and
  * generated from a specific PIO program.  By now, most of the
- * configuration of this demo is hard-wired in order to make it
- * running out of the box.
+ * configuration is hard-wired in order to make it running out of the
+ * box.
  */
-public class Demo
+public class Main
 {
-  private static final String PRG_NAME = "Observer";
+  private static final String PRG_NAME = "TimingDiagram";
   private static final String PRG_ID_AND_VERSION =
-    "Emulation Observer Version 0.1 for " + Constants.getProgramAndVersion();
+    "TimingDiagram Version 0.1 for " + Constants.getProgramAndVersion();
   private static final CmdOptions.FlagOptionDeclaration optVersion =
     CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
                                 "display version information and exit");
@@ -71,13 +71,15 @@ public class Demo
   private final PrintStream console;
   private final CmdOptions options;
   private final SDK sdk;
+  private final TimingDiagram diagram;
 
-  private Demo()
+  private Main()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Demo(final PrintStream console, final String[] argv)
+  public Main(final PrintStream console, final String[] argv)
+    throws IOException
   {
     if (console == null) {
       throw new NullPointerException("console");
@@ -95,6 +97,8 @@ public class Demo
       registers = new LocalRegisters(emulator);
     }
     sdk = new SDK(console, registers);
+    diagram = new TimingDiagram(console, sdk);
+    createDiagram();
   }
 
   private CmdOptions parseArgs(final String argv[])
@@ -135,8 +139,7 @@ public class Demo
 
   private void printAbout()
   {
-    console.println("Demo Timing Diagram App");
-    console.println(Constants.getAbout());
+    console.printf(TimingDiagram.getAboutText());
   }
 
   private Registers connect()
@@ -175,20 +178,9 @@ public class Demo
     return displayFilter;
   }
 
-  private void run()
-  {
-    try {
-      createDiagram();
-    } catch (final IOException e) {
-      console.println(e.getMessage());
-      System.exit(-1);
-    }
-  }
-
   private void createDiagram() throws IOException
   {
     final String programResourcePath = "/examples/squarewave.hex";
-    final TimingDiagram diagram = new TimingDiagram(console, sdk);
     diagram.setProgram(programResourcePath);
     diagram.addSignal(DiagramConfig.createClockSignal("clock"));
 
@@ -224,7 +216,12 @@ public class Demo
 
   public static void main(final String argv[])
   {
-    new Demo(System.out, argv).run();
+    final PrintStream console = System.out;
+    try {
+      new Main(System.out, argv);
+    } catch (final IOException e) {
+      console.println(e.getMessage());
+    }
   }
 }
 

@@ -157,7 +157,9 @@ public class DiagramPanel extends JPanel
   {
     double y = TOP_MARGIN;
     for (final DiagramConfig.Signal signal : diagramConfig) {
-      y += signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+      if (signal.getVisible()) {
+        y += signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+      }
     }
     final int preferredHeight = (int)(y + BOTTOM_MARGIN);
     setPreferredSize(new Dimension(640, preferredHeight));
@@ -313,10 +315,12 @@ public class DiagramPanel extends JPanel
     g.setStroke(PLAIN_STROKE);
     double y = TOP_MARGIN;
     for (final DiagramConfig.Signal signal : diagramConfig) {
-      final double height =
-        signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-      paintSignalCycle(panel, g, xStart, y += height, signal,
-                       leftBorder, rightBorder);
+      if (signal.getVisible()) {
+        final double height =
+          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        paintSignalCycle(panel, g, xStart, y += height, signal,
+                         leftBorder, rightBorder);
+      }
     }
   }
 
@@ -335,10 +339,12 @@ public class DiagramPanel extends JPanel
   {
     double y = TOP_MARGIN;
     for (final DiagramConfig.Signal signal : diagramConfig) {
-      final String label = signal.getLabel();
-      final double height =
-        signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-      paintLabel(panel, g, LEFT_MARGIN, y += height, label);
+      if (signal.getVisible()) {
+        final String label = signal.getLabel();
+        final double height =
+          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        paintLabel(panel, g, LEFT_MARGIN, y += height, label);
+      }
     }
   }
 

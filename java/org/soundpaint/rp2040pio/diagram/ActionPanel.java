@@ -66,8 +66,7 @@ public class ActionPanel extends Box
     btExecute.addActionListener((event) -> {
         final int cycles = (Integer)spCycles.getValue();
         try {
-          if (cycles == 10) timingDiagram.clear();
-          else timingDiagram.createSnapShot(cycles);
+          timingDiagram.createSnapShot(cycles);
         } catch (final IOException e) {
           final String title = "Failed Creating Snapshot";
           final String message = "I/O Error: " + e.getMessage();
@@ -80,11 +79,7 @@ public class ActionPanel extends Box
     add(Box.createHorizontalGlue());
     btClose = new JButton("Close");
     btClose.setMnemonic(KeyEvent.VK_C);
-    btClose.addActionListener((event) -> {
-        final WindowEvent closeEvent =
-          new WindowEvent(timingDiagram, WindowEvent.WINDOW_CLOSING);
-        timingDiagram.dispatchEvent(closeEvent);
-      });
+    btClose.addActionListener((event) -> { timingDiagram.close(); });
     add(btClose);
   }
 }

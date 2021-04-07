@@ -54,6 +54,8 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     String getPreviousToolTipText();
     void record();
     void rewind();
+    void setVisible(final boolean visible);
+    boolean getVisible();
   }
 
   private static class SignalRecord<T>
@@ -93,6 +95,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     private Function<T, String> renderer;
     private Function<T, String> toolTipTexter;
     private int replayIndex;
+    private boolean visible;
 
     private AbstractSignal()
     {
@@ -108,6 +111,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       this.label = label;
       this.renderer = null;
       this.toolTipTexter = null;
+      visible = true;
       reset();
     }
 
@@ -117,6 +121,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       value = null;
       notChangedSince = 0;
       signalRecords.clear();
+      // keep visibility unmodified
     }
 
     public void rewind()
@@ -238,6 +243,18 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
     }
 
     @Override
+    public void setVisible(final boolean visible)
+    {
+      this.visible = visible;
+    }
+
+    @Override
+    public boolean getVisible()
+    {
+      return visible;
+    }
+
+    @Override
     public String toString()
     {
       return "Signal[" + label + "]";
@@ -346,9 +363,6 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
   {
     return new ClockSignal(label);
   }
-
-  private static final String[] MNEMONIC =
-  {"jmp", "wait", "in", "out", "push", "mov", "irq", "set"};
 
   public static ValuedSignal<PIOSDK.InstructionInfo>
     createInstructionSignal(final SDK sdk,
@@ -478,6 +492,11 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       throw new NullPointerException("signal");
     }
     signals.add(signal);
+  }
+
+  public void clear()
+  {
+    signals.clear();
   }
 
   public Iterator<Signal> iterator()
