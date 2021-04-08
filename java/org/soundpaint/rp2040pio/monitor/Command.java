@@ -46,7 +46,11 @@ public abstract class Command
                                 "display this help text and exit");
   protected static final String helpNotes =
     "For detail help of a command, enter: <command> -h.%n" +
-    "Commands may be abbreviated as long as unambiguity is preserved.%n";
+    "Commands may be abbreviated as long as unambiguity is preserved.";
+  protected static final String panicNotes =
+    "The system may be now in a corrupted state.%n" +
+    "You may consider to fully reset the emulator with%n" +
+    "the \"reset\" commmand, if unexpected behavior shows up.";
 
   protected final PrintStream console;
   private final String fullName;
@@ -159,24 +163,25 @@ public abstract class Command
   }
 
   /**
+   * Returns true if no error occurred.
+   */
+  public void parse(final String[] argv) throws CmdOptions.ParseException
+  {
+    options.parse(argv, true);
+    checkValidity(options);
+  }
+
+  /**
    * Returns true if no error occurred and the command has been
    * executed.
    */
-  public boolean parseAndExecute(final String args)
+  public boolean execute() throws IOException
   {
-    try {
-      options.parse(args);
-      checkValidity(options);
-      if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
-        console.println(options.getFullInfo());
-        return false;
-      }
-      return execute(options);
-    } catch (final CmdOptions.ParseException | IOException e) {
-      console.printf("%s:%n%s%n", this, e.getMessage());
-      console.printf(helpNotes);
+    if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
+      console.println(options.getFullInfo());
       return false;
     }
+    return execute(options);
   }
 
   /**

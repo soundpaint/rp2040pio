@@ -58,7 +58,7 @@ public class Reset extends Command
   protected boolean execute(final CmdOptions options) throws IOException
   {
     sdk.reset();
-    console.println("emulator successfully reset");
+    console.println("(pio*:sm*) emulator successfully reset");
     return true;
   }
 }

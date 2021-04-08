@@ -1,0 +1,8 @@
+# Monitor script for loading & configuring squarewave.hex
+reset
+load --file=/examples/squarewave.hex
+enable --pio=0 --sm=0 --enable=true
+gpio --pio=0 --init=0
+sideset --pio=0 --sm=0 --count=0
+quit
+# end of script

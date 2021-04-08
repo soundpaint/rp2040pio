@@ -24,23 +24,38 @@
  */
 package org.soundpaint.rp2040pio.monitor;
 
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import org.soundpaint.rp2040pio.CmdOptions;
+import org.soundpaint.rp2040pio.ParseException;
 
 /**
  * Used for command dispatching.
  */
 public class CommandRegistry implements Iterable<Command>
 {
+  private final PrintStream console;
   private final Set<Command> commands;
   private final HashMap<String, List<Command>> token2commands;
+  private Command quit;
 
-  public CommandRegistry()
+  private CommandRegistry()
   {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public CommandRegistry(final PrintStream console)
+  {
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
+    this.console = console;
     commands =
       new TreeSet<Command>((cmd1, cmd2) ->
                            cmd1.getFullName().compareTo(cmd2.getFullName()));
@@ -110,6 +125,82 @@ public class CommandRegistry implements Iterable<Command>
   public Iterator<Command> iterator()
   {
     return commands.iterator();
+  }
+
+  public void setQuitCommand(final Command command)
+  {
+    if (command == null) {
+      throw new NullPointerException("command");
+    }
+    if (!commands.contains(command)) {
+      throw new IllegalArgumentException("no such command registered: " +
+                                         command);
+    }
+    quit = command;
+  }
+
+  private ParseException createCommandParseException(final Command command,
+                                                     final Exception e)
+  {
+    final String helpNotes = String.format(Command.helpNotes);
+    final String message =
+      String.format("%s:%n%s%n%s", command, e.getMessage(), helpNotes);
+    return new ParseException(message);
+  }
+
+  /**
+   * @return &lt;code&gt;true&lt;/code&gt;, if and only if command
+   * "quit" is to be successfully be executed (the command itself, not
+   * showing help with "-h" option).
+   * @throws &lt;code&gt;ParseException&lt;/code&gt;, if the command
+   * can not be executed due to a parse exception.  In dry-run mode,
+   * checking for this exception can be used to check the syntax of a
+   * command without actually executing it.
+   */
+  public boolean parseAndExecute(final String commandLine, boolean dryRun)
+    throws ParseException
+  {
+    final String[] argv;
+    try {
+      argv = CmdOptions.splitArgs(commandLine);
+    } catch (final CmdOptions.ParseException e) {
+      final String message =
+        String.format("failed tokenizing command line: %s%n", e.getMessage());
+      throw new ParseException(message, e);
+    }
+    if (argv.length == 0) {
+      return false;
+    }
+    final String commandToken = argv[0];
+    final List<Command> matchingCommands = lookup(commandToken);
+    if ((matchingCommands == null) || (matchingCommands.size() == 0)) {
+      final String message =
+        String.format("unknown command: %s%n%s%n",
+                      commandToken, Monitor.commandHint);
+      throw new ParseException(message);
+    }
+    if (matchingCommands.size() > 1) {
+      final String message =
+        String.format("ambiguous command: %s%npossible resolutions: %s%n",
+                      commandToken, matchingCommands);
+      throw new ParseException(message);
+    }
+    final Command command = matchingCommands.get(0);
+    try {
+      command.parse(argv);
+    } catch (final CmdOptions.ParseException e) {
+      throw createCommandParseException(command, e);
+    }
+    if (dryRun) {
+      return false;
+    }
+    final boolean executed;
+    try {
+      executed = command.execute();
+    } catch (final IOException e) {
+      throw createCommandParseException(command, e);
+    }
+    return (command == quit) && executed;
   }
 }
 

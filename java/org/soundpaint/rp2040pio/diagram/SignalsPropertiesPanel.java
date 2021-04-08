@@ -68,8 +68,26 @@ public class SignalsPropertiesPanel extends Box
     timingDiagram.repaint();
   }
 
-  private void rebuild()
+  private void swapSignals(final int index)
   {
+    Collections.swap(signals, index, index + 1);
+    final DiagramConfig.Signal signal1 = signals.get(index);
+    final DiagramConfig.Signal signal2 = signals.get(index + 1);
+    final JTextField tfSignal1 = signalLabels.get(index);
+    tfSignal1.setText(signal1.getLabel());
+    final JTextField tfSignal2 = signalLabels.get(index + 1);
+    tfSignal2.setText(signal2.getLabel());
+    final JCheckBox cbVisible1 = signalVisibilities.get(index);
+    final JCheckBox cbVisible2 = signalVisibilities.get(index + 1);
+    final boolean selected = cbVisible1.isSelected();
+    cbVisible1.setSelected(cbVisible2.isSelected());
+    cbVisible2.setSelected(selected);
+    revalidate();
+  }
+
+  private void rebuildGUI()
+  {
+    removeAll();
     boolean firstLine = true;
     final Box headerLine = new Box(BoxLayout.X_AXIS);
     add(headerLine);
@@ -91,7 +109,7 @@ public class SignalsPropertiesPanel extends Box
         final JButton btSwap =
           SwingUtils.createIconButton("swapv12x12.png", "⬍");
         final int swapIndex = index - 1;
-        btSwap.addActionListener((event) -> swap(swapIndex));
+        btSwap.addActionListener((event) -> swapSignals(swapIndex));
         btSwap.setBorderPainted(false);
         btSwap.setContentAreaFilled(false);
         swapLine.add(btSwap);
@@ -109,26 +127,10 @@ public class SignalsPropertiesPanel extends Box
       index++;
     }
     add(Box.createVerticalGlue());
-  }
-
-  private void swap(final int index)
-  {
-    Collections.swap(signals, index, index + 1);
-    final DiagramConfig.Signal signal1 = signals.get(index);
-    final DiagramConfig.Signal signal2 = signals.get(index + 1);
-    final JTextField tfSignal1 = signalLabels.get(index);
-    tfSignal1.setText(signal1.getLabel());
-    final JTextField tfSignal2 = signalLabels.get(index + 1);
-    tfSignal2.setText(signal2.getLabel());
-    final JCheckBox cbVisible1 = signalVisibilities.get(index);
-    final JCheckBox cbVisible2 = signalVisibilities.get(index + 1);
-    final boolean selected = cbVisible1.isSelected();
-    cbVisible1.setSelected(cbVisible2.isSelected());
-    cbVisible2.setSelected(selected);
     revalidate();
   }
 
-  public void updateSignals()
+  private void rebuildSignals()
   {
     timingDiagram.fillInCurrentSignals(signals);
     signalLabels.clear();
@@ -150,10 +152,12 @@ public class SignalsPropertiesPanel extends Box
 
       index++;
     }
-    removeAll();
-    rebuild();
-    revalidate();
-    // no repaint() here, since dialog not yet visible
+  }
+
+  public void rebuild()
+  {
+    rebuildSignals();
+    rebuildGUI();
   }
 }
 

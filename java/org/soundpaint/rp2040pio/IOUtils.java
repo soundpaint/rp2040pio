@@ -1,5 +1,5 @@
 /*
- * @(#)ParseException.java 1.00 21/02/16
+ * @(#)IOUtils.java 1.00 21/04/08
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,38 +24,38 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
 
-public class ParseException extends IOException
+public class IOUtils
 {
-  private static final long serialVersionUID = -3298538004378904681L;
-
-  private ParseException()
+  public static InputStream getStreamForResourcePath(final String resourcePath)
+    throws IOException
   {
-    throw new UnsupportedOperationException("unsupported empty constructor");
+    final InputStream fromFile;
+    try {
+      fromFile = new FileInputStream(resourcePath);
+    } catch (final FileNotFoundException e) {
+      final InputStream fromResource =
+        Constants.class.getResourceAsStream(resourcePath);
+      if (fromResource == null) {
+        throw new IOException("resource not found: " + resourcePath);
+      }
+      return fromResource;
+    }
+    return fromFile;
   }
 
-  public ParseException(final String message)
+  public static LineNumberReader
+    getReaderForResourcePath(final String resourcePath)
+    throws IOException
   {
-    super(message);
-  }
-
-  public ParseException(final String message, final Throwable cause)
-  {
-    super(message, cause);
-  }
-
-  public static ParseException create(final String message,
-                                      final String resourcePath,
-                                      final int lineIndex,
-                                      final Throwable cause)
-  {
-    final String fullMessage =
-      String.format("parse exception in %s, line %d: %s",
-                    resourcePath, lineIndex, message);
-    return cause != null ?
-      new ParseException(fullMessage, cause) :
-      new ParseException(fullMessage);
+    final InputStream in = getStreamForResourcePath(resourcePath);
+    return new LineNumberReader(new InputStreamReader(in));
   }
 }
 

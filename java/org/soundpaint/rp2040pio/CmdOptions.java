@@ -539,6 +539,7 @@ public class CmdOptions
   private final String prgNotes;
   private final List<OptionDeclaration<?>> declarations;
   private final OptionDefinition<?>[] definitions;
+  private String parsedCommand;
 
   public CmdOptions(final String prgName,
                     final String prgSingleLineDescription,
@@ -672,6 +673,7 @@ public class CmdOptions
 
   public void clear()
   {
+    parsedCommand = null;
     for (final OptionDefinition<?> definition : definitions) {
       definition.clear();
     }
@@ -792,7 +794,7 @@ public class CmdOptions
 
   private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
-  private static String[] splitArgs(final String args) throws ParseException
+  public static String[] splitArgs(final String args) throws ParseException
   {
     if ((args == null) || args.isEmpty()) {
       return EMPTY_STRING_ARRAY;
@@ -806,11 +808,12 @@ public class CmdOptions
       final char ch = args.charAt(pos);
       if (!inToken) {
         if (isWhiteSpace(ch)) continue;
+        if (ch == '#') break;
         token.setLength(0);
         inToken = true;
       }
       if (escaped) {
-        if ((ch != ' ') && (ch != '\\') && (ch != '"')) {
+        if ((ch != ' ') && (ch != '"') && (ch != '#') && (ch != '\\')) {
           throw new ParseException("unsupported escaped character: " + ch);
         }
         token.append(ch);
@@ -830,6 +833,9 @@ public class CmdOptions
         argv.add(token.toString());
         continue;
       }
+      if ((ch == '#') && !quoted) {
+        break;
+      }
       token.append(ch);
     }
     if (escaped) {
@@ -844,18 +850,23 @@ public class CmdOptions
     return argv.toArray(EMPTY_STRING_ARRAY);
   }
 
-  public void parse(final String args) throws ParseException
+  public void parse(final String argv[]) throws ParseException
   {
-    parse(splitArgs(args));
+    parse(argv, false);
   }
 
-  public void parse(final String argv[]) throws ParseException
+  public void parse(final String argv[], final boolean includesCommand)
+    throws ParseException
   {
     clear();
     OptionDefinition<?> currentOption = null;
     for (final String arg : argv) {
       if (arg == null) {
         throw new NullPointerException("arg");
+      }
+      if (includesCommand && (parsedCommand == null)) {
+        parsedCommand = arg;
+        continue;
       }
       if (currentOption != null) {
         if (currentOption.isParsed()) {
@@ -878,6 +889,11 @@ public class CmdOptions
                                  definition.getDeclaration());
       }
     }
+  }
+
+  public String getCommand()
+  {
+    return parsedCommand;
   }
 
   private OptionDefinition<?>

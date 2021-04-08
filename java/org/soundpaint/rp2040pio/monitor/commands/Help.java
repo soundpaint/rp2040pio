@@ -64,6 +64,7 @@ public class Help extends Command
     }
     console.println();
     console.printf(helpNotes);
+    console.println();
     return true;
   }
 }

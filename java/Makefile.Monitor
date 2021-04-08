@@ -38,7 +38,7 @@ IMAGES_OBJ=$(patsubst $(IMAGES_SRC_DIR)/%,$(IMAGES_OBJ_DIR)/%,$(IMAGES_SRC))
 
 EXAMPLES_SRC_DIR=$(JAVA_DIR)/examples
 EXAMPLES_OBJ_DIR=$(BUILD_DIR)/examples
-EXAMPLES_SRC=$(wildcard $(EXAMPLES_SRC_DIR)/*.hex)
+EXAMPLES_SRC=$(wildcard $(EXAMPLES_SRC_DIR)/*.hex) $(wildcard $(EXAMPLES_SRC_DIR)/*.mon)
 EXAMPLES_OBJ=$(patsubst $(EXAMPLES_SRC_DIR)/%,$(EXAMPLES_OBJ_DIR)/%,$(EXAMPLES_SRC))
 
 JAR_OBJ=$(JAR_DIR)/rp2040pio_monitor.jar
@@ -73,6 +73,9 @@ $(IMAGES_OBJ_DIR)/%.png: $(IMAGES_SRC_DIR)/%.png
 	cp -pf $< $@
 
 $(EXAMPLES_OBJ_DIR)/%.hex: $(EXAMPLES_SRC_DIR)/%.hex
+	cp -pf $< $@
+
+$(EXAMPLES_OBJ_DIR)/%.mon: $(EXAMPLES_SRC_DIR)/%.mon
 	cp -pf $< $@
 
 depend:

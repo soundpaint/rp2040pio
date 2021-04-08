@@ -115,7 +115,7 @@ public class ViewPropertiesDialog extends JDialog
 
   public void open()
   {
-    signalsPropertiesPanel.updateSignals();
+    signalsPropertiesPanel.rebuild();
     pack();
     setVisible(true);
   }

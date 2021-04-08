@@ -129,7 +129,7 @@ public class Load extends Command
       optAddressValue != null ?
       pioSdk.addProgramAtOffset(resourcePath, optAddressValue) :
       pioSdk.addProgram(resourcePath);
-    console.printf("stored program at PIO %d, address 0x%02x%n",
+    console.printf("(pio%d:sm*) loaded program at address 0x%02x%n",
                    pioNum, assignedAddress);
     return true;
   }

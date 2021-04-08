@@ -179,18 +179,6 @@ public class TimingDiagram extends JFrame implements Constants
 
   public void createSnapShot(final int stopCycle) throws IOException
   {
-    sdk.reset();
-    if (program != null) {
-      pioSdk.addProgram(program);
-    }
-    pioSdk.setSmMaskEnabled((1 << SM_COUNT) - 1, false);
-    pioSdk.restartSmMask(SM_COUNT - 1);
-    // TODO: Enabling SM should be part of configuration and
-    // replayed, whenever the simulation is restarted.
-    pioSdk.setSmMaskEnabled(1, true);
-    for (int pin = 0; pin < Constants.GPIO_NUM; pin++) {
-      pioSdk.gpioInit(pin);
-    }
     for (final DiagramConfig.Signal signal : diagramConfig) {
       signal.reset();
     }

@@ -48,6 +48,7 @@ import org.soundpaint.rp2040pio.monitor.commands.Read;
 import org.soundpaint.rp2040pio.monitor.commands.Registers;
 import org.soundpaint.rp2040pio.monitor.commands.Reset;
 import org.soundpaint.rp2040pio.monitor.commands.Save;
+import org.soundpaint.rp2040pio.monitor.commands.Script;
 import org.soundpaint.rp2040pio.monitor.commands.SideSet;
 import org.soundpaint.rp2040pio.monitor.commands.Trace;
 import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
@@ -68,6 +69,8 @@ import org.soundpaint.rp2040pio.sdk.ProgramParser;
  */
 public class Monitor
 {
+  public static final String commandHint =
+    "For a list of available commands, enter 'help'.";
   private static final String PRG_NAME = "Monitor";
   private static final String PRG_ID_AND_VERSION =
     "Emulation Monitor Version 0.1 for " + Constants.getProgramAndVersion();
@@ -86,12 +89,6 @@ public class Monitor
     optionDeclarations =
     Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
                   { optVersion, optHelp, optPort });
-  private static final String panicInfo =
-    "The system may be now in a corrupted state.%n" +
-    "You may consider to fully reset the emulator with%n" +
-    "the \"reset\" commmand, if unexpected behavior shows up.%n";
-  private static final String commandHint =
-    "For a list of available commands, enter 'help'.";
 
   private final BufferedReader in;
   private final PrintStream console;
@@ -100,7 +97,6 @@ public class Monitor
   private final GPIOSDK gpioSdk;
   private final CmdOptions options;
   private final CommandRegistry commands;
-  private final Command quit;
 
   private Monitor()
   {
@@ -123,15 +119,13 @@ public class Monitor
     sdk = new SDK(console, connect());
     pioSdk = sdk.getPIO0SDK();
     gpioSdk = sdk.getGPIOSDK();
-    commands = installCommands(console, in, sdk, quit = new Quit(console));
+    commands = installCommands();
   }
 
-  private CommandRegistry installCommands(final PrintStream console,
-                                          final BufferedReader in,
-                                          final SDK sdk,
-                                          final Command quit)
+  private CommandRegistry installCommands()
   {
-    final CommandRegistry commands = new CommandRegistry();
+    final CommandRegistry commands = new CommandRegistry(console);
+    final Command quit;
     commands.add(new BreakPoints(console, sdk));
     commands.add(new Enable(console, sdk));
     commands.add(new Enter(console, sdk, in));
@@ -141,11 +135,12 @@ public class Monitor
     commands.add(new Help(console, commands));
     commands.add(new Label(console, sdk));
     commands.add(new Load(console, sdk));
-    commands.add(quit);
+    commands.add(quit = new Quit(console));
     commands.add(new Read(console, sdk));
     commands.add(new Registers(console, sdk));
     commands.add(new Reset(console, sdk));
     commands.add(new Save(console, sdk));
+    commands.add(new Script(console, commands));
     commands.add(new SideSet(console, sdk));
     commands.add(new Trace(console, sdk));
     commands.add(new Unassemble(console, sdk));
@@ -154,6 +149,7 @@ public class Monitor
     commands.add(new Wait(console, sdk));
     commands.add(new Wrap(console, sdk));
     commands.add(new Write(console, sdk));
+    commands.setQuitCommand(quit);
     return commands;
   }
 
@@ -217,60 +213,40 @@ public class Monitor
     }
   }
 
-  private void run()
+  private int run()
   {
     try {
-      boolean quit = false;
-      while (!quit) {
+      while (true) {
         console.print("> ");
-        final String commandLine = in.readLine();
-        if (!commandLine.isEmpty()) {
-          try {
-            quit = parseAndExecute(commandLine);
-          } catch (final Panic e) {
-            console.println(e.getMessage());
-            console.printf(panicInfo);
+        try {
+          final String line = in.readLine();
+          if (line == null) break;
+          if (commands.parseAndExecute(line, false)) break;
+        } catch (final Panic | IOException e) {
+          console.println(e.getMessage());
+          if (e instanceof Panic) {
+            console.printf(Command.panicNotes);
+            console.println();
           }
         }
       }
       console.println("bye");
-      System.exit(0);
-    } catch (final IOException | RuntimeException e) {
+      return 0;
+    } catch (final RuntimeException e) {
       console.printf("fatal error: %s%n", e.getMessage());
       console.println();
       console.println("detailed debug information:");
       e.printStackTrace(console);
-      System.exit(-1);
+      return -1;
     }
-  }
-
-  private boolean parseAndExecute(final String commandLine)
-  {
-    final int spacePos = commandLine.indexOf(' ');
-    final String commandToken =
-      (spacePos < 0 ? commandLine : commandLine.substring(0, spacePos)).trim();
-    final List<Command> matchingCommands = commands.lookup(commandToken);
-    if ((matchingCommands == null) || (matchingCommands.size() == 0)) {
-      console.println("unknown command: " + commandToken);
-      console.println(commandHint);
-      return false;
-    }
-    if (matchingCommands.size() > 1) {
-      console.println("ambiguous command: " + commandToken);
-      console.println("possible resolutions: " + matchingCommands);
-      return false;
-    }
-    final Command command = matchingCommands.get(0);
-    final String args = spacePos < 0 ? "" : commandLine.substring(spacePos + 1);
-    final boolean executed = command.parseAndExecute(args);
-    return (command == quit) && executed;
   }
 
   public static void main(final String argv[])
   {
     final BufferedReader in =
       new BufferedReader(new InputStreamReader(System.in));
-    new Monitor(in, System.out, argv).run();
+    final int exitCode = new Monitor(in, System.out, argv).run();
+    System.exit(exitCode);
   }
 }
 

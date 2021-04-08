@@ -176,8 +176,8 @@ public class Save extends Command
       final PrintWriter out = new PrintWriter(filePath);
       writeProgram(pioNum, startAddress, stopAddress, out, name, relocatable);
       out.close();
-      console.printf("wrote 0x%02x instruction words to file %s%n",
-                     (stopAddress - startAddress) & 0x1f, filePath);
+      console.printf("(pio%d:sm*) saved 0x%02x instruction words to file %s%n",
+                     pioNum, (stopAddress - startAddress) & 0x1f, filePath);
       return true;
     } catch (final IOException e) {
       console.println("failed saving to file: " + e.getMessage());

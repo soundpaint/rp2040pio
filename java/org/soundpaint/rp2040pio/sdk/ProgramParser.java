@@ -25,13 +25,12 @@
 package org.soundpaint.rp2040pio.sdk;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.function.Function;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.ParseException;
 
 public class ProgramParser implements Constants
@@ -91,25 +90,13 @@ public class ProgramParser implements Constants
   private BufferedReader getReaderForResourcePath(final String resourcePath)
     throws IOException
   {
-    final InputStream in = getStreamForResourcePath(resourcePath);
-    return new BufferedReader(new InputStreamReader(in));
-  }
-
-  private InputStream getStreamForResourcePath(final String resourcePath)
-    throws IOException
-  {
-    final InputStream fromFile;
     try {
-      fromFile = new FileInputStream(resourcePath);
-    } catch(final FileNotFoundException e) {
-      final InputStream fromResource =
-        Constants.class.getResourceAsStream(resourcePath);
-      if (fromResource == null) {
-        throw parseException("resource not found: " + resourcePath);
-      }
-      return fromResource;
+      final InputStream in = IOUtils.getStreamForResourcePath(resourcePath);
+      return new BufferedReader(new InputStreamReader(in));
+    } catch (final IOException e) {
+      throw parseException("failed creating reader for resource: " +
+                           e.getMessage());
     }
-    return fromFile;
   }
 
   private ParseException parseException(final String message)

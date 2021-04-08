@@ -62,8 +62,8 @@ public class SideSet extends Command
                                    "used (0...5)");
   private static final CmdOptions.IntegerOptionDeclaration optBase =
     CmdOptions.createIntegerOption("NUMBER", false, 'b', "base", null,
-                                   "number of side-set bits to be " +
-                                   "used (0...31)");
+                                   "base GPIO pin (0...31) number "+
+                                   "of side-set");
   protected static final CmdOptions.BooleanOptionDeclaration optOpt =
     CmdOptions.createBooleanOption(false, 'o', "opt", null,
                                    "make side <value> optional for " +
@@ -156,6 +156,8 @@ public class SideSet extends Command
     final int values =
       count << Constants.SM0_PINCTRL_SIDESET_COUNT_LSB;
     sdk.hwWriteMasked(address, values, writeMask);
+    console.printf("(pio%d:sm%d) set side set count to %d%n",
+                   pioNum, smNum, count);
   }
 
   private void setSideSetBase(final int pioNum, final int smNum,
@@ -168,6 +170,8 @@ public class SideSet extends Command
     final int values =
       base << Constants.SM0_PINCTRL_SIDESET_BASE_LSB;
     sdk.hwWriteMasked(address, values, writeMask);
+    console.printf("(pio%d:sm%d) set side set base GPIO pin to %d%n",
+                   pioNum, smNum, base);
   }
 
   private void setSideSetOpt(final int pioNum, final int smNum,
