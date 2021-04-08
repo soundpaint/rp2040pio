@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
+import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.RegisterClient;
 import org.soundpaint.rp2040pio.monitor.commands.BreakPoints;
@@ -69,8 +70,7 @@ import org.soundpaint.rp2040pio.sdk.ProgramParser;
  */
 public class Monitor
 {
-  public static final String commandHint =
-    "For a list of available commands, enter 'help'.";
+  private static final String PROGRAM_ID = "Monitor Control Program";
   private static final String PRG_NAME = "Monitor";
   private static final String PRG_ID_AND_VERSION =
     "Emulation Monitor Version 0.1 for " + Constants.getProgramAndVersion();
@@ -85,10 +85,13 @@ public class Monitor
                                    Constants.
                                    REGISTER_SERVER_DEFAULT_PORT_NUMBER,
                                    "use PORT as server port number");
+  private static final CmdOptions.StringOptionDeclaration optScript =
+    CmdOptions.createStringOption("PATH", false, 's', "script", null,
+                                  "path of monitor script file to execute");
   private static final List<CmdOptions.OptionDeclaration<?>>
     optionDeclarations =
     Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
-                  { optVersion, optHelp, optPort });
+                  { optVersion, optHelp, optPort, optScript });
 
   private final BufferedReader in;
   private final PrintStream console;
@@ -105,6 +108,7 @@ public class Monitor
 
   public Monitor(final BufferedReader in, final PrintStream console,
                  final String[] argv)
+    throws IOException
   {
     if (in == null) {
       throw new NullPointerException("in");
@@ -114,12 +118,18 @@ public class Monitor
     }
     this.in = in;
     this.console = console;
-    options = parseArgs(argv);
-    printAbout();
-    sdk = new SDK(console, connect());
-    pioSdk = sdk.getPIO0SDK();
-    gpioSdk = sdk.getGPIOSDK();
-    commands = installCommands();
+    if ((options = parseArgs(argv)) != null) {
+      printAbout();
+      sdk = new SDK(console, connect());
+      pioSdk = sdk.getPIO0SDK();
+      gpioSdk = sdk.getGPIOSDK();
+      commands = installCommands();
+    } else {
+      sdk = null;
+      pioSdk = null;
+      gpioSdk = null;
+      commands = null;
+    }
   }
 
   private CommandRegistry installCommands()
@@ -153,7 +163,7 @@ public class Monitor
     return commands;
   }
 
-  private CmdOptions parseArgs(final String argv[])
+  private CmdOptions parseArgs(final String argv[]) throws IOException
   {
     final CmdOptions options;
     try {
@@ -162,19 +172,17 @@ public class Monitor
       options.parse(argv);
       checkValidity(options);
     } catch (final CmdOptions.ParseException e) {
-      console.println(e.getMessage());
-      System.exit(-1);
-      throw new InternalError();
+      final String message =
+        String.format("parsing command line failed: %s", e.getMessage());
+      throw new IOException(message);
     }
     if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
       console.println(PRG_ID_AND_VERSION);
-      System.exit(0);
-      throw new InternalError();
+      return null;
     }
     if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
       console.println(options.getFullInfo());
-      System.exit(0);
-      throw new InternalError();
+      return null;
     }
     return options;
   }
@@ -191,37 +199,59 @@ public class Monitor
 
   private void printAbout()
   {
-    console.println("Monitor Control Program");
-    console.println(Constants.getAbout());
-    console.println();
-    console.println(commandHint);
+    console.printf("%s%n%s%n%s%n",
+                   PROGRAM_ID, Constants.getAbout(),
+                   String.format(Command.commandHint));
   }
 
-  private RegisterClient connect()
+  private RegisterClient connect() throws IOException
   {
     final int port = options.getValue(optPort);
     try {
       console.printf("connecting to emulation server at port %d...%n", port);
       return new RegisterClient(console, port);
     } catch (final IOException e) {
-      console.println("failed to connect to emulation server: " +
-                      e.getMessage());
-      console.println("check that emulation server runs at port address " +
-                      port);
-      System.exit(-1);
-      throw new InternalError();
+      final String message =
+        String.format("failed to connect to emulation server: %s%n" +
+                      "check that emulation server runs at port address %d%n",
+                      e.getMessage(), port);
+      throw new IOException(message);
     }
   }
 
   private int run()
   {
+    if (sdk == null) return 0;
+    final String optScriptValue = options.getValue(optScript);
+    final BufferedReader scriptIn;
+    if (optScriptValue != null) {
+      try {
+        scriptIn = IOUtils.getReaderForResourcePath(optScriptValue);
+      } catch (final IOException e) {
+        console.println(e.getMessage());
+        return -1;
+      }
+    } else {
+      scriptIn = null;
+    }
+    return
+      (scriptIn != null) ?
+      session(scriptIn, false, true, "script> ") :
+      session(in, false, false, "> ");
+  }
+
+  private int session(final BufferedReader in,
+                      final boolean dryRun,
+                      final boolean localEcho,
+                      final String prompt) {
     try {
       while (true) {
-        console.print("> ");
+        console.print(prompt);
         try {
           final String line = in.readLine();
           if (line == null) break;
-          if (commands.parseAndExecute(line, false)) break;
+          if (localEcho) console.println(line);
+          if (commands.parseAndExecute(line, dryRun)) break;
         } catch (final Panic | IOException e) {
           console.println(e.getMessage());
           if (e instanceof Panic) {
@@ -245,8 +275,13 @@ public class Monitor
   {
     final BufferedReader in =
       new BufferedReader(new InputStreamReader(System.in));
-    final int exitCode = new Monitor(in, System.out, argv).run();
-    System.exit(exitCode);
+    try {
+      final int exitCode = new Monitor(in, System.out, argv).run();
+      System.exit(exitCode);
+    } catch (final IOException e) {
+      System.out.println(e.getMessage());
+      System.exit(-1);
+    }
   }
 }
 

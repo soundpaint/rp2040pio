@@ -29,7 +29,8 @@ public interface Constants
   public static final String PROGRAM_ID = "RP2040 PIO Emulator";
   public static final String VERSION_ID = "0.1";
   public static final String COPYRIGHT_INFO =
-    "© 2021 by J. Reuter\nKarlsruhe, Germany";
+    String.format("© 2021 by J. Reuter%n" +
+                  "Karlsruhe, Germany");
 
   public static String getProgramId()
   {
@@ -58,8 +59,7 @@ public interface Constants
   public static String getAbout()
   {
     return
-      getProgramAndVersion() + System.lineSeparator() +
-      getCopyrightInfo();
+      String.format("%s%n%s", getProgramAndVersion(), getCopyrightInfo());
   }
 
   public static final int GPIO_NUM = 32;
@@ -171,7 +171,7 @@ public interface Constants
   public static final int SM0_PINCTRL_OUT_BASE_LSB = 0;
   public static final int SM0_PINCTRL_OUT_BASE_BITS = 0x0000001f;
 
-  public static final int REGISTER_SERVER_DEFAULT_PORT_NUMBER = 1088;
+  public static final int REGISTER_SERVER_DEFAULT_PORT_NUMBER = 2040;
 
   public enum GPIO_Function {
     XIP(0, "xip"),

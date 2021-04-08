@@ -176,7 +176,7 @@ public class CommandRegistry implements Iterable<Command>
     if ((matchingCommands == null) || (matchingCommands.size() == 0)) {
       final String message =
         String.format("unknown command: %s%n%s%n",
-                      commandToken, Monitor.commandHint);
+                      commandToken, String.format(Command.commandHint));
       throw new ParseException(message);
     }
     if (matchingCommands.size() > 1) {

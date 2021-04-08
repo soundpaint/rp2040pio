@@ -44,6 +44,10 @@ public abstract class Command
   protected static final CmdOptions.FlagOptionDeclaration optHelp =
     CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
                                 "display this help text and exit");
+  protected static final String commandHint =
+    "For a list of available commands, enter 'help'.%n" +
+    "When invoked with the \"-s\" script execution option, the specified%n" +
+    "script is executed, and the monitor exits immediately after execution.";
   protected static final String helpNotes =
     "For detail help of a command, enter: <command> -h.%n" +
     "Commands may be abbreviated as long as unambiguity is preserved.";

@@ -24,15 +24,27 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 public class IOUtils
 {
+  /**
+   * @param resourcePath absolute Path within root package, i.e. with
+   * leading "/".
+   */
   public static InputStream getStreamForResourcePath(final String resourcePath)
     throws IOException
   {
@@ -56,6 +68,48 @@ public class IOUtils
   {
     final InputStream in = getStreamForResourcePath(resourcePath);
     return new LineNumberReader(new InputStreamReader(in));
+  }
+
+  /**
+   * @param resourcePath Path relative to root package, i.e. without
+   * leading "/".
+   */
+  public static List<String> list(final String resourcePath) throws IOException
+  {
+    final List<String> paths = new ArrayList<String>();
+    final File resourceFile =
+      new File(IOUtils.class.getProtectionDomain().
+               getCodeSource().getLocation().getPath());
+    if (resourceFile.isFile()) {
+      final JarFile jarFile = new JarFile(resourceFile);
+      final Enumeration<JarEntry> entries = jarFile.entries();
+      final String prefix = resourcePath + "/";
+      while (entries.hasMoreElements()) {
+        final String path = entries.nextElement().getName();
+        if (path.startsWith(prefix) && (path.length() > prefix.length())) {
+          paths.add(path.substring(prefix.length()));
+        }
+      }
+      jarFile.close();
+    } else {
+      final URL url = IOUtils.class.getResource("/" + resourcePath);
+      if (url != null) {
+        final File directoryPath;
+        try {
+          directoryPath = new File(url.toURI());
+        } catch (final URISyntaxException e) {
+          throw new InternalError("unexpected exception", e);
+        }
+        final String prefix = directoryPath + "/";
+        for (final File file : directoryPath.listFiles()) {
+          final String path = file.getPath();
+          if (path.startsWith(prefix) && (path.length() > prefix.length())) {
+            paths.add(path.substring(prefix.length()));
+          }
+        }
+      }
+    }
+    return paths;
   }
 }
 

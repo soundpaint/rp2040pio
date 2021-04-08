@@ -29,6 +29,8 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintStream;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.monitor.Command;
@@ -51,14 +53,20 @@ public class Script extends Command
     "For safety reasons as well as for providing for future extensions,%n" +
     "an additional flag \"-e\" must be specified to execute the script.%n" +
     "Without the \"-e\" flag, the command just checks for existence and%n" +
-    "readability of the specified file.";
-  private static final String defaultPath = "/examples/squarewave.mon";
+    "readability of the specified file." +
+    "Some built-in example scripts are provided that can be listed with%n" +
+    "the \"-l\" option.  If the specified path matches one of the example%n" +
+    "scripts, it is executed.  Otherwise, the path is interpreted as%n" +
+    "ordinary file system path.";
 
   private final CommandRegistry commands;
 
   private static final CmdOptions.StringOptionDeclaration optFile =
-    CmdOptions.createStringOption("PATH", false, 'f', "file", defaultPath,
+    CmdOptions.createStringOption("PATH", false, 'f', "file", null,
                                   "path of hex dump file to load");
+  private static final CmdOptions.FlagOptionDeclaration optList =
+    CmdOptions.createFlagOption(false, 'l', "list", CmdOptions.Flag.OFF,
+                                "list available example script files");
   private static final CmdOptions.FlagOptionDeclaration optExecute =
     CmdOptions.createFlagOption(false, 'e', "execute", CmdOptions.Flag.OFF,
                                 "actually execute the script rather than " +
@@ -67,7 +75,8 @@ public class Script extends Command
   public Script(final PrintStream console, final CommandRegistry commands)
   {
     super(console, fullName, singleLineDescription, notes,
-          new CmdOptions.OptionDeclaration<?>[] { optFile, optExecute });
+          new CmdOptions.OptionDeclaration<?>[]
+          { optList, optFile, optExecute });
     if (commands == null) {
       throw new NullPointerException("commands");
     }
@@ -81,20 +90,53 @@ public class Script extends Command
     return new LineNumberReader(new InputStreamReader(in));
   }
 
+  @Override
+  protected void checkValidity(final CmdOptions options)
+    throws CmdOptions.ParseException
+  {
+    final String optFileValue = options.getValue(optFile);
+    final boolean optListValue =
+      options.getValue(optList) == CmdOptions.Flag.ON;
+    if (optListValue && (optFileValue != null)) {
+      throw new CmdOptions.
+        ParseException("either option \"-l\" or option \"-f\" may be " +
+                       "specified, but not both at the same time");
+    }
+    if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
+      if (!optListValue && (optFileValue == null)) {
+        throw new CmdOptions.
+          ParseException("at least one of options \"-l\" and \"-f\" " +
+                         "must be specified");
+      }
+    }
+  }
+
+  private void listExampleScripts() throws IOException
+  {
+    final List<String> examples =
+      IOUtils.list("examples").stream().
+      filter((name) -> name.endsWith(".mon")).collect(Collectors.toList());
+    for (final String example : examples) {
+      console.printf("(pio*:sm*) /examples/%s%n", example);
+    }
+  }
+
   private boolean executeScript(final LineNumberReader in,
                                 final String resourcePath,
-                                final boolean dryRun)
+                                final boolean dryRun,
+                                final boolean localEcho,
+                                final String prompt)
     throws IOException
   {
     final String action = dryRun ? "dry-running" : "running";
     console.printf("(pio*:sm*) %s script from resource %s%n",
                    action, resourcePath);
     while (true) {
-      console.print("script> ");
+      console.print(prompt);
       try {
         final String line = in.readLine();
         if (line == null) break;
-        console.printf("%s%n", line);
+        if (localEcho) console.println(line);
         if (commands.parseAndExecute(line, dryRun)) break;
       } catch (final Panic | IOException e) {
         console.println(e.getMessage());
@@ -116,12 +158,17 @@ public class Script extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    final String resourcePath = options.getValue(optFile);
-    if (resourcePath != null) {
+    final String optFileValue = options.getValue(optFile);
+    final boolean optListValue =
+      options.getValue(optList) == CmdOptions.Flag.ON;
+    if (optListValue) {
+      listExampleScripts();
+    }
+    if (optFileValue != null) {
       final LineNumberReader reader =
-        IOUtils.getReaderForResourcePath(resourcePath);
+        IOUtils.getReaderForResourcePath(optFileValue);
       final boolean dryRun = options.getValue(optExecute) != CmdOptions.Flag.ON;
-      return executeScript(reader, resourcePath, dryRun);
+      return executeScript(reader, optFileValue, dryRun, true, "script> ");
     }
     return true;
   }
