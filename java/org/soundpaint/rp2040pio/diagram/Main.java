@@ -98,7 +98,7 @@ public class Main
     }
     sdk = new SDK(console, registers);
     diagram = new TimingDiagram(console, sdk);
-    createDiagram();
+    configureDiagram();
   }
 
   private CmdOptions parseArgs(final String argv[])
@@ -178,38 +178,44 @@ public class Main
     return displayFilter;
   }
 
-  private void createDiagram() throws IOException
+  private void configureDiagram() throws IOException
   {
-    diagram.addSignal(DiagramConfig.createClockSignal("clock"));
+    diagram.addSignal(DiagramConfig.createClockSignal("clock")).
+      setVisible(true);
 
-    diagram.addSignal(PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);
-    diagram.addSignal("GPIO 0",
-                      GPIOIOBank0Registers.getAddress(GPIOIOBank0Registers.Regs.GPIO0_STATUS), 8, 8);
-    diagram.addSignal("GPIO 1",
-                      GPIOIOBank0Registers.getAddress(GPIOIOBank0Registers.Regs.GPIO1_STATUS), 8, 8);
-    diagram.addSignal("GPIO 10",
-                      GPIOIOBank0Registers.getAddress(GPIOIOBank0Registers.Regs.GPIO10_STATUS), 8, 8);
-    diagram.addSignal(PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC));
-    diagram.addSignal(PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC),
-                      createDelayFilter(sdk, 0, 0));
-
-    final int instrAddr = PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
+    diagram.addSignal(PIOEmuRegisters.
+                      getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0).
+      setVisible(true);
+    final GPIOIOBank0Registers.Regs regGpio0Status =
+      GPIOIOBank0Registers.Regs.GPIO0_STATUS;
+    for (int gpioNum = 0; gpioNum < 32; gpioNum++) {
+      final String label = "GPIO " + gpioNum;
+      final int address =
+        GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
+      final DiagramConfig.Signal signal =
+        diagram.addSignal(label, address, 8, 8);
+      if (gpioNum == 0) signal.setVisible(true);
+    }
+    final int addrSm0Pc =
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
+    diagram.addSignal("SM0_PC", addrSm0Pc);
+    diagram.addSignal("SM0_PC (hidden delay)",
+                      addrSm0Pc, createDelayFilter(sdk, 0, 0)).
+      setVisible(true);
+    final int instrAddr =
+      PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     final DiagramConfig.Signal instr1 =
       DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
-                                            0, null, false, null);
+                                            0, "SM0_INSTR",
+                                            true, null);
     diagram.addSignal(instr1);
     final DiagramConfig.Signal instr2 =
       DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
-                                            0, null, true, null);
+                                            0, "SM0_INSTR (hidden delay)",
+                                            true, createDelayFilter(sdk, 0, 0));
+    instr2.setVisible(true);
     diagram.addSignal(instr2);
-    final DiagramConfig.Signal instr3 =
-      DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
-                                            0, null, true,
-                                            createDelayFilter(sdk, 0, 0));
-    diagram.addSignal(instr3);
-
-    //diagram.setSideSetCount(1);
-    diagram.create();
+    diagram.packAndShow();
   }
 
   public static void main(final String argv[])

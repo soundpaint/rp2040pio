@@ -25,8 +25,10 @@
 package org.soundpaint.rp2040pio.diagram;
 
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
@@ -40,6 +42,7 @@ import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
@@ -94,6 +97,43 @@ public class ScriptSelectionPanel extends Box
     return examples.stream().toArray(String[]::new);
   }
 
+  private InputStream getExampleScriptStream(final String scriptName)
+  {
+    final InputStream in;
+    try {
+      in = IOUtils.getStreamForResourcePath("/examples/" + scriptName + ".mon");
+    } catch (final IOException e) {
+      final String message =
+        String.format("Built-in script \"%s\" not found: %s",
+                      scriptName, e.getMessage());
+      JOptionPane.showMessageDialog(this, message,
+                                    "Internal Error",
+                                    JOptionPane.ERROR_MESSAGE);
+      return null;
+    }
+    return in;
+  }
+
+  private void showExampleScript(final String scriptName)
+  {
+    final InputStream in = getExampleScriptStream(scriptName);
+    if (in == null) return;
+    final BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+    final String title = String.format("Script %s", scriptName);
+    final JTextArea taScript = new JTextArea(10, 10);
+    try {
+      taScript.read(reader, scriptName);
+    } catch (final IOException e) {
+      final String message =
+        String.format("failed reading script %s: %s",
+                      scriptName, e.getMessage());
+      JOptionPane.showMessageDialog(this, message, title,
+                                    JOptionPane.ERROR_MESSAGE);
+    }
+    JOptionPane.showMessageDialog(this, taScript, title,
+                                  JOptionPane.INFORMATION_MESSAGE);
+  }
+
   private void executeScript(final String scriptId,
                              final InputStream in,
                              final PrintStream console)
@@ -121,18 +161,8 @@ public class ScriptSelectionPanel extends Box
 
   private void executeExampleScript(final String scriptName)
   {
-    final InputStream in;
-    try {
-      in = IOUtils.getStreamForResourcePath("/examples/" + scriptName + ".mon");
-    } catch (final IOException e) {
-      final String message =
-        String.format("Built-in script \"%s\" not found: %s",
-                      scriptName, e.getMessage());
-      JOptionPane.showMessageDialog(this, message,
-                                    "Internal Error",
-                                    JOptionPane.ERROR_MESSAGE);
-      return;
-    }
+    final InputStream in = getExampleScriptStream(scriptName);
+    if (in == null) return;
     executeScript(scriptName, in, console);
   }
 
@@ -161,7 +191,7 @@ public class ScriptSelectionPanel extends Box
       BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
     final TitledBorder titled =
       BorderFactory.createTitledBorder(loweredEtched,
-                                       "Select built-in example script");
+                                       "Select built-in example load script");
     titled.setTitleJustification(TitledBorder.CENTER);
     selectionLine.setBorder(titled);
     final JLabel lbExampleScript = new JLabel("Example script");
@@ -172,6 +202,15 @@ public class ScriptSelectionPanel extends Box
     cbExamples.setMaximumSize(cbExamples.getPreferredSize());
     selectionLine.add(cbExamples);
     selectionLine.add(Box.createHorizontalStrut(5));
+
+    final JButton btShow = new JButton("Show");
+    btShow.setMnemonic(KeyEvent.VK_S);
+    btShow.addActionListener((event) -> {
+        showExampleScript((String)cbExamples.getSelectedItem());
+      });
+    selectionLine.add(btShow);
+    selectionLine.add(Box.createHorizontalStrut(5));
+
     selectionLine.add(Box.createHorizontalGlue());
     final JButton btExecute = new JButton("Execute");
     btExecute.setMnemonic(KeyEvent.VK_E);
@@ -190,7 +229,7 @@ public class ScriptSelectionPanel extends Box
       BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
     final TitledBorder titled =
       BorderFactory.createTitledBorder(loweredEtched,
-                                       "Select script from file");
+                                       "Select load script from file");
     titled.setTitleJustification(TitledBorder.CENTER);
     selectionLine.setBorder(titled);
     final JLabel lbScriptFilePath = new JLabel("Script file path");
@@ -202,6 +241,7 @@ public class ScriptSelectionPanel extends Box
     selectionLine.add(tfFileName);
     selectionLine.add(Box.createHorizontalStrut(5));
     final JButton btOpen = new JButton("Browse…");
+    btOpen.setMnemonic(KeyEvent.VK_B);
     btOpen.addActionListener((event) -> {
         final int result = scriptFileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {

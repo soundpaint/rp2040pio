@@ -165,7 +165,7 @@ public class TimingDiagram extends JFrame implements Constants
     return addSignal(null, address, displayFilter);
   }
 
-  public void create() throws IOException
+  public void packAndShow() throws IOException
   {
     diagramPanel.updatePreferredHeight();
     pack();

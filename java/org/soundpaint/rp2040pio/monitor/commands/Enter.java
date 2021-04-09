@@ -113,6 +113,14 @@ public class Enter extends Command
     }
   }
 
+  private static String stripOffComment(final String line)
+  {
+    if ((line == null) || line.isEmpty()) return line;
+    final int hashPos = line.indexOf('#');
+    if (hashPos < 0) return line;
+    return line.substring(0, hashPos);
+  }
+
   /**
    * Returns true if no error occurred and the command has been
    * executed.
@@ -135,7 +143,7 @@ public class Enter extends Command
         sdk.readAddress(PIOEmuRegisters.getMemoryAddress(pioNum, address));
       console.printf("(pio%d:sm*) %02x: (%04x) ",
                      pioNum, address, currentValue);
-      final String line = in.readLine().trim();
+      final String line = stripOffComment(in.readLine()).trim();
       if ((line == null) || line.isEmpty()) break;
       if (!line.equals(".")) {
         if (!enterWord(pioNum, pioSdk, address, line)) continue;

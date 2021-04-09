@@ -81,8 +81,8 @@ public class ActionPanel extends Box
     add(btEmulate);
     add(Box.createHorizontalStrut(5));
 
-    btScript = new JButton("Script…");
-    btScript.setMnemonic(KeyEvent.VK_S);
+    btScript = new JButton("Load…");
+    btScript.setMnemonic(KeyEvent.VK_L);
     btScript.addActionListener((event) -> { scriptDialog.setVisible(true); });
     add(btScript);
     add(Box.createHorizontalGlue());

@@ -64,20 +64,20 @@ public class MenuBar extends JMenuBar
     final JMenu file = new JMenu("File");
     file.setMnemonic(KeyEvent.VK_F);
 
-    final JMenuItem script = new JMenuItem("Script…");
-    script.setMnemonic(KeyEvent.VK_S);
-    script.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
+    final JMenuItem script = new JMenuItem("Load…");
+    script.setMnemonic(KeyEvent.VK_L);
+    script.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,
                                                  ActionEvent.ALT_MASK));
-    script.getAccessibleContext().setAccessibleDescription("Execute script");
+    script.getAccessibleContext().setAccessibleDescription("Run load script");
     script.addActionListener((event) -> { scriptDialog.setVisible(true); });
     file.add(script);
 
     final JMenuItem close =
-      SwingUtils.createIconMenuItem("quit16x16.png", "Close");
+      SwingUtils.createIconMenuItem("quit16x16.png", "Quit");
     close.setMnemonic(KeyEvent.VK_C);
-    close.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C,
+    close.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,
                                                 ActionEvent.ALT_MASK));
-    close.getAccessibleContext().setAccessibleDescription("Close diagram");
+    close.getAccessibleContext().setAccessibleDescription("Quit");
     close.addActionListener((event) -> { timingDiagram.close(); });
     file.add(close);
     return file;

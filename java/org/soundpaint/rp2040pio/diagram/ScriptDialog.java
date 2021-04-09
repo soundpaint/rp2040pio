@@ -64,7 +64,7 @@ public class ScriptDialog extends JDialog
   public ScriptDialog(final TimingDiagram timingDiagram,
                       final PrintStream console)
   {
-    super(timingDiagram, "Script");
+    super(timingDiagram, "Load");
     Objects.requireNonNull(console);
     getContentPane().add(new ScriptSelectionPanel(console));
     getContentPane().add(new ActionPanel(), BorderLayout.SOUTH);

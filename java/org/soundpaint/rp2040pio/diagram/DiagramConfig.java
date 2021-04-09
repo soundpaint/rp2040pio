@@ -111,7 +111,7 @@ public class DiagramConfig implements Constants, Iterable<DiagramConfig.Signal>
       this.label = label;
       this.renderer = null;
       this.toolTipTexter = null;
-      visible = true;
+      visible = false;
       reset();
     }
 
