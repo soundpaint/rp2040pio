@@ -34,6 +34,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import org.soundpaint.rp2040pio.SwingUtils;
 
 public class MenuBar extends JMenuBar
 {
@@ -47,20 +48,29 @@ public class MenuBar extends JMenuBar
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public MenuBar(final TimingDiagram timingDiagram)
+  public MenuBar(final TimingDiagram timingDiagram,
+                 final ScriptDialog scriptDialog)
   {
     Objects.requireNonNull(timingDiagram);
     this.timingDiagram = timingDiagram;
-    add(createFileMenu());
+    add(createFileMenu(scriptDialog));
     add(createViewMenu());
     add(createHelpMenu());
     viewPropertiesDialog = new ViewPropertiesDialog(timingDiagram);
   }
 
-  private JMenu createFileMenu()
+  private JMenu createFileMenu(final ScriptDialog scriptDialog)
   {
     final JMenu file = new JMenu("File");
     file.setMnemonic(KeyEvent.VK_F);
+
+    final JMenuItem script = new JMenuItem("Script…");
+    script.setMnemonic(KeyEvent.VK_S);
+    script.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
+                                                 ActionEvent.ALT_MASK));
+    script.getAccessibleContext().setAccessibleDescription("Execute script");
+    script.addActionListener((event) -> { scriptDialog.setVisible(true); });
+    file.add(script);
 
     final JMenuItem close =
       SwingUtils.createIconMenuItem("quit16x16.png", "Close");

@@ -65,6 +65,7 @@ public class TimingDiagram extends JFrame implements Constants
   private final PrintStream console;
   private final SDK sdk;
   private final PIOSDK pioSdk;
+  private final ScriptDialog scriptDialog;
   private final DiagramConfig diagramConfig;
   private final DiagramPanel diagramPanel;
   private Program program;
@@ -88,10 +89,12 @@ public class TimingDiagram extends JFrame implements Constants
     this.sdk = sdk;
     pioSdk = sdk.getPIO0SDK();
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    setJMenuBar(new MenuBar(this));
+    scriptDialog = new ScriptDialog(this, console);
+    setJMenuBar(new MenuBar(this, scriptDialog));
     diagramConfig = new DiagramConfig();
     getContentPane().add(diagramPanel = new DiagramPanel(diagramConfig));
-    getContentPane().add(new ActionPanel(this), BorderLayout.SOUTH);
+    getContentPane().
+      add(new ActionPanel(this, scriptDialog), BorderLayout.SOUTH);
     program = null;
   }
 

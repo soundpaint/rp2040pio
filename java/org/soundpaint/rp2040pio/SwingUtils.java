@@ -22,7 +22,7 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio.diagram;
+package org.soundpaint.rp2040pio;
 
 import java.awt.Dimension;
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class SwingUtils
     throws IOException
   {
     final String iconPath = "/images/" + iconFileName;
-    final URL iconURL = Main.class.getResource(iconPath);
+    final URL iconURL = SwingUtils.class.getResource(iconPath);
     if (iconURL != null) {
       return new ImageIcon(iconURL, label);
     }

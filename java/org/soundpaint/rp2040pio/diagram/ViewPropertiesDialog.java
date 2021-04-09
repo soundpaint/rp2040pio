@@ -44,6 +44,8 @@ import javax.swing.border.TitledBorder;
 
 public class ViewPropertiesDialog extends JDialog
 {
+  private static final long serialVersionUID = 8248679860337463934L;
+
   private class ActionPanel extends Box
   {
     private static final long serialVersionUID = -4136799373128393432L;
@@ -53,7 +55,7 @@ public class ViewPropertiesDialog extends JDialog
     private final JButton btApply;
     private final JButton btCancel;
 
-    public ActionPanel(final TimingDiagram timingDiagram)
+    public ActionPanel()
     {
       super(BoxLayout.X_AXIS);
       btOk = new JButton("Ok");
@@ -80,8 +82,6 @@ public class ViewPropertiesDialog extends JDialog
     }
   }
 
-  private static final long serialVersionUID = 8248679860337463934L;
-
   private final TimingDiagram timingDiagram;
   private final SignalsPropertiesPanel signalsPropertiesPanel;
 
@@ -104,7 +104,7 @@ public class ViewPropertiesDialog extends JDialog
     titled.setTitleJustification(TitledBorder.CENTER);
     scrollPane.setBorder(titled);
     getContentPane().add(scrollPane);
-    getContentPane().add(new ActionPanel(timingDiagram), BorderLayout.SOUTH);
+    getContentPane().add(new ActionPanel(), BorderLayout.SOUTH);
     setPreferredSize(new Dimension(320, 480));
   }
 

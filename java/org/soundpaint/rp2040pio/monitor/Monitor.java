@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio.monitor;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -219,7 +220,7 @@ public class Monitor
     }
   }
 
-  private int run()
+  private int run(final boolean localEcho)
   {
     if (sdk == null) return 0;
     final String optScriptValue = options.getValue(optScript);
@@ -237,7 +238,7 @@ public class Monitor
     return
       (scriptIn != null) ?
       session(scriptIn, false, true, "script> ") :
-      session(in, false, false, "> ");
+      session(in, false, localEcho, "> ");
   }
 
   private int session(final BufferedReader in,
@@ -271,17 +272,26 @@ public class Monitor
     }
   }
 
+  public static int main(final String argv[],
+                         final InputStream in,
+                         final PrintStream out,
+                         final boolean localEcho)
+  {
+    final BufferedReader reader =
+      new BufferedReader(new InputStreamReader(in));
+    try {
+      final int exitCode = new Monitor(reader, out, argv).run(localEcho);
+      return exitCode;
+    } catch (final IOException e) {
+      out.println(e.getMessage());
+      return -1;
+    }
+  }
+
   public static void main(final String argv[])
   {
-    final BufferedReader in =
-      new BufferedReader(new InputStreamReader(System.in));
-    try {
-      final int exitCode = new Monitor(in, System.out, argv).run();
-      System.exit(exitCode);
-    } catch (final IOException e) {
-      System.out.println(e.getMessage());
-      System.exit(-1);
-    }
+    final int exitCode = main(argv, System.in, System.out, false);
+    System.exit(exitCode);
   }
 }
 

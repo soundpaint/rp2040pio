@@ -1,8 +1,28 @@
 # Monitor script for loading & configuring squarewave.hex
+
+# Make a full reset of the emulator.
 reset
-load --file=/examples/squarewave.hex
+
+# Note: We could just do
+#   load --file=/examples/squarewave.hex
+# assuming that the built-in file squarewave.hex exists.
+# However, to make this script self-contained, we
+# enter instead the program op-codes with the monitor
+# command "enter":
+enter --pio=0 --address=0
+e081
+e101
+e000
+0001
+
+# Set up the program for execution on PIO 0, SM 0.
+sideset --pio=0 --sm=0 --count=0
 enable --pio=0 --sm=0 --enable=true
 gpio --pio=0 --init=0
-sideset --pio=0 --sm=0 --count=0
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=5
+
+# Done.
 quit
-# end of script

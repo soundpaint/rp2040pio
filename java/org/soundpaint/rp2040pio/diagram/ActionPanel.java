@@ -41,15 +41,17 @@ import javax.swing.JSpinner;
 public class ActionPanel extends Box
 {
   private static final long serialVersionUID = -4136799373128393432L;
-  private static final int defaultCycles = 30;
+  private static final int defaultCycles = 20;
 
   private final JLabel lbCycles;
   private final SpinnerModel cyclesModel;
   private final JSpinner spCycles;
-  private final JButton btExecute;
+  private final JButton btEmulate;
+  private final JButton btScript;
   private final JButton btClose;
 
-  public ActionPanel(final TimingDiagram timingDiagram)
+  public ActionPanel(final TimingDiagram timingDiagram,
+                     final ScriptDialog scriptDialog)
   {
     super(BoxLayout.X_AXIS);
     lbCycles = new JLabel("Cycles");
@@ -61,9 +63,10 @@ public class ActionPanel extends Box
     spCycles.setMaximumSize(new Dimension(100, spCyclesHeight));
     add(spCycles);
     add(Box.createHorizontalStrut(5));
-    btExecute = new JButton("Execute");
-    btExecute.setMnemonic(KeyEvent.VK_E);
-    btExecute.addActionListener((event) -> {
+
+    btEmulate = new JButton("Emulate");
+    btEmulate.setMnemonic(KeyEvent.VK_E);
+    btEmulate.addActionListener((event) -> {
         final int cycles = (Integer)spCycles.getValue();
         try {
           timingDiagram.createSnapShot(cycles);
@@ -75,8 +78,15 @@ public class ActionPanel extends Box
           timingDiagram.clear();
         }
       });
-    add(btExecute);
+    add(btEmulate);
+    add(Box.createHorizontalStrut(5));
+
+    btScript = new JButton("Script…");
+    btScript.setMnemonic(KeyEvent.VK_S);
+    btScript.addActionListener((event) -> { scriptDialog.setVisible(true); });
+    add(btScript);
     add(Box.createHorizontalGlue());
+
     btClose = new JButton("Close");
     btClose.setMnemonic(KeyEvent.VK_C);
     btClose.addActionListener((event) -> { timingDiagram.close(); });
