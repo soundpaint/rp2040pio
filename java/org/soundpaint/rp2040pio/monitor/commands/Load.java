@@ -97,6 +97,9 @@ public class Load extends Command
   private static final CmdOptions.FlagOptionDeclaration optList =
     CmdOptions.createFlagOption(false, 'l', "list", CmdOptions.Flag.OFF,
                                 "list names of available example hex dumps");
+  private static final CmdOptions.StringOptionDeclaration optShow =
+    CmdOptions.createStringOption("NAME", false, 's', "show", null,
+                                  "name of example hex dump to show");
   private static final CmdOptions.StringOptionDeclaration optExample =
     CmdOptions.createStringOption("NAME", false, 'e', "example", null,
                                   "name of example hex dump to load");
@@ -111,7 +114,7 @@ public class Load extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optList, optExample, optFile, optAddress });
+          { optPio, optList, optShow, optExample, optFile, optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -129,23 +132,25 @@ public class Load extends Command
     }
     final boolean optListValue =
       options.getValue(optList) == CmdOptions.Flag.ON;
+    final String optShowValue = options.getValue(optShow);
     final String optExampleValue = options.getValue(optExample);
     final String optFileValue = options.getValue(optFile);
     int count = 0;
     if (optListValue) count++;
+    if (optShowValue != null) count++;
     if (optExampleValue != null) count++;
     if (optFileValue != null) count++;
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
       if (count == 0) {
         throw new CmdOptions.
-          ParseException("at least one of options \"-l\", \"-e\" and \"-f\" " +
-                         "must be specified");
+          ParseException("at least one of options \"-l\", \"-s\", \"-e\" " +
+                         "and \"-f\" must be specified");
       }
     }
     if (count > 1) {
       throw new CmdOptions.
-        ParseException("at most one of options \"-l\", \"-e\" and \"-f\" " +
-                       "may be specified at the same time");
+        ParseException("at most one of options \"-l\", \"-s\", \"-e\" " +
+                       "and \"-f\" may be specified at the same time");
     }
   }
 
@@ -160,6 +165,19 @@ public class Load extends Command
     for (final String example : examples) {
       console.printf("(pio*:sm*) %s%n", example);
     }
+    return true;
+  }
+
+  private boolean showHexDump(final LineNumberReader in, final String hexDumpId)
+    throws IOException
+  {
+    console.printf("(pio*:sm*) [hex dump %s]%n", hexDumpId);
+    while (true) {
+      final String line = in.readLine();
+      if (line == null) break;
+      console.printf("(pio*:sm*) %3d: %s%n", in.getLineNumber(), line);
+    }
+    console.printf("(pio*:sm*) [end of hex dump %s]%n", hexDumpId);
     return true;
   }
 
@@ -188,11 +206,18 @@ public class Load extends Command
     final int pioNum = options.getValue(optPio);
     final boolean optListValue =
       options.getValue(optList) == CmdOptions.Flag.ON;
+    final String optShowValue = options.getValue(optShow);
     final String optExampleValue = options.getValue(optExample);
     final String optFileValue = options.getValue(optFile);
     final Integer optAddressValue = options.getValue(optAddress);
     if (optListValue) {
       return listExampleHexDumps();
+    } else if (optShowValue != null) {
+      final String resourcePath =
+        String.format("/examples/%s.hex", optShowValue);
+      final LineNumberReader reader =
+        IOUtils.getReaderForResourcePath(resourcePath);
+      return showHexDump(reader, optShowValue);
     } else if (optExampleValue != null) {
       final String resourcePath =
         String.format("/examples/%s.hex", optExampleValue);
