@@ -24,10 +24,15 @@
  */
 package org.soundpaint.rp2040pio.monitor.commands;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.io.PrintStream;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -42,6 +47,17 @@ public class Load extends Command
   private static final String singleLineDescription =
     "load program from file and mark affected PIO memory area as allocated";
   private static final String notes =
+    "By convention, hex dump files have \".hex\" file name suffix.%n" +
+    "They contain a sequence of instruction op-codes to be loaded into%n" +
+    "a PIO's instruction memory." +
+    "%n" +
+    "Some built-in example hex dumps are available that can be listed with%n" +
+    "the \"-l\" option.  To load an example hex dump, use the \"-e\"%n" +
+    "option and pass to this option the hex dump's name as shown in the%n" +
+    "list of available built-in hex dumps.%n" +
+    "For user-provided hex dumps, use the \"-f\" option to specify the%n" +
+    "file path of the hex dump, including the \".hex\" file name suffix." +
+    "%n" +
     "Note that tracking memory allocation is not a feature of the%n" +
     "RP2040, but local to this monitor instance, just to avoid%n" +
     "accidentally overwriting your own PIO programs.  Other applications%n" +
@@ -72,15 +88,20 @@ public class Load extends Command
     "opcode is a 32 bits integer and represented as a plain four-digit%n" +
     "hexadecimal value without leading \"0x\".  The maximum allowed number%n" +
     "of opcodes is 32.";
-  private static final String defaultPath = "/examples/squarewave.hex";
 
   private final SDK sdk;
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
                                    "PIO number, either 0 or 1");
+  private static final CmdOptions.FlagOptionDeclaration optList =
+    CmdOptions.createFlagOption(false, 'l', "list", CmdOptions.Flag.OFF,
+                                "list names of available example hex dumps");
+  private static final CmdOptions.StringOptionDeclaration optExample =
+    CmdOptions.createStringOption("NAME", false, 'e', "example", null,
+                                  "name of example hex dump to load");
   private static final CmdOptions.StringOptionDeclaration optFile =
-    CmdOptions.createStringOption("PATH", false, 'f', "file", defaultPath,
+    CmdOptions.createStringOption("PATH", false, 'f', "file", null,
                                   "path of hex dump file to load");
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
@@ -90,7 +111,7 @@ public class Load extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optFile, optAddress });
+          { optPio, optList, optExample, optFile, optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -101,17 +122,60 @@ public class Load extends Command
   protected void checkValidity(final CmdOptions options)
     throws CmdOptions.ParseException
   {
+    final int pioNum = options.getValue(optPio);
+    if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
+      throw new CmdOptions.
+        ParseException("PIO number must be either 0 or 1");
+    }
+    final boolean optListValue =
+      options.getValue(optList) == CmdOptions.Flag.ON;
+    final String optExampleValue = options.getValue(optExample);
+    final String optFileValue = options.getValue(optFile);
+    int count = 0;
+    if (optListValue) count++;
+    if (optExampleValue != null) count++;
+    if (optFileValue != null) count++;
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
-      final int pioNum = options.getValue(optPio);
-      if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
+      if (count == 0) {
         throw new CmdOptions.
-          ParseException("PIO number must be either 0 or 1");
-      }
-      if (!options.isDefined(optFile)) {
-        throw new CmdOptions.
-          ParseException("option not specified: " + optFile);
+          ParseException("at least one of options \"-l\", \"-e\" and \"-f\" " +
+                         "must be specified");
       }
     }
+    if (count > 1) {
+      throw new CmdOptions.
+        ParseException("at most one of options \"-l\", \"-e\" and \"-f\" " +
+                       "may be specified at the same time");
+    }
+  }
+
+  private boolean listExampleHexDumps() throws IOException
+  {
+    final String suffix = ".hex";
+    final List<String> examples =
+      IOUtils.list("examples").stream().
+      filter(s -> s.endsWith(suffix)).
+      map(s -> { return s.substring(0, s.length() - suffix.length()); }).
+      collect(Collectors.toList());
+    for (final String example : examples) {
+      console.printf("(pio*:sm*) %s%n", example);
+    }
+    return true;
+  }
+
+  private boolean loadHexDump(final int pioNum,
+                              final BufferedReader reader,
+                              final String hexDumpId, final Integer address)
+    throws IOException
+  {
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    final int assignedAddress =
+      address != null ?
+      pioSdk.addProgramAtOffset(hexDumpId, reader, address) :
+      pioSdk.addProgram(hexDumpId, reader);
+    console.printf("(pio%d:sm*) loaded program %s at address 0x%02x%n",
+                   pioNum, hexDumpId, assignedAddress);
+    return true;
   }
 
   /**
@@ -122,16 +186,25 @@ public class Load extends Command
   protected boolean execute(final CmdOptions options) throws IOException
   {
     final int pioNum = options.getValue(optPio);
-    final String resourcePath = options.getValue(optFile);
+    final boolean optListValue =
+      options.getValue(optList) == CmdOptions.Flag.ON;
+    final String optExampleValue = options.getValue(optExample);
+    final String optFileValue = options.getValue(optFile);
     final Integer optAddressValue = options.getValue(optAddress);
-    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-    final int assignedAddress =
-      optAddressValue != null ?
-      pioSdk.addProgramAtOffset(resourcePath, optAddressValue) :
-      pioSdk.addProgram(resourcePath);
-    console.printf("(pio%d:sm*) loaded program at address 0x%02x%n",
-                   pioNum, assignedAddress);
-    return true;
+    if (optListValue) {
+      return listExampleHexDumps();
+    } else if (optExampleValue != null) {
+      final String resourcePath =
+        String.format("/examples/%s.hex", optExampleValue);
+      final LineNumberReader reader =
+        IOUtils.getReaderForResourcePath(resourcePath);
+      return loadHexDump(pioNum, reader, optExampleValue, optAddressValue);
+    } else if (optFileValue != null) {
+      final LineNumberReader reader =
+        IOUtils.getReaderForResourcePath(optFileValue);
+      return loadHexDump(pioNum, reader, optFileValue, optAddressValue);
+    }
+    return false;
   }
 }
 

@@ -47,36 +47,43 @@ public class Script extends Command
   private static final String singleLineDescription =
     "load monitor script from file and execute it";
   private static final String notes =
-    "By convention, monitor scripts have \".mon\" file name suffix.%n" +
+    "By convention, monitor scripts files have \".mon\" file name suffix.%n" +
     "They contain commands to be executed verbatim as if they were%n" +
     "manually entered in exactly the same way." +
+    "%n" +
     "For safety reasons as well as for providing for future extensions,%n" +
-    "an additional flag \"-e\" must be specified to execute the script.%n" +
-    "Without the \"-e\" flag, the command just checks for existence and%n" +
-    "readability of the specified file." +
-    "Some built-in example scripts are provided that can be listed with%n" +
-    "the \"-l\" option.  If the specified path matches one of the example%n" +
-    "scripts, it is executed.  Otherwise, the path is interpreted as%n" +
-    "ordinary file system path.";
+    "an additional flag \"+d\" is by default set to dry-run the script.%n" +
+    "To actually run the script, you need to explicitly spcify \"-d\" to%n" +
+    "override dry-run mode.%n" +
+    "%n" +
+    "Some built-in example scripts are available that can be listed with%n" +
+    "the \"-l\" option.  To execute a built-in script, use the \"-e\"%n" +
+    "option and pass to this option the script's name as shown in the%n" +
+    "list of available built-in scripts.%n" +
+    "For user-provided script files, use the \"-f\" option to specify the%n" +
+    "file path of the script, including the \".mon\" file name suffix.";
 
   private final CommandRegistry commands;
 
-  private static final CmdOptions.StringOptionDeclaration optFile =
-    CmdOptions.createStringOption("PATH", false, 'f', "file", null,
-                                  "path of hex dump file to load");
   private static final CmdOptions.FlagOptionDeclaration optList =
     CmdOptions.createFlagOption(false, 'l', "list", CmdOptions.Flag.OFF,
-                                "list available example script files");
-  private static final CmdOptions.FlagOptionDeclaration optExecute =
-    CmdOptions.createFlagOption(false, 'e', "execute", CmdOptions.Flag.OFF,
-                                "actually execute the script rather than " +
-                                "just checking for existence and readability");
+                                "list names of available example scripts");
+  private static final CmdOptions.StringOptionDeclaration optExample =
+    CmdOptions.createStringOption("NAME", false, 'e', "example", null,
+                                  "name of example script to execute");
+  private static final CmdOptions.StringOptionDeclaration optFile =
+    CmdOptions.createStringOption("PATH", false, 'f', "file", null,
+                                  "path of script file to execute");
+  private static final CmdOptions.BooleanOptionDeclaration optDryRun =
+    CmdOptions.createBooleanOption(false, 'd', "dry-run", true,
+                                   "dry-run the script commands rather than " +
+                                   "actually executing them");
 
   public Script(final PrintStream console, final CommandRegistry commands)
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optList, optFile, optExecute });
+          { optList, optExample, optFile, optDryRun });
     if (commands == null) {
       throw new NullPointerException("commands");
     }
@@ -94,43 +101,49 @@ public class Script extends Command
   protected void checkValidity(final CmdOptions options)
     throws CmdOptions.ParseException
   {
-    final String optFileValue = options.getValue(optFile);
     final boolean optListValue =
       options.getValue(optList) == CmdOptions.Flag.ON;
-    if (optListValue && (optFileValue != null)) {
-      throw new CmdOptions.
-        ParseException("either option \"-l\" or option \"-f\" may be " +
-                       "specified, but not both at the same time");
-    }
+    final String optExampleValue = options.getValue(optExample);
+    final String optFileValue = options.getValue(optFile);
+    int count = 0;
+    if (optListValue) count++;
+    if (optExampleValue != null) count++;
+    if (optFileValue != null) count++;
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
-      if (!optListValue && (optFileValue == null)) {
+      if (count == 0) {
         throw new CmdOptions.
-          ParseException("at least one of options \"-l\" and \"-f\" " +
+          ParseException("at least one of options \"-l\", \"-e\" and \"-f\" " +
                          "must be specified");
       }
+    }
+    if (count > 1) {
+      throw new CmdOptions.
+        ParseException("at most one of options \"-l\", \"-e\" and \"-f\" " +
+                       "may be specified at the same time");
     }
   }
 
   private void listExampleScripts() throws IOException
   {
+    final String suffix = ".mon";
     final List<String> examples =
       IOUtils.list("examples").stream().
-      filter((name) -> name.endsWith(".mon")).collect(Collectors.toList());
+      filter(s -> s.endsWith(suffix)).
+      map(s -> { return s.substring(0, s.length() - suffix.length()); }).
+      collect(Collectors.toList());
     for (final String example : examples) {
-      console.printf("(pio*:sm*) /examples/%s%n", example);
+      console.printf("(pio*:sm*) %s%n", example);
     }
   }
 
-  private boolean executeScript(final LineNumberReader in,
-                                final String resourcePath,
-                                final boolean dryRun,
-                                final boolean localEcho,
-                                final String prompt)
-    throws IOException
+  private int executeScript(final LineNumberReader in,
+                            final String scriptId,
+                            final boolean dryRun,
+                            final boolean localEcho,
+                            final String prompt)
   {
     final String action = dryRun ? "dry-running" : "running";
-    console.printf("(pio*:sm*) %s script from resource %s%n",
-                   action, resourcePath);
+    console.printf("(pio*:sm*) %s script %s%n", action, scriptId);
     while (true) {
       console.print(prompt);
       try {
@@ -144,10 +157,20 @@ public class Script extends Command
           console.printf(Command.panicNotes);
           console.println();
         }
+        return -1;
       }
     }
-    final int exitStatus = 0;
-    console.printf("(pio*:sm*) script exited with status %d%n", exitStatus);
+    return 0;
+  }
+
+  private boolean executeScript(final LineNumberReader in,
+                                final String scriptId, final boolean dryRun)
+    throws IOException
+  {
+    final int exitStatus =
+      executeScript(in, scriptId, dryRun, true, "script> ");
+    console.printf("(pio*:sm*) script %s exited with status %d%n",
+                   scriptId, exitStatus);
     return true;
   }
 
@@ -158,17 +181,23 @@ public class Script extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    final String optFileValue = options.getValue(optFile);
     final boolean optListValue =
       options.getValue(optList) == CmdOptions.Flag.ON;
+    final String optExampleValue = options.getValue(optExample);
+    final String optFileValue = options.getValue(optFile);
+    final boolean dryRun = options.getValue(optDryRun);
     if (optListValue) {
       listExampleScripts();
-    }
-    if (optFileValue != null) {
+    } else if (optExampleValue != null) {
+      final String resourcePath =
+        String.format("/examples/%s.mon", optExampleValue);
+      final LineNumberReader reader =
+        IOUtils.getReaderForResourcePath(resourcePath);
+      return executeScript(reader, optExampleValue, dryRun);
+    } else if (optFileValue != null) {
       final LineNumberReader reader =
         IOUtils.getReaderForResourcePath(optFileValue);
-      final boolean dryRun = options.getValue(optExecute) != CmdOptions.Flag.ON;
-      return executeScript(reader, optFileValue, dryRun, true, "script> ");
+      return executeScript(reader, optFileValue, dryRun);
     }
     return true;
   }

@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio.sdk;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
@@ -482,9 +483,10 @@ public class PIOSDK implements Constants
     }
   }
 
-  public int addProgram(final String resourcePath) throws IOException
+  public int addProgram(final String resourceId, final BufferedReader reader)
+    throws IOException
   {
-    return addProgram(ProgramParser.parse(resourcePath));
+    return addProgram(ProgramParser.parse(resourceId, reader));
   }
 
   public int addProgram(final Program program) throws IOException
@@ -499,10 +501,11 @@ public class PIOSDK implements Constants
     return address;
   }
 
-  public int addProgramAtOffset(final String resourcePath, final int offset)
+  public int addProgramAtOffset(final String resourceId,
+                                final BufferedReader reader, final int offset)
     throws IOException
   {
-    return addProgramAtOffset(ProgramParser.parse(resourcePath), offset);
+    return addProgramAtOffset(ProgramParser.parse(resourceId, reader), offset);
   }
 
   public int addProgramAtOffset(final Program program, final int offset)
@@ -534,10 +537,11 @@ public class PIOSDK implements Constants
     return address;
   }
 
-  public void removeProgram(final String resourcePath, final int loadedOffset)
+  public void removeProgram(final String resourceId,
+                            final BufferedReader reader, final int loadedOffset)
     throws IOException
   {
-    removeProgram(ProgramParser.parse(resourcePath), loadedOffset);
+    removeProgram(ProgramParser.parse(resourceId, reader), loadedOffset);
   }
 
   public void removeProgram(final Program program, final int loadedOffset)

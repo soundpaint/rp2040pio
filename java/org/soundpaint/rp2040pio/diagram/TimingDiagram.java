@@ -197,12 +197,6 @@ public class TimingDiagram extends JFrame implements Constants
     SwingUtilities.invokeLater(() -> diagramPanel.repaint());
   }
 
-  public void setProgram(final String programResourcePath)
-    throws IOException
-  {
-    program = ProgramParser.parse(programResourcePath);
-  }
-
   public void close()
   {
     final WindowEvent closeEvent =

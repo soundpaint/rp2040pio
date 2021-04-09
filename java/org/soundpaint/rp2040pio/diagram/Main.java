@@ -180,8 +180,6 @@ public class Main
 
   private void createDiagram() throws IOException
   {
-    final String programResourcePath = "/examples/squarewave.hex";
-    diagram.setProgram(programResourcePath);
     diagram.addSignal(DiagramConfig.createClockSignal("clock"));
 
     diagram.addSignal(PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);

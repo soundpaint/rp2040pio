@@ -44,7 +44,7 @@ public class ProgramParser implements Constants
   private static final String ARG_OPT = "opt";
   private static final String ARG_PINDIRS = "pindirs";
 
-  private final String resourcePath;
+  private final String resourceId;
   private final BufferedReader reader;
   private final short[] instructions;
   private boolean firstInstructionParsed;
@@ -68,15 +68,18 @@ public class ProgramParser implements Constants
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  private ProgramParser(final String resourcePath)
+  private ProgramParser(final String resourceId, final BufferedReader reader)
     throws IOException
   {
-    if (resourcePath == null) {
-      throw new NullPointerException("resourcePath");
+    if (resourceId == null) {
+      throw new NullPointerException("resourceId");
     }
-    this.resourcePath = resourcePath;
+    if (reader == null) {
+      throw new NullPointerException("reader");
+    }
+    this.resourceId = resourceId;
+    this.reader = reader;
     address = -1;
-    reader = getReaderForResourcePath(resourcePath);
     instructions = new short[MEMORY_SIZE];
     lineIndex = 0;
     address = 0;
@@ -87,18 +90,6 @@ public class ProgramParser implements Constants
     sideSetCount = 0;
   }
 
-  private BufferedReader getReaderForResourcePath(final String resourcePath)
-    throws IOException
-  {
-    try {
-      final InputStream in = IOUtils.getStreamForResourcePath(resourcePath);
-      return new BufferedReader(new InputStreamReader(in));
-    } catch (final IOException e) {
-      throw parseException("failed creating reader for resource: " +
-                           e.getMessage());
-    }
-  }
-
   private ParseException parseException(final String message)
   {
     return parseException(message, null);
@@ -107,7 +98,7 @@ public class ProgramParser implements Constants
   private ParseException parseException(final String message,
                                         final Throwable cause)
   {
-    return ParseException.create(message, resourcePath, lineIndex, cause);
+    return ParseException.create(message, resourceId, lineIndex, cause);
   }
 
   private int parseDecimalInt(final String decInt) throws ParseException
@@ -378,9 +369,11 @@ public class ProgramParser implements Constants
     return program;
   }
 
-  public static Program parse(final String resourcePath) throws IOException
+  public static Program parse(final String resourceId,
+                              final BufferedReader reader)
+    throws IOException
   {
-    final ProgramParser parser = new ProgramParser(resourcePath);
+    final ProgramParser parser = new ProgramParser(resourceId, reader);
     return parser.parse();
   }
 }
