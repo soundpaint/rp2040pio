@@ -58,12 +58,16 @@ public class Enter extends Command
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
                                    "start address");
+  private static final CmdOptions.IntegerOptionDeclaration optValue =
+    CmdOptions.createIntegerOption("NUMBER", false, 'v', "value", null,
+                                   "instruction op-code");
 
   public Enter(final PrintStream console, final SDK sdk,
                final BufferedReader in)
   {
     super(console, fullName, singleLineDescription,
-          new CmdOptions.OptionDeclaration<?>[] { optPio, optAddress });
+          new CmdOptions.OptionDeclaration<?>[]
+          { optPio, optAddress, optValue });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -121,21 +125,12 @@ public class Enter extends Command
     return line.substring(0, hashPos);
   }
 
-  /**
-   * Returns true if no error occurred and the command has been
-   * executed.
-   */
-  @Override
-  protected boolean execute(final CmdOptions options) throws IOException
+  private void enterWords(final int pioNum, final PIOSDK pioSdk,
+                          final int startAddress)
+    throws IOException
   {
-    final int pioNum = options.getValue(optPio);
-    final Integer optAddressValue = options.getValue(optAddress);
-    int address =
-      optAddressValue != null ?
-      optAddressValue & Constants.MEMORY_SIZE - 1 :
-      0;
     console.printf(enterInstructions);
-    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    int address = startAddress;
     int count = 0;
     while (true) {
       unassemble(pioNum, pioSdk, address);
@@ -152,6 +147,30 @@ public class Enter extends Command
       count++;
     }
     console.printf("entered %d words%n", count);
+  }
+
+  /**
+   * Returns true if no error occurred and the command has been
+   * executed.
+   */
+  @Override
+  protected boolean execute(final CmdOptions options) throws IOException
+  {
+    final int pioNum = options.getValue(optPio);
+    final Integer optAddressValue = options.getValue(optAddress);
+    final int address =
+      optAddressValue != null ?
+      optAddressValue & Constants.MEMORY_SIZE - 1 :
+      0;
+    final Integer optValueValue = options.getValue(optValue);
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    if (optValueValue != null) {
+      sdk.writeAddress(PIORegisters.getMemoryAddress(pioNum, address),
+                       optValueValue);
+      unassemble(pioNum, pioSdk, address);
+    } else {
+      enterWords(pioNum, pioSdk, address);
+    }
     return true;
   }
 }

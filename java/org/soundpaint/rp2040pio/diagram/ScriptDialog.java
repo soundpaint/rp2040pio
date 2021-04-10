@@ -28,6 +28,7 @@ import java.awt.BorderLayout;
 import java.awt.event.KeyEvent;
 import java.io.PrintStream;
 import java.util.Objects;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -41,11 +42,19 @@ public class ScriptDialog extends JDialog
   {
     private static final long serialVersionUID = -3909730642902134887L;
 
+    private final JButton btExecute;
     private final JButton btClose;
 
     public ActionPanel()
     {
       super(BoxLayout.X_AXIS);
+      setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+      btExecute = new JButton("Execute");
+      btExecute.setMnemonic(KeyEvent.VK_E);
+      btExecute.addActionListener((event) -> {
+          scriptSelectionPanel.execute();
+        });
+      add(btExecute);
       add(Box.createHorizontalGlue());
       btClose = new JButton("Close");
       btClose.setMnemonic(KeyEvent.VK_C);
@@ -55,6 +64,8 @@ public class ScriptDialog extends JDialog
       add(btClose);
     }
   }
+
+  private final ScriptSelectionPanel scriptSelectionPanel;
 
   private ScriptDialog()
   {
@@ -66,7 +77,8 @@ public class ScriptDialog extends JDialog
   {
     super(timingDiagram, "Load");
     Objects.requireNonNull(console);
-    getContentPane().add(new ScriptSelectionPanel(console));
+    scriptSelectionPanel = new ScriptSelectionPanel(console);
+    getContentPane().add(scriptSelectionPanel);
     getContentPane().add(new ActionPanel(), BorderLayout.SOUTH);
     pack();
   }

@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio.diagram;
 
+import java.awt.Component;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.File;
@@ -42,6 +43,8 @@ import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
@@ -49,6 +52,7 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.soundpaint.rp2040pio.IOUtils;
+import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.monitor.Monitor;
 
 public class ScriptSelectionPanel extends Box
@@ -57,6 +61,9 @@ public class ScriptSelectionPanel extends Box
 
   private final PrintStream console;
   private final JFileChooser scriptFileChooser;
+  private final JTabbedPane tabbedPane;
+  private final ExampleSelectionPanel exampleSelectionPanel;
+  private final FileSelectionPanel fileSelectionPanel;
 
   public ScriptSelectionPanel(final PrintStream console)
   {
@@ -64,9 +71,16 @@ public class ScriptSelectionPanel extends Box
     Objects.requireNonNull(console);
     this.console = console;
     scriptFileChooser = createScriptFileChooser();
-    createExampleSelectionPanel();
-    createFileSelectionPanel();
-    add(Box.createVerticalGlue());
+    tabbedPane = new JTabbedPane();
+    add(tabbedPane);
+    exampleSelectionPanel = new ExampleSelectionPanel();
+    tabbedPane.addTab("Example Scripts", null, exampleSelectionPanel,
+                      "Load & configure emulator by running an example script");
+    tabbedPane.setMnemonicAt(0, KeyEvent.VK_X);
+    fileSelectionPanel = new FileSelectionPanel();
+    tabbedPane.addTab("User Scripts", null, fileSelectionPanel,
+                      "Load & configure emulator by running a user script");
+    tabbedPane.setMnemonicAt(1, KeyEvent.VK_U);
   }
 
   private JFileChooser createScriptFileChooser()
@@ -183,82 +197,109 @@ public class ScriptSelectionPanel extends Box
     executeScript(scriptFilePath, in, console);
   }
 
-  private void createExampleSelectionPanel()
+  public void execute()
   {
-    final Box selectionLine = new Box(BoxLayout.X_AXIS);
-    add(selectionLine);
-    final Border loweredEtched =
-      BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
-    final TitledBorder titled =
-      BorderFactory.createTitledBorder(loweredEtched,
-                                       "Select built-in example load script");
-    titled.setTitleJustification(TitledBorder.CENTER);
-    selectionLine.setBorder(titled);
-    final JLabel lbExampleScript = new JLabel("Example script");
-    selectionLine.add(lbExampleScript);
-    selectionLine.add(Box.createHorizontalStrut(5));
-    final JComboBox<String> cbExamples =
-      new JComboBox<String>(getExampleScripts());
-    cbExamples.setMaximumSize(cbExamples.getPreferredSize());
-    selectionLine.add(cbExamples);
-    selectionLine.add(Box.createHorizontalStrut(5));
-
-    final JButton btShow = new JButton("Show");
-    btShow.setMnemonic(KeyEvent.VK_S);
-    btShow.addActionListener((event) -> {
-        showExampleScript((String)cbExamples.getSelectedItem());
-      });
-    selectionLine.add(btShow);
-    selectionLine.add(Box.createHorizontalStrut(5));
-
-    selectionLine.add(Box.createHorizontalGlue());
-    final JButton btExecute = new JButton("Execute");
-    btExecute.setMnemonic(KeyEvent.VK_E);
-    btExecute.addActionListener((event) -> {
-        executeExampleScript((String)cbExamples.getSelectedItem());
-      });
-    selectionLine.add(btExecute);
-    selectionLine.add(Box.createHorizontalStrut(5));
+    final Component selectedComponent = tabbedPane.getSelectedComponent();
+    if (selectedComponent == exampleSelectionPanel) {
+      exampleSelectionPanel.execute();
+    } else if (selectedComponent == fileSelectionPanel) {
+      fileSelectionPanel.execute();
+    } else {
+      console.printf("warning: unexpected tab: %s%n", selectedComponent);
+    }
   }
 
-  private void createFileSelectionPanel()
+  private class ExampleSelectionPanel extends JPanel
   {
-    final Box selectionLine = new Box(BoxLayout.X_AXIS);
-    add(selectionLine);
-    final Border loweredEtched =
-      BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
-    final TitledBorder titled =
-      BorderFactory.createTitledBorder(loweredEtched,
-                                       "Select load script from file");
-    titled.setTitleJustification(TitledBorder.CENTER);
-    selectionLine.setBorder(titled);
-    final JLabel lbScriptFilePath = new JLabel("Script file path");
-    selectionLine.add(lbScriptFilePath);
-    selectionLine.add(Box.createHorizontalStrut(5));
-    final JTextField tfFileName = new JTextField();
-    tfFileName.setColumns(15);
-    tfFileName.setMaximumSize(tfFileName.getPreferredSize());
-    selectionLine.add(tfFileName);
-    selectionLine.add(Box.createHorizontalStrut(5));
-    final JButton btOpen = new JButton("Browse…");
-    btOpen.setMnemonic(KeyEvent.VK_B);
-    btOpen.addActionListener((event) -> {
-        final int result = scriptFileChooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
-          final File file = scriptFileChooser.getSelectedFile();
-          tfFileName.setText(file.getPath());
-        }
-      });
-    selectionLine.add(btOpen);
-    selectionLine.add(Box.createHorizontalStrut(5));
-    selectionLine.add(Box.createHorizontalGlue());
-    final JButton btExecute = new JButton("Execute");
-    btExecute.setMnemonic(KeyEvent.VK_E);
-    btExecute.addActionListener((event) -> {
-        executeFileScript(tfFileName.getText());
-      });
-    selectionLine.add(btExecute);
-    selectionLine.add(Box.createHorizontalStrut(5));
+    private static final long serialVersionUID = -7249218754281104584L;
+
+    private final JComboBox<String> cbExamples;
+
+    private void execute()
+    {
+      executeExampleScript((String)cbExamples.getSelectedItem());
+    }
+
+    private ExampleSelectionPanel()
+    {
+      setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+      final Border loweredEtched =
+        BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
+      final TitledBorder titled =
+        BorderFactory.createTitledBorder(loweredEtched, "Select example");
+      titled.setTitleJustification(TitledBorder.CENTER);
+      final Box selectionLine = new Box(BoxLayout.X_AXIS);
+      setBorder(titled);
+      add(selectionLine);
+      final JLabel lbExampleScript = new JLabel("Examples:");
+      lbExampleScript.setDisplayedMnemonic(KeyEvent.VK_X);
+      selectionLine.add(lbExampleScript);
+      selectionLine.add(Box.createHorizontalStrut(5));
+      cbExamples = new JComboBox<String>(getExampleScripts());
+      cbExamples.setMaximumSize(cbExamples.getPreferredSize());
+      lbExampleScript.setLabelFor(cbExamples);
+      selectionLine.add(cbExamples);
+      selectionLine.add(Box.createHorizontalStrut(5));
+      final JButton btShow = new JButton("Show");
+      btShow.setMnemonic(KeyEvent.VK_S);
+      btShow.addActionListener((event) -> {
+          showExampleScript((String)cbExamples.getSelectedItem());
+        });
+      selectionLine.add(btShow);
+      selectionLine.add(Box.createHorizontalStrut(5));
+      selectionLine.add(Box.createHorizontalGlue());
+      SwingUtils.setPreferredHeightAsMaximum(selectionLine);
+      add(Box.createVerticalGlue());
+    }
+  }
+
+  private class FileSelectionPanel extends JPanel
+  {
+    private static final long serialVersionUID = -6631139141176608724L;
+
+    private final JTextField tfFileName;
+
+    private void execute()
+    {
+      executeFileScript(tfFileName.getText());
+    }
+
+    private FileSelectionPanel()
+    {
+      setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+      final Border loweredEtched =
+        BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
+      final TitledBorder titled =
+        BorderFactory.createTitledBorder(loweredEtched, "Choose file");
+      titled.setTitleJustification(TitledBorder.CENTER);
+      setBorder(titled);
+      final Box selectionLine = new Box(BoxLayout.X_AXIS);
+      add(selectionLine);
+      final JLabel lbScriptFilePath = new JLabel("File path:");
+      lbScriptFilePath.setDisplayedMnemonic(KeyEvent.VK_F);
+      selectionLine.add(lbScriptFilePath);
+      selectionLine.add(Box.createHorizontalStrut(5));
+      tfFileName = new JTextField();
+      tfFileName.setColumns(15);
+      tfFileName.setMaximumSize(tfFileName.getPreferredSize());
+      lbScriptFilePath.setLabelFor(tfFileName);
+      selectionLine.add(tfFileName);
+      selectionLine.add(Box.createHorizontalStrut(5));
+      final JButton btOpen = new JButton("Browse…");
+      btOpen.setMnemonic(KeyEvent.VK_B);
+      btOpen.addActionListener((event) -> {
+          final int result = scriptFileChooser.showOpenDialog(this);
+          if (result == JFileChooser.APPROVE_OPTION) {
+            final File file = scriptFileChooser.getSelectedFile();
+            tfFileName.setText(file.getPath());
+          }
+        });
+      selectionLine.add(btOpen);
+      selectionLine.add(Box.createHorizontalStrut(5));
+      selectionLine.add(Box.createHorizontalGlue());
+      SwingUtils.setPreferredHeightAsMaximum(selectionLine);
+      add(Box.createVerticalGlue());
+    }
   }
 }
 

@@ -29,6 +29,7 @@ import java.awt.Frame;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.SpinnerModel;
@@ -54,13 +55,17 @@ public class ActionPanel extends Box
                      final ScriptDialog scriptDialog)
   {
     super(BoxLayout.X_AXIS);
+    setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
     lbCycles = new JLabel("Cycles");
+    lbCycles.setDisplayedMnemonic(KeyEvent.VK_Y);
     add(lbCycles);
     add(Box.createHorizontalStrut(5));
     cyclesModel = new SpinnerNumberModel(defaultCycles, 1, 1000, 1);
     spCycles = new JSpinner(cyclesModel);
     final int spCyclesHeight = spCycles.getPreferredSize().height;
     spCycles.setMaximumSize(new Dimension(100, spCyclesHeight));
+    lbCycles.setLabelFor(spCycles);
     add(spCycles);
     add(Box.createHorizontalStrut(5));
 
