@@ -51,12 +51,12 @@ public class Trace extends Command
                                    "number of cycles to apply");
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", null,
-                                   "PIO number, either 0 or 1 or both, " +
-                                   "if undefined");
+                                   "limit option -a to PIO number, either " +
+                                   "0 or 1 or both, if undefined");
   private static final CmdOptions.IntegerOptionDeclaration optSm =
     CmdOptions.createIntegerOption("NUMBER", false, 's', "sm", null,
-                                   "SM number, one of 0, 1, 2 or 3, or all, " +
-                                   "if undefined");
+                                   "limit option -a to SM number, one of " +
+                                   "0, 1, 2 or 3, or all, if undefined");
   private static final CmdOptions.FlagOptionDeclaration optPc =
     CmdOptions.createFlagOption(false, 'a', "address", CmdOptions.Flag.OFF,
                                 "show instruction address (PC values) for " +
@@ -64,6 +64,10 @@ public class Trace extends Command
   private static final CmdOptions.FlagOptionDeclaration optGpio =
     CmdOptions.createFlagOption(false, 'g', "gpio", CmdOptions.Flag.OFF,
                                 "show status of GPIO pins");
+  private static final CmdOptions.IntegerOptionDeclaration optWait =
+    CmdOptions.createIntegerOption("NUMBER", false, 'w', "wait", 0,
+                                   "before each cycle, sleep for the " +
+                                   "specified time [ms] or until interrupted");
 
   private static final int[][] addressPioSmPc = {{
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC),
@@ -83,7 +87,7 @@ public class Trace extends Command
   {
     super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optCycles, optPc, optGpio });
+          { optPio, optSm, optCycles, optPc, optGpio, optWait });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -94,23 +98,31 @@ public class Trace extends Command
   protected void checkValidity(final CmdOptions options)
     throws CmdOptions.ParseException
   {
-    if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
-      final Integer optPioValue = options.getValue(optPio);
-      if (optPioValue != null) {
-        final int pioNum = optPioValue;
-        if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
-          throw new CmdOptions.
-            ParseException("PIO number must be either 0 or 1, if defined");
-        }
+    final Integer optPioValue = options.getValue(optPio);
+    if (optPioValue != null) {
+      final int pioNum = optPioValue;
+      if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
+        throw new CmdOptions.
+          ParseException("PIO number must be either 0 or 1, if defined");
       }
-      final Integer optSmValue = options.getValue(optSm);
-      if (optSmValue != null) {
-        final int smNum = optSmValue;
-        if ((smNum < 0) || (smNum > Constants.SM_COUNT - 1)) {
-          throw new CmdOptions.
-            ParseException("SM number must be one of 0, 1, 2 or 3, if defined");
-        }
+    }
+    final Integer optSmValue = options.getValue(optSm);
+    if (optSmValue != null) {
+      final int smNum = optSmValue;
+      if ((smNum < 0) || (smNum > Constants.SM_COUNT - 1)) {
+        throw new CmdOptions.
+          ParseException("SM number must be one of 0, 1, 2 or 3, if defined");
       }
+    }
+    final int cycles = options.getValue(optCycles);
+    if (cycles < 0) {
+      throw new CmdOptions.
+        ParseException("COUNT must be a non-negative value", optCycles);
+    }
+    final int wait = options.getValue(optWait);
+    if (wait < 0) {
+      throw new CmdOptions.
+        ParseException("NUMBER must be a non-negative value", optWait);
     }
   }
 
@@ -151,7 +163,15 @@ public class Trace extends Command
     final int smNumLast =
       optSmValue != null ? optSmValue : Constants.SM_COUNT - 1;
     final int cycles = options.getValue(optCycles);
+    final int wait = options.getValue(optWait);
     for (int i = 0; i < cycles; i++) {
+      if (wait > 0) {
+        try {
+          Thread.sleep(wait);
+        } catch (final InterruptedException e) {
+          // ignore
+        }
+      }
       sdk.triggerCyclePhase0(true);
       sdk.triggerCyclePhase1(true);
       if (options.getValue(optPc).isOn()) {

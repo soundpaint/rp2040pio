@@ -29,6 +29,7 @@ all:
 	cd $(JAVA_DIR) ; make -f Makefile.Monitor all
 	cd $(JAVA_DIR) ; make -f Makefile.Observer all
 	cd $(JAVA_DIR) ; make -f Makefile.Diagram all
+	cd $(JAVA_DIR) ; make -f Makefile.GPIOObserver all
 
 run: all
 	cd $(JAVA_DIR) ; make -f Makefile.Server run

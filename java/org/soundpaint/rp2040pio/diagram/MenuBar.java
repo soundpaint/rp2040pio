@@ -26,9 +26,7 @@ package org.soundpaint.rp2040pio.diagram;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.net.URL;
 import java.util.Objects;
-import javax.swing.ImageIcon;
 import javax.swing.KeyStroke;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;

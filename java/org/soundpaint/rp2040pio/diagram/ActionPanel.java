@@ -27,7 +27,6 @@ package org.soundpaint.rp2040pio.diagram;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowEvent;
 import java.io.IOException;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -98,3 +97,10 @@ public class ActionPanel extends Box
     add(btClose);
   }
 }
+
+/*
+ * Local Variables:
+ *   coding:utf-8
+ *   mode:Java
+ * End:
+ */
