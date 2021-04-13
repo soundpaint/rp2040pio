@@ -32,6 +32,7 @@ import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.monitor.Command;
+import org.soundpaint.rp2040pio.monitor.MonitorUtils;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -71,6 +72,12 @@ public class Unload extends Command
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
                                    "PIO number, either 0 or 1");
+  private static final CmdOptions.FlagOptionDeclaration optList =
+    CmdOptions.createFlagOption(false, 'l', "list", CmdOptions.Flag.OFF,
+                                "list names of available example hex dumps");
+  private static final CmdOptions.StringOptionDeclaration optShow =
+    CmdOptions.createStringOption("NAME", false, 's', "show", null,
+                                  "name of example hex dump to show");
   private static final CmdOptions.StringOptionDeclaration optExample =
     CmdOptions.createStringOption("NAME", false, 'e', "example", null,
                                   "name of example hex dump to unload");
@@ -85,7 +92,7 @@ public class Unload extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optFile, optAddress });
+          { optPio, optList, optShow, optExample, optFile, optAddress });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -101,27 +108,35 @@ public class Unload extends Command
       throw new CmdOptions.
         ParseException("PIO number must be either 0 or 1");
     }
+    final boolean optListValue =
+      options.getValue(optList) == CmdOptions.Flag.ON;
+    final String optShowValue = options.getValue(optShow);
     final String optExampleValue = options.getValue(optExample);
     final String optFileValue = options.getValue(optFile);
     int count = 0;
+    if (optListValue) count++;
+    if (optShowValue != null) count++;
     if (optExampleValue != null) count++;
     if (optFileValue != null) count++;
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
       if (count == 0) {
         throw new CmdOptions.
-          ParseException("at least one of options \"-l\", \"-e\" and \"-f\" " +
-                         "must be specified");
+          ParseException("at least one of options \"-l\", \"-s\", \"-e\" " +
+                         "and \"-f\" must be specified");
       }
     }
     if (count > 1) {
       throw new CmdOptions.
-        ParseException("at most one of options \"-l\", \"-e\" and \"-f\" " +
-                       "may be specified at the same time");
+        ParseException("at most one of options \"-l\", \"-s\", \"-e\" " +
+                       "and \"-f\" may be specified at the same time");
     }
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
-      if (!options.isDefined(optAddress)) {
-        throw new CmdOptions.
-          ParseException("option not specified: " + optAddress);
+      if (options.isDefined(optExample) ||
+          options.isDefined(optFile)) {
+        if (!options.isDefined(optAddress)) {
+          throw new CmdOptions.
+            ParseException("option not specified: " + optAddress);
+        }
       }
     }
   }
@@ -129,13 +144,13 @@ public class Unload extends Command
   private boolean unloadHexDump(final int pioNum,
                                 final BufferedReader reader,
                                 final String hexDumpId,
-                                final Integer loadedOffset)
+                                final int loadedOffset)
     throws IOException
   {
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     pioSdk.removeProgram(hexDumpId, reader, loadedOffset);
     console.printf("removed program %s from PIO %d, address 0x%02x%n",
-                   pioNum, hexDumpId, loadedOffset);
+                   hexDumpId, pioNum, loadedOffset);
     return true;
   }
 
@@ -147,19 +162,26 @@ public class Unload extends Command
   protected boolean execute(final CmdOptions options) throws IOException
   {
     final int pioNum = options.getValue(optPio);
+    final boolean optListValue =
+      options.getValue(optList) == CmdOptions.Flag.ON;
+    final String optShowValue = options.getValue(optShow);
     final String optExampleValue = options.getValue(optExample);
     final String optFileValue = options.getValue(optFile);
-    final int address = options.getValue(optAddress);
-    if (optExampleValue != null) {
+    final Integer optAddressValue = options.getValue(optAddress);
+    if (optListValue) {
+      return MonitorUtils.listExampleHexDumps(console);
+    } else if (optShowValue != null) {
+      return MonitorUtils.showExampleHexDump(console, optShowValue);
+    } else if (optExampleValue != null) {
       final String resourcePath =
         String.format("/examples/%s.hex", optExampleValue);
       final LineNumberReader reader =
         IOUtils.getReaderForResourcePath(resourcePath);
-      return unloadHexDump(pioNum, reader, optExampleValue, address);
+      return unloadHexDump(pioNum, reader, optExampleValue, optAddressValue);
     } else if (optFileValue != null) {
       final LineNumberReader reader =
         IOUtils.getReaderForResourcePath(optFileValue);
-      return unloadHexDump(pioNum, reader, optFileValue, address);
+      return unloadHexDump(pioNum, reader, optFileValue, optAddressValue);
     }
     return false;
   }

@@ -28,12 +28,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintStream;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.monitor.Command;
+import org.soundpaint.rp2040pio.monitor.MonitorUtils;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -154,36 +153,10 @@ public class Load extends Command
     }
   }
 
-  private boolean listExampleHexDumps() throws IOException
-  {
-    final String suffix = ".hex";
-    final List<String> examples =
-      IOUtils.list("examples").stream().
-      filter(s -> s.endsWith(suffix)).
-      map(s -> { return s.substring(0, s.length() - suffix.length()); }).
-      collect(Collectors.toList());
-    for (final String example : examples) {
-      console.printf("(pio*:sm*) %s%n", example);
-    }
-    return true;
-  }
-
-  private boolean showHexDump(final LineNumberReader in, final String hexDumpId)
-    throws IOException
-  {
-    console.printf("(pio*:sm*) [hex dump %s]%n", hexDumpId);
-    while (true) {
-      final String line = in.readLine();
-      if (line == null) break;
-      console.printf("(pio*:sm*) %3d: %s%n", in.getLineNumber(), line);
-    }
-    console.printf("(pio*:sm*) [end of hex dump %s]%n", hexDumpId);
-    return true;
-  }
-
   private boolean loadHexDump(final int pioNum,
                               final BufferedReader reader,
-                              final String hexDumpId, final Integer address)
+                              final String hexDumpId,
+                              final Integer address)
     throws IOException
   {
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
@@ -211,13 +184,9 @@ public class Load extends Command
     final String optFileValue = options.getValue(optFile);
     final Integer optAddressValue = options.getValue(optAddress);
     if (optListValue) {
-      return listExampleHexDumps();
+      return MonitorUtils.listExampleHexDumps(console);
     } else if (optShowValue != null) {
-      final String resourcePath =
-        String.format("/examples/%s.hex", optShowValue);
-      final LineNumberReader reader =
-        IOUtils.getReaderForResourcePath(resourcePath);
-      return showHexDump(reader, optShowValue);
+      return MonitorUtils.showExampleHexDump(console, optShowValue);
     } else if (optExampleValue != null) {
       final String resourcePath =
         String.format("/examples/%s.hex", optExampleValue);
