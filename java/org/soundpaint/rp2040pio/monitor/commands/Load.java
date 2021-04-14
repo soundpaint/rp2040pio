@@ -46,14 +46,15 @@ public class Load extends Command
   private static final String singleLineDescription =
     "load program from file and mark affected PIO memory area as allocated";
   private static final String notes =
+    "The \"load\" command reads in the specified hex dump and stores it%n" +
+    "as a PIO program in one of the two PIOs' instruction memory.%n" +
     "By convention, hex dump files have \".hex\" file name suffix.%n" +
-    "They contain a sequence of instruction op-codes to be loaded into%n" +
-    "a PIO's instruction memory." +
     "%n" +
-    "Some built-in example hex dumps are available that can be listed with%n" +
-    "the \"-l\" option.  To load an example hex dump, use the \"-e\"%n" +
-    "option and pass to this option the hex dump's name as shown in the%n" +
-    "list of available built-in hex dumps.%n" +
+    "Built-in example hex dumps are available that can be listed with%n" +
+    "the \"-l\" option.  To select any of the example hex dumps, use the%n" +
+    "\"-e\" option and pass to this option the hex dump's name as shown%n" +
+    "in the list of available built-in hex dumps.  To view a built-in hex%n" +
+    "dump prior to loading it, use the \"-s\" option.%n" +
     "For user-provided hex dumps, use the \"-f\" option to specify the%n" +
     "file path of the hex dump, including the \".hex\" file name suffix." +
     "%n" +
@@ -63,15 +64,6 @@ public class Load extends Command
     "that concurrently access the RP2040 will therefore ignore%n" +
     "this instance's allocation tracking and may arbitrarily%n" +
     "overwrite allocated PIO memory, using their own allocation scheme.%n" +
-    "%n" +
-    "Order of precedence in looking up the specified path:%n" +
-    "The \"load\" command will first try to find a regular file with the%n" +
-    "specified path interpreted as file path.  If no such file is%n" +
-    "found, it will next interpret the path as a resource path and try%n" +
-    "to find a resource that matches the specified path.  In particular,%n" +
-    "under the resource path \"/examples\" within the jar file that%n" +
-    "contains this application, there are some pre-installed example%n" +
-    "programs available.%n" +
     "%n" +
     "Expected file format:%n" +
     "The program file to be loaded must be a regular text file with%n" +

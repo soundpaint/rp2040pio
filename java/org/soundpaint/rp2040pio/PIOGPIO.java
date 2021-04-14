@@ -111,6 +111,17 @@ public class PIOGPIO implements Constants
     }
   }
 
+  public void setPinsMask(final int pins, final int mask, final boolean xor)
+  {
+    for (int pinNum = 0; pinNum < GPIO_NUM; pinNum++) {
+      final int oldLevel = getLevel(pinNum).getValue();
+      final int pin = pins >>> pinNum & 0x1;
+      final int maskBit = mask >>> pinNum & 0x1;
+      final int newLevel = Constants.hwSetBits(oldLevel, pin, maskBit, xor);
+      setLevel(pinNum, Bit.fromValue(newLevel));
+    }
+  }
+
   public int getPinDirs(final int base, final int count)
   {
     Constants.checkGpioPin(base, "GPIO pin base");
@@ -130,6 +141,19 @@ public class PIOGPIO implements Constants
     for (int pin = 0; pin < count; pin++) {
       setDirection((base + pin) & 0x1f,
                    Direction.fromValue((pinDirs >>> pin) & 0x1));
+    }
+  }
+
+  public void setPinDirsMask(final int pinDirs, final int mask,
+                             final boolean xor)
+  {
+    for (int pinNum = 0; pinNum < GPIO_NUM; pinNum++) {
+      final int oldDirection = getDirection(pinNum).getValue();
+      final int pinDir = pinDirs >>> pinNum & 0x1;
+      final int maskBit = mask >>> pinNum & 0x1;
+      final int newDirection = Constants.hwSetBits(oldDirection, pinDir,
+                                                   maskBit, xor);
+      setDirection(pinNum, Direction.fromValue(newDirection));
     }
   }
 

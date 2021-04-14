@@ -45,16 +45,19 @@ public class Unload extends Command
   private static final String singleLineDescription =
     "zero PIO memory area for the specified program and unmark it as allocated";
   private static final String notes =
-    "The \"unload\" command reads in again the specified program in order%n" +
-    "to determine its program length and, if appropriate, origin address.%n" +
-    "The identified memory area that is associated with the specified PIO%n" +
-    "program will be zeroed, and any memory allocation marks found in this%n" +
-    "memory area will be removed.%n" +
+    "The \"unload\" command first reads in the specified hex dump in order%n" +
+    "to determine the program length of the corresponding PIO program.%n" +
+    "Then, the identified instruction memory area that is associated with%n" +
+    "the PIO program in the specified PIO will be zeroed, and any memory%n" +
+    "allocation marks found in this memory area will be removed.%n" +
     "%n" +
-    "Just like with command load, hex dumps can be loaded from either a%n" +
-    "regular file specified with option \"-f\", or an example hex dump%n" +
-    "specified with option \"-e\".  For getting a list of available%n" +
-    "example hex dump names, use the \"load\" command.%n" +
+    "Built-in example hex dumps are available that can be listed with%n" +
+    "the \"-l\" option.  To select any of the example hex dumps, use the%n" +
+    "\"-e\" option and pass to this option the hex dump's name as shown%n" +
+    "in the list of available built-in hex dumps.  To view a built-in hex%n" +
+    "dump prior to unloading it, use the \"-s\" option.%n" +
+    "For user-provided hex dumps, use the \"-f\" option to specify the%n" +
+    "file path of the hex dump, including the \".hex\" file name suffix." +
     "%n" +
     "Note that tracking memory allocation is not a feature of the%n" +
     "RP2040, but local to this monitor instance, just to avoid%n" +
@@ -63,9 +66,8 @@ public class Unload extends Command
     "this instance's allocation tracking and may arbitrarily%n" +
     "overwrite allocated PIO memory, using their own allocation scheme.%n" +
     "%n" +
-    "For information about order of precedence in looking up the specified%n" +
-    "path and expected file format, enter the command \"load -h\" to view%n" +
-    "the help information of the \"load\" command.%n";
+    "For information about the expected file format, enter the command%n" +
+    "\"load -h\" to view the help information of the \"load\" command.";
 
   private final SDK sdk;
 

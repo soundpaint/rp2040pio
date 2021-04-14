@@ -242,9 +242,11 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
       pio.getMemory().set(regNum - Regs.INSTR_MEM0.ordinal(), value, mask, xor);
       break;
     case GPIO_PINS:
-      break; // (for now) read-only address
+      pio.getPIOGPIO().setPinsMask(value, mask, xor);
+      break;
     case GPIO_PINDIRS:
-      break; // (for now) read-only address
+      pio.getPIOGPIO().setPinDirsMask(value, mask, xor);
+      break;
     default:
       throw new InternalError("unexpected case fall-through");
     }
@@ -422,9 +424,9 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case INSTR_MEM31:
       return pio.getMemory().get(regNum - Regs.INSTR_MEM0.ordinal()) & 0xffff;
     case GPIO_PINS:
-      return pio.getGPIO().getPins(0, GPIO_NUM);
+      return pio.getPIOGPIO().getPins(0, GPIO_NUM);
     case GPIO_PINDIRS:
-      return pio.getGPIO().getPinDirs(0, GPIO_NUM);
+      return pio.getPIOGPIO().getPinDirs(0, GPIO_NUM);
     default:
       throw new InternalError("unexpected case fall-through");
     }
