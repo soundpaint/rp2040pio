@@ -339,9 +339,9 @@ public class PIORegistersImpl extends PIORegisters
     case INPUT_SYNC_BYPASS:
       return pio.getPIOGPIO().getGPIO().getInputSyncByPass();
     case DBG_PADOUT:
-      return pio.getGPIO().getPins(0, 32);
+      return pio.getPIOGPIO().getPins(0, 32);
     case DBG_PADOE:
-      return pio.getGPIO().getPinDirs(0, 32);
+      return pio.getPIOGPIO().getPinDirs(0, 32);
     case DBG_CFGINFO:
       return getCfgInfo();
     case INSTR_MEM0:

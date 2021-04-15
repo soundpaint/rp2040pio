@@ -34,6 +34,7 @@ import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
+import org.soundpaint.rp2040pio.monitor.MonitorUtils;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -54,8 +55,8 @@ public class Gpio extends Command
     "Each PIO has a set of local GPIO pins that, depending on the GPIO's%n" +
     "function selection settings, are propagated to the RP2040's GPIO%n" +
     "pins or not.  Use this command for displaying the RP2040's GPIO pins%n" +
-    "after function selection, but (as of now) neither a specific PIO's%n" +
-    "local GPIO status.%n" +
+    "after function selection, or as directly output by a specific PIO's%n" +
+    "local GPIO pins.%n" +
     "%n" +
     "Use one of options \"-i\", \"-s\", \"-c\", \"-e\", \"-d\", together%n" +
     "with option \"-g\", for either initializing a GPIO pin for a PIO, or%n" +
@@ -65,11 +66,13 @@ public class Gpio extends Command
     "pin to apply the operation.%n" +
     "%n" +
     "If none of options \"-i\", \"-s\", \"-c\", \"-e\", \"-d\" is%n" +
-    "specified, the current status of all GPIO pins will be displayed.";
+    "specified, the current status of all GPIO pins will be displayed,%n" +
+    "depending on option \"-p\" for either of the PIOs or for the GPIO%n" +
+    "after function selection.";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
-    CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
-                                   "PIO number, either 0 or 1");
+    CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", null,
+                                   "PIO number, either 0 or 1 or undefined");
   private static final CmdOptions.IntegerOptionDeclaration optGpio =
     CmdOptions.createIntegerOption("NUMBER", false, 'g', "gpio", null,
                                    "number of GPIO pin (0..31)");
@@ -151,10 +154,21 @@ public class Gpio extends Command
     }
   }
 
-  private void displayGpio() throws IOException
+  private void displayGpio(final Integer optPioValue) throws IOException
   {
-    final String gpioPinBits = sdk.getGPIOSDK().asBitArrayDisplay();
-    console.printf("(pio*:sm*) %s%n", gpioPinBits);
+    final PinState[] pinStates;
+    final String pioNumId;
+    if (optPioValue != null) {
+      final int pioNum = optPioValue;
+      final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+      pinStates = pioSdk.getPinStates();
+      pioNumId = String.format("%d", pioNum);
+    } else {
+      pinStates = sdk.getGPIOSDK().getPinStates();
+      pioNumId = "*";
+    }
+    final String gpioPinBits = MonitorUtils.asBitArrayDisplay(pinStates);
+    console.printf("(pio%s:sm*) %s%n", pioNumId, gpioPinBits);
   }
 
   private void initGpio(final int pioNum, final int gpioNum) throws IOException
@@ -238,7 +252,7 @@ public class Gpio extends Command
         disableGpio(pioNum, gpioNum);
       }
     } else {
-      displayGpio();
+      displayGpio(options.getValue(optPio));
     }
     return true;
   }

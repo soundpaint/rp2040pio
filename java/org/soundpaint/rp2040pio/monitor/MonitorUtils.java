@@ -29,7 +29,9 @@ import java.io.LineNumberReader;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.IOUtils;
+import org.soundpaint.rp2040pio.PinState;
 
 /**
  * Utility methods that are used by multiple monitor commands.
@@ -66,6 +68,21 @@ public class MonitorUtils
     }
     console.printf("(pio*:sm*) [end of hex dump %s]%n", hexDumpId);
     return true;
+  }
+
+  public static String asBitArrayDisplay(final PinState[] pinStates)
+  {
+    final StringBuffer display = new StringBuffer();
+    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM - 1; gpioNum++) {
+      if (((gpioNum & 0x7) == 0) && (gpioNum > 0)) {
+        display.append(' ');
+      }
+      final PinState pinState = pinStates[gpioNum];
+      final String bitDisplay =
+        pinState.getLevel().toChar(pinState.getDirection());
+      display.append(bitDisplay);
+    }
+    return display.toString();
   }
 }
 

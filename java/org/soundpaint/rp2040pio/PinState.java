@@ -27,56 +27,61 @@ package org.soundpaint.rp2040pio;
 /**
  * Representation of a single GPIO pin's state.
  */
-public class PinState
+public enum PinState
 {
-  private Direction direction;
-  private Bit level;
+  IN_LOW(Direction.IN, Bit.LOW),
+  IN_HIGH(Direction.IN, Bit.HIGH),
+  OUT_LOW(Direction.OUT, Bit.LOW),
+  OUT_HIGH(Direction.OUT, Bit.HIGH);
 
-  public PinState()
-  {
-    reset();
-  }
+  private final Direction direction;
+  private final Bit level;
 
-  public void reset()
-  {
-    direction = Direction.IN;
-    level = Bit.LOW;
-  }
-
-  public Direction getDirection() { return direction; }
-
-  public void setDirection(final Direction direction)
+  private PinState(final Direction direction, final Bit level)
   {
     if (direction == null) {
       throw new NullPointerException("direction");
     }
-    this.direction = direction;
-  }
-
-  public Bit getLevel() { return level; }
-
-  public void setLevel(final Bit level)
-  {
     if (level == null) {
       throw new NullPointerException("level");
     }
+    this.direction = direction;
     this.level = level;
   }
 
-  public static String toChar(final Direction direction, final Bit level)
-  {
-    return level.toChar(direction);
-  }
+  public Direction getDirection() { return direction; }
 
-  public String toChar()
+  public Bit getLevel() { return level; }
+
+  public static PinState fromValues(final Direction direction, final Bit level)
   {
-    return toChar(direction, level);
+    if (direction == null) {
+      throw new NullPointerException("direction");
+    }
+    if (level == null) {
+      throw new NullPointerException("level");
+    }
+    switch (direction) {
+    case IN:
+      switch (level) {
+      case LOW: return IN_LOW;
+      case HIGH: return IN_HIGH;
+      default: throw new InternalError("unexpected case fall-through");
+      }
+    case OUT:
+      switch (level) {
+      case LOW: return OUT_LOW;
+      case HIGH: return OUT_HIGH;
+      default: throw new InternalError("unexpected case fall-through");
+      }
+    default: throw new InternalError("unexpected case fall-through");
+    }
   }
 
   @Override
   public String toString()
   {
-    return String.valueOf(toChar());
+    return String.format("PinState[level=%s, direction=%s]", level, direction);
   }
 }
 

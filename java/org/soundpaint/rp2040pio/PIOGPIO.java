@@ -44,51 +44,50 @@ public class PIOGPIO implements Constants
     }
     this.gpio = gpio;
     states = new PinState[GPIO_NUM];
-    for (int port = 0; port < states.length; port++) {
-      states[port] = new PinState();
-    }
     reset();
   }
 
   public void reset()
   {
-    for (int port = 0; port < states.length; port++) {
-      states[port].reset();
+    for (int gpioNum = 0; gpioNum < states.length; gpioNum++) {
+      states[gpioNum] = PinState.IN_LOW;
     }
   }
 
   public GPIO getGPIO() { return gpio; }
 
-  public void setLevel(final int port, final Bit level)
+  public void setLevel(final int gpioNum, final Bit level)
   {
     if (level == null) {
       throw new NullPointerException("level");
     }
-    Constants.checkGpioPin(port, "GPIO port");
-    states[port].setLevel(level);
+    Constants.checkGpioPin(gpioNum, "GPIO pin number");
+    final PinState pinState = states[gpioNum];
+    states[gpioNum] = PinState.fromValues(pinState.getDirection(), level);
   }
 
-  public Bit getLevel(final int port)
+  public Bit getLevel(final int gpioNum)
   {
     // TODO: Clarify what happens when reading from a GPIO with pin
     // direction set to OUT.
-    Constants.checkGpioPin(port, "GPIO port");
-    return states[port].getLevel();
+    Constants.checkGpioPin(gpioNum, "GPIO pin number");
+    return states[gpioNum].getLevel();
   }
 
-  public void setDirection(final int port, final Direction direction)
+  public void setDirection(final int gpioNum, final Direction direction)
   {
     if (direction == null) {
       throw new NullPointerException("direction");
     }
-    Constants.checkGpioPin(port, "GPIO port");
-    states[port].setDirection(direction);
+    Constants.checkGpioPin(gpioNum, "GPIO pin number");
+    final PinState pinState = states[gpioNum];
+    states[gpioNum] = PinState.fromValues(direction, pinState.getLevel());
   }
 
-  public Direction getDirection(final int port)
+  public Direction getDirection(final int gpioNum)
   {
-    Constants.checkGpioPin(port, "GPIO port");
-    return states[port].getDirection();
+    Constants.checkGpioPin(gpioNum, "GPIO pin number");
+    return states[gpioNum].getDirection();
   }
 
   public int getPins(final int base, final int count)
@@ -113,12 +112,12 @@ public class PIOGPIO implements Constants
 
   public void setPinsMask(final int pins, final int mask, final boolean xor)
   {
-    for (int pinNum = 0; pinNum < GPIO_NUM; pinNum++) {
-      final int oldLevel = getLevel(pinNum).getValue();
-      final int pin = pins >>> pinNum & 0x1;
-      final int maskBit = mask >>> pinNum & 0x1;
+    for (int gpioNum = 0; gpioNum < GPIO_NUM; gpioNum++) {
+      final int oldLevel = getLevel(gpioNum).getValue();
+      final int pin = pins >>> gpioNum & 0x1;
+      final int maskBit = mask >>> gpioNum & 0x1;
       final int newLevel = Constants.hwSetBits(oldLevel, pin, maskBit, xor);
-      setLevel(pinNum, Bit.fromValue(newLevel));
+      setLevel(gpioNum, Bit.fromValue(newLevel));
     }
   }
 
@@ -147,40 +146,40 @@ public class PIOGPIO implements Constants
   public void setPinDirsMask(final int pinDirs, final int mask,
                              final boolean xor)
   {
-    for (int pinNum = 0; pinNum < GPIO_NUM; pinNum++) {
-      final int oldDirection = getDirection(pinNum).getValue();
-      final int pinDir = pinDirs >>> pinNum & 0x1;
-      final int maskBit = mask >>> pinNum & 0x1;
+    for (int gpioNum = 0; gpioNum < GPIO_NUM; gpioNum++) {
+      final int oldDirection = getDirection(gpioNum).getValue();
+      final int pinDir = pinDirs >>> gpioNum & 0x1;
+      final int maskBit = mask >>> gpioNum & 0x1;
       final int newDirection = Constants.hwSetBits(oldDirection, pinDir,
                                                    maskBit, xor);
-      setDirection(pinNum, Direction.fromValue(newDirection));
+      setDirection(gpioNum, Direction.fromValue(newDirection));
     }
   }
 
-  public Direction getOeToPad(final int gpio)
+  public Direction getOeToPad(final int gpioNum)
   {
-    final Direction beforeRegisterOverride = getOeFromPeripheral(gpio);
+    final Direction beforeRegisterOverride = getOeFromPeripheral(gpioNum);
     // TODO: Check if we need to implement register override.
     final Direction afterRegisterOverride = beforeRegisterOverride;
     return afterRegisterOverride;
   }
 
-  public Direction getOeFromPeripheral(final int gpio)
+  public Direction getOeFromPeripheral(final int gpioNum)
   {
-    return getDirection(gpio);
+    return getDirection(gpioNum);
   }
 
-  public Bit getOutToPad(final int gpio)
+  public Bit getOutToPad(final int gpioNum)
   {
-    final Bit beforeRegisterOverride = getOutFromPeripheral(gpio);
+    final Bit beforeRegisterOverride = getOutFromPeripheral(gpioNum);
     // TODO: Check if we need to implement register override.
     final Bit afterRegisterOverride = beforeRegisterOverride;
     return afterRegisterOverride;
   }
 
-  public Bit getOutFromPeripheral(final int gpio)
+  public Bit getOutFromPeripheral(final int gpioNum)
   {
-    return getLevel(gpio);
+    return getLevel(gpioNum);
   }
 }
 

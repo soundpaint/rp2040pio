@@ -50,13 +50,6 @@ public class GPIO implements Constants
     {
       function = GPIO_Function.NULL;
     }
-
-    public String toChar()
-    {
-      final Bit level = getLevel(num);
-      final Direction direction = getDirection(num);
-      return level != null ? level.toChar(direction) : "?";
-    }
   }
 
   private final PrintStream console;
@@ -278,86 +271,6 @@ public class GPIO implements Constants
       return Bit.LOW;
     default:
       throw new InternalError("unexpected case fall-through");
-    }
-  }
-
-  public void setLevel(final int port, final Bit level)
-  {
-    // TODO: Clarify what happens when writing to a GPIO with pin
-    // direction set to IN.
-    if (level == null) {
-      throw new NullPointerException("value");
-    }
-    Constants.checkGpioPin(port, "GPIO port");
-    // TODO: GPIO Mapping: Ouput priority.
-    //terminals[port].level = level;
-  }
-
-  public Bit getLevel(final int port)
-  {
-    // TODO: Clarify what happens when reading from a GPIO with pin
-    // direction set to OUT.
-    Constants.checkGpioPin(port, "GPIO port");
-    // TODO: GPIO Mapping: Ouput priority.
-    return Bit.LOW; //terminals[port].level;
-  }
-
-  public void setDirection(final int port, final Direction direction)
-  {
-    if (direction == null) {
-      throw new NullPointerException("direction");
-    }
-    Constants.checkGpioPin(port, "GPIO port");
-    // TODO: GPIO Mapping: Ouput priority.
-    //terminals[port].direction = direction;
-  }
-
-  public Direction getDirection(final int port)
-  {
-    Constants.checkGpioPin(port, "GPIO port");
-    // TODO: GPIO Mapping: Ouput priority.
-    return Direction.IN; //terminals[port].direction;
-  }
-
-  public int getPins(final int base, final int count)
-  {
-    Constants.checkGpioPin(base, "GPIO pin base");
-    Constants.checkGpioPinsCount(count, "GPIO pin count");
-    int pins = 0;
-    for (int pin = 0; pin < count; pin++) {
-      pins = (pins << 0x1) | getLevel((base - pin - 1) & 0x1f).getValue();
-    }
-    return pins;
-  }
-
-  public void setPins(final int pins, final int base, final int count)
-  {
-    Constants.checkGpioPin(base, "GPIO pin base");
-    Constants.checkGpioPinsCount(count, "GPIO pin count");
-    for (int pin = 0; pin < count; pin++) {
-      setLevel((base + pin) & 0x1f,  Bit.fromValue((pins >>> pin) & 0x1));
-    }
-  }
-
-  public int getPinDirs(final int base, final int count)
-  {
-    Constants.checkGpioPin(base, "GPIO pin base");
-    Constants.checkGpioPinsCount(count, "GPIO pin count");
-    int pinDirs = 0;
-    for (int pin = 0; pin < count; pin++) {
-      pinDirs =
-        (pinDirs << 0x1) | getDirection((base - pin - 1) & 0x1f).getValue();
-    }
-    return pinDirs;
-  }
-
-  public void setPinDirs(final int pinDirs, final int base, final int count)
-  {
-    Constants.checkGpioPin(base, "GPIO pin base");
-    Constants.checkGpioPinsCount(count, "GPIO pin count");
-    for (int pin = 0; pin < count; pin++) {
-      setDirection((base + pin) & 0x1f,
-                   Direction.fromValue((pinDirs >>> pin) & 0x1));
     }
   }
 

@@ -69,13 +69,10 @@ public class GPIOSDK implements Constants
     registers.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
   }
 
-  public String asBitArrayDisplay() throws IOException
+  public PinState[] getPinStates() throws IOException
   {
-    final StringBuffer gpioPinBits = new StringBuffer();
+    final PinState[] pinStates = new PinState[Constants.GPIO_NUM];
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM - 1; gpioNum++) {
-      if (((gpioNum & 0x7) == 0) && (gpioNum > 0)) {
-        gpioPinBits.append(' ');
-      }
       final int gpioStatusAddress =
         GPIOIOBank0Registers.
         getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
@@ -83,14 +80,14 @@ public class GPIOSDK implements Constants
       final int gpioOeFromPeri =
         (gpioStatusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
         Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;
-      final Direction oeValue = Direction.fromValue(gpioOeFromPeri);
+      final Direction direction = Direction.fromValue(gpioOeFromPeri);
       final int gpioOutFromPeri =
         (gpioStatusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
         Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
-      final Bit outValue = Bit.fromValue(gpioOutFromPeri);
-      gpioPinBits.append(PinState.toChar(oeValue, outValue));
+      final Bit level = Bit.fromValue(gpioOutFromPeri);
+      pinStates[gpioNum] = PinState.fromValues(direction, level);
     }
-    return gpioPinBits.toString();
+    return pinStates;
   }
 }
 

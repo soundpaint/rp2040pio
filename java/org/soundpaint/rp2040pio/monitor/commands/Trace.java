@@ -34,6 +34,7 @@ import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.monitor.Command;
+import org.soundpaint.rp2040pio.monitor.MonitorUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -143,7 +144,8 @@ public class Trace extends Command
   private void displayGpioValues()
     throws IOException
   {
-    final String gpioPinBits = sdk.getGPIOSDK().asBitArrayDisplay();
+    final PinState[] pinStates = sdk.getGPIOSDK().getPinStates();
+    final String gpioPinBits = MonitorUtils.asBitArrayDisplay(pinStates);
     console.printf("(pio*:sm*) %s%n", gpioPinBits);
   }
 

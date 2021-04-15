@@ -26,9 +26,12 @@ package org.soundpaint.rp2040pio.sdk;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
+import org.soundpaint.rp2040pio.Direction;
 import org.soundpaint.rp2040pio.Instruction;
+import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.Registers;
@@ -1108,6 +1111,24 @@ public class PIOSDK implements Constants
       }
       throw new InternalError("unexpected fall-through");
     }
+  }
+
+  public PinState[] getPinStates() throws IOException
+  {
+    final int pinsAddress =
+      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINS);
+    final int pinDirsAddress =
+      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINDIRS);
+    final int pins = registers.readAddress(pinsAddress);
+    final int pinDirs = registers.readAddress(pinDirsAddress);
+    final PinState[] pinStates = new PinState[Constants.GPIO_NUM];
+    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM - 1; gpioNum++) {
+      final Direction direction =
+        Direction.fromValue((pinDirs >>> gpioNum) & 0x1);
+      final Bit level = Bit.fromValue((pins >>> gpioNum) & 0x1);
+      pinStates[gpioNum] = PinState.fromValues(direction, level);
+    }
+    return pinStates;
   }
 }
 
