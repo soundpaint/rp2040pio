@@ -1,0 +1,163 @@
+/*
+ * @(#)RegistersDocs.java 1.00 21/04/15
+ *
+ * Copyright (C) 2021 Jürgen Reuter
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * For updates and more info or contacting the author, visit:
+ * <https://github.com/soundpaint/rp2040pio>
+ *
+ * Author's web site: www.juergen-reuter.de
+ */
+package org.soundpaint.rp2040pio.doctool;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Documentation interface for automatic creation of registers
+ * documentation from annotations in the code.
+ */
+public interface RegistersDocs<T>
+{
+  public enum BitsType
+  {
+    NA("-", "n/a"),
+    SC("SC", "???"),
+    WC("WC", "wrtite 1 to clear"),
+    RW("RW", "read/write"),
+    RO("RO", "read-only"),
+    WO("WO", "write-only"),
+    RF("RF", "read to trigger function"),
+    WF("WF", "wrtite to trigger function");
+
+    private final String id;
+    private final String description;
+
+    private BitsType(final String id, final String description)
+    {
+      this.id = id;
+      this.description = description;
+    }
+
+    public String getId() { return id; }
+
+    public String getDescription() { return description; }
+  }
+
+  public static class BitsInfo
+  {
+    private final int msb;
+    private final int lsb;
+    private final String name;
+    private final String description;
+    private final BitsType type;
+    private final Integer resetValue;
+
+    private BitsInfo()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    public BitsInfo(final int msb, final int lsb,
+                    final String name,
+                    final String description,
+                    final BitsType type,
+                    final Integer resetValue)
+    {
+      if (type == null) {
+        throw new NullPointerException("type");
+      }
+      if (msb < 0) {
+        throw new IllegalArgumentException("msb < 0: " + msb);
+      }
+      if (msb > 31) {
+        throw new IllegalArgumentException("msb > 31: " + msb);
+      }
+      if (lsb < 0) {
+        throw new IllegalArgumentException("lsb < 0: " + lsb);
+      }
+      if (lsb > 31) {
+        throw new IllegalArgumentException("lsb > 31: " + lsb);
+      }
+      if (lsb > msb) {
+        throw new IllegalArgumentException("lsb > msb: " + lsb + " > " + msb);
+      }
+      if (resetValue != null) {
+        final long maxResetValue = (0x1 << (msb - lsb + 1)) - 1;
+        final long resetValueAsLong = 0x00000000FFFFFFFFL & (long)resetValue;
+        if (resetValueAsLong > maxResetValue) {
+          throw new IllegalArgumentException("resetValueAsLong > " +
+                                             "maxResetValue: " +
+                                             resetValueAsLong + " > " +
+                                             maxResetValue);
+        }
+      }
+      this.msb = msb;
+      this.lsb = lsb;
+      this.name = name;
+      this.description = description;
+      this.type = type;
+      this.resetValue = resetValue;
+    }
+
+    public int getMsb() { return msb; }
+    public int getLsb() { return lsb; }
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public BitsType getType() { return type; }
+    public Integer getResetValue() { return resetValue; }
+  }
+
+  public static class RegisterDetails
+  {
+    private List<BitsInfo> bitsInfos;
+
+    private RegisterDetails()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    public RegisterDetails(final BitsInfo[] bitsInfos)
+    {
+      this(Arrays.asList(bitsInfos));
+    }
+
+    public RegisterDetails(final List<BitsInfo> bitsInfos)
+    {
+      this.bitsInfos = new ArrayList<BitsInfo>();
+      this.bitsInfos.addAll(bitsInfos);
+    }
+
+    public Iterable<BitsInfo> getBitsInfos()
+    {
+      final List<BitsInfo> bitsInfosCopy = new ArrayList<BitsInfo>();
+      bitsInfosCopy.addAll(bitsInfos);
+      return bitsInfosCopy;
+    }
+  }
+
+  String getInfo();
+  RegisterDetails getRegisterDetails();
+}
+
+/*
+ * Local Variables:
+ *   coding:utf-8
+ *   mode:Java
+ * End:
+ */

@@ -24,7 +24,11 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.List;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.soundpaint.rp2040pio.doctool.RegistersDocs;
 
 /**
  * Facade to additonal emulator properties of the internal subsystems
@@ -35,149 +39,276 @@ import java.util.function.LongSupplier;
 public abstract class PIOEmuRegisters extends AbstractRegisters
   implements Constants
 {
-  public enum Regs {
-    SM0_REGX,
-    SM0_REGY,
-    SM0_PC,
-    SM0_ISR,
-    SM0_ISR_SHIFT_COUNT,
-    SM0_OSR,
-    SM0_OSR_SHIFT_COUNT,
-    SM0_FIFO_MEM0,
-    SM0_FIFO_MEM1,
-    SM0_FIFO_MEM2,
-    SM0_FIFO_MEM3,
-    SM0_FIFO_MEM4,
-    SM0_FIFO_MEM5,
-    SM0_FIFO_MEM6,
-    SM0_FIFO_MEM7,
-    SM0_DELAY,
-    SM0_DELAY_CYCLE,
-    SM0_PENDING_DELAY,
-    SM0_CLK_ENABLE,
-    /**
-     * R/W address.  Reset value: 0.
-     *
-     * Each bit of this values corresponds to each of the 32 memory
-     * locations of the PIO instruction memory (with the LSB of the
-     * word corresponding to the lowest memory address).  Setting a
-     * bit to 1 marks the corresponding memory address as location of
-     * a breakpoint.  Setting a bit to 0 removes the breakpoint.
-     *
-     * As soon as the program counter of the state machine reaches an
-     * address that is marked as a breakpoint, master clock
-     * MASTERCLK_MODE will be automatically set to single step mode.
-     */
-    SM0_BREAKPOINTS,
-    /**
-     * R/W address.  Reset value: 0.
-     *
-     * Tracepoints work like breakpoints with the difference that
-     * master clock MASTERCLK_MODE it not automatically set to single
-     * step mode, but instead a message is printed to console output.
-     * The message contains the state machine's number and
-     * disassembled instruction with prefixed instruction memory
-     * address.  Tracepoints work in all master clock MASTERCLK_MODE
-     * modes.
-     */
-    SM0_TRACEPOINTS,
-    SM1_REGX,
-    SM1_REGY,
-    SM1_PC,
-    SM1_ISR,
-    SM1_ISR_SHIFT_COUNT,
-    SM1_OSR,
-    SM1_OSR_SHIFT_COUNT,
-    SM1_FIFO_MEM0,
-    SM1_FIFO_MEM1,
-    SM1_FIFO_MEM2,
-    SM1_FIFO_MEM3,
-    SM1_FIFO_MEM4,
-    SM1_FIFO_MEM5,
-    SM1_FIFO_MEM6,
-    SM1_FIFO_MEM7,
-    SM1_DELAY,
-    SM1_DELAY_CYCLE,
-    SM1_PENDING_DELAY,
-    SM1_CLK_ENABLE,
-    SM1_BREAKPOINTS,
-    SM1_TRACEPOINTS,
-    SM2_REGX,
-    SM2_REGY,
-    SM2_PC,
-    SM2_ISR,
-    SM2_ISR_SHIFT_COUNT,
-    SM2_OSR,
-    SM2_OSR_SHIFT_COUNT,
-    SM2_FIFO_MEM0,
-    SM2_FIFO_MEM1,
-    SM2_FIFO_MEM2,
-    SM2_FIFO_MEM3,
-    SM2_FIFO_MEM4,
-    SM2_FIFO_MEM5,
-    SM2_FIFO_MEM6,
-    SM2_FIFO_MEM7,
-    SM2_DELAY,
-    SM2_DELAY_CYCLE,
-    SM2_PENDING_DELAY,
-    SM2_CLK_ENABLE,
-    SM2_BREAKPOINTS,
-    SM2_TRACEPOINTS,
-    SM3_REGX,
-    SM3_REGY,
-    SM3_PC,
-    SM3_ISR,
-    SM3_ISR_SHIFT_COUNT,
-    SM3_OSR,
-    SM3_OSR_SHIFT_COUNT,
-    SM3_FIFO_MEM0,
-    SM3_FIFO_MEM1,
-    SM3_FIFO_MEM2,
-    SM3_FIFO_MEM3,
-    SM3_FIFO_MEM4,
-    SM3_FIFO_MEM5,
-    SM3_FIFO_MEM6,
-    SM3_FIFO_MEM7,
-    SM3_DELAY,
-    SM3_DELAY_CYCLE,
-    SM3_PENDING_DELAY,
-    SM3_CLK_ENABLE,
-    SM3_BREAKPOINTS,
-    SM3_TRACEPOINTS,
-    INSTR_MEM0,
-    INSTR_MEM1,
-    INSTR_MEM2,
-    INSTR_MEM3,
-    INSTR_MEM4,
-    INSTR_MEM5,
-    INSTR_MEM6,
-    INSTR_MEM7,
-    INSTR_MEM8,
-    INSTR_MEM9,
-    INSTR_MEM10,
-    INSTR_MEM11,
-    INSTR_MEM12,
-    INSTR_MEM13,
-    INSTR_MEM14,
-    INSTR_MEM15,
-    INSTR_MEM16,
-    INSTR_MEM17,
-    INSTR_MEM18,
-    INSTR_MEM19,
-    INSTR_MEM20,
-    INSTR_MEM21,
-    INSTR_MEM22,
-    INSTR_MEM23,
-    INSTR_MEM24,
-    INSTR_MEM25,
-    INSTR_MEM26,
-    INSTR_MEM27,
-    INSTR_MEM28,
-    INSTR_MEM29,
-    INSTR_MEM30,
-    INSTR_MEM31,
-    GPIO_PINS,
-    GPIO_PINDIRS;
+  public enum Regs implements RegistersDocs<Regs> {
+    SM0_REGX("Direct read / write access to the SM's%n" +
+             "scratch register X.",
+             new BitsInfo[] {
+               new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+             }),
+    SM0_REGY("Direct read / write access to the SM's%n" +
+             "scratch register Y.",
+             new BitsInfo[] {
+               new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+             }),
+    SM0_PC("Direct read-only access to the SM's%n" +
+           "instruction pointer / program counter.",
+           new BitsInfo[] {
+             new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+           }),
+    SM0_ISR("Direct read / write access to the SM's%n" +
+            "input shift register.",
+            new BitsInfo[] {
+              new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+             }),
+    SM0_ISR_SHIFT_COUNT("Direct read / write access to the SM's%n" +
+                        "input shift count register.",
+                        new BitsInfo[] {
+                          new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+                        }),
+    SM0_OSR("Direct read / write access to all of the SM's%n" +
+            "output shift register.",
+            new BitsInfo[] {
+              new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+             }),
+    SM0_OSR_SHIFT_COUNT("Direct read / write access to the SM's%n" +
+                        "output shift count register.",
+                        new BitsInfo[] {
+                          new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+                        }),
+    SM0_FIFO_MEM0("Read / write access to FIFO memory word.",
+                  new BitsInfo[] {
+                    new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+                  }),
+    SM0_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
+    SM0_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
+    SM0_FIFO_MEM3(Regs.SM0_FIFO_MEM0),
+    SM0_FIFO_MEM4(Regs.SM0_FIFO_MEM0),
+    SM0_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
+    SM0_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
+    SM0_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM0_DELAY("Direct read-only access to the SM's%n" +
+              "currently executed instruction's number of delay cycles.",
+              new BitsInfo[] {
+                new BitsInfo(31, 5, "Reserved.",
+                             null, BitsType.NA, null),
+                new BitsInfo(4, 0, null, null, BitsType.RO, 0)
+              }),
+    SM0_DELAY_CYCLE("Read-only access to the SM's delay status.",
+                    new BitsInfo[] {
+                      new BitsInfo(31, 1, "Reserved.", null, BitsType.NA, null),
+                      new BitsInfo(0, 0, "DELAY_CYCLE",
+                                   "0x1, if the currently executed cycles%n" +
+                                   "is a delay cycle.", BitsType.RO, 0)
+                    }),
+    SM0_PENDING_DELAY("Direct read-only access to the SM's%n" +
+                      "number of pending delay cycles.",
+                      new BitsInfo[] {
+                        new BitsInfo(31, 5, "Reserved.",
+                                     null, BitsType.NA, null),
+                        new BitsInfo(4, 0, "PENDING_DELAY",
+                                     "number (0..0x1f) of pending delays%n" +
+                                     "of the currently executed instruction",
+                                     BitsType.RO, 0)
+                      }),
+    SM0_CLK_ENABLE("Read-only access to the SM's delay status.",
+                   new BitsInfo[] {
+                     new BitsInfo(31, 1, "Reserved.", null, BitsType.NA, null),
+                     new BitsInfo(0, 0, "DELAY_CYCLE",
+                                  "0x1, if in the current cycle the clock%n" +
+                                  "enable signal evaluates to 0x1.",
+                                  BitsType.RO, 0)
+                   }),
+    SM0_BREAKPOINTS("Each bit of this values corresponds to each of the%n" +
+                    "32 memory locations of the PIO instruction memory%n" +
+                    "(with the LSB of the word corresponding to the lowest%n" +
+                    "memory address).  Setting a bit to 1 marks the%n" +
+                    "corresponding memory address as location of a%n" +
+                    "breakpoint.  Setting a bit to 0 removes the%n" +
+                    "breakpoint.%n" +
+                    "%n" +
+                    "As soon as the program counter of the state machine%n" +
+                    "reaches an address that is marked as a breakpoint,%n" +
+                    "master clock MASTERCLK_MODE will be automatically set%n" +
+                    "to single step mode.",
+                    IntStream.rangeClosed(0, 31).boxed()
+                    .map(n -> new BitsInfo(31 - n, 31 - n, "BP_MEM" + (31 - n),
+                                           "0x1, if the memory address is " +
+                                           "marked as breakpoint",
+                                           BitsType.RW, 0))
+                    .collect(Collectors.toList())),
+    SM0_TRACEPOINTS("Tracepoints work like breakpoints with the difference%n" +
+                    "that master clock MASTERCLK_MODE it not automatically%n" +
+                    "set to single step mode, but instead a message is%n" +
+                    "printed to console output.  The message contains the%n" +
+                    "state machine's number and disassembled instruction%n" +
+                    "with prefixed instruction memory address.  Tracepoints%n" +
+                    "work in all master clock MASTERCLK_MODE modes.",
+                    IntStream.rangeClosed(0, 31).boxed()
+                    .map(n -> new BitsInfo(31 - n, 31 - n, "TP_MEM" + (31 - n),
+                                           "0x1, if the memory address is " +
+                                           "marked as tracepoint",
+                                           BitsType.RW, 0))
+                    .collect(Collectors.toList())),
+    SM1_REGX(Regs.SM0_REGX),
+    SM1_REGY(Regs.SM0_REGY),
+    SM1_PC(Regs.SM0_PC),
+    SM1_ISR(Regs.SM0_ISR),
+    SM1_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT),
+    SM1_OSR(Regs.SM0_OSR),
+    SM1_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT),
+    SM1_FIFO_MEM0(Regs.SM0_FIFO_MEM0),
+    SM1_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
+    SM1_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
+    SM1_FIFO_MEM3(Regs.SM0_FIFO_MEM0),
+    SM1_FIFO_MEM4(Regs.SM0_FIFO_MEM0),
+    SM1_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
+    SM1_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
+    SM1_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM1_DELAY(Regs.SM0_DELAY),
+    SM1_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
+    SM1_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
+    SM1_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
+    SM1_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
+    SM1_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
+    SM2_REGX(Regs.SM0_REGX),
+    SM2_REGY(Regs.SM0_REGY),
+    SM2_PC(Regs.SM0_PC),
+    SM2_ISR(Regs.SM0_ISR),
+    SM2_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT),
+    SM2_OSR(Regs.SM0_OSR),
+    SM2_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT),
+    SM2_FIFO_MEM0(Regs.SM0_FIFO_MEM0),
+    SM2_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
+    SM2_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
+    SM2_FIFO_MEM3(Regs.SM0_FIFO_MEM0),
+    SM2_FIFO_MEM4(Regs.SM0_FIFO_MEM0),
+    SM2_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
+    SM2_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
+    SM2_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM2_DELAY(Regs.SM0_DELAY),
+    SM2_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
+    SM2_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
+    SM2_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
+    SM2_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
+    SM2_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
+    SM3_REGX(Regs.SM0_REGX),
+    SM3_REGY(Regs.SM0_REGY),
+    SM3_PC(Regs.SM0_PC),
+    SM3_ISR(Regs.SM0_ISR),
+    SM3_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT),
+    SM3_OSR(Regs.SM0_OSR),
+    SM3_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT),
+    SM3_FIFO_MEM0(Regs.SM0_FIFO_MEM0),
+    SM3_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
+    SM3_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
+    SM3_FIFO_MEM3(Regs.SM0_FIFO_MEM0),
+    SM3_FIFO_MEM4(Regs.SM0_FIFO_MEM0),
+    SM3_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
+    SM3_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
+    SM3_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM3_DELAY(Regs.SM0_DELAY),
+    SM3_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
+    SM3_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
+    SM3_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
+    SM3_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
+    SM3_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
+    INSTR_MEM0("Read / write access to instruction memory word.",
+               new BitsInfo[] {
+                 new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+               }),
+    INSTR_MEM1(Regs.INSTR_MEM0),
+    INSTR_MEM2(Regs.INSTR_MEM0),
+    INSTR_MEM3(Regs.INSTR_MEM0),
+    INSTR_MEM4(Regs.INSTR_MEM0),
+    INSTR_MEM5(Regs.INSTR_MEM0),
+    INSTR_MEM6(Regs.INSTR_MEM0),
+    INSTR_MEM7(Regs.INSTR_MEM0),
+    INSTR_MEM8(Regs.INSTR_MEM0),
+    INSTR_MEM9(Regs.INSTR_MEM0),
+    INSTR_MEM10(Regs.INSTR_MEM0),
+    INSTR_MEM11(Regs.INSTR_MEM0),
+    INSTR_MEM12(Regs.INSTR_MEM0),
+    INSTR_MEM13(Regs.INSTR_MEM0),
+    INSTR_MEM14(Regs.INSTR_MEM0),
+    INSTR_MEM15(Regs.INSTR_MEM0),
+    INSTR_MEM16(Regs.INSTR_MEM0),
+    INSTR_MEM17(Regs.INSTR_MEM0),
+    INSTR_MEM18(Regs.INSTR_MEM0),
+    INSTR_MEM19(Regs.INSTR_MEM0),
+    INSTR_MEM20(Regs.INSTR_MEM0),
+    INSTR_MEM21(Regs.INSTR_MEM0),
+    INSTR_MEM22(Regs.INSTR_MEM0),
+    INSTR_MEM23(Regs.INSTR_MEM0),
+    INSTR_MEM24(Regs.INSTR_MEM0),
+    INSTR_MEM25(Regs.INSTR_MEM0),
+    INSTR_MEM26(Regs.INSTR_MEM0),
+    INSTR_MEM27(Regs.INSTR_MEM0),
+    INSTR_MEM28(Regs.INSTR_MEM0),
+    INSTR_MEM29(Regs.INSTR_MEM0),
+    INSTR_MEM30(Regs.INSTR_MEM0),
+    INSTR_MEM31(Regs.INSTR_MEM0),
+    GPIO_PINS("Direct read / write access to all of the 32 GPIO pins.",
+              IntStream.rangeClosed(0, 31).boxed()
+              .map(n -> new BitsInfo(31 - n, 31 - n, "GPIO_PIN" + (31 - n),
+                                     "0x1 for HIGH or 0x0 for LOW",
+                                     BitsType.RW, 0))
+              .collect(Collectors.toList())),
+    GPIO_PINDIRS("Direct read / write access to all of the 32 GPIO pin%n" +
+                 "directions.",
+                 IntStream.rangeClosed(0, 31).boxed()
+                 .map(n -> new BitsInfo(31 - n, 31 - n,
+                                        "GPIO_PINDIR" + (31 - n),
+                                        "0x1 for pin direction out or%n" +
+                                        "0x0 for pin direction in",
+                                        BitsType.RW, 0))
+                 .collect(Collectors.toList()));
+
+    private final String info;
+    private final RegisterDetails registerDetails;
+
+    private Regs()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    private Regs(final Regs ref)
+    {
+      this(ref.getInfo(), ref.getRegisterDetails());
+    }
+
+    private Regs(final String info, final BitsInfo[] bitsInfos)
+    {
+      this(info,
+           bitsInfos == null ?
+           (RegisterDetails)null :
+           new RegisterDetails(bitsInfos));
+    }
+
+    private Regs(final String info, final List<BitsInfo> bitsInfos)
+    {
+      this(info,
+           bitsInfos == null ?
+           (RegisterDetails)null :
+           new RegisterDetails(bitsInfos));
+    }
+
+    private Regs(final String info, final RegisterDetails registerDetails)
+    {
+      this.info = info;
+      this.registerDetails = registerDetails;
+    }
+
+    @Override
+    public String getInfo()
+    {
+      return info;
+    }
+
+    @Override
+    public RegisterDetails getRegisterDetails()
+    {
+      return registerDetails;
+    }
   }
 
   protected static final Regs[] REGS = Regs.values();
