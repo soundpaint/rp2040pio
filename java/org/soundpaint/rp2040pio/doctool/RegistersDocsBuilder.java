@@ -90,6 +90,28 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     return String.format(name);
   }
 
+  private static String
+    formatTableDescription(final String defaultDescription,
+                           final Iterable<RegistersDocs.BitsInfo> bitsInfos)
+  {
+    boolean hasBitsDescription = false;
+    for (final RegistersDocs.BitsInfo bitsInfo : bitsInfos) {
+      if (bitsInfo.getDescription() != null) {
+        hasBitsDescription = true;
+        break;
+      }
+    }
+    if (hasBitsDescription) {
+      if (defaultDescription != null) {
+        return String.format(defaultDescription);
+      } else {
+        return null;
+      }
+    } else {
+      return null;
+    }
+  }
+
   private static String formatDescription(final RegistersDocs.BitsInfo bitsInfo,
                                           final String defaultDescription)
   {
@@ -123,15 +145,28 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     return String.format("%d", resetValue);
   }
 
+  private String createDetailTableLabels(final List<T> regsList)
+  {
+    final StringBuilder labels = new StringBuilder();
+    for (final T reg : regsList) {
+      labels.append(String.format(".. _%s-details-label:%n", reg.toString()));
+    }
+    labels.append(String.format("%n"));
+    return labels.toString();
+  }
+
   private String formatRegNames(final List<T> regsList)
   {
     final StringBuilder regNames = new StringBuilder();
+    boolean multiple = false;
     for (final T reg : regsList) {
       if (regNames.length() > 0) {
         regNames.append(", ");
+        multiple = true;
       }
       regNames.append(reg.toString());
     }
+    regNames.append(multiple ? " Registers" : " Register");
     return String.format("%s", regNames);
   }
 
@@ -146,8 +181,8 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
       }
       offsets.append(String.format("0x%03x", reg.ordinal() << 2));
     }
-    return String.format("%s: %s",
-                         haveMultipleRegs ? "Offsets" : "Offset",offsets);
+    return String.format("**%s:** %s",
+                         haveMultipleRegs ? "Offsets" : "Offset", offsets);
   }
 
   private String createDetailTable(final String registersSetLabel,
@@ -156,20 +191,28 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
                                    final List<T> regsList)
   {
     final StringBuilder s = new StringBuilder();
+    s.append(createDetailTableLabels(regsList));
     final String regNames = formatRegNames(regsList);
     final String headLine =
-      String.format("%s: %s", registersSetLabel, regNames);
+      String.format(":ref:`%s <section-top>`: %s", registersSetLabel, regNames);
     s.append(String.format("%s%n", headLine));
     s.append(String.format("%s%n", fill('-', headLine.length())));
     s.append(String.format("%n"));
     final String offsets = formatOffsets(regsList);
     s.append(String.format("%s%n", offsets));
     s.append(String.format("%n"));
-    s.append(String.format(".. csv-table:: %s%n", headLine));
+    final String defaultDescription = registerDetails.getInfo();
+    final String tableDescription =
+      formatTableDescription(defaultDescription,
+                             registerDetails.getBitsInfos());
+    if (tableDescription != null) {
+      s.append(String.format("**Description**%n%n%s%n", tableDescription));
+      s.append(String.format("%n"));
+    }
+    s.append(String.format(".. csv-table::%n"));
     s.append(String.format("   :header: Bits, Name, Description, Type, Reset%n"));
     s.append(String.format("   :widths: 8, 20, 40, 8, 20%n"));
     s.append(String.format("%n"));
-    final String defaultDescription = registerDetails.getInfo();
     for (final T.BitsInfo bitsInfo : registerDetails.getBitsInfos()) {
       final String bitsRange = formatBitsRange(bitsInfo);
       final String name = formatName(bitsInfo);
@@ -179,6 +222,58 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
       final String reset = formatResetValue(bitsInfo);
       s.append(String.format("   %s, %s, %s, %s, %s%n",
                              bitsRange, name, description, type, reset));
+    }
+    s.append(String.format("%n"));
+    return s.toString();
+  }
+
+  private String createDetailTableRef(final T reg)
+  {
+    final String regName = reg.toString();
+    return String.format(":ref:`%s <%s-details-label>`", regName, regName);
+  }
+
+  private String createOverviewTable(final String registersSetLabel,
+                                     final String registersSetDescription,
+                                     final EnumSet<T> regs,
+                                     final Map<T.RegisterDetails, List<T>>
+                                     registerDetails2regs)
+  {
+    final StringBuilder s = new StringBuilder();
+    s.append(String.format(".. _section-top:%n"));
+    s.append(String.format("%n"));
+    final String sectionHeader = String.format("%s", registersSetLabel);
+    s.append(String.format("%s%n", sectionHeader));
+    s.append(String.format("%s%n", fill('=', sectionHeader.length())));
+    s.append(String.format("%n"));
+    final String overviewTableHeader = "List of Registers";
+    s.append(String.format("%s%n", overviewTableHeader));
+    s.append(String.format("%s%n", fill('-', overviewTableHeader.length())));
+    s.append(String.format("%n"));
+    if (registersSetDescription != null) {
+      s.append(String.format(registersSetDescription));
+      s.append(String.format("%n"));
+      s.append(String.format("%n"));
+    }
+    s.append(String.format(".. csv-table::%n"));
+    s.append(String.format("   :header: Offset, Name, Info%n"));
+    s.append(String.format("   :widths: 8, 20, 40%n"));
+    s.append(String.format("%n"));
+    int address = 0x000;
+    for (final T reg : regs) {
+      final T.RegisterDetails registerDetails = reg.getRegisterDetails();
+      final List<T> regsList;
+      if (registerDetails2regs.containsKey(registerDetails)) {
+        regsList = registerDetails2regs.get(registerDetails);
+      } else {
+        regsList = new ArrayList<T>();
+        registerDetails2regs.put(registerDetails, regsList);
+      }
+      regsList.add(reg);
+      s.append(String.format("   0x%03x, %s, %s%n",
+                             address, createDetailTableRef(reg),
+                             csvEncode(reg.getInfo().replace("%n", " "))));
+      address += 0x004;
     }
     s.append(String.format("%n"));
     return s.toString();
@@ -199,41 +294,10 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
   {
     final Map<T.RegisterDetails, List<T>> registerDetails2regs
       = new HashMap<T.RegisterDetails, List<T>>();
-
     final StringBuilder s = new StringBuilder();
     s.append(String.format(leadinComment, Instant.now()));
-
-    final String headLine =
-      String.format("%s: List of Registers", registersSetLabel);
-    s.append(String.format("%s%n", headLine));
-    s.append(String.format("%s%n", fill('=', headLine.length())));
-    s.append(String.format("%n"));
-    if (registersSetDescription != null) {
-      s.append(String.format(registersSetDescription));
-      s.append(String.format("%n"));
-      s.append(String.format("%n"));
-    }
-    s.append(String.format(".. csv-table:: %s%n", headLine));
-    s.append(String.format("   :header: Offset, Name, Info%n"));
-    s.append(String.format("   :widths: 8, 20, 40%n"));
-    s.append(String.format("%n"));
-    int address = 0x000;
-    for (final T reg : regs) {
-      final T.RegisterDetails registerDetails = reg.getRegisterDetails();
-      final List<T> regsList;
-      if (registerDetails2regs.containsKey(registerDetails)) {
-        regsList = registerDetails2regs.get(registerDetails);
-      } else {
-        regsList = new ArrayList<T>();
-        registerDetails2regs.put(registerDetails, regsList);
-      }
-      regsList.add(reg);
-      s.append(String.format("   0x%03x, %s, %s%n",
-                             address, reg,
-                             csvEncode(reg.getInfo().replace("%n", " "))));
-      address += 0x004;
-    }
-    s.append(String.format("%n"));
+    s.append(createOverviewTable(registersSetLabel, registersSetDescription,
+                                 regs, registerDetails2regs));
     for (final T.RegisterDetails registerDetails :
            registerDetails2regs.keySet()) {
       final List<T> regsList = registerDetails2regs.get(registerDetails);
