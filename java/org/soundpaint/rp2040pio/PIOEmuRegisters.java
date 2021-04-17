@@ -263,7 +263,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
 
     public static String getRegisterSetLabel()
     {
-      return "PIO Emulator";
+      return "Additional PIO Registers";
     }
 
     public static String getRegisterSetDescription()

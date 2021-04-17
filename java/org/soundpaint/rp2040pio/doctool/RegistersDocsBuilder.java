@@ -29,9 +29,10 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 
 /**
@@ -69,6 +70,23 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     }
     s.append("\"");
     return s.toString();
+  }
+
+  /**
+   * Replaces all characters that could have special meaning for
+   * Sphinx.
+   */
+  private static String createIdFromLabel(final String registersSetLabel)
+  {
+    return
+      registersSetLabel
+      .trim()
+      .toLowerCase()
+      .replace(" ", "_")
+      .replace("\"", "")
+      .replace("'", "")
+      .replace("`", "")
+      .replace(":", "");
   }
 
   private static String formatBitsRange(final RegistersDocs.BitsInfo bitsInfo)
@@ -193,8 +211,10 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     final StringBuilder s = new StringBuilder();
     s.append(createDetailTableLabels(regsList));
     final String regNames = formatRegNames(regsList);
+    final String registersSetId = createIdFromLabel(registersSetLabel);
     final String headLine =
-      String.format(":ref:`%s <section-top>`: %s", registersSetLabel, regNames);
+      String.format(":ref:`%s <section-top_%s>`: %s",
+                    registersSetLabel, registersSetId, regNames);
     s.append(String.format("%s%n", headLine));
     s.append(String.format("%s%n", fill('-', headLine.length())));
     s.append(String.format("%n"));
@@ -240,7 +260,8 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
                                      registerDetails2regs)
   {
     final StringBuilder s = new StringBuilder();
-    s.append(String.format(".. _section-top:%n"));
+    final String registersSetId = createIdFromLabel(registersSetLabel);
+    s.append(String.format(".. _section-top_%s:%n", registersSetId));
     s.append(String.format("%n"));
     final String sectionHeader = String.format("%s", registersSetLabel);
     s.append(String.format("%s%n", sectionHeader));
@@ -293,7 +314,7 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
                             final EnumSet<T> regs)
   {
     final Map<T.RegisterDetails, List<T>> registerDetails2regs
-      = new HashMap<T.RegisterDetails, List<T>>();
+      = new LinkedHashMap<T.RegisterDetails, List<T>>();
     final StringBuilder s = new StringBuilder();
     s.append(String.format(leadinComment, Instant.now()));
     s.append(createOverviewTable(registersSetLabel, registersSetDescription,
@@ -332,6 +353,11 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
 
   public static void main(final String argv[])
   {
+    new RegistersDocsBuilder<PicoEmuRegisters.Regs>
+      (PicoEmuRegisters.Regs.class,
+       PicoEmuRegisters.Regs.getRegisterSetLabel(),
+       PicoEmuRegisters.Regs.getRegisterSetDescription(),
+       "pico-emu-registers.rst");
     new RegistersDocsBuilder<PIOEmuRegisters.Regs>
       (PIOEmuRegisters.Regs.class,
        PIOEmuRegisters.Regs.getRegisterSetLabel(),

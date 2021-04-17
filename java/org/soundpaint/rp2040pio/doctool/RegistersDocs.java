@@ -98,7 +98,7 @@ public interface RegistersDocs<T>
         throw new IllegalArgumentException("lsb > msb: " + lsb + " > " + msb);
       }
       if (resetValue != null) {
-        final long maxResetValue = (0x1 << (msb - lsb + 1)) - 1;
+        final long maxResetValue = ((long)0x1 << (msb - lsb + 1)) - 1;
         final long resetValueAsLong = 0x00000000FFFFFFFFL & (long)resetValue;
         if (resetValueAsLong > maxResetValue) {
           throw new IllegalArgumentException("resetValueAsLong > " +

@@ -24,7 +24,9 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.util.List;
 import java.util.function.LongSupplier;
+import org.soundpaint.rp2040pio.doctool.RegistersDocs;
 
 /**
  * Facade to additonal emulator properties of the internal subsystems
@@ -35,81 +37,148 @@ import java.util.function.LongSupplier;
 public abstract class PicoEmuRegisters extends AbstractRegisters
   implements Constants
 {
-  public enum Regs {
-    /**
-     * W/C address.
-     *
-     * Writing the value 0xa55a5aa5 to this address will fully reset
-     * the emulator.  Writing any other value will have no effect.
-     */
-    PWR_UP,
-    /**
-     * R/W address.  Reset value: 1000000000.
-     *
-     * Unsigned integer value that represents the target frequency of
-     * the emulation in 1/8Hz.  That is, a value of 1 represents a
-     * frequency of 0.125 Hz, and the maximum value of 2^32 - 1 =
-     * 4294967295 represents a frequency of 536.870911875MHz.
-     *
-     * A value of 0 indicates that the emulation should execute as
-     * fast as possible.
-     *
-     * Note that there is no guarantee at all to run at the specified
-     * frequency.  Instead, the value is just the frequency that the
-     * emulation tries to catch up with as close as possible.  The
-     * reset value corresponds to a target frequency of 125MHz.
-     */
-    MASTERCLK_FREQ,
-    /**
-     * R/W address.  Reset value: 0.
-     *
-     * Bit 0 = 0: Target frequency mode.
-     * Bit 0 = 1: Single step mode.
-     *
-     * Bits 1..31: Reserved.
-     */
-    MASTERCLK_MODE,
-    /**
-     * W/C address.
-     *
-     * When master clock is in single step mode, writing any value to
-     * this address will trigger the emulator to execute phase 0 of
-     * the next clock cycle.  In phase 0, the emulator fetches and
-     * decodes the next instruction.  When already in phase 0, writing
-     * once more to this address will have no effect.  When master
-     * clock is in target frequency mode, writing to this address will
-     * have no effect.  Upon reset, the system is in phase 1.
-     */
-    MASTERCLK_TRIGGER_PHASE0,
-    /**
-     * W/C address.
-     *
-     * When master clock is in single step mode, writing any value to
-     * this address will trigger the emulator to execute phase 1 of
-     * the current clock cycle.  In phase 1, the emulator will execute
-     * the instruction previously decoded in phase 0.  When already in
-     * phase 1, writing once more to this address will have no effect.
-     * When master clock is in target frequency mode, writing to this
-     * address will have no effect.  Upon reset, the system is in
-     * phase 1.
-     */
-    MASTERCLK_TRIGGER_PHASE1,
-    /**
-     * R/O address.
-     *
-     * LSB value (lower 32 bits) of wall clock.  The wall clock is a
-     * 64 bit counter that is initialized to 0 and incremented
-     * whenever the master clock has completed a cycle.
-     */
-    WALLCLOCK_LSB,
-    /**
-     * R/O address.
-     *
-     * MSB value (upper 32 bits) of wall clock.  The wall clock is a
-     * 64 bit counter that is initialized to 0 and incremented
-     * whenever the master clock has completed a cycle.
-     */
-    WALLCLOCK_MSB;
+  public enum Regs implements RegistersDocs<Regs> {
+    PWR_UP("Writing the value 0xa55a5aa5 to this address will fully reset%n" +
+           "the emulator.  Writing any other value will have no effect.",
+             new BitsInfo[] {
+               new BitsInfo(31, 0, null, null, BitsType.WF, 0)
+             }),
+    MASTERCLK_FREQ("Unsigned integer value that represents the%n" +
+                   "target frequency of the emulation in 1/8Hz.%n" +
+                   "That is, a value of 1 represents a frequency of%n" +
+                   "0.125 Hz, and the maximum value of 2^32 - 1 =%n" +
+                   "4294967295 represents a frequency of%n" +
+                   "536.870911875MHz.%n" +
+                   "%n" +
+                   "A value of 0 indicates that the emulation should%n" +
+                   "execute as fast as possible.%n" +
+                   "%n" +
+                   "Note that there is no guarantee at all to run at%n" +
+                   "the specified frequency.  Instead, the value is%n" +
+                   "just the frequency that the emulation tries to%n" +
+                   "catch up with as close as possible.  The reset%n" +
+                   "value corresponds to a target frequency of 125MHz.",
+                   new BitsInfo[] {
+                     new BitsInfo(31, 0, null, null, BitsType.RW, 1000000000)
+                   }),
+    MASTERCLK_MODE("Selects the clock mode.",
+                   new BitsInfo[] {
+                     new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
+                     new BitsInfo(0, 0, null,
+                                  "Bit 0 = 0: Target frequency mode.%n" +
+                                  "Bit 0 = 1: Single step mode.",
+                                  BitsType.RW, 0)
+                   }),
+    MASTERCLK_TRIGGER_PHASE0("When master clock is in single step%n" +
+                             "mode, writing any value to this address%n" +
+                             "will trigger the emulator to execute phase%n" +
+                             "0 of the next clock cycle.  In phase%n" +
+                             "0, the emulator fetches and decodes the%n" +
+                             "next instruction.  When already in phase%n" +
+                             "0, writing once more to this address will%n" +
+                             "have no effect.  When master clock is in%n" +
+                             "target frequency mode, writing to this%n" +
+                             "address will have no effect.  Upon reset,%n" +
+                             "the system is in phase 1.",
+                             new BitsInfo[] {
+                               new BitsInfo(31, 0, null, null,
+                                            BitsType.WF, null)
+                             }),
+    MASTERCLK_TRIGGER_PHASE1("When master clock is in single step%n" +
+                             "mode, writing any value to this address%n" +
+                             "will trigger the emulator to execute phase%n" +
+                             "1 of the current clock cycle.  In phase%n" +
+                             "1, the emulator will execute the%n" +
+                             "instruction previously decoded in%n" +
+                             "phase 0.  When already in phase%n" +
+                             "1, writing once more to this address will%n" +
+                             "have no effect. When master clock is in%n" +
+                             "target frequency mode, writing to this%n" +
+                             "address will have no effect.  Upon reset,%n" +
+                             "the system is in phase 1.",
+                             new BitsInfo[] {
+                               new BitsInfo(31, 0, null, null,
+                                            BitsType.WF, null)
+                             }),
+    WALLCLOCK_LSB("LSB value (lower 32 bits) of wall clock.  The%n" +
+                  "wall clock is a 64 bit counter that is initialized%n" +
+                  "to 0 and incremented whenever the master clock has%n" +
+                  "completed a cycle.",
+                  new BitsInfo[] {
+                    new BitsInfo(31, 0, null, null, BitsType.RO, null)
+                  }),
+    WALLCLOCK_MSB("MSB value (upper 32 bits) of wall clock.  The%n" +
+                  "wall clock is a 64 bit counter that is initialized%n" +
+                  "to 0 and incremented whenever the master clock has%n" +
+                  "completed a cycle.",
+                  new BitsInfo[] {
+                    new BitsInfo(31, 0, null, null, BitsType.RO, null)
+                  });
+
+    public static String getRegisterSetLabel()
+    {
+      return "Additional Global Registers";
+    }
+
+    public static String getRegisterSetDescription()
+    {
+      return
+        "The PIO emulator provides global registers, hereafter%n" +
+        "called *Pico Emulator Registers*, that are used to inspect%n" +
+        "and control the emulator as a whole (rather than just%n" +
+        "referring to a specifc PIO) and that are accessible through%n" +
+        "this registers facade and provided in addition to the%n" +
+        "registers of the original RP2040 hardware.%n" +
+        "Base address for the Pico emulator register set is%n" +
+        String.format("0x%08x.%n", EMULATOR_BASE);
+    }
+
+    private final String info;
+    private final RegisterDetails registerDetails;
+
+    private Regs()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    private Regs(final Regs ref)
+    {
+      this(ref.getInfo(), ref.getRegisterDetails());
+    }
+
+    private Regs(final String info, final BitsInfo[] bitsInfos)
+    {
+      this(info,
+           bitsInfos == null ?
+           (RegisterDetails)null :
+           new RegisterDetails(info, bitsInfos));
+    }
+
+    private Regs(final String info, final List<BitsInfo> bitsInfos)
+    {
+      this(info,
+           bitsInfos == null ?
+           (RegisterDetails)null :
+           new RegisterDetails(info, bitsInfos));
+    }
+
+    private Regs(final String info, final RegisterDetails registerDetails)
+    {
+      this.info = info;
+      this.registerDetails = registerDetails;
+    }
+
+    @Override
+    public String getInfo()
+    {
+      return info;
+    }
+
+    @Override
+    public RegisterDetails getRegisterDetails()
+    {
+      return registerDetails;
+    }
   }
 
   protected static final Regs[] REGS = Regs.values();
