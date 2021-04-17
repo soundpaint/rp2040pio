@@ -30,7 +30,7 @@ all:
 	cd $(JAVA_DIR) ; make -f Makefile.Observer all
 	cd $(JAVA_DIR) ; make -f Makefile.Diagram all
 	cd $(JAVA_DIR) ; make -f Makefile.GPIOObserver all
-	cd $(JAVA_DIR) ; make -f Makefile.DocTool all
+	cd $(JAVA_DIR) ; make -f Makefile.DocTool doc
 
 run: all
 	cd $(JAVA_DIR) ; make -f Makefile.Server run
@@ -41,6 +41,7 @@ tags:
 objclean:
 	rm -rf $(ROOT_BUILD_DIR)
 	rm -rf $(JAR_DIR)
+	rm -rf $(RST_DOC_DIR)
 
 bkpclean:
 	- find $(JAVA_DIR) -name \*~ -exec /bin/rm -f {} \; -print

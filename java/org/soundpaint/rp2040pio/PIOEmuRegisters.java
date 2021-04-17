@@ -89,13 +89,12 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM0_DELAY("Direct read-only access to the SM's%n" +
               "currently executed instruction's number of delay cycles.",
               new BitsInfo[] {
-                new BitsInfo(31, 5, "Reserved.",
-                             null, BitsType.NA, null),
+                new BitsInfo(31, 5, null, null, BitsType.RESERVED, null),
                 new BitsInfo(4, 0, null, null, BitsType.RO, 0)
               }),
     SM0_DELAY_CYCLE("Read-only access to the SM's delay status.",
                     new BitsInfo[] {
-                      new BitsInfo(31, 1, "Reserved.", null, BitsType.NA, null),
+                      new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
                       new BitsInfo(0, 0, "DELAY_CYCLE",
                                    "0x1, if the currently executed cycles%n" +
                                    "is a delay cycle.", BitsType.RO, 0)
@@ -103,8 +102,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM0_PENDING_DELAY("Direct read-only access to the SM's%n" +
                       "number of pending delay cycles.",
                       new BitsInfo[] {
-                        new BitsInfo(31, 5, "Reserved.",
-                                     null, BitsType.NA, null),
+                        new BitsInfo(31, 5, null, null, BitsType.RESERVED, null),
                         new BitsInfo(4, 0, "PENDING_DELAY",
                                      "number (0..0x1f) of pending delays%n" +
                                      "of the currently executed instruction",
@@ -112,7 +110,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                       }),
     SM0_CLK_ENABLE("Read-only access to the SM's delay status.",
                    new BitsInfo[] {
-                     new BitsInfo(31, 1, "Reserved.", null, BitsType.NA, null),
+                     new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
                      new BitsInfo(0, 0, "DELAY_CYCLE",
                                   "0x1, if in the current cycle the clock%n" +
                                   "enable signal evaluates to 0x1.",
@@ -263,6 +261,25 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                         BitsType.RW, 0))
                  .collect(Collectors.toList()));
 
+    public static String getRegisterSetLabel()
+    {
+      return "PIO Emulator";
+    }
+
+    public static String getRegisterSetDescription()
+    {
+      return
+        "The PIO emulator provides registers in addition to those%n" +
+        "of the PIO as specified in the RP2040 datasheet to allow%n" +
+        "for inspection of more details of the PIO's internal state%n" +
+        "such as its scratch registers X and Y, its shift registers%n" +
+        "ISR, OSR, FIFO memory, and read access to PIO instruction%n" +
+        "memory for enhanced debugging of programs.%n" +
+        "Base address for the PIO emulator register sets is%n" +
+        String.format("0x%08x and 0x%08x for PIO0 and PIO1, respectively.%n",
+                      PIO0_EMU, PIO1_EMU);
+    }
+
     private final String info;
     private final RegisterDetails registerDetails;
 
@@ -281,7 +298,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
       this(info,
            bitsInfos == null ?
            (RegisterDetails)null :
-           new RegisterDetails(bitsInfos));
+           new RegisterDetails(info, bitsInfos));
     }
 
     private Regs(final String info, final List<BitsInfo> bitsInfos)
@@ -289,7 +306,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
       this(info,
            bitsInfos == null ?
            (RegisterDetails)null :
-           new RegisterDetails(bitsInfos));
+           new RegisterDetails(info, bitsInfos));
     }
 
     private Regs(final String info, final RegisterDetails registerDetails)

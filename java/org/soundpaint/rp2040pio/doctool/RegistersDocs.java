@@ -36,7 +36,7 @@ public interface RegistersDocs<T>
 {
   public enum BitsType
   {
-    NA("-", "n/a"),
+    RESERVED("-", "n/a"),
     SC("SC", "???"),
     WC("WC", "wrtite 1 to clear"),
     RW("RW", "read/write"),
@@ -125,6 +125,7 @@ public interface RegistersDocs<T>
 
   public static class RegisterDetails
   {
+    private String info;
     private List<BitsInfo> bitsInfos;
 
     private RegisterDetails()
@@ -132,16 +133,19 @@ public interface RegistersDocs<T>
       throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public RegisterDetails(final BitsInfo[] bitsInfos)
+    public RegisterDetails(final String info, final BitsInfo[] bitsInfos)
     {
-      this(Arrays.asList(bitsInfos));
+      this(info, Arrays.asList(bitsInfos));
     }
 
-    public RegisterDetails(final List<BitsInfo> bitsInfos)
+    public RegisterDetails(final String info, final List<BitsInfo> bitsInfos)
     {
+      this.info = info;
       this.bitsInfos = new ArrayList<BitsInfo>();
       this.bitsInfos.addAll(bitsInfos);
     }
+
+    public String getInfo() { return info; }
 
     public Iterable<BitsInfo> getBitsInfos()
     {

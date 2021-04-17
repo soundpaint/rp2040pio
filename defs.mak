@@ -24,6 +24,7 @@
 JAVA_DIR=$(ROOT_DIR)/java
 ROOT_BUILD_DIR=$(ROOT_DIR)/build
 JAR_DIR=$(ROOT_DIR)/jar
+RST_DOC_DIR=$(ROOT_DIR)/rst-doc
 
 #  Local Variables:
 #    coding:utf-8

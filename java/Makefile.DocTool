@@ -63,6 +63,9 @@ $(EXAMPLES_OBJ_DIR):
 $(JAR_DIR):
 	mkdir -p $@
 
+$(RST_DOC_DIR):
+	mkdir -p $@
+
 jar: $(JAR_OBJ)
 
 $(JAR_OBJ): $(JAR_DIR) $(JAVA_OBJ)
@@ -79,6 +82,9 @@ $(EXAMPLES_OBJ_DIR)/%.mon: $(EXAMPLES_SRC_DIR)/%.mon
 	cp -pf $< $@
 
 depend:
+
+doc: all $(RST_DOC_DIR)
+	cd $(RST_DOC_DIR) ; java -jar $(JAR_OBJ)
 
 run: all
 	cd $(JAR_DIR) ; java -jar $(JAR_OBJ)

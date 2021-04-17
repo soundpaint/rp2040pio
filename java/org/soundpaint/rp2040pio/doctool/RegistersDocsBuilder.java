@@ -24,7 +24,14 @@
  */
 package org.soundpaint.rp2040pio.doctool;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 
 /**
@@ -33,6 +40,16 @@ import org.soundpaint.rp2040pio.PIOEmuRegisters;
  */
 public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
 {
+  private static String fill(final char ch, final int length)
+  {
+    final StringBuilder s = new StringBuilder();
+    s.setLength(length);
+    for (int pos = 0; pos < length; pos++) {
+      s.setCharAt(pos, ch);
+    }
+    return s.toString();
+  }
+
   private static String csvEncode(final String raw)
   {
     final StringBuilder s = new StringBuilder();
@@ -54,33 +71,208 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     return s.toString();
   }
 
-  private String createDocs(final EnumSet<T> regs)
+  private static String formatBitsRange(final RegistersDocs.BitsInfo bitsInfo)
+  {
+    final int msb = bitsInfo.getMsb();
+    final int lsb = bitsInfo.getLsb();
+    if (msb == lsb)
+      return String.format("%d", msb);
+    return String.format("%d:%d", msb, lsb);
+  }
+
+  private static String formatName(final RegistersDocs.BitsInfo bitsInfo)
+  {
+    final String name = bitsInfo.getName();
+    if (bitsInfo.getType() == RegistersDocs.BitsType.RESERVED)
+      return "Reserved.";
+    if (name == null)
+      return "―";
+    return String.format(name);
+  }
+
+  private static String formatDescription(final RegistersDocs.BitsInfo bitsInfo,
+                                          final String defaultDescription)
+  {
+    final RegistersDocs.BitsType type = bitsInfo.getType();
+    final String bitsInfoDescription = bitsInfo.getDescription();
+    final String description;
+    if (bitsInfoDescription != null) {
+      description = bitsInfoDescription;
+    } else if (type == RegistersDocs.BitsType.RESERVED) {
+      description = "―";
+    } else if (defaultDescription != null) {
+      description = defaultDescription;
+    } else {
+      description = "―";
+    }
+    return csvEncode(description.replace("%n", " "));
+  }
+
+  private static String formatType(final RegistersDocs.BitsInfo bitsInfo)
+  {
+    final RegistersDocs.BitsType type = bitsInfo.getType();
+    return String.format("%s",
+                         type != RegistersDocs.BitsType.RESERVED ? type : "―");
+  }
+
+  private static String formatResetValue(final RegistersDocs.BitsInfo bitsInfo)
+  {
+    final Integer resetValue = bitsInfo.getResetValue();
+    if (resetValue == null)
+      return "―";
+    return String.format("%d", resetValue);
+  }
+
+  private String formatRegNames(final List<T> regsList)
+  {
+    final StringBuilder regNames = new StringBuilder();
+    for (final T reg : regsList) {
+      if (regNames.length() > 0) {
+        regNames.append(", ");
+      }
+      regNames.append(reg.toString());
+    }
+    return String.format("%s", regNames);
+  }
+
+  private String formatOffsets(final List<T> regsList)
+  {
+    final StringBuilder offsets = new StringBuilder();
+    boolean haveMultipleRegs = false;
+    for (final T reg : regsList) {
+      if (offsets.length() > 0) {
+        offsets.append(", ");
+        haveMultipleRegs = true;
+      }
+      offsets.append(String.format("0x%03x", reg.ordinal() << 2));
+    }
+    return String.format("%s: %s",
+                         haveMultipleRegs ? "Offsets" : "Offset",offsets);
+  }
+
+  private String createDetailTable(final String registersSetLabel,
+                                   final RegistersDocs.RegisterDetails
+                                   registerDetails,
+                                   final List<T> regsList)
   {
     final StringBuilder s = new StringBuilder();
-    s.append(String.format("List of Registers%n"));
-    s.append(String.format("=================%n"));
+    final String regNames = formatRegNames(regsList);
+    final String headLine =
+      String.format("%s: %s", registersSetLabel, regNames);
+    s.append(String.format("%s%n", headLine));
+    s.append(String.format("%s%n", fill('-', headLine.length())));
     s.append(String.format("%n"));
-    s.append(String.format(".. csv-table:: Headline"));
+    final String offsets = formatOffsets(regsList);
+    s.append(String.format("%s%n", offsets));
+    s.append(String.format("%n"));
+    s.append(String.format(".. csv-table:: %s%n", headLine));
+    s.append(String.format("   :header: Bits, Name, Description, Type, Reset%n"));
+    s.append(String.format("   :widths: 8, 20, 40, 8, 20%n"));
+    s.append(String.format("%n"));
+    final String defaultDescription = registerDetails.getInfo();
+    for (final T.BitsInfo bitsInfo : registerDetails.getBitsInfos()) {
+      final String bitsRange = formatBitsRange(bitsInfo);
+      final String name = formatName(bitsInfo);
+      final String description =
+        formatDescription(bitsInfo, defaultDescription);
+      final String type = formatType(bitsInfo);
+      final String reset = formatResetValue(bitsInfo);
+      s.append(String.format("   %s, %s, %s, %s, %s%n",
+                             bitsRange, name, description, type, reset));
+    }
+    s.append(String.format("%n"));
+    return s.toString();
+  }
+
+  private static final String leadinComment =
+    ".. # WARNING: This sphinx documentation file was automatically%n" +
+    ".. # created directly from documentation info the source code.%n" +
+    ".. # DO NOT CHANGE THIS FILE, since changes will be lost upon%n" +
+    ".. # its next update.%n" +
+    ".. # This file was automatically created on:%n" +
+    ".. # %s%n" +
+    "%n";
+
+  private String createDocs(final String registersSetLabel,
+                            final String registersSetDescription,
+                            final EnumSet<T> regs)
+  {
+    final Map<T.RegisterDetails, List<T>> registerDetails2regs
+      = new HashMap<T.RegisterDetails, List<T>>();
+
+    final StringBuilder s = new StringBuilder();
+    s.append(String.format(leadinComment, Instant.now()));
+
+    final String headLine =
+      String.format("%s: List of Registers", registersSetLabel);
+    s.append(String.format("%s%n", headLine));
+    s.append(String.format("%s%n", fill('=', headLine.length())));
+    s.append(String.format("%n"));
+    if (registersSetDescription != null) {
+      s.append(String.format(registersSetDescription));
+      s.append(String.format("%n"));
+      s.append(String.format("%n"));
+    }
+    s.append(String.format(".. csv-table:: %s%n", headLine));
     s.append(String.format("   :header: Offset, Name, Info%n"));
-    s.append(String.format("   :width: 8, 20, 30%n"));
+    s.append(String.format("   :widths: 8, 20, 40%n"));
     s.append(String.format("%n"));
     int address = 0x000;
     for (final T reg : regs) {
+      final T.RegisterDetails registerDetails = reg.getRegisterDetails();
+      final List<T> regsList;
+      if (registerDetails2regs.containsKey(registerDetails)) {
+        regsList = registerDetails2regs.get(registerDetails);
+      } else {
+        regsList = new ArrayList<T>();
+        registerDetails2regs.put(registerDetails, regsList);
+      }
+      regsList.add(reg);
       s.append(String.format("   0x%03x, %s, %s%n",
                              address, reg,
                              csvEncode(reg.getInfo().replace("%n", " "))));
       address += 0x004;
     }
     s.append(String.format("%n"));
+    for (final T.RegisterDetails registerDetails :
+           registerDetails2regs.keySet()) {
+      final List<T> regsList = registerDetails2regs.get(registerDetails);
+      s.append(createDetailTable(registersSetLabel, registerDetails, regsList));
+    }
     return s.toString();
+  }
+
+  private RegistersDocsBuilder()
+  {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public RegistersDocsBuilder(final Class<T> regsClass,
+                              final String registerSetLabel,
+                              final String registerSetDescription,
+                              final String rstFilePath)
+  {
+    try {
+      final String s =
+        createDocs(registerSetLabel, registerSetDescription,
+                   EnumSet.allOf(regsClass));
+      final FileWriter writer = new FileWriter(rstFilePath);
+      writer.write(s);
+      writer.close();
+    } catch (final IOException e) {
+      System.err.printf("failed creating documentation file %s: %s%n",
+                        rstFilePath, e.getMessage());
+      System.exit(-1);
+    }
   }
 
   public static void main(final String argv[])
   {
-    final String s =
-      new RegistersDocsBuilder<PIOEmuRegisters.Regs>().
-      createDocs(EnumSet.allOf(PIOEmuRegisters.Regs.class));
-    System.out.println(s);
+    new RegistersDocsBuilder<PIOEmuRegisters.Regs>
+      (PIOEmuRegisters.Regs.class,
+       PIOEmuRegisters.Regs.getRegisterSetLabel(),
+       PIOEmuRegisters.Regs.getRegisterSetDescription(),
+       "pio-emu-registers.rst");
   }
 }
 
