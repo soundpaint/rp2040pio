@@ -83,24 +83,26 @@ public class DocsBuilder
 
   public static final String leadinComment =
     ".. # WARNING: This sphinx documentation file was automatically%n" +
-    ".. # created directly from documentation info the source code.%n" +
+    ".. # created directly from documentation info in the source code.%n" +
     ".. # DO NOT CHANGE THIS FILE, since changes will be lost upon%n" +
-    ".. # its next update.%n" +
+    ".. # its next update.  Instead, change the info in the source code.%n" +
     ".. # This file was automatically created on:%n" +
     ".. # %s%n" +
     "%n";
 
   public static void writeToFile(final String rstFilePath,
                                  final String docs)
+    throws IOException
   {
     try {
       final FileWriter writer = new FileWriter(rstFilePath);
       writer.write(docs);
       writer.close();
     } catch (final IOException e) {
-      System.err.printf("failed creating documentation file %s: %s%n",
-                        rstFilePath, e.getMessage());
-      System.exit(-1);
+      final String message =
+        String.format("failed creating documentation file %s: %s%n",
+                      rstFilePath, e.getMessage());
+      throw new IOException(message, e);
     }
   }
 

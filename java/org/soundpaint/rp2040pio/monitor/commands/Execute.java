@@ -63,10 +63,13 @@ public class Execute extends Command
     "and then resuming execution or displays the currently excuted%n" +
     "instruction.  Immediate execution means execution during the next%n" +
     "clock cycle.%n" +
+    "%n" +
     "Options -p and -s select the state machine that this command%n" +
     "applies to.  Default is PIO0 and SM0.%n" +
+    "%n" +
     "If option -i is not specified, the instruction currently being%n" +
     "executed by the selected state machine will be displayed.%n" +
+    "%n" +
     "If option -i is specified, the specified instruction is written%n" +
     "for immediate execution.";
 

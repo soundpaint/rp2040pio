@@ -41,7 +41,8 @@ public class Label extends Command
 
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
-                                   "address of the register to display");
+                                   "address (0x00000000…0xffffffff) of the " +
+                                   "register to display");
 
   private final SDK sdk;
 

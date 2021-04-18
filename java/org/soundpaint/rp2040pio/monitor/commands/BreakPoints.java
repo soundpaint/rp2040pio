@@ -53,10 +53,12 @@ public class BreakPoints extends Command
                                    "SM number, one of 0, 1, 2 or 3");
   private static final CmdOptions.IntegerOptionDeclaration optAdd =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "add", null,
-                                   "add breakpoint at specified address ");
+                                   "add breakpoint at specified address " +
+                                   "(0x00…0x1f)");
   private static final CmdOptions.IntegerOptionDeclaration optDelete =
     CmdOptions.createIntegerOption("ADDRESS", false, 'd', "delete", null,
-                                   "remove breakpoint from specified address ");
+                                   "remove breakpoint from specified " +
+                                   "address (0x00…0x1f)");
 
   private final SDK sdk;
 

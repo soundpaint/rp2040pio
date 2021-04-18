@@ -78,7 +78,7 @@ public class Unassemble extends Command
                                    "SM number, one of 0, 1, 2 or 3");
   private static final CmdOptions.IntegerOptionDeclaration optStart =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", 0,
-                                   "start address");
+                                   "start address (0x00…0x1f)");
   private static final CmdOptions.IntegerOptionDeclaration optCount =
     CmdOptions.createIntegerOption("COUNT", false, 'c', "count",
                                    Constants.MEMORY_SIZE,

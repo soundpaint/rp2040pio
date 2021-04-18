@@ -44,6 +44,7 @@ public class Wrap extends Command
   private static final String notes =
     "Options -p and -s select the state machine that this command%n" +
     "applies to.  Default is PIO0 and SM0.%n" +
+    "%n" +
     "If none of the options -w, -t is specified, the currently%n" +
     "configured wrap and wrap target of the selected state machine will be%n" +
     "displayed.  If at least one of the options -w, -t is%n" +
@@ -58,10 +59,11 @@ public class Wrap extends Command
                                    "SM number, one of 0, 1, 2 or 3");
   private static final CmdOptions.IntegerOptionDeclaration optWrap =
     CmdOptions.createIntegerOption("ADDRESS", false, 'w', "wrap", null,
-                                   "wrap address (WRAP_TOP)");
+                                   "wrap (WRAP_TOP) address (0x00…0x1f)");
   private static final CmdOptions.IntegerOptionDeclaration optWrapTarget =
     CmdOptions.createIntegerOption("ADDRESS", false, 't', "target", null,
-                                   "wrap target address (WRAP_BOTTOM)");
+                                   "wrap target (WRAP_BOTTOM) address " +
+                                   "(0x00…0x1f)");
 
   private final SDK sdk;
 

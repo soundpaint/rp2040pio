@@ -160,6 +160,16 @@ public abstract class Command
     return notes;
   }
 
+  public String getUsage()
+  {
+    return options.getUsage();
+  }
+
+  public String getOptionsHelp()
+  {
+    return options.getOptionsHelp();
+  }
+
   public Iterator<CmdOptions.OptionDeclaration<?>>
     getOptionDeclarationsIterator()
   {

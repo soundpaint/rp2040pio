@@ -106,16 +106,12 @@ public class CmdOptions
 
     abstract OptionDefinition<T> define() throws ParseException;
 
-    private String getHelp()
+    private String getOptionHelp()
     {
-      final String ls = System.lineSeparator();
       final StringBuffer sb = new StringBuffer();
-      sb.append("  ");
-      sb.append(toString());
+      sb.append(String.format("  %s", this));
       if (description != null) {
-        sb.append(ls);
-        sb.append("            ");
-        sb.append(description);
+        sb.append(String.format("%n            %s", description));
       }
       return sb.toString();
     }
@@ -589,36 +585,34 @@ public class CmdOptions
 
   public String getUsage()
   {
-    return
-      "Usage: " + prgName + " [OPTION]...";
+    return prgName + " [OPTION]...";
   }
 
-  public String getHelp()
+  public String getOptionsHelp()
   {
-    final String ls = System.lineSeparator();
     final StringBuffer sb = new StringBuffer();
-    if (declarations.size() > 0) {
-      sb.append("Options:");
-      sb.append(ls);
-    }
     for (final OptionDeclaration<?> declaration : declarations) {
-      sb.append(declaration.getHelp());
-      sb.append(ls);
-    }
-    if (prgNotes != null) {
-      sb.append(String.format("%nNotes:%n" + prgNotes + "%n"));
+      sb.append(String.format("%s%n", declaration.getOptionHelp()));
     }
     return sb.toString();
   }
 
   public String getFullInfo()
   {
-    final String ls = System.lineSeparator();
-    final String help = getHelp();
-    return
-      getUsage() + ls + ls +
-      (prgSingleLineDescription != null ? prgSingleLineDescription + ls : "") +
-      (!help.isEmpty() ? ls + help : "");
+    final StringBuffer sb = new StringBuffer();
+    sb.append(String.format("Usage: %s%n%n", getUsage()));
+    if (prgSingleLineDescription != null) {
+      sb.append(String.format("%s%n", prgSingleLineDescription));
+    }
+    final String optionsHelp = getOptionsHelp();
+    if (!optionsHelp.isEmpty()) {
+      sb.append(String.format("Options:%n%n"));
+      sb.append(optionsHelp);
+    }
+    if (prgNotes != null) {
+      sb.append(String.format("%nNotes:%n" + prgNotes + "%n"));
+    }
+    return sb.toString();
   }
 
   private void checkShortNamesAreUnique()

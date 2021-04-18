@@ -57,7 +57,7 @@ public class Enter extends Command
                                    "PIO number, either 0 or 1");
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
-                                   "start address");
+                                   "start address (0x00…0x1f)");
   private static final CmdOptions.IntegerOptionDeclaration optValue =
     CmdOptions.createIntegerOption("NUMBER", false, 'v', "value", null,
                                    "instruction op-code");

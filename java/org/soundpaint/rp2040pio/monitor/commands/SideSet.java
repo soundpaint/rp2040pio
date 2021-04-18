@@ -44,6 +44,7 @@ public class SideSet extends Command
   private static final String notes =
     "Options -p and -s select the state machine that this command%n" +
     "applies to.  Default is PIO0 and SM0.%n" +
+    "%n" +
     "If none of the options -c, -b, ±o, ±d is specified, the currently%n" +
     "configured side-set of the selected state machine will be%n" +
     "displayed.  If at least one of the options -c, -b, ±o, ±d is%n" +

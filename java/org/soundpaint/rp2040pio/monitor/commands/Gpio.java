@@ -50,7 +50,7 @@ public class Gpio extends Command
 {
   private static final String fullName = "gpio";
   private static final String singleLineDescription =
-    "display status of GPIO pins";
+    "display or change status of GPIO pins";
   private static final String notes =
     "Each PIO has a set of local GPIO pins that, depending on the GPIO's%n" +
     "function selection settings, are propagated to the RP2040's GPIO%n" +

@@ -57,15 +57,63 @@ public class MonitorCommandsDocsBuilder
   {
     final StringBuilder s = new StringBuilder();
     final String commandName = command.getFullName();
+    s.append(String.format(".. _%s-command-label:%n", commandName));
+    s.append(String.format("%n"));
     s.append(String.format(commandName + "%n"));
     s.append(String.format(DocsBuilder.fill('-', commandName.length()) + "%n"));
     s.append(String.format("%n"));
-    s.append(command.getHelp());
+    s.append(String.format("**Usage**%n"));
+    s.append(String.format("^^^^^^^^^%n"));
+    s.append(String.format("%n%s%n%n", command.getUsage()));
+    s.append(String.format("**Description**%n"));
+    s.append(String.format("^^^^^^^^^^^^^^^%n"));
+    s.append(String.format("%n%s%n%n", command.getSingleLineDescription()));
+    final String optionsHelp = command.getOptionsHelp();
+    if (!optionsHelp.isEmpty()) {
+      s.append(String.format("**Options**%n"));
+      s.append(String.format("^^^^^^^^^^^%n"));
+      s.append(String.format("%n%s%n", optionsHelp));
+    }
+    final String notes = command.getNotes();
+    if ((notes != null) && !notes.isEmpty()) {
+      s.append(String.format("**Notes**%n"));
+      s.append(String.format("^^^^^^^^^%n"));
+      s.append(String.format("%n" + notes + "%n%n"));
+    }
+    s.append(String.format(":ref:`Back to Overview <commands-overview>`%n"));
     s.append(String.format("%n"));
     return s.toString();
   }
 
-  private String createDocs()
+  private String createCommandsOverview(final CommandRegistry commandRegistry)
+  {
+    final StringBuilder s = new StringBuilder();
+    s.append(String.format(".. _commands-overview:%n"));
+    s.append(String.format("%n"));
+    s.append(String.format("Overview%n"));
+    s.append(String.format("--------%n"));
+    s.append(String.format("%n"));
+    s.append(String.format("The monitor supports all of the commands%n"));
+    s.append(String.format("listed below.%n"));
+    s.append(String.format("%n"));
+    s.append(String.format(".. csv-table::%n"));
+    s.append(String.format("   :header: Command, Short Description%n"));
+    s.append(String.format("   :widths: 20, 80%n"));
+    s.append(String.format("%n"));
+    for (final Command command : commandRegistry) {
+      final String commandName = command.getFullName();
+      final String commandRef =
+        String.format(":ref:`%s <%s-command-label>`", commandName, commandName);
+      final String commandDescription = command.getSingleLineDescription();
+      s.append(String.format("   %s,%s%n",
+                             DocsBuilder.csvEncode(commandRef),
+                             DocsBuilder.csvEncode(commandDescription)));
+    }
+    s.append(String.format("%n"));
+    return s.toString();
+  }
+
+  private String createDocs() throws IOException
   {
     final StringBuilder s = new StringBuilder();
     s.append(String.format(DocsBuilder.leadinComment, Instant.now()));
@@ -80,21 +128,13 @@ public class MonitorCommandsDocsBuilder
     s.append(String.format("%n"));
     final PrintStream console = System.out;
     final Registers registers;
-    try {
-      registers = new RegisterClient(console);
-    } catch (final IOException e) {
-      final String message =
-        String.format("failed creating monitor commands documentation: %s%n",
-                      e.getMessage());
-      System.err.printf(message);
-      System.exit(-1);
-      throw new InternalError(message);
-    }
+    registers = new RegisterClient(console);
     final BufferedReader in =
       new BufferedReader(new InputStreamReader(System.in));
     final SDK sdk = new SDK(console, registers);
     final CommandRegistry commandRegistry =
       new CommandRegistry(console, in, sdk);
+    s.append(createCommandsOverview(commandRegistry));
     for (final Command command : commandRegistry) {
       s.append(createCommandDocs(command));
     }
@@ -102,6 +142,7 @@ public class MonitorCommandsDocsBuilder
   }
 
   public MonitorCommandsDocsBuilder(final String rstFilePath)
+    throws IOException
   {
     final String docs = createDocs();
     DocsBuilder.writeToFile(rstFilePath, docs);
@@ -109,7 +150,15 @@ public class MonitorCommandsDocsBuilder
 
   public static void main(final String argv[])
   {
-    new MonitorCommandsDocsBuilder("monitor-commands.rst");
+    try {
+      new MonitorCommandsDocsBuilder("monitor-commands.rst");
+    } catch (final IOException e) {
+      final String message =
+        String.format("failed creating monitor commands documentation: %s%n",
+                      e.getMessage());
+      System.err.printf(message);
+      System.exit(-1);
+    }
   }
 }
 

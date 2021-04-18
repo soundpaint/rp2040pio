@@ -61,7 +61,8 @@ public class Fifo extends Command
                                    "SM number, one of 0, 1, 2 or 3");
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
-                                   "FIFO memory address to write value into");
+                                   "FIFO memory address (0x0…0x7) to write " +
+                                   "value into");
   private static final CmdOptions.IntegerOptionDeclaration optValue =
     CmdOptions.createIntegerOption("VALUE", false, 'v', "value", null,
                                    "value to write into FIFO memory");

@@ -46,7 +46,8 @@ public class Wait extends Command
 
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
-                                   "address of the register to observe");
+                                   "address (0x00000000…0xffffffff) of the " +
+                                   "register to observe");
   private static final CmdOptions.IntegerOptionDeclaration optExpectedValue =
     CmdOptions.createIntegerOption("VALUE", false, 'v', "value", null,
                                    "expected value to match");

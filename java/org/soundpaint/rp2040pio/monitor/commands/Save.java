@@ -48,14 +48,18 @@ public class Save extends Command
     "The file is written as a text file, with each instruction%n" +
     "added as a line consisting of its operation code represented%n" +
     "as hexadecimal 32 bit integer value (without \"0x\" prefix).%n" +
+    "%n" +
     "If the specified stop address is lower than start address, then%n" +
     "the program is assumed to wrap from the highest memory address to%n" +
     "the first memory address.  Any configuration of a SM specific wrap%n" +
     "or wrap target is ignored.%n" +
+    "%n" +
     "If the file is specified to be not relocatable, a proper%n" +
     "\".origin\" directive will be added as a comment line.%n" +
+    "%n" +
     "If a program name is provided, it will be added as a%n" +
     "\".program\" directive in a separate comment line.%n" +
+    "%n" +
     "Comment lines start with the hash symbol \"#\".";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
@@ -63,10 +67,11 @@ public class Save extends Command
                                    "PIO number, either 0 or 1");
   private static final CmdOptions.IntegerOptionDeclaration optStart =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "start", null,
-                                   "first address of the program");
+                                   "first address (0x00…0x1f) of the program");
   private static final CmdOptions.IntegerOptionDeclaration optStop =
     CmdOptions.createIntegerOption("ADDRESS", false, 's', "stop", null,
-                                   "last address (inclusive) of the program");
+                                   "last address (0x00…0x1f, inclusive) of "+
+                                   "the program");
   private static final CmdOptions.StringOptionDeclaration optFile =
     CmdOptions.createStringOption("PATH", false, 'f', "file", null,
                                   "path of file to write");

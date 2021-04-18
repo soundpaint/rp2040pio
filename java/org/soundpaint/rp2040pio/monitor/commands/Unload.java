@@ -88,7 +88,8 @@ public class Unload extends Command
                                   "path of hex dump file to unload");
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
-                                   "start address of the area to free");
+                                   "start address (0x00…0x1f) of the area " +
+                                   "to free");
 
   public Unload(final PrintStream console, final SDK sdk)
   {

@@ -99,7 +99,8 @@ public class Load extends Command
                                   "path of hex dump file to load");
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
-                                   "preferred program start address");
+                                   "preferred program start address " +
+                                   "(0x00…0x1f)");
 
   public Load(final PrintStream console, final SDK sdk)
   {

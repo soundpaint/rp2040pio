@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio.doctool;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -282,6 +283,7 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
                               final String registerSetLabel,
                               final String registerSetDescription,
                               final String rstFilePath)
+    throws IOException
   {
     final String docs =
       createDocs(registerSetLabel, registerSetDescription,
@@ -291,16 +293,24 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
 
   public static void main(final String argv[])
   {
-    new RegistersDocsBuilder<PicoEmuRegisters.Regs>
-      (PicoEmuRegisters.Regs.class,
-       PicoEmuRegisters.Regs.getRegisterSetLabel(),
-       PicoEmuRegisters.Regs.getRegisterSetDescription(),
-       "pico-emu-registers.rst");
-    new RegistersDocsBuilder<PIOEmuRegisters.Regs>
-      (PIOEmuRegisters.Regs.class,
-       PIOEmuRegisters.Regs.getRegisterSetLabel(),
-       PIOEmuRegisters.Regs.getRegisterSetDescription(),
-       "pio-emu-registers.rst");
+    try {
+      new RegistersDocsBuilder<PicoEmuRegisters.Regs>
+        (PicoEmuRegisters.Regs.class,
+         PicoEmuRegisters.Regs.getRegisterSetLabel(),
+         PicoEmuRegisters.Regs.getRegisterSetDescription(),
+         "pico-emu-registers.rst");
+      new RegistersDocsBuilder<PIOEmuRegisters.Regs>
+        (PIOEmuRegisters.Regs.class,
+         PIOEmuRegisters.Regs.getRegisterSetLabel(),
+         PIOEmuRegisters.Regs.getRegisterSetDescription(),
+         "pio-emu-registers.rst");
+    } catch (final IOException e) {
+      final String message =
+        String.format("failed creating registers documentation: %s%n",
+                      e.getMessage());
+      System.err.printf(message);
+      System.exit(-1);
+    }
   }
 }
 

@@ -42,7 +42,8 @@ public class Read extends Command
 
   private static final CmdOptions.IntegerOptionDeclaration optAddress =
     CmdOptions.createIntegerOption("ADDRESS", false, 'a', "address", null,
-                                   "address of the register to access");
+                                   "address (0x00000000…0xffffffff) of the " +
+                                   "register to access");
 
   private final SDK sdk;
 

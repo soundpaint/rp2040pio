@@ -41,7 +41,7 @@ public class Enable extends Command
 {
   private static final String fullName = "enable";
   private static final String singleLineDescription =
-    "enabled or disable state machine(s) or show if enabled";
+    "enable or disable state machine(s) or show if enabled";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", null,
