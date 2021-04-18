@@ -24,8 +24,6 @@
  */
 package org.soundpaint.rp2040pio.doctool;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -41,54 +39,6 @@ import org.soundpaint.rp2040pio.PIOEmuRegisters;
  */
 public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
 {
-  private static String fill(final char ch, final int length)
-  {
-    final StringBuilder s = new StringBuilder();
-    s.setLength(length);
-    for (int pos = 0; pos < length; pos++) {
-      s.setCharAt(pos, ch);
-    }
-    return s.toString();
-  }
-
-  private static String csvEncode(final String raw)
-  {
-    final StringBuilder s = new StringBuilder();
-    s.append("\"");
-    boolean escaped = false;
-    for (final char ch : raw.toCharArray()) {
-      if (escaped) {
-        s.append(ch);
-        escaped = false;
-      } else if (ch == '\\') {
-        escaped = true;
-      } else if (ch == '"') {
-        s.append("\\\"");
-      } else {
-        s.append(ch);
-      }
-    }
-    s.append("\"");
-    return s.toString();
-  }
-
-  /**
-   * Replaces all characters that could have special meaning for
-   * Sphinx.
-   */
-  private static String createIdFromLabel(final String registersSetLabel)
-  {
-    return
-      registersSetLabel
-      .trim()
-      .toLowerCase()
-      .replace(" ", "_")
-      .replace("\"", "")
-      .replace("'", "")
-      .replace("`", "")
-      .replace(":", "");
-  }
-
   private static String formatBitsRange(final RegistersDocs.BitsInfo bitsInfo)
   {
     final int msb = bitsInfo.getMsb();
@@ -145,7 +95,7 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     } else {
       description = "―";
     }
-    return csvEncode(description.replace("%n", " "));
+    return DocsBuilder.csvEncode(description.replace("%n", " "));
   }
 
   private static String formatType(final RegistersDocs.BitsInfo bitsInfo)
@@ -211,12 +161,13 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     final StringBuilder s = new StringBuilder();
     s.append(createDetailTableLabels(regsList));
     final String regNames = formatRegNames(regsList);
-    final String registersSetId = createIdFromLabel(registersSetLabel);
+    final String registersSetId =
+      DocsBuilder.createIdFromLabel(registersSetLabel);
     final String headLine =
       String.format(":ref:`%s <section-top_%s>`: %s",
                     registersSetLabel, registersSetId, regNames);
     s.append(String.format("%s%n", headLine));
-    s.append(String.format("%s%n", fill('-', headLine.length())));
+    s.append(String.format("%s%n", DocsBuilder.fill('-', headLine.length())));
     s.append(String.format("%n"));
     final String offsets = formatOffsets(regsList);
     s.append(String.format("%s%n", offsets));
@@ -260,16 +211,19 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
                                      registerDetails2regs)
   {
     final StringBuilder s = new StringBuilder();
-    final String registersSetId = createIdFromLabel(registersSetLabel);
+    final String registersSetId =
+      DocsBuilder.createIdFromLabel(registersSetLabel);
     s.append(String.format(".. _section-top_%s:%n", registersSetId));
     s.append(String.format("%n"));
     final String sectionHeader = String.format("%s", registersSetLabel);
     s.append(String.format("%s%n", sectionHeader));
-    s.append(String.format("%s%n", fill('=', sectionHeader.length())));
+    s.append(String.format("%s%n",
+                           DocsBuilder.fill('=', sectionHeader.length())));
     s.append(String.format("%n"));
     final String overviewTableHeader = "List of Registers";
     s.append(String.format("%s%n", overviewTableHeader));
-    s.append(String.format("%s%n", fill('-', overviewTableHeader.length())));
+    s.append(String.format("%s%n",
+                           DocsBuilder.fill('-', overviewTableHeader.length())));
     s.append(String.format("%n"));
     if (registersSetDescription != null) {
       s.append(String.format(registersSetDescription));
@@ -293,21 +247,13 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
       regsList.add(reg);
       s.append(String.format("   0x%03x, %s, %s%n",
                              address, createDetailTableRef(reg),
-                             csvEncode(reg.getInfo().replace("%n", " "))));
+                             DocsBuilder.csvEncode(reg.getInfo().
+                                                   replace("%n", " "))));
       address += 0x004;
     }
     s.append(String.format("%n"));
     return s.toString();
   }
-
-  private static final String leadinComment =
-    ".. # WARNING: This sphinx documentation file was automatically%n" +
-    ".. # created directly from documentation info the source code.%n" +
-    ".. # DO NOT CHANGE THIS FILE, since changes will be lost upon%n" +
-    ".. # its next update.%n" +
-    ".. # This file was automatically created on:%n" +
-    ".. # %s%n" +
-    "%n";
 
   private String createDocs(final String registersSetLabel,
                             final String registersSetDescription,
@@ -316,7 +262,7 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     final Map<T.RegisterDetails, List<T>> registerDetails2regs
       = new LinkedHashMap<T.RegisterDetails, List<T>>();
     final StringBuilder s = new StringBuilder();
-    s.append(String.format(leadinComment, Instant.now()));
+    s.append(String.format(DocsBuilder.leadinComment, Instant.now()));
     s.append(createOverviewTable(registersSetLabel, registersSetDescription,
                                  regs, registerDetails2regs));
     for (final T.RegisterDetails registerDetails :
@@ -337,18 +283,10 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
                               final String registerSetDescription,
                               final String rstFilePath)
   {
-    try {
-      final String s =
-        createDocs(registerSetLabel, registerSetDescription,
-                   EnumSet.allOf(regsClass));
-      final FileWriter writer = new FileWriter(rstFilePath);
-      writer.write(s);
-      writer.close();
-    } catch (final IOException e) {
-      System.err.printf("failed creating documentation file %s: %s%n",
-                        rstFilePath, e.getMessage());
-      System.exit(-1);
-    }
+    final String docs =
+      createDocs(registerSetLabel, registerSetDescription,
+                 EnumSet.allOf(regsClass));
+    DocsBuilder.writeToFile(rstFilePath, docs);
   }
 
   public static void main(final String argv[])

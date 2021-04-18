@@ -616,7 +616,7 @@ public class CmdOptions
     final String ls = System.lineSeparator();
     final String help = getHelp();
     return
-      getUsage() + ls +
+      getUsage() + ls + ls +
       (prgSingleLineDescription != null ? prgSingleLineDescription + ls : "") +
       (!help.isEmpty() ? ls + help : "");
   }

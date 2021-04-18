@@ -36,29 +36,6 @@ import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.RegisterClient;
-import org.soundpaint.rp2040pio.monitor.commands.BreakPoints;
-import org.soundpaint.rp2040pio.monitor.commands.Enable;
-import org.soundpaint.rp2040pio.monitor.commands.Enter;
-import org.soundpaint.rp2040pio.monitor.commands.Execute;
-import org.soundpaint.rp2040pio.monitor.commands.Fifo;
-import org.soundpaint.rp2040pio.monitor.commands.Gpio;
-import org.soundpaint.rp2040pio.monitor.commands.Help;
-import org.soundpaint.rp2040pio.monitor.commands.Label;
-import org.soundpaint.rp2040pio.monitor.commands.Load;
-import org.soundpaint.rp2040pio.monitor.commands.Quit;
-import org.soundpaint.rp2040pio.monitor.commands.Read;
-import org.soundpaint.rp2040pio.monitor.commands.Registers;
-import org.soundpaint.rp2040pio.monitor.commands.Reset;
-import org.soundpaint.rp2040pio.monitor.commands.Save;
-import org.soundpaint.rp2040pio.monitor.commands.Script;
-import org.soundpaint.rp2040pio.monitor.commands.SideSet;
-import org.soundpaint.rp2040pio.monitor.commands.Trace;
-import org.soundpaint.rp2040pio.monitor.commands.Unassemble;
-import org.soundpaint.rp2040pio.monitor.commands.Unload;
-import org.soundpaint.rp2040pio.monitor.commands.Version;
-import org.soundpaint.rp2040pio.monitor.commands.Wait;
-import org.soundpaint.rp2040pio.monitor.commands.Wrap;
-import org.soundpaint.rp2040pio.monitor.commands.Write;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.Panic;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
@@ -124,44 +101,13 @@ public class Monitor
       sdk = new SDK(console, connect());
       pioSdk = sdk.getPIO0SDK();
       gpioSdk = sdk.getGPIOSDK();
-      commands = installCommands();
+      commands = new CommandRegistry(console, in, sdk);
     } else {
       sdk = null;
       pioSdk = null;
       gpioSdk = null;
       commands = null;
     }
-  }
-
-  private CommandRegistry installCommands()
-  {
-    final CommandRegistry commands = new CommandRegistry(console);
-    final Command quit;
-    commands.add(new BreakPoints(console, sdk));
-    commands.add(new Enable(console, sdk));
-    commands.add(new Enter(console, sdk, in));
-    commands.add(new Execute(console, sdk));
-    commands.add(new Fifo(console, sdk));
-    commands.add(new Gpio(console, sdk));
-    commands.add(new Help(console, commands));
-    commands.add(new Label(console, sdk));
-    commands.add(new Load(console, sdk));
-    commands.add(quit = new Quit(console));
-    commands.add(new Read(console, sdk));
-    commands.add(new Registers(console, sdk));
-    commands.add(new Reset(console, sdk));
-    commands.add(new Save(console, sdk));
-    commands.add(new Script(console, commands));
-    commands.add(new SideSet(console, sdk));
-    commands.add(new Trace(console, sdk));
-    commands.add(new Unassemble(console, sdk));
-    commands.add(new Unload(console, sdk));
-    commands.add(new Version(console, sdk));
-    commands.add(new Wait(console, sdk));
-    commands.add(new Wrap(console, sdk));
-    commands.add(new Write(console, sdk));
-    commands.setQuitCommand(quit);
-    return commands;
   }
 
   private CmdOptions parseArgs(final String argv[]) throws IOException
