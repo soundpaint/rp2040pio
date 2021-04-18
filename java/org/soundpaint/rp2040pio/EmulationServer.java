@@ -107,7 +107,7 @@ public class EmulationServer
     final int port = options.getValue(optPort);
     if ((port < 0) || (port > 65535)) {
       throw new CmdOptions.
-        ParseException("PORT must be in the range 0..65535");
+        ParseException("PORT must be in the range 0…65535");
     }
     if ((options.getValue(optSilent) == CmdOptions.Flag.ON) &&
         (options.getValue(optVerbose) == CmdOptions.Flag.ON)) {

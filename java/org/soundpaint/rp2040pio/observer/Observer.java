@@ -122,7 +122,7 @@ public class Observer
     final int port = options.getValue(optPort);
     if ((port < 0) || (port > 65535)) {
       throw new CmdOptions.
-        ParseException("PORT must be in the range 0..65535", optPort);
+        ParseException("PORT must be in the range 0…65535", optPort);
     }
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
       if (!options.isDefined(optAddress)) {
@@ -147,7 +147,7 @@ public class Observer
   {
     final int port = options.getValue(optPort);
     try {
-      console.printf("connecting to emulation server at port %d...%n", port);
+      console.printf("connecting to emulation server at port %d…%n", port);
       return new RegisterClient(console, port);
     } catch (final IOException e) {
       console.println("failed to connect to emulation server: " +

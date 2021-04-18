@@ -45,7 +45,7 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * TODO: Ellipsis, see e.g. Fig. 55.
  *
  * TODO: Labelled external data via GPIO or DMA (e.g. data bits "D0",
- * "D1", "D2", ...).
+ * "D1", "D2", …).
  *
  * Syntax:
  * CLK=SIGNAL

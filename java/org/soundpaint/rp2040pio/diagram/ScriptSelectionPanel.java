@@ -152,7 +152,7 @@ public class ScriptSelectionPanel extends Box
                              final InputStream in,
                              final PrintStream console)
   {
-    console.printf("%s: executing...%n", scriptId);
+    console.printf("%s: executing…%n", scriptId);
     final int exitCode = Monitor.main(new String[0], in, console, true);
     final String message;
     final String title;

@@ -56,7 +56,7 @@ public class GPIO implements Constants
   private final PIO pio0;
   private final PIO pio1;
   private final Terminal[] terminals;
-  private int regINPUT_SYNC_BYPASS; // bits 0..31 of INPUT_SYNC_BYPASS
+  private int regINPUT_SYNC_BYPASS; // bits 0…31 of INPUT_SYNC_BYPASS
                                     // (contents currently ignored)
 
   private GPIO()

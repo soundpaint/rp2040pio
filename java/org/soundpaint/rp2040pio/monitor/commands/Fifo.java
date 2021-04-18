@@ -112,7 +112,7 @@ public class Fifo extends Command
         final int address = optAddressValue;
         if ((address < 0) || (address > (Constants.FIFO_DEPTH << 1) - 1)) {
           final String message =
-            String.format("expected address value in the range 0...%d, " +
+            String.format("expected address value in the range 0…%d, " +
                           "but got: %d",
                           (Constants.FIFO_DEPTH << 1) - 1, address);
           throw new CmdOptions.ParseException(message);

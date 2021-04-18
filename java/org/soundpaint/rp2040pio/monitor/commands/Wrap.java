@@ -98,7 +98,7 @@ public class Wrap extends Command
         final int wrap = optWrapValue;
         if ((wrap < 0) || (wrap > Constants.MEMORY_SIZE - 1)) {
           final String message =
-            String.format("wrap address must be in the range 0..%d",
+            String.format("wrap address must be in the range 0x00…0x%02x",
                           Constants.MEMORY_SIZE - 1);
           throw new CmdOptions.ParseException(message);
         }
@@ -108,7 +108,8 @@ public class Wrap extends Command
         final int wrapTarget = optWrapTargetValue;
         if ((wrapTarget < 0) || (wrapTarget > Constants.MEMORY_SIZE - 1)) {
           final String message =
-            String.format("wrap target address must be in the range 0..%d",
+            String.format("wrap target address must be in the range " +
+                          "0x00…0x%02x",
                           Constants.MEMORY_SIZE - 1);
           throw new CmdOptions.ParseException(message);
         }

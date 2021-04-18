@@ -60,10 +60,10 @@ public class SideSet extends Command
   private static final CmdOptions.IntegerOptionDeclaration optCount =
     CmdOptions.createIntegerOption("COUNT", false, 'c', "count", null,
                                    "number of side-set bits to be " +
-                                   "used (0...5)");
+                                   "used (0…5)");
   private static final CmdOptions.IntegerOptionDeclaration optBase =
     CmdOptions.createIntegerOption("NUMBER", false, 'b', "base", null,
-                                   "base GPIO pin (0...31) number "+
+                                   "base GPIO pin (0…31) number "+
                                    "of side-set");
   protected static final CmdOptions.BooleanOptionDeclaration optOpt =
     CmdOptions.createBooleanOption(false, 'o', "opt", null,
@@ -107,7 +107,7 @@ public class SideSet extends Command
         final int count = optCountValue;
         if ((count < 0) || (count > 5)) {
           throw new CmdOptions.
-            ParseException("count must be in the range 0..5");
+            ParseException("count must be in the range 0…5");
         }
       }
       final Integer optBaseValue = options.getValue(optBase);
@@ -115,7 +115,7 @@ public class SideSet extends Command
         final int base = optBaseValue;
         if ((base < 0) || (base > 31)) {
           throw new CmdOptions.
-            ParseException("base must be in the range 0..31");
+            ParseException("base must be in the range 0…31");
         }
       }
     }

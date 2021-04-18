@@ -97,31 +97,31 @@ public class SM implements Constants
     public int pendingDelay;
     public int pendingDMAInstruction;
     public int pendingExecInstruction;
-    public int regADDR; // bits 0..4 of SMx_ADDR
+    public int regADDR; // bits 0…4 of SMx_ADDR
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
     public PIO.PinDir regEXECCTRL_SIDE_PINDIR; // bit 29 of SMx_EXECCTRL
-    public int regEXECCTRL_JMP_PIN; // bits 24..28 of SMx_EXECCTRL
-    public int regEXECCTRL_WRAP_TOP; // bits 12..16 of SMx_EXECCTRL
-    public int regEXECCTRL_WRAP_BOTTOM; // bits 7..11 of SMx_EXECCTRL
+    public int regEXECCTRL_JMP_PIN; // bits 24…28 of SMx_EXECCTRL
+    public int regEXECCTRL_WRAP_TOP; // bits 12…16 of SMx_EXECCTRL
+    public int regEXECCTRL_WRAP_BOTTOM; // bits 7…11 of SMx_EXECCTRL
     public boolean regEXECCTRL_STATUS_SEL; // bit 4 of SMx_EXECCTRL
-    public int regEXECCTRL_STATUS_N; // bits 0..3 of SMx_EXECCTRL
-    public int regSHIFTCTRL_PULL_THRESH; // bits 25..29 of SMx_SHIFTCTRL
-    public int regSHIFTCTRL_PUSH_THRESH; // bits 20..24 of SMx_SHIFTCTRL
+    public int regEXECCTRL_STATUS_N; // bits 0…3 of SMx_EXECCTRL
+    public int regSHIFTCTRL_PULL_THRESH; // bits 25…29 of SMx_SHIFTCTRL
+    public int regSHIFTCTRL_PUSH_THRESH; // bits 20…24 of SMx_SHIFTCTRL
     public PIO.ShiftDir regSHIFTCTRL_IN_SHIFTDIR; // bit 18 of SMx_SHIFTCTRL
     public boolean regSHIFTCTRL_AUTOPULL; // bit 17 of SMx_SHIFTCTRL
     public PIO.ShiftDir regSHIFTCTRL_OUT_SHIFTDIR; // bit 19 of SMx_SHIFTCTRL
     public boolean regSHIFTCTRL_AUTOPUSH; // bit 16 of SMx_SHIFTCTRL
-    public int regPINCTRL_SIDESET_COUNT; // bits 29..31 of SMx_PINCTRL
-    public int regPINCTRL_SET_COUNT; // bits 26..28 of SMx_PINCTRL
-    public int regPINCTRL_OUT_COUNT; // bits 20..25 of SMx_PINCTRL
-    public int regPINCTRL_IN_BASE; // bits 15..19 of SMx_PINCTRL
-    public int regPINCTRL_SIDESET_BASE; // bits 10..14 of SMx_PINCTRL
-    public int regPINCTRL_SET_BASE; // bits 5..9 of SMx_PINCTRL
-    public int regPINCTRL_OUT_BASE; // bits 0..4 of SMx_PINCTRL
+    public int regPINCTRL_SIDESET_COUNT; // bits 29…31 of SMx_PINCTRL
+    public int regPINCTRL_SET_COUNT; // bits 26…28 of SMx_PINCTRL
+    public int regPINCTRL_OUT_COUNT; // bits 20…25 of SMx_PINCTRL
+    public int regPINCTRL_IN_BASE; // bits 15…19 of SMx_PINCTRL
+    public int regPINCTRL_SIDESET_BASE; // bits 10…14 of SMx_PINCTRL
+    public int regPINCTRL_SET_BASE; // bits 5…9 of SMx_PINCTRL
+    public int regPINCTRL_OUT_BASE; // bits 0…4 of SMx_PINCTRL
 
     // PIOEmuRegisters Status
-    public int regBREAKPOINTS; // bits 0..31 of SMx_BREAKPOINTS
-    public int regTRACEPOINTS; // bits 0..31 of SMx_TRACEPOINTS
+    public int regBREAKPOINTS; // bits 0…31 of SMx_BREAKPOINTS
+    public int regTRACEPOINTS; // bits 0…31 of SMx_TRACEPOINTS
 
     public Status()
     {
@@ -948,10 +948,10 @@ public class SM implements Constants
     }
     status.resultState = instruction.execute(this);
     if (status.resultState == Instruction.ResultState.COMPLETE) {
-      // Sect. 3.4.2.2: "Delay cycles ... take place after ... the
-      // program counter is updated" (though this specifically refers
-      // to JMP instruction). => Update PC immediately, before
-      // executing delay.
+      // Sect. 3.4.2.2: "Delay cycles … take place after … the program
+      // counter is updated" (though this specifically refers to JMP
+      // instruction). => Update PC immediately, before executing
+      // delay.
       updatePC();
     }
     if (status.resultState != Instruction.ResultState.STALL) {

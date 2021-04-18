@@ -393,10 +393,10 @@ public class PIOSDK implements Constants
 
   /**
    * Tries to allocate memory for the specified allocation mask and
-   * origin.  Returns address (0..31) where the allocation is
+   * origin.  Returns address (0…31) where the allocation is
    * performed.
-   * @param allocationMask Bit mask of instruction addresses (0..31)
-   * to allocate.
+   * @param allocationMask Bit mask of instruction addresses (0…31) to
+   * allocate.
    * @param origin Address where to allocate, or -1, if any address is
    * acceptable.
    * @param checkOnly If true, allocation is only checked for, but not

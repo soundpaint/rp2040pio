@@ -75,7 +75,7 @@ public class Gpio extends Command
                                    "PIO number, either 0 or 1 or undefined");
   private static final CmdOptions.IntegerOptionDeclaration optGpio =
     CmdOptions.createIntegerOption("NUMBER", false, 'g', "gpio", null,
-                                   "number of GPIO pin (0..31)");
+                                   "number of GPIO pin (0…31)");
   private static final CmdOptions.FlagOptionDeclaration optInit =
     CmdOptions.createFlagOption(false, 'i', "init", CmdOptions.Flag.OFF,
                                 "initialize GPIO pin for use with the " +
@@ -125,7 +125,7 @@ public class Gpio extends Command
         final int gpioNum = options.getValue(optGpio);
         if ((gpioNum < 0) || (gpioNum > Constants.GPIO_NUM - 1)) {
           final String message =
-            String.format("GPIO number must be in the range 0x00..0x%02x",
+            String.format("GPIO number must be in the range 0x00…0x%02x",
                           Constants.GPIO_NUM - 1);
           throw new CmdOptions.ParseException(message);
         }

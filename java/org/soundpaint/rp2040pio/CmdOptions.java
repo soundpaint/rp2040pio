@@ -585,7 +585,7 @@ public class CmdOptions
 
   public String getUsage()
   {
-    return prgName + " [OPTION]...";
+    return prgName + " [OPTION]…";
   }
 
   public String getOptionsHelp()

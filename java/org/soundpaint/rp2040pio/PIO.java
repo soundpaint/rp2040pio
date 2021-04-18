@@ -41,7 +41,7 @@ public class PIO implements Constants, Clock.TransitionListener
   private final Memory memory;
   private final IRQ irq;
   private final SM[] sms;
-  private int smEnabled; // bits 0..3 of CTRL_SM_ENABLE
+  private int smEnabled; // bits 0…3 of CTRL_SM_ENABLE
 
   public enum PinDir {
     GPIO_LEVELS(0, "levels"),

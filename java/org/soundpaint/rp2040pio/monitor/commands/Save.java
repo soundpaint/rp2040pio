@@ -140,7 +140,7 @@ public class Save extends Command
     out.printf("# ; by Monitor Control Program %s%n",
                Constants.getProgramAndVersion());
     if (name != null) {
-      // TODO: Escape program name ("\r", "\n", "\"", ...)?
+      // TODO: Escape program name ("\r", "\n", "\"", …)?
       out.printf("# .program %s%n", name);
     }
     if (!relocatable) {

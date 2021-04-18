@@ -32,8 +32,8 @@ import java.util.List;
  */
 public class PLL implements Clock.TransitionListener
 {
-  private int regCLKDIV_INT; // bits 16..31 of SMx_CLKDIV
-  private int regCLKDIV_FRAC; // bits 8..15 of SMx_CLKDIV
+  private int regCLKDIV_INT; // bits 16…31 of SMx_CLKDIV
+  private int regCLKDIV_FRAC; // bits 8…15 of SMx_CLKDIV
   private int countIntegerBits;
   private int countFractionalBits;
   private boolean clockEnable;
@@ -109,7 +109,7 @@ public class PLL implements Clock.TransitionListener
   {
     /*
      * TODO: Clarify: Sect. 3.5.5. "Clock Dividers", Fig. 46: "clock
-     * divider ... emits an enable pulse when it reaches 1"
+     * divider … emits an enable pulse when it reaches 1"
      *
      * -- Really "1", not "0"?
      */

@@ -52,7 +52,7 @@ public class Program implements Constants
 
   /**
    * @param origin Either the fixed origin of the program (values
-   * 0..31), or -1, if the program is relocatable, such that it does
+   * 0…31), or -1, if the program is relocatable, such that it does
    * not matter where it will be loaded into memory.
    * @param instructions Array with all instructions of the program.
    * If the array is null or the length of the array is greater than
@@ -150,7 +150,7 @@ public class Program implements Constants
 
   /**
    * @return The origin of the program.  Either a fixed values in the
-   * range 0..31, or -1, if the program is relocatable, such that it
+   * range 0…31, or -1, if the program is relocatable, such that it
    * does not matter where it will be loaded into memory.
    */
   public int getOrigin()

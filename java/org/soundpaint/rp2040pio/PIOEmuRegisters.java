@@ -104,7 +104,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                       new BitsInfo[] {
                         new BitsInfo(31, 5, null, null, BitsType.RESERVED, null),
                         new BitsInfo(4, 0, "PENDING_DELAY",
-                                     "number (0..0x1f) of pending delays%n" +
+                                     "number (0x00…0x1f) of pending delays%n" +
                                      "of the currently executed instruction",
                                      BitsType.RO, 0)
                       }),
