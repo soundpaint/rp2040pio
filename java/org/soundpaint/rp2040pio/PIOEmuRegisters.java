@@ -263,7 +263,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
 
     public static String getRegisterSetLabel()
     {
-      return "Additional PIO Registers";
+      return "Emulator PIO Registers";
     }
 
     public static String getRegisterSetDescription()
@@ -275,7 +275,8 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
         "such as its scratch registers X and Y, its shift registers%n" +
         "ISR, OSR, FIFO memory, and read access to PIO instruction%n" +
         "memory for enhanced debugging of programs.%n" +
-        "Base address for the PIO emulator register sets is%n" +
+        "Base address for the two emulator PIO register sets (one %n" +
+        "register set for each of the two PIOs) is%n" +
         String.format("0x%08x and 0x%08x for PIO0 and PIO1, respectively.%n",
                       PIO0_EMU, PIO1_EMU);
     }

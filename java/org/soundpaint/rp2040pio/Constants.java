@@ -68,6 +68,7 @@ public interface Constants
   public static final int PIO_NUM = 2;
   public static final int SM_COUNT = 4;
   public static final int INTR_NUM = 4;
+  public static final int DEFAULT_FREQUENCY = 1000000000;
 
   // address map
   public static final int IO_BANK0_BASE = 0x40014000;

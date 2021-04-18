@@ -59,7 +59,8 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
                    "catch up with as close as possible.  The reset%n" +
                    "value corresponds to a target frequency of 125MHz.",
                    new BitsInfo[] {
-                     new BitsInfo(31, 0, null, null, BitsType.RW, 1000000000)
+                     new BitsInfo(31, 0, null, null, BitsType.RW,
+                                  MasterClock.DEFAULT_FREQUENCY)
                    }),
     MASTERCLK_MODE("Selects the clock mode.",
                    new BitsInfo[] {
@@ -117,19 +118,19 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
 
     public static String getRegisterSetLabel()
     {
-      return "Additional Global Registers";
+      return "Emulator Global Registers";
     }
 
     public static String getRegisterSetDescription()
     {
       return
         "The PIO emulator provides global registers, hereafter%n" +
-        "called *Pico Emulator Registers*, that are used to inspect%n" +
+        "called *Emulator Global Registers*, that are used to inspect%n" +
         "and control the emulator as a whole (rather than just%n" +
         "referring to a specifc PIO) and that are accessible through%n" +
         "this registers facade and provided in addition to the%n" +
         "registers of the original RP2040 hardware.%n" +
-        "Base address for the Pico emulator register set is%n" +
+        "Base address for the emulator global register set is%n" +
         String.format("0x%08x.%n", EMULATOR_BASE);
     }
 

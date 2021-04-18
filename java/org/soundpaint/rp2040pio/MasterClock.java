@@ -30,10 +30,8 @@ import java.util.List;
 /**
  * System Master Clock
  */
-public class MasterClock implements Clock
+public class MasterClock implements Clock, Constants
 {
-  public static final long DEFAULT_FREQUENCY = 1000000000;
-
   public enum Mode {
     TARGET_FREQUENCY,
     SINGLE_STEP;
@@ -138,7 +136,7 @@ public class MasterClock implements Clock
 
   public void reset()
   {
-    setFrequency((int)DEFAULT_FREQUENCY);
+    setFrequency(DEFAULT_FREQUENCY);
     setMode(Mode.SINGLE_STEP);
     phase = Phase.PHASE_1;
     trigger = Phase.PHASE_1;
