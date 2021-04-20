@@ -59,11 +59,11 @@ public class Trace extends Command
                                    "limit option -a to SM number, one of " +
                                    "0, 1, 2 or 3, or all, if undefined");
   private static final CmdOptions.FlagOptionDeclaration optPc =
-    CmdOptions.createFlagOption(false, 'a', "address", CmdOptions.Flag.OFF,
-                                "show instruction address (PC values) for " +
-                                "selected state machines of selected PIOs");
+    CmdOptions.createFlagOption(false, 'i', "show-instr", CmdOptions.Flag.OFF,
+                                "show address of instruction pointer (aka " +
+                                "PC reg) for selected SMs of selected PIOs");
   private static final CmdOptions.FlagOptionDeclaration optGpio =
-    CmdOptions.createFlagOption(false, 'g', "gpio", CmdOptions.Flag.OFF,
+    CmdOptions.createFlagOption(false, 'g', "show-gpio", CmdOptions.Flag.OFF,
                                 "show status of GPIO pins");
   private static final CmdOptions.IntegerOptionDeclaration optWait =
     CmdOptions.createIntegerOption("NUMBER", false, 'w', "wait", 0,

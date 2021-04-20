@@ -354,7 +354,9 @@ public class RegisterServer
       millisTimeout = 0x0;
     }
     final int value =
-      sdk.wait(address, expectedValue, mask, cyclesTimeout, millisTimeout);
+      sdk.wait(address, expectedValue, mask,
+               ((long)cyclesTimeout) & 0xffffffffL,
+               ((long)millisTimeout) & 0xffffffffL);
     return createResponse(ResponseStatus.OK, String.valueOf(value));
   }
 

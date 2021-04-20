@@ -45,8 +45,10 @@ public class PLL implements Clock.TransitionListener
 
   public void reset()
   {
-    countIntegerBits = 0x0001;
-    countFractionalBits = 0x00;
+    regCLKDIV_INT = 0x0001;
+    regCLKDIV_FRAC = 0x00;
+    countIntegerBits = 0x0;
+    countFractionalBits = 0x0;
     clockEnable = false;
   }
 

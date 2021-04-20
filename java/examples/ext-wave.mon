@@ -1,0 +1,117 @@
+# Monitor script for providing a square wave signal on GPIO31 pin,
+# that changes the pin's status each 3rd clock cycle.
+
+# We do *not* reset the emulator, but assume that this script is run
+# with the emulator already properly set up.  Furthermore, we assume
+# that the emulator starts with clock cycle 0.  Monitor scripts do not
+# (yet) provide loops; hence we have to unroll any periodic activity
+# for now.
+
+# Set GPIO31 pin to 1 for PIO0
+
+gpio --pio=0 --gpio=31 --set
+
+# Show effect
+
+gpio --pio=0
+
+# Await *absolute* clock cycle 0x00000003.
+
+# But (just for case that we are already beyond that cycle) finally
+# give up after 10 cycles.
+
+wait --address=0x58000014 --cycles=10 --value=0x3
+
+# Clear GPIO31 pin to 1 for PIO0
+
+gpio --pio=0 --gpio=31 --clear
+
+# Show effect
+
+gpio --pio=0
+
+# Now wait again, but this time nor for an absolute amount of clock
+# cycles, but for 3 clock cycles to pass.  This can be done by
+# specifying a value match condition that surely will never be occur,
+# and additionally specify a timeout of 3 cycles, such that the wait
+# command will be for sure terminated after the timeout (rather than
+# by the value to be matched).  Specifically, option "--mask=0" will
+# mask out all bits, such that always a value of 0 will be received,
+# such that waiting for "--value=1" will never succeed, such that
+# finally the timeout will take effect after 3 cycles.
+
+wait --address=0x58000014 --mask=0 --value=1 --cycles=3
+
+# GPIO31 := 1, and show effect.
+
+gpio --pio=0 --gpio=31 --set
+gpio --pio=0
+
+# Wait again 3 cycles
+
+wait --address=0x58000014 --mask=0 --value=1 --cycles=3
+
+# GPIO31 := 0, and show effect.
+
+gpio --pio=0 --gpio=31 --clear
+gpio --pio=0
+
+# Wait.
+
+wait --address=0x58000014 --mask=0 --value=1 --cycles=3
+
+# GPIO31 := 1, and show effect.
+
+gpio --pio=0 --gpio=31 --set
+gpio --pio=0
+
+# And so on, for some more cycles...
+
+wait --address=0x58000014 --mask=0 --value=1 --cycles=3
+gpio --pio=0 --gpio=31 --clear
+gpio --pio=0
+wait --address=0x58000014 --mask=0 --value=1 --cycles=3
+gpio --pio=0 --gpio=31 --set
+gpio --pio=0
+
+# And the same with abbreviated syntax.
+
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -c
+g -p 0
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -s
+g -p 0
+
+# And some more cycles, this time without showing each change.
+
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -c
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -s
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -c
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -s
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -c
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -s
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -c
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -s
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -c
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -s
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -c
+wa -a 0x58000014 -m 0 -v 1 -c 3
+g -p 0 -g 31 -s
+
+# And finally quit.
+
+q
+
+# Done.

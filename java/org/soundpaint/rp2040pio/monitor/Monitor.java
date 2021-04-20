@@ -63,13 +63,16 @@ public class Monitor
                                    Constants.
                                    REGISTER_SERVER_DEFAULT_PORT_NUMBER,
                                    "use PORT as server port number");
-  private static final CmdOptions.StringOptionDeclaration optScript =
-    CmdOptions.createStringOption("PATH", false, 's', "script", null,
+  private static final CmdOptions.StringOptionDeclaration optExample =
+    CmdOptions.createStringOption("NAME", false, 'e', "example", null,
+                                  "name of built-in example script to execute");
+  private static final CmdOptions.StringOptionDeclaration optFile =
+    CmdOptions.createStringOption("PATH", false, 'f', "file", null,
                                   "path of monitor script file to execute");
   private static final List<CmdOptions.OptionDeclaration<?>>
     optionDeclarations =
     Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
-                  { optVersion, optHelp, optPort, optScript });
+                  { optVersion, optHelp, optPort, optExample, optFile });
 
   private final BufferedReader in;
   private final PrintStream console;
@@ -142,6 +145,11 @@ public class Monitor
       throw new CmdOptions.
         ParseException("PORT must be in the range 0…65535");
     }
+    if (options.isDefined(optExample) && options.isDefined(optFile)) {
+      throw new CmdOptions.
+        ParseException("at most one of options \"-e\" and \"-f\" may be " +
+                       "specified at the same time");
+    }
   }
 
   private void printAbout()
@@ -169,17 +177,22 @@ public class Monitor
   private int run(final boolean localEcho)
   {
     if (sdk == null) return 0;
-    final String optScriptValue = options.getValue(optScript);
     final BufferedReader scriptIn;
-    if (optScriptValue != null) {
-      try {
-        scriptIn = IOUtils.getReaderForResourcePath(optScriptValue);
-      } catch (final IOException e) {
-        console.println(e.getMessage());
-        return -1;
+    try {
+      if (options.isDefined(optExample)) {
+        final String optExampleValue = options.getValue(optExample);
+        final String resourcePath =
+          String.format("/examples/%s.mon", optExampleValue);
+        scriptIn = IOUtils.getReaderForResourcePath(resourcePath);
+      } else if (options.isDefined(optFile)) {
+        final String optFileValue = options.getValue(optFile);
+        scriptIn = IOUtils.getReaderForResourcePath(optFileValue);
+      } else {
+        scriptIn = null;
       }
-    } else {
-      scriptIn = null;
+    } catch (final IOException e) {
+      console.println(e.getMessage());
+      return -1;
     }
     return
       (scriptIn != null) ?

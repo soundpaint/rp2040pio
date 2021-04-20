@@ -90,10 +90,10 @@ public class Load extends Command
                                 "list names of available example hex dumps");
   private static final CmdOptions.StringOptionDeclaration optShow =
     CmdOptions.createStringOption("NAME", false, 's', "show", null,
-                                  "name of example hex dump to show");
+                                  "name of built-in example hex dump to show");
   private static final CmdOptions.StringOptionDeclaration optExample =
     CmdOptions.createStringOption("NAME", false, 'e', "example", null,
-                                  "name of example hex dump to load");
+                                  "name of built-in example hex dump to load");
   private static final CmdOptions.StringOptionDeclaration optFile =
     CmdOptions.createStringOption("PATH", false, 'f', "file", null,
                                   "path of hex dump file to load");

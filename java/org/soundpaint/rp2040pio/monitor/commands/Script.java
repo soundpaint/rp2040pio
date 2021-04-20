@@ -70,13 +70,13 @@ public class Script extends Command
                                 "list names of available example scripts");
   private static final CmdOptions.StringOptionDeclaration optShow =
     CmdOptions.createStringOption("NAME", false, 's', "show", null,
-                                  "name of example script to show");
+                                  "name of built-in example script to show");
   private static final CmdOptions.StringOptionDeclaration optExample =
     CmdOptions.createStringOption("NAME", false, 'e', "example", null,
-                                  "name of example script to execute");
+                                  "name of built-in example script to execute");
   private static final CmdOptions.StringOptionDeclaration optFile =
     CmdOptions.createStringOption("PATH", false, 'f', "file", null,
-                                  "path of script file to execute");
+                                  "path of monitor script file to execute");
   private static final CmdOptions.BooleanOptionDeclaration optDryRun =
     CmdOptions.createBooleanOption(false, 'd', "dry-run", true,
                                    "dry-run the script commands rather than " +
