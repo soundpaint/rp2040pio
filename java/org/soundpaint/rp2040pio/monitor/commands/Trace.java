@@ -52,11 +52,11 @@ public class Trace extends Command
                                    "number of cycles to apply");
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", null,
-                                   "limit option -a to PIO number, either " +
+                                   "limit option -i to PIO number, either " +
                                    "0 or 1 or both, if undefined");
   private static final CmdOptions.IntegerOptionDeclaration optSm =
     CmdOptions.createIntegerOption("NUMBER", false, 's', "sm", null,
-                                   "limit option -a to SM number, one of " +
+                                   "limit option -i to SM number, one of " +
                                    "0, 1, 2 or 3, or all, if undefined");
   private static final CmdOptions.FlagOptionDeclaration optPc =
     CmdOptions.createFlagOption(false, 'i', "show-instr", CmdOptions.Flag.OFF,

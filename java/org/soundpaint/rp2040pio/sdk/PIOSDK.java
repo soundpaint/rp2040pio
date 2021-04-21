@@ -1115,14 +1115,14 @@ public class PIOSDK implements Constants
 
   public PinState[] getPinStates() throws IOException
   {
+    final PinState[] pinStates = new PinState[Constants.GPIO_NUM];
     final int pinsAddress =
       PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINS);
     final int pinDirsAddress =
       PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINDIRS);
     final int pins = registers.readAddress(pinsAddress);
     final int pinDirs = registers.readAddress(pinDirsAddress);
-    final PinState[] pinStates = new PinState[Constants.GPIO_NUM];
-    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM - 1; gpioNum++) {
+    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
       final Direction direction =
         Direction.fromValue((pinDirs >>> gpioNum) & 0x1);
       final Bit level = Bit.fromValue((pins >>> gpioNum) & 0x1);

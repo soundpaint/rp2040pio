@@ -304,6 +304,21 @@ public class MasterClock implements Clock, Constants
       registerWaitLock.notifyAll();
     }
   }
+
+  public void awaitCyclePhase1() throws InterruptedException
+  {
+    synchronized(registerWaitLock) {
+      registerWaitLock.wait();
+    }
+  }
+
+  public void awaitCyclePhase1(final long millisTimeout)
+    throws InterruptedException
+  {
+    synchronized(registerWaitLock) {
+      registerWaitLock.wait(millisTimeout);
+    }
+  }
 }
 
 /*

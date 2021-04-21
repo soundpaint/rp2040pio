@@ -33,6 +33,7 @@ import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.GPIO;
 import org.soundpaint.rp2040pio.GPIOIOBank0RegistersImpl;
 import org.soundpaint.rp2040pio.GPIOPadsBank0RegistersImpl;
+import org.soundpaint.rp2040pio.MasterClock;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PicoEmuRegistersImpl;
 import org.soundpaint.rp2040pio.PIO;
@@ -95,18 +96,7 @@ public class LocalRegisters extends AbstractRegisters
 
   private Long getWallClock()
   {
-    try {
-      final int addressLSB =
-        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
-      final int addressMSB =
-        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
-      final int wallClockLSB = picoEmuRegisters.readAddress(addressLSB);
-      final int wallClockMSB = picoEmuRegisters.readAddress(addressMSB);
-      return (((long)wallClockMSB) << 32) | wallClockLSB;
-    } catch (final IOException e) {
-      emulator.getConsole().println(e.getMessage());
-      return null;
-    }
+    return emulator.getMasterClock().getWallClock();
   }
 
   public int getGPIOAddress(final GPIOIOBank0RegistersImpl.Regs register)
@@ -233,19 +223,49 @@ public class LocalRegisters extends AbstractRegisters
     throw new IOException(message);
   }
 
+  private static boolean timedOut(final long startWallClock,
+                                  final long stopWallClock,
+                                  final long wallClock)
+  {
+    return
+      (startWallClock < stopWallClock) ?
+      (wallClock < startWallClock) || (wallClock >= stopWallClock) :
+      (wallClock < startWallClock) && (wallClock >= stopWallClock);
+  }
+
   @Override
   public int wait(final int address, final int expectedValue, final int mask,
                   final long cyclesTimeout, final long millisTimeout)
     throws IOException
   {
-    final AbstractRegisters registers = getProvidingRegisters(address);
-    if (registers != null) {
-      return registers.wait(address, expectedValue, mask,
-                            cyclesTimeout, millisTimeout);
+    if (cyclesTimeout < 0) {
+      throw new IllegalArgumentException("cyclesTimeout < 0: " + cyclesTimeout);
     }
-    final String message =
-      String.format("wait on unsupported address: %08x", address);
-    throw new IOException(message);
+    if (millisTimeout < 0) {
+      throw new IllegalArgumentException("millisTimeout < 0: " + millisTimeout);
+    }
+    final MasterClock masterClock = emulator.getMasterClock();
+    final long startWallClock = masterClock.getWallClock();
+    final long stopWallClock = startWallClock + cyclesTimeout;
+    final long startTime = System.currentTimeMillis();
+    final long stopTime = startTime + millisTimeout;
+    int receivedValue;
+    while (((receivedValue = readAddress(address) & mask) != expectedValue)) {
+      final long wallClock = masterClock.getWallClock();
+      if (timedOut(startWallClock, stopWallClock, wallClock)) break;
+      try {
+        if (millisTimeout != 0) {
+          final long time = System.currentTimeMillis();
+          if (timedOut(startTime, stopTime, time)) break;
+          masterClock.awaitCyclePhase1(stopTime - time);
+        } else {
+          masterClock.awaitCyclePhase1();
+        }
+      } catch (final InterruptedException e) {
+        // ignore here, since check in while condition
+      }
+    }
+    return receivedValue;
   }
 }
 

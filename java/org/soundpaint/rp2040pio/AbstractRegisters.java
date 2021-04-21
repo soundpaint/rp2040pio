@@ -229,59 +229,13 @@ public abstract class AbstractRegisters implements Registers
     return readRegister(((address - baseAddress) & ~0x3000) >>> 2);
   }
 
-  private boolean timedOut(final long startWallClock,
-                           final long stopWallClock,
-                           final long wallClock)
-  {
-    return
-      (startWallClock < stopWallClock) ?
-      (wallClock < startWallClock) || (wallClock >= stopWallClock) :
-      (wallClock < startWallClock) && (wallClock >= stopWallClock);
-  }
-
   @Override
   public int wait(final int address, final int expectedValue, final int mask,
                   final long cyclesTimeout, final long millisTimeout)
     throws IOException
   {
-    checkAddressAligned(address);
-    if (cyclesTimeout < 0) {
-      throw new IllegalArgumentException("cyclesTimeout < 0: " + cyclesTimeout);
-    }
-    if (millisTimeout < 0) {
-      throw new IllegalArgumentException("millisTimeout < 0: " + millisTimeout);
-    }
-    final int regNum = ((address - baseAddress) & ~0x3000) >>> 2;
-    final LongSupplier wallClockSupplier = getWallClockSupplier();
-    final Long startWallClock = wallClockSupplier.getAsLong();
-    if (startWallClock == null) {
-      throw new IOException("wallClock not reachable");
-    }
-    final long stopWallClock = startWallClock + cyclesTimeout;
-    final long startTime = System.currentTimeMillis();
-    final long stopTime = startTime + millisTimeout;
-    synchronized(this) {
-      int receivedValue;
-      while (((receivedValue = readRegister(regNum) & mask) != expectedValue)) {
-        final Long wallClock = wallClockSupplier.getAsLong();
-        if (wallClock == null) {
-          throw new IOException("wallClock not reachable");
-        }
-        if (timedOut(startWallClock, stopWallClock, wallClock)) break;
-        try {
-          if (millisTimeout != 0) {
-            final long time = System.currentTimeMillis();
-            if (timedOut(startTime, stopTime, time)) break;
-            wait(stopTime - time);
-          } else {
-            wait();
-          }
-        } catch (final InterruptedException e) {
-          // ignore here, since check in while condition
-        }
-      }
-      return receivedValue;
-    }
+    throw
+      new IOException("wait method not available for partial register sets");
   }
 
   @Override
@@ -289,7 +243,7 @@ public abstract class AbstractRegisters implements Registers
   {
     return
       String.format("%s@%08x, size=%08x, addrMin=%08x, addrMax=%08x",
-                    getClass().getName(), baseAddress, size, addrMin, addrMax);
+                    super.toString(), baseAddress, size, addrMin, addrMax);
   }
 }
 

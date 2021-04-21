@@ -4,8 +4,8 @@
 # Make a full reset of the emulator.
 reset
 
-# Configure GPIO 0 as output for PIO 0
-gpio --pio=0 --init=0
+# Connect GPIO 0 with PIO 0
+gpio --pio=0 --gpio=0 -i
 
 # Note: We could just do
 #   load --file=/examples/squarewave.hex

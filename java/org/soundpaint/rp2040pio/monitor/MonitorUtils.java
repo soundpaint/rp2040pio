@@ -73,7 +73,7 @@ public class MonitorUtils
   public static String asBitArrayDisplay(final PinState[] pinStates)
   {
     final StringBuffer display = new StringBuffer();
-    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM - 1; gpioNum++) {
+    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
       if (((gpioNum & 0x7) == 0) && (gpioNum > 0)) {
         display.append(' ');
       }

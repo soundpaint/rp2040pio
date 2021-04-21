@@ -72,7 +72,7 @@ public class GPIOSDK implements Constants
   public PinState[] getPinStates() throws IOException
   {
     final PinState[] pinStates = new PinState[Constants.GPIO_NUM];
-    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM - 1; gpioNum++) {
+    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
       final int gpioStatusAddress =
         GPIOIOBank0Registers.
         getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
