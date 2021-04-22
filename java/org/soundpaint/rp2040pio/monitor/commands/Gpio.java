@@ -156,19 +156,7 @@ public class Gpio extends Command
 
   private void displayGpio(final Integer optPioValue) throws IOException
   {
-    final PinState[] pinStates;
-    final String pioNumId;
-    if (optPioValue != null) {
-      final int pioNum = optPioValue;
-      final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-      pinStates = pioSdk.getPinStates();
-      pioNumId = String.format("%d", pioNum);
-    } else {
-      pinStates = sdk.getGPIOSDK().getPinStates();
-      pioNumId = "*";
-    }
-    final String gpioPinBits = MonitorUtils.asBitArrayDisplay(pinStates);
-    console.printf("(pio%s:sm*) %s%n", pioNumId, gpioPinBits);
+    console.printf(MonitorUtils.gpioDisplay(sdk, optPioValue));
   }
 
   private void initGpio(final int pioNum, final int gpioNum) throws IOException

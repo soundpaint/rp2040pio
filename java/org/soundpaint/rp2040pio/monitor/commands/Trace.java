@@ -52,8 +52,8 @@ public class Trace extends Command
                                    "number of cycles to apply");
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", null,
-                                   "limit option -i to PIO number, either " +
-                                   "0 or 1 or both, if undefined");
+                                   "limit options -l and -i to PIO number, " +
+                                   "either 0 or 1 or both, if undefined");
   private static final CmdOptions.IntegerOptionDeclaration optSm =
     CmdOptions.createIntegerOption("NUMBER", false, 's', "sm", null,
                                    "limit option -i to SM number, one of " +
@@ -64,7 +64,11 @@ public class Trace extends Command
                                 "PC reg) for selected SMs of selected PIOs");
   private static final CmdOptions.FlagOptionDeclaration optGpio =
     CmdOptions.createFlagOption(false, 'g', "show-gpio", CmdOptions.Flag.OFF,
-                                "show status of GPIO pins");
+                                "show status of (global) GPIO pins");
+  private static final CmdOptions.FlagOptionDeclaration optPioGpio =
+    CmdOptions.createFlagOption(false, 'l', "show-local-gpio",
+                                CmdOptions.Flag.OFF,
+                                "show status of (local PIO's) GPIO pins");
   private static final CmdOptions.IntegerOptionDeclaration optWait =
     CmdOptions.createIntegerOption("NUMBER", false, 'w', "wait", 0,
                                    "before each cycle, sleep for the " +
@@ -88,7 +92,7 @@ public class Trace extends Command
   {
     super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optCycles, optPc, optGpio, optWait });
+          { optPio, optSm, optCycles, optPc, optPioGpio, optGpio, optWait });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -141,12 +145,12 @@ public class Trace extends Command
     }
   }
 
-  private void displayGpioValues()
+  private void displayGpioValues(final int pioNumFirst, final int pioNumLast)
     throws IOException
   {
-    final PinState[] pinStates = sdk.getGPIOSDK().getPinStates();
-    final String gpioPinBits = MonitorUtils.asBitArrayDisplay(pinStates);
-    console.printf("(pio*:sm*) %s%n", gpioPinBits);
+    for (int pioNum = pioNumFirst; pioNum <= pioNumLast; pioNum++) {
+      console.printf(MonitorUtils.gpioDisplay(sdk, pioNum));
+    }
   }
 
   /**
@@ -175,13 +179,16 @@ public class Trace extends Command
         }
       }
       sdk.triggerCyclePhase0(true);
-      sdk.triggerCyclePhase1(true);
       if (options.getValue(optPc).isOn()) {
         displayPcValues(pioNumFirst, pioNumLast, smNumFirst, smNumLast);
       }
-      if (options.getValue(optGpio).isOn()) {
-        displayGpioValues();
+      if (options.getValue(optPioGpio).isOn()) {
+        displayGpioValues(pioNumFirst, pioNumLast);
       }
+      if (options.getValue(optGpio).isOn()) {
+        console.printf(MonitorUtils.gpioDisplay(sdk, null));
+      }
+      sdk.triggerCyclePhase1(true);
     }
     console.println(cycles + " clock cycle" + (cycles != 1 ? "s" : "") +
                     " executed.");

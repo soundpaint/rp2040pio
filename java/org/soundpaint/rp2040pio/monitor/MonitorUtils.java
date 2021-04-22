@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.PinState;
+import org.soundpaint.rp2040pio.sdk.PIOSDK;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
  * Utility methods that are used by multiple monitor commands.
@@ -70,7 +72,7 @@ public class MonitorUtils
     return true;
   }
 
-  public static String asBitArrayDisplay(final PinState[] pinStates)
+  private static String asBitArrayDisplay(final PinState[] pinStates)
   {
     final StringBuffer display = new StringBuffer();
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
@@ -83,6 +85,28 @@ public class MonitorUtils
       display.append(bitDisplay);
     }
     return display.toString();
+  }
+
+  /**
+   * @param pioNum Either 0 or 1 for GPIO pins of PIO0 or PIO1 or
+   * &lt;code&gt;null&lt;/code&gt; for global GPIO pins.
+   */
+  public static String gpioDisplay(final SDK sdk, final Integer pioNum)
+    throws IOException
+  {
+    final PinState[] pinStates;
+    final String pioNumId;
+    if (pioNum != null) {
+      Constants.checkPioNum(pioNum, "PIO index number");
+      final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+      pinStates = pioSdk.getPinStates();
+      pioNumId = String.format("%d", pioNum);
+    } else {
+      pinStates = sdk.getGPIOSDK().getPinStates();
+      pioNumId = "*";
+    }
+    final String gpioPinBits = asBitArrayDisplay(pinStates);
+    return String.format("(pio%s:sm*) %s%n", pioNumId, gpioPinBits);
   }
 }
 
