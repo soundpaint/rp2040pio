@@ -47,6 +47,11 @@ public class SDK implements Constants
   private final PIOSDK pio0Sdk;
   private final PIOSDK pio1Sdk;
 
+  private SDK()
+  {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
   public SDK(final PrintStream console, final Registers registers)
   {
     if (console == null) {

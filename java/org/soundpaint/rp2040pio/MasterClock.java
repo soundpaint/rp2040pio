@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,6 +63,7 @@ public class MasterClock implements Clock, Constants
           } catch (final InterruptedException e) {
             // ignore here, since check in while condition
           }
+          if (terminate) return;
         }
         if (phase == Phase.PHASE_1) {
           syncWithRealTime();
@@ -73,6 +75,7 @@ public class MasterClock implements Clock, Constants
           } catch (final InterruptedException e) {
             // ignore here, since check in while condition
           }
+          if (terminate) return;
         }
         if (phase == Phase.PHASE_0) {
           cyclePhase1();
@@ -93,13 +96,17 @@ public class MasterClock implements Clock, Constants
       while (true) {
         while (mode == Mode.SINGLE_STEP) {
           runSingleStep();
+          if (terminate) return;
         }
         while (mode == Mode.TARGET_FREQUENCY) {
           runTargetFrequency();
+          if (terminate) return;
         }
       }
     }
   }
+
+  private final PrintStream console;
 
   /**
    * Insure access to the following set of variables is atomic:
@@ -123,15 +130,25 @@ public class MasterClock implements Clock, Constants
   private long wallClock;
   private long refWallClock;
   private long refRealTime;
+  private boolean terminate;
 
-  public MasterClock()
+  private MasterClock()
   {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public MasterClock(final PrintStream console)
+  {
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
+    this.console = console;
     accountingLock = new Object();
     registerWaitLock = new Object();
     drivingGear = new DrivingGear();
     listeners = new ArrayList<TransitionListener>();
     reset();
-    drivingGear.start();
+    start();
   }
 
   public void reset()
@@ -141,6 +158,20 @@ public class MasterClock implements Clock, Constants
     phase = Phase.PHASE_1;
     trigger = Phase.PHASE_1;
     wallClock = -1;
+  }
+
+  private void start()
+  {
+    terminate = false;
+    drivingGear.start();
+  }
+
+  public void terminate()
+  {
+    synchronized(drivingGear) {
+      terminate = true;
+      drivingGear.notify();
+    }
   }
 
   private void resetRef()

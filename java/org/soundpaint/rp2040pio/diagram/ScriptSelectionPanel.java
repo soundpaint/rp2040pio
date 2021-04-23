@@ -226,7 +226,8 @@ public class ScriptSelectionPanel extends Box
       final Border loweredEtched =
         BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
       final TitledBorder titled =
-        BorderFactory.createTitledBorder(loweredEtched, "Select example");
+        BorderFactory.createTitledBorder(loweredEtched,
+                                         "Select built-in example");
       titled.setTitleJustification(TitledBorder.CENTER);
       final Box selectionLine = new Box(BoxLayout.X_AXIS);
       setBorder(titled);

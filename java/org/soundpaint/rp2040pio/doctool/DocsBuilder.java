@@ -108,8 +108,11 @@ public class DocsBuilder
 
   public static void main(final String argv[])
   {
+    System.out.println("building monitor commands documentation...");
     MonitorCommandsDocsBuilder.main(argv);
+    System.out.println("building registers documentation...");
     RegistersDocsBuilder.main(argv);
+    System.out.println("documentation successfully built");
   }
 }
 

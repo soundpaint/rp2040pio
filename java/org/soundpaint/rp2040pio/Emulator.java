@@ -48,7 +48,7 @@ public class Emulator
       throw new NullPointerException("console");
     }
     this.console = console;
-    masterClock = new MasterClock();
+    masterClock = new MasterClock(console);
     gpio = new GPIO(console, masterClock);
     pio0 = gpio.getPIO0();
     pio1 = gpio.getPIO1();
@@ -85,6 +85,11 @@ public class Emulator
     gpio.reset();
     pio0.reset();
     pio1.reset();
+  }
+
+  public void terminate()
+  {
+    masterClock.terminate();
   }
 }
 

@@ -34,12 +34,13 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
-import org.soundpaint.rp2040pio.RegisterClient;
 import org.soundpaint.rp2040pio.Registers;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.monitor.CommandRegistry;
+import org.soundpaint.rp2040pio.sdk.LocalRegisters;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -128,7 +129,8 @@ public class MonitorCommandsDocsBuilder
     s.append(String.format("%n"));
     final PrintStream console = System.out;
     final Registers registers;
-    registers = new RegisterClient(console);
+    final Emulator emulator = new Emulator(console);
+    registers = new LocalRegisters(emulator);
     final BufferedReader in =
       new BufferedReader(new InputStreamReader(System.in));
     final SDK sdk = new SDK(console, registers);
@@ -138,6 +140,7 @@ public class MonitorCommandsDocsBuilder
     for (final Command command : commandRegistry) {
       s.append(createCommandDocs(command));
     }
+    emulator.terminate();
     return s.toString();
   }
 
