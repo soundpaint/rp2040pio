@@ -19,14 +19,31 @@ gpio --pio=0 --gpio=23 --set
 
 gpio --pio=0
 
-# Await *absolute* clock cycle 0x00000003.
+# Await *absolute* clock cycle 0x00000002.
 #
-# But (just for case that we are already beyond that cycle) finally
-# give up after 10 cycles, or, alternatively, after 300 seconds.
+# But (just for case that we are already beyond that cycle), as
+# fallback, finally give up after 5 cycles, or, alternatively, after
+# 300 seconds.
 
-wait --address=0x58000014 --cycles=10 --value=0x3 --time=300000
+wait --address=0x58000014 --value=0x2 --cycles=5 --time=300000
 
-# Clear GPIO pin 23 to 1 for PIO0
+# The PIO emulator performs instruction fetch & decode during clock
+# cycle phase 0, and instruction execution during cycle phase 1.
+# Therefore, the trace command of the monitor application displays the
+# GPIO state immediately after clock phase 1 has settled,
+# i.e. immediately after instruction execution has been completed.  To
+# avoid a race between the monitor showing the GPIO state after
+# completion of cycle phase 1 and this external signal supplying
+# script updating the GPIO state also immediately after completion of
+# cycle phase 1, scripts like this one are advised to update signal
+# state instead immediately after clock phase 0 has settled
+# (i.e. after PIO instruction fetch & decode, but before instruction
+# execution).  For that purpose, we do another wait for the next cycle
+# phase 0 to become settled.
+
+wait --address=0x5800000c --value=1 --cycles=0 --time=0
+
+# Now, clear GPIO pin 23 to 1 for PIO0
 
 gpio --pio=0 --gpio=23 --clear
 
@@ -46,6 +63,7 @@ gpio --pio=0
 # the default milliseconds timeout of 100 seconds by setting it to 0.
 
 wait --address=0x58000014 --mask=0 --value=1 --cycles=3 --time=0
+wait --address=0x5800000c --value=1 --cycles=0 --time=0
 
 # GPIO pin 23 := 1, and show effect.
 
@@ -55,6 +73,7 @@ gpio --pio=0
 # Wait again 3 cycles
 
 wait --address=0x58000014 --mask=0 --value=1 --cycles=3 --time=0
+wait --address=0x5800000c --value=1 --cycles=0 --time=0
 
 # GPIO pin 23 := 0, and show effect.
 
@@ -64,6 +83,7 @@ gpio --pio=0
 # Wait.
 
 wait --address=0x58000014 --mask=0 --value=1 --cycles=3 --time=0
+wait --address=0x5800000c --value=1 --cycles=0 --time=0
 
 # GPIO pin 23 := 1, and show effect.
 
@@ -73,29 +93,37 @@ gpio --pio=0
 # And so on, for some more cycles...
 
 wait --address=0x58000014 --mask=0 --value=1 --cycles=3 --time=0
+wait --address=0x5800000c --value=1 --cycles=0 --time=0
 gpio --pio=0 --gpio=23 --clear
 gpio --pio=0
 wait --address=0x58000014 --mask=0 --value=1 --cycles=3 --time=0
+wait --address=0x5800000c --value=1 --cycles=0 --time=0
 gpio --pio=0 --gpio=23 --set
 gpio --pio=0
 
-# And the same with abbreviated syntax.
+# And the same with abbreviated syntax.  Note that options "--cycles"
+# and "--time" have default values 0 and can be completely dropped
+# where we choose to use the default.
 
-wa -a 0x58000014 -m 0 -v 1 -c 3 -t 0
+wa -a 0x58000014 -m 0 -v 1 -c 3
+wa -a 0x5800000c -v 1
 g -p 0 -g 23 -c
 g -p 0
-wa -a 0x58000014 -m 0 -v 1 -c 3 -t 0
+wa -a 0x58000014 -m 0 -v 1 -c 3
+wa -a 0x5800000c -v 1
 g -p 0 -g 23 -s
 g -p 0
 
 # And some more cycles, this time without showing each change.
 
-wa -a 0x58000014 -m 0 -v 1 -c 3 -t 0
+wa -a 0x58000014 -m 0 -v 1 -c 3
+wa -a 0x5800000c -v 1
 g -p 0 -g 23 -c
-wa -a 0x58000014 -m 0 -v 1 -c 3 -t 0
+wa -a 0x58000014 -m 0 -v 1 -c 3
+wa -a 0x5800000c -v 1
 g -p 0 -g 23 -s
 
-# And finally quit.
+# And finally quit, when we are done.
 
 q
 

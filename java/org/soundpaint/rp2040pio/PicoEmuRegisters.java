@@ -80,7 +80,12 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
                              "have no effect.  When master clock is in%n" +
                              "target frequency mode, writing to this%n" +
                              "address will have no effect.  Upon reset,%n" +
-                             "the system is in phase 1.",
+                             "the system is in phase 1.%n" +
+                             "Reading from this register will return value%n" +
+                             "0x1 if and only if the emulator is in phase%n" +
+                             "0 *and* phase 0 is settled (i.e. the emulator%n" +
+                             "has completed all operations to be performed%n" +
+                             "during this phase), and 0x0 otherwise.",
                              new BitsInfo[] {
                                new BitsInfo(31, 0, null, null,
                                             BitsType.WF, null)
@@ -96,7 +101,12 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
                              "have no effect. When master clock is in%n" +
                              "target frequency mode, writing to this%n" +
                              "address will have no effect.  Upon reset,%n" +
-                             "the system is in phase 1.",
+                             "the system is in phase 1.%n" +
+                             "Reading from this register will return value%n" +
+                             "0x1 if and only if the emulator is in phase%n" +
+                             "1 *and* phase 1 is settled (i.e. the emulator%n" +
+                             "has completed all operations to be performed%n" +
+                             "during this phase), and 0x0 otherwise.",
                              new BitsInfo[] {
                                new BitsInfo(31, 0, null, null,
                                             BitsType.WF, null)

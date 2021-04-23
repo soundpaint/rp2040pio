@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio;
 
 import java.util.function.LongSupplier;
+import org.soundpaint.rp2040pio.Clock;
 
 /**
  * Facade to additonal emulator properties of the internal subsystems
@@ -88,9 +89,13 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
     case MASTERCLK_MODE:
       return emulator.getMasterClock().getMASTERCLK_MODE();
     case MASTERCLK_TRIGGER_PHASE0:
-      return emulator.getMasterClock().getPhase().ordinal() == 0 ? 0x1 : 0x0;
+      return
+        emulator.getMasterClock().getPhase() == Clock.Phase.PHASE_0_STABLE ?
+        0x1 : 0x0;
     case MASTERCLK_TRIGGER_PHASE1:
-      return emulator.getMasterClock().getPhase().ordinal() == 1 ? 0x1 : 0x0;
+      return
+        emulator.getMasterClock().getPhase() == Clock.Phase.PHASE_1_STABLE ?
+        0x1 : 0x0;
     case WALLCLOCK_LSB:
       return (int)emulator.getMasterClock().getWallClock();
     case WALLCLOCK_MSB:

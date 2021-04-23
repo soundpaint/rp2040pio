@@ -34,7 +34,10 @@ public interface Clock
 {
   public enum Phase
   {
-    PHASE_0, PHASE_1
+    PHASE_0_IN_PROGRESS,
+    PHASE_0_STABLE,
+    PHASE_1_IN_PROGRESS,
+    PHASE_1_STABLE
   };
 
   public static interface TransitionListener

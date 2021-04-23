@@ -170,15 +170,25 @@ public class Trace extends Command
       optSmValue != null ? optSmValue : Constants.SM_COUNT - 1;
     final int cycles = options.getValue(optCycles);
     final int wait = options.getValue(optWait);
+    final int wait0 = wait / 2;
+    final int wait1 = wait - wait0;
     for (int i = 0; i < cycles; i++) {
-      if (wait > 0) {
+      if (wait0 > 0) {
         try {
-          Thread.sleep(wait);
+          Thread.sleep(wait0);
         } catch (final InterruptedException e) {
           // ignore
         }
       }
       sdk.triggerCyclePhase0(true);
+      if (wait1 > 0) {
+        try {
+          Thread.sleep(wait1);
+        } catch (final InterruptedException e) {
+          // ignore
+        }
+      }
+      sdk.triggerCyclePhase1(true);
       if (options.getValue(optPc).isOn()) {
         displayPcValues(pioNumFirst, pioNumLast, smNumFirst, smNumLast);
       }
@@ -188,7 +198,6 @@ public class Trace extends Command
       if (options.getValue(optGpio).isOn()) {
         console.printf(MonitorUtils.gpioDisplay(sdk, null));
       }
-      sdk.triggerCyclePhase1(true);
     }
     console.println(cycles + " clock cycle" + (cycles != 1 ? "s" : "") +
                     " executed.");

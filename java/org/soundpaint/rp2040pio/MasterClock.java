@@ -57,7 +57,8 @@ public class MasterClock implements Clock, Constants
     private void runSingleStep()
     {
       synchronized(this) {
-        while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_1)) {
+        while ((mode == Mode.SINGLE_STEP) &&
+               (phase == Phase.PHASE_1_STABLE)) {
           try {
             wait();
           } catch (final InterruptedException e) {
@@ -65,11 +66,12 @@ public class MasterClock implements Clock, Constants
           }
           if (terminate) return;
         }
-        if (phase == Phase.PHASE_1) {
+        if (phase == Phase.PHASE_0_IN_PROGRESS) {
           syncWithRealTime();
           cyclePhase0();
         }
-        while ((mode == Mode.SINGLE_STEP) && (trigger == Phase.PHASE_0)) {
+        while ((mode == Mode.SINGLE_STEP) &&
+               (phase == Phase.PHASE_0_STABLE)) {
           try {
             wait();
           } catch (final InterruptedException e) {
@@ -77,7 +79,7 @@ public class MasterClock implements Clock, Constants
           }
           if (terminate) return;
         }
-        if (phase == Phase.PHASE_0) {
+        if (phase == Phase.PHASE_1_IN_PROGRESS) {
           cyclePhase1();
         }
       }
@@ -86,7 +88,9 @@ public class MasterClock implements Clock, Constants
     private void runTargetFrequency()
     {
       syncWithRealTime();
+      phase = Phase.PHASE_0_IN_PROGRESS;
       cyclePhase0();
+      phase = Phase.PHASE_1_IN_PROGRESS;
       cyclePhase1();
     }
 
@@ -126,7 +130,6 @@ public class MasterClock implements Clock, Constants
   private double milliSecondsPerCycle;
   private Mode mode;
   private Phase phase;
-  private Phase trigger;
   private long wallClock;
   private long refWallClock;
   private long refRealTime;
@@ -155,8 +158,7 @@ public class MasterClock implements Clock, Constants
   {
     setFrequency(DEFAULT_FREQUENCY);
     setMode(Mode.SINGLE_STEP);
-    phase = Phase.PHASE_1;
-    trigger = Phase.PHASE_1;
+    phase = Phase.PHASE_1_STABLE;
     wallClock = -1;
   }
 
@@ -294,24 +296,30 @@ public class MasterClock implements Clock, Constants
 
   public Phase getPhase() { return phase; }
 
-  public Phase getLatestTrigger() { return trigger; }
-
   public void triggerPhase0()
   {
     synchronized(accountingLock) {
       if (mode != Mode.SINGLE_STEP) return;
       synchronized(drivingGear) {
-        trigger = Phase.PHASE_0;
-        drivingGear.notify();
+        if (phase == Phase.PHASE_1_STABLE) {
+          phase = Phase.PHASE_0_IN_PROGRESS;
+          drivingGear.notify();
+        }
       }
     }
   }
 
   private void cyclePhase0()
   {
-    if (phase == Phase.PHASE_0) return;
-    phase = Phase.PHASE_0;
+    if (phase != Phase.PHASE_0_IN_PROGRESS) {
+      console.println("warning: cyclePhase0: unexpected phase: " + phase);
+      return;
+    }
     announceRaisingEdge();
+    phase = Phase.PHASE_0_STABLE;
+    synchronized(registerWaitLock) {
+      registerWaitLock.notifyAll();
+    }
   }
 
   public void triggerPhase1()
@@ -319,31 +327,36 @@ public class MasterClock implements Clock, Constants
     synchronized(accountingLock) {
       if (mode != Mode.SINGLE_STEP) return;
       synchronized(drivingGear) {
-        trigger = Phase.PHASE_1;
-        drivingGear.notify();
+        if (phase == Phase.PHASE_0_STABLE) {
+          phase = Phase.PHASE_1_IN_PROGRESS;
+          drivingGear.notify();
+        }
       }
     }
   }
 
   private void cyclePhase1()
   {
-    if (phase == Phase.PHASE_1) return;
-    phase = Phase.PHASE_1;
+    if (phase != Phase.PHASE_1_IN_PROGRESS) {
+      console.println("warning: cyclePhase1: unexpected phase: " + phase);
+      return;
+    }
     announceFallingEdge();
     wallClock++;
+    phase = Phase.PHASE_1_STABLE;
     synchronized(registerWaitLock) {
       registerWaitLock.notifyAll();
     }
   }
 
-  public void awaitCyclePhase1() throws InterruptedException
+  public void awaitPhaseChange() throws InterruptedException
   {
     synchronized(registerWaitLock) {
       registerWaitLock.wait();
     }
   }
 
-  public void awaitCyclePhase1(final long millisTimeout)
+  public void awaitPhaseChange(final long millisTimeout)
     throws InterruptedException
   {
     synchronized(registerWaitLock) {

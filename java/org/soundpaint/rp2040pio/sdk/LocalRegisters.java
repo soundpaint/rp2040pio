@@ -257,9 +257,9 @@ public class LocalRegisters extends AbstractRegisters
         if (millisTimeout != 0) {
           final long time = System.currentTimeMillis();
           if (timedOut(startTime, stopTime, time)) break;
-          masterClock.awaitCyclePhase1(stopTime - time);
+          masterClock.awaitPhaseChange(stopTime - time);
         } else {
-          masterClock.awaitCyclePhase1();
+          masterClock.awaitPhaseChange();
         }
       } catch (final InterruptedException e) {
         // ignore here, since check in while condition
