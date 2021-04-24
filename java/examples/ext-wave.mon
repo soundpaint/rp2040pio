@@ -102,8 +102,9 @@ gpio --pio=0 --gpio=23 --set
 gpio --pio=0
 
 # And the same with abbreviated syntax.  Note that options "--cycles"
-# and "--time" have default values 0 and can be completely dropped
-# where we choose to use the default.
+# and "--time" can be completely dropped if we choose to use the
+# default values, which is ok, since we expect the wait to finish
+# within a very short period of time.
 
 wa -a 0x58000014 -m 0 -v 1 -c 3
 wa -a 0x5800000c -v 1

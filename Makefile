@@ -30,6 +30,7 @@ all:
 	cd $(JAVA_DIR) ; make -f Makefile.Observer all
 	cd $(JAVA_DIR) ; make -f Makefile.Diagram all
 	cd $(JAVA_DIR) ; make -f Makefile.GPIOObserver all
+	cd $(JAVA_DIR) ; make -f Makefile.CodeObserver all
 	cd $(JAVA_DIR) ; make -f Makefile.DocTool doc
 
 run: all
