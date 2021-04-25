@@ -5,7 +5,7 @@
 reset
 
 # Connect GPIO 0 with PIO 0
-gpio --pio=0 --gpio=0 -i
+gpio --pio=0 --gpio=0 --init
 
 # Note: We could just do
 #   load --file=/examples/squarewave.hex

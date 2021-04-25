@@ -24,7 +24,6 @@
  */
 package org.soundpaint.rp2040pio.observer;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;

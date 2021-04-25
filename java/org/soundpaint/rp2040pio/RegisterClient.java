@@ -156,7 +156,8 @@ public class RegisterClient extends AbstractRegisters
     }
   }
 
-  private Response getResponse(final String request) throws IOException
+  private synchronized Response getResponse(final String request)
+    throws IOException
   {
     out.println(request);
     final String response = in.readLine();
@@ -193,21 +194,21 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  public synchronized String getVersion() throws IOException
+  public String getVersion() throws IOException
   {
     final Response response = getResponse("v");
     checkResponse(response);
     return response.getResultOrThrowOnFailure("failed retreiving version");
   }
 
-  public synchronized String getHelp() throws IOException
+  public String getHelp() throws IOException
   {
     final Response response = getResponse("h");
     checkResponse(response);
     return response.getResultOrThrowOnFailure("failed retreiving help");
   }
 
-  public synchronized void quit() throws IOException
+  public void quit() throws IOException
   {
     final Response response = getResponse("q");
     if (response != null) {
@@ -221,7 +222,8 @@ public class RegisterClient extends AbstractRegisters
   @Override
   public boolean providesAddress(final int address) throws IOException
   {
-    final Response response = getResponse("p " + address);
+    final String request = String.format("p 0x%08x", address);
+    final Response response = getResponse(request);
     checkResponse(response);
     final String provisionRetrievalMessage =
       String.format("failed retrieving provision info for address 0x%08x",
@@ -253,7 +255,8 @@ public class RegisterClient extends AbstractRegisters
   @Override
   public String getAddressLabel(final int address) throws IOException
   {
-    final Response response = getResponse("l " + address);
+    final String request = String.format("l 0x%08x", address);
+    final Response response = getResponse(request);
     checkResponse(response);
     final String labelRetrievalMessage =
       String.format("failed retrieving label for address 0x%08x", address);
@@ -276,10 +279,11 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  public synchronized void writeAddress(final int address,
-                                        final int value) throws IOException
+  public void writeAddress(final int address, final int value)
+    throws IOException
   {
-    final Response response = getResponse("w " + address + " " + value);
+    final String request = String.format("w 0x%08x 0x%08x", address, value);
+    final Response response = getResponse(request);
     checkResponse(response);
     final String message =
       String.format("failed writing value 0x%04x to address 0x%08x",
@@ -314,9 +318,10 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  public synchronized int readAddress(final int address) throws IOException
+  public int readAddress(final int address) throws IOException
   {
-    final Response response = getResponse("r " + address);
+    final String request = String.format("r 0x%08x", address);
+    final Response response = getResponse(request);
     checkResponse(response);
     final String message =
       String.format("failed retrieving value for address 0x%08x", address);
@@ -326,18 +331,17 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  public synchronized int wait(final int address,
-                               final int expectedValue, final int mask,
-                               final long cyclesTimeout,
-                               final long millisTimeout)
+  public int wait(final int address,
+                  final int expectedValue, final int mask,
+                  final long cyclesTimeout,
+                  final long millisTimeout)
     throws IOException
   {
     final StringBuffer query = new StringBuffer();
-    final Response response = getResponse("i " + address + " " +
-                                          expectedValue + " " +
-                                          mask + " " +
-                                          cyclesTimeout + " " +
-                                          millisTimeout);
+    final String request =
+      String.format("i 0x%08x 0x%08x 0x%08x %d %d",
+                    address, expectedValue, mask, cyclesTimeout, millisTimeout);
+    final Response response = getResponse(request);
     checkResponse(response);
     final String message =
       String.format("failed waiting for IRQ on address 0x%08x", address);

@@ -26,7 +26,6 @@ package org.soundpaint.rp2040pio.observer.code;
 
 import java.awt.BorderLayout;
 import java.awt.event.WindowEvent;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;

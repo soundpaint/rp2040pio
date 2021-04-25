@@ -137,10 +137,12 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM0_TRACEPOINTS("Tracepoints work like breakpoints with the difference%n" +
                     "that master clock MASTERCLK_MODE it not automatically%n" +
                     "set to single step mode, but instead a message is%n" +
-                    "printed to console output.  The message contains the%n" +
-                    "state machine's number and disassembled instruction%n" +
-                    "with prefixed instruction memory address.  Tracepoints%n" +
-                    "work in all master clock MASTERCLK_MODE modes.",
+                    "typically printed to console output (depending on%n" +
+                    "the specific client application).  The message may,%n" +
+                    "for example, caontain the state machine's number and%n" +
+                    "disassembled instruction with prefixed instruction%n" +
+                    "memory address.  Tracepoints work in all master clock%n" +
+                    "MASTERCLK_MODE modes.",
                     IntStream.rangeClosed(0, 31).boxed()
                     .map(n -> new BitsInfo(31 - n, 31 - n, "TP_MEM" + (31 - n),
                                            "0x1, if the memory address is " +
@@ -278,7 +280,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
         "Base address for the two emulator PIO register sets (one %n" +
         "register set for each of the two PIOs) is%n" +
         String.format("0x%08x and 0x%08x for PIO0 and PIO1, respectively.%n",
-                      PIO0_EMU, PIO1_EMU);
+                      PIO0_EMU_BASE, PIO1_EMU_BASE);
     }
 
     private final String info;

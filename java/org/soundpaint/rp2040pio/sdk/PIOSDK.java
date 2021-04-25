@@ -102,6 +102,14 @@ public class PIOSDK implements Constants
       this.delay = 0;
     }
 
+    public String getMnemnonic() { return mnemonic; }
+
+    public String getFullStatement() { return fullStatement; }
+
+    public boolean isDelayCycle() { return isDelayCycle; }
+
+    public int getDelay() { return delay; }
+
     @Override
     public boolean equals(final Object obj)
     {

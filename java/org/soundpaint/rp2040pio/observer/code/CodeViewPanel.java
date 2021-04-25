@@ -31,10 +31,14 @@ import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
+import javax.swing.ButtonGroup;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
+import javax.swing.JProgressBar;
+import javax.swing.JRadioButton;
+import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -45,7 +49,10 @@ public class CodeViewPanel extends JPanel
   private final PrintStream console;
   private final SDK sdk;
   private final int refresh;
-  private final JTabbedPane tabbedPane;
+  private final CodeSmViewPanel codeSmViewPanel;
+  private final JProgressBar pbDelay;
+  private int pioNum;
+  private int smNum;
 
   private CodeViewPanel()
   {
@@ -63,17 +70,97 @@ public class CodeViewPanel extends JPanel
     this.refresh = refresh;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("Code View"));
-    tabbedPane = new JTabbedPane();
-    add(tabbedPane);
-    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
-      final CodeSmViewPanel codeSmViewPanel =
-        new CodeSmViewPanel(console, sdk, smNum);
-      tabbedPane.addTab("SM" + smNum, null, codeSmViewPanel,
-                        "Code View Panel for State Machine #" + smNum);
-      tabbedPane.setMnemonicAt(smNum, KeyEvent.VK_0 + smNum);
+    pbDelay = new JProgressBar(0, 1000);
+    codeSmViewPanel = new CodeSmViewPanel(console, sdk, pbDelay);
+
+    final Box pioSelection = new Box(BoxLayout.X_AXIS);
+    add(pioSelection);
+    final JLabel lbPio = new JLabel("PIO");
+    pioSelection.add(lbPio);
+    pioSelection.add(Box.createHorizontalStrut(15));
+    addPioButtons(pioSelection);
+    pioSelection.add(Box.createHorizontalGlue());
+    SwingUtils.setPreferredHeightAsMaximum(pioSelection);
+
+    final Box smSelection = new Box(BoxLayout.X_AXIS);
+    add(smSelection);
+    final JLabel lbSm = new JLabel("SM");
+    lbSm.setMinimumSize(lbPio.getPreferredSize());
+    lbSm.setPreferredSize(lbPio.getPreferredSize());
+    smSelection.add(lbSm);
+    smSelection.add(Box.createHorizontalStrut(15));
+    addSmButtons(smSelection);
+    smSelection.add(Box.createHorizontalGlue());
+    SwingUtils.setPreferredHeightAsMaximum(smSelection);
+
+    pbDelay.setStringPainted(true);
+    add(codeSmViewPanel);
+    add(pbDelay);
+    codeSmViewPanel.smChanged(pioNum, smNum);
+    new Thread(() -> updateStatus()).start();
+  }
+
+  private void addPioButtons(final Box pioSelection)
+  {
+    final ButtonGroup bgPio = new ButtonGroup();
+    for (int pioNum = 0; pioNum < Constants.PIO_NUM; pioNum++) {
+      if (pioNum != 0) pioSelection.add(Box.createHorizontalStrut(10));
+      final JRadioButton rbPio = new JRadioButton(String.valueOf(pioNum));
+      rbPio.setSelected(pioNum == 0);
+      final int finalPioNum = pioNum;
+      rbPio.addActionListener((event) -> {
+          this.pioNum = finalPioNum;
+          codeSmViewPanel.smChanged(finalPioNum, smNum);
+        });
+      bgPio.add(rbPio);
+      pioSelection.add(rbPio);
     }
-    SwingUtils.setPreferredHeightAsMaximum(tabbedPane);
-    add(Box.createVerticalGlue());
+  }
+
+  private void addSmButtons(final Box smSelection)
+  {
+    final ButtonGroup bgSm = new ButtonGroup();
+    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+      if (smNum != 0) smSelection.add(Box.createHorizontalStrut(10));
+      final JRadioButton rbSm = new JRadioButton(String.valueOf(smNum));
+      rbSm.setSelected(smNum == 0);
+      rbSm.setMnemonic(KeyEvent.VK_0 + smNum);
+      final int finalSmNum = smNum;
+      rbSm.addActionListener((event) -> {
+          this.smNum = finalSmNum;
+          codeSmViewPanel.smChanged(pioNum, finalSmNum);
+        });
+      bgSm.add(rbSm);
+      smSelection.add(rbSm);
+    }
+  }
+
+  public void updateStatus()
+  {
+    final int addressPhase0 =
+      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
+                                  MASTERCLK_TRIGGER_PHASE0);
+    final int addressPhase1 =
+      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
+                                  MASTERCLK_TRIGGER_PHASE1);
+    final int expectedValue = 0x1; // update upon stable cycle phase 1
+    final int mask = 0xffffffff;
+    final int cyclesTimeout = 0;
+    final int millisTimeout = 1000; // but at least every second
+    while (true) {
+      try {
+        while (true) {
+          sdk.wait(addressPhase1, expectedValue, mask,
+                   cyclesTimeout, millisTimeout);
+          codeSmViewPanel.smChanged(pioNum, smNum);
+          codeSmViewPanel.repaintLater();
+          sdk.wait(addressPhase0, expectedValue, mask,
+                   cyclesTimeout, millisTimeout);
+        }
+      } catch (final IOException e) {
+        console.println(e.getMessage());
+      }
+    }
   }
 }
 
