@@ -57,17 +57,18 @@ public class Program implements Constants
    * @param instructions Array with all instructions of the program.
    * If the array is null or the length of the array is greater than
    * 32, an exception is thrown.
+   *
+   * The program id is optional.  Set to
+   * &lt;code&gt;null&lt;/code&gt;, if program id is undefined.
+   * However, if defined, it must be a non-empty string.
    */
   public Program(final String id, final int origin, final int wrap,
                  final int wrapTarget, final int sideSetCount,
                  final boolean sideSetOpt, final boolean sideSetPinDirs,
                  final short[] instructions)
   {
-    if (id == null) {
-      throw new NullPointerException("id");
-    }
-    if (id.isEmpty()) {
-      throw new IllegalArgumentException("invalid program id: <empty>");
+    if (id != null) {
+      checkId(id);
     }
     if (origin < -1) {
       throw new IllegalArgumentException("origin < -1: " + origin);
@@ -126,6 +127,17 @@ public class Program implements Constants
       mask;
   }
 
+  private void checkId(final String id)
+  {
+    if (id.isEmpty()) {
+      throw new IllegalArgumentException("invalid program id: <empty>");
+    }
+  }
+
+  /**
+   * Optional program identifier, or &lt;code&gt;null&lt;/code&gt;, if
+   * undefined.
+   */
   public String getId()
   {
     return id;

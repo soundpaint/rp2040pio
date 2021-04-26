@@ -83,7 +83,7 @@ public class ProgramParser implements Constants
     instructions = new short[MEMORY_SIZE];
     lineIndex = 0;
     address = 0;
-    id = "";
+    id = null;
     origin = -1;
     wrap = MEMORY_SIZE - 1;
     wrapTarget = 0;
@@ -114,11 +114,6 @@ public class ProgramParser implements Constants
                                 final Function<String, Integer> wordParser)
     throws ParseException
   {
-    if (!idParsed) {
-      throw parseException(DIRECTIVE_SIDE_SET + ": " +
-                           "instruction is only valid after a " +
-                           DIRECTIVE_PROGRAM + " directive");
-    }
     if (address >= MEMORY_SIZE) {
       throw parseException("program too large: " +
                            "get more than " + MEMORY_SIZE + " words");
@@ -171,11 +166,6 @@ public class ProgramParser implements Constants
     if (originParsed) {
       throw parseException(DIRECTIVE_ORIGIN + " already declared");
     }
-    if (!idParsed) {
-      throw parseException(DIRECTIVE_ORIGIN + ": " +
-                           "this directive is only valid after a " +
-                           DIRECTIVE_PROGRAM + " directive");
-    }
     final int origin = parseDecimalInt(unparsed);
     if (origin < -1) {
       throw parseException(DIRECTIVE_ORIGIN + ": origin < -1: " + origin);
@@ -193,11 +183,6 @@ public class ProgramParser implements Constants
     if (wrapParsed) {
       throw parseException(DIRECTIVE_WRAP + " already declared");
     }
-    if (!idParsed) {
-      throw parseException(DIRECTIVE_WRAP + ": " +
-                           "this directive is only valid after a " +
-                           DIRECTIVE_PROGRAM + " directive");
-    }
     final int wrap = parseDecimalInt(unparsed);
     if (wrap < 0) {
       throw parseException(DIRECTIVE_WRAP + ": wrap < 0: " + wrap);
@@ -214,11 +199,6 @@ public class ProgramParser implements Constants
   {
     if (wrapTargetParsed) {
       throw parseException(DIRECTIVE_WRAP_TARGET + " already declared");
-    }
-    if (!idParsed) {
-      throw parseException(DIRECTIVE_WRAP_TARGET + ": " +
-                           "this directive is only valid after a " +
-                           DIRECTIVE_PROGRAM + " directive");
     }
     final int wrapTarget = parseDecimalInt(unparsed);
     if (wrapTarget < 0) {
@@ -256,11 +236,6 @@ public class ProgramParser implements Constants
   {
     if (sideSetCountParsed) {
       throw parseException(DIRECTIVE_SIDE_SET + " already declared");
-    }
-    if (!idParsed) {
-      throw parseException(DIRECTIVE_SIDE_SET + ": " +
-                           "this directive is only valid after a " +
-                           DIRECTIVE_PROGRAM + " directive");
     }
     if (firstInstructionParsed) {
       throw parseException(DIRECTIVE_SIDE_SET + ": " +
@@ -346,9 +321,6 @@ public class ProgramParser implements Constants
     if (address == 0) {
       throw parseException("program does not contain any instruction");
     }
-    if (!idParsed) {
-      throw parseException("missing directive " + DIRECTIVE_PROGRAM);
-    }
     if (!wrapTargetParsed) {
       wrapTarget = origin >= 0 ? origin : 0;
     }
@@ -361,8 +333,10 @@ public class ProgramParser implements Constants
     final Program program =
       new Program(id, origin, wrap, wrapTarget, sideSetCount,
                   sideSetOptParsed, sideSetPinDirsParsed, trimmedInstructions);
+    final String programDisplay =
+      id != null ? "program \"" + id + "\"" : "unnamed program";
     final String message =
-      "parsed program \"" + id + "\" with " +
+      "parsed " + programDisplay + " with " +
       address + " PIO SM instructions" +
       (origin >= 0 ? " @" + origin : "");
     System.out.println(message);
