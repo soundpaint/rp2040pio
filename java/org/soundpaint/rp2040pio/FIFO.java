@@ -95,6 +95,11 @@ public class FIFO implements Constants
     return regSHIFTCTRL_FJOIN_RX;
   }
 
+  public synchronized int getRXReadPointer()
+  {
+    return 0; // TODO
+  }
+
   public synchronized int getRXLevel()
   {
     return rx.size();
@@ -177,6 +182,11 @@ public class FIFO implements Constants
   public boolean getJoinTX()
   {
     return regSHIFTCTRL_FJOIN_TX;
+  }
+
+  public synchronized int getTXReadPointer()
+  {
+    return 0; // TODO
   }
 
   public synchronized int getTXLevel()

@@ -32,6 +32,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -50,6 +51,7 @@ public class FifoViewPanel extends JPanel
   private final SDK sdk;
   private final int refresh;
   private final FifoEntriesViewPanel fifoEntriesViewPanel;
+  private final JCheckBox cbAutoRotate;
   private int pioNum;
   private int smNum;
 
@@ -91,8 +93,19 @@ public class FifoViewPanel extends JPanel
     smSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(smSelection);
 
-    add(new JScrollPane(fifoEntriesViewPanel));
+    add(fifoEntriesViewPanel);
     fifoEntriesViewPanel.smChanged(pioNum, smNum);
+
+    final Box alignSelectionLine = new Box(BoxLayout.X_AXIS);
+    add(alignSelectionLine);
+    cbAutoRotate = new JCheckBox("Auto-Rotate to First Entry");
+    cbAutoRotate.setSelected(true);
+    cbAutoRotate.addActionListener((event) ->
+                                   fifoEntriesViewPanel.
+                                   setAutoRotate(cbAutoRotate.isSelected()));
+    alignSelectionLine.add(cbAutoRotate);
+    alignSelectionLine.add(Box.createHorizontalGlue());
+
     new Thread(() -> updateStatus()).start();
   }
 

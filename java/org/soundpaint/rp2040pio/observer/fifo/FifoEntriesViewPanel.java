@@ -71,62 +71,12 @@ public class FifoEntriesViewPanel extends JPanel
     txtBottomJoined =
     "└──────────────────────────────────────────────────────────────────────────────┘";
 
-  /*
-  private static class Entry
-  {
-    public boolean isFirst;
-    public boolean isLast;
-    public Integer data;
-  }
-
-  private static class EntryRenderer extends DefaultListCellRenderer
-  {
-    private static final long serialVersionUID = -3620566438024324611L;
-
-    public EntryRenderer()
-    {
-      setHorizontalAlignment(SwingConstants.LEFT);
-    }
-
-    @Override
-    public Component
-      getListCellRendererComponent(final JList<?> list,
-                                   final Object value,
-                                   final int index,
-                                   final boolean isSelected,
-                                   final boolean cellHasFocus)
-    {
-      final Entry entry = (Entry)value;
-      super.getListCellRendererComponent(list, value, index,
-                                         isSelected, cellHasFocus);
-      setText(entry.data != null ?
-              String.format("%08x", entry.data) : "     ???");
-      if (entry.isFirst && entry.isLast) {
-        setBackground(Color.DARK_GRAY);
-        setForeground(Color.LIGHT_GRAY);
-      } else if (entry.isFirst) {
-        setBackground(Color.GREEN);
-        setForeground(Color.BLACK);
-      } else if (entry.isLast) {
-        setBackground(Color.RED);
-        setForeground(Color.WHITE);
-      } else {
-        // keep default
-      }
-      setFont(codeFont);
-      return this;
-    }
-  }
-  */
-
   private final PrintStream console;
   private final SDK sdk;
-  //private final DefaultListModel<Entry> entries;
-  //private final JList<Entry> lsEntries;
-  //private final Entry[] entries;
   private JLabel lbTopLine;
   private JLabel lbBottomLine;
   private final JLabel[] lbEntries;
+  private final JLabel[] lbSeparators;
   private final Integer[] buffer;
   private int pioNum;
   private int smNum;
@@ -134,6 +84,7 @@ public class FifoEntriesViewPanel extends JPanel
   private int txLevel;
   private boolean joinRx;
   private boolean joinTx;
+  private boolean autoRotate;
 
   private FifoEntriesViewPanel()
   {
@@ -146,12 +97,6 @@ public class FifoEntriesViewPanel extends JPanel
     Objects.requireNonNull(sdk);
     this.console = console;
     this.sdk = sdk;
-    /*
-    entries = new DefaultListModel<Entry>();
-    for (int entryNum = 0; entryNum < 2 * Constants.FIFO_DEPTH; entryNum++) {
-      entries.addElement(new Entry());
-    }
-    */
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     final Box topLine = new Box(BoxLayout.X_AXIS);
     add(topLine);
@@ -161,23 +106,26 @@ public class FifoEntriesViewPanel extends JPanel
     topLine.add(Box.createHorizontalGlue());
     final Box entriesLine = new Box(BoxLayout.X_AXIS);
     add(entriesLine);
-    /*
-    lsEntries = new JList<Entry>(entries);
-    lsEntries.setVisibleRowCount(-1);
-    lsEntries.setPreferredSize(new Dimension(500, 50));
-    lsEntries.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-    lsEntries.setCellRenderer(new EntryRenderer());
-    add(lsEntries);
-    */
     buffer = new Integer[2 * Constants.FIFO_DEPTH];
+    lbSeparators = new JLabel[2 * Constants.FIFO_DEPTH + 1];
     lbEntries = new JLabel[2 * Constants.FIFO_DEPTH];
     for (int entryNum = 0; entryNum < 2 * Constants.FIFO_DEPTH; entryNum++) {
-      final JLabel lbEntry = new JLabel("[" + entryNum + "]");
+      final JLabel lbSeparator = new JLabel(entryNum == 0 ? "│" : "  ");
+      lbSeparator.setOpaque(true);
+      lbSeparator.setFont(codeFont);
+      lbSeparators[entryNum] = lbSeparator;
+      entriesLine.add(lbSeparator);
+      final JLabel lbEntry = new JLabel();
       lbEntry.setOpaque(true);
       lbEntry.setFont(codeFont);
       lbEntries[entryNum] = lbEntry;
       entriesLine.add(lbEntry);
     }
+    final JLabel lbSeparator = new JLabel("│");
+    lbSeparator.setOpaque(true);
+    lbSeparator.setFont(codeFont);
+    lbSeparators[2 * Constants.FIFO_DEPTH] = lbSeparator;
+    entriesLine.add(lbSeparator);
     entriesLine.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(entriesLine);
     final Box bottomLine = new Box(BoxLayout.X_AXIS);
@@ -189,12 +137,36 @@ public class FifoEntriesViewPanel extends JPanel
     repaintLater();
   }
 
+  private int getSMJoin() throws IOException
+  {
+    final int addressShiftCtrl =
+      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
+    final int shiftCtrl = sdk.readAddress(addressShiftCtrl);
+    return (shiftCtrl >>> 30) & 0x3;
+  }
+
+  private int getSMFReadPtr() throws IOException
+  {
+    final int addressFReadPtr =
+      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.FREAD_PTR);
+    final int fReadPtr = sdk.readAddress(addressFReadPtr);
+    return (fReadPtr >>> (smNum << 3)) & 0xff;
+  }
+
   private int getSMFLevel() throws IOException
   {
     final int addressFLevel =
       PIORegisters.getAddress(pioNum, PIORegisters.Regs.FLEVEL);
     final int fLevel = sdk.readAddress(addressFLevel);
     return (fLevel >>> (smNum << 3)) & 0xff;
+  }
+
+  private int getSMFStat() throws IOException
+  {
+    final int addressFStat =
+      PIORegisters.getAddress(pioNum, PIORegisters.Regs.FSTAT);
+    final int fStat = sdk.readAddress(addressFStat);
+    return fStat >>> smNum;
   }
 
   private void updateFifoContents() throws IOException
@@ -207,44 +179,24 @@ public class FifoEntriesViewPanel extends JPanel
     }
   }
 
-  private void updateEntries() throws IOException
+  private void updateEntries(final int startEntryNum, final int entryCount,
+                             final int readPtr, final int level)
   {
-    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-    updateFifoContents();
-    final int smfLevel = getSMFLevel();
-    final int txLevel = smfLevel & 0xf;
-    final int rxLevel = (smfLevel >>> 4) & 0xf;
-    final boolean fJoinTX = false; // TODO
-    final boolean fJoinRX = false; // TODO
-
-    lbBottomLine.setText(fJoinTX || fJoinRX ?
-                         txtBottomJoined : txtBottomUnjoined);
-    if (fJoinTX) {
-      lbTopLine.setText(fJoinRX ? txtFJoinBoth : txtFJoinTX);
-    } else {
-      lbTopLine.setText(fJoinRX ? txtFJoinRX : txtFJoinNone);
-    }
-    for (int entryNum = 0; entryNum < 2 * Constants.FIFO_DEPTH; entryNum++) {
-      /*
-      final Entry entry = entries.getElementAt(entryNum);
-      entry.data = buffer[entryNum];
-      entry.isFirst = entryNum == 0;
-      entry.isLast = entryNum == rxLevel; // TODO: rxJoin, txJoin, ...
-      */
-      final boolean isFirst = entryNum == 0;
-      final boolean isLast = entryNum == smfLevel; // TODO: rxJoin, txJoin, ...
+    final int stopEntryNum = startEntryNum + entryCount;
+    for (int entryNum = startEntryNum;
+         entryNum < 2 * Constants.FIFO_DEPTH; entryNum++) {
+      final boolean isFirst;
+      final boolean isLast;
+      if (autoRotate) {
+        isFirst = entryNum == startEntryNum;
+        isLast = entryNum == startEntryNum + level - 1;
+      } else {
+        isFirst = entryNum == startEntryNum + readPtr;
+        isLast = entryNum == startEntryNum + readPtr + level - 1;
+      }
       final Integer data = buffer[entryNum];
       final JLabel lbEntry = lbEntries[entryNum];
-      final String leftBound =
-        entryNum == 0 ||
-        ((entryNum == Constants.FIFO_DEPTH) && !fJoinTX && !fJoinRX) ?
-        "│" :" ";
-      final String rightBound =
-        entryNum == 2 * Constants.FIFO_DEPTH - 1 ||
-        ((entryNum == Constants.FIFO_DEPTH - 1) && !fJoinTX && !fJoinRX) ?
-        "│" :" ";
-      lbEntry.setText(data != null ?
-              String.format(" %08x ", data) : "      ??? ");
+      lbEntry.setText(data != null ? String.format("%08x", data) : "     ???");
       if (isFirst && isLast) {
         lbEntry.setBackground(Color.DARK_GRAY);
         lbEntry.setForeground(Color.LIGHT_GRAY);
@@ -261,13 +213,50 @@ public class FifoEntriesViewPanel extends JPanel
     }
   }
 
+  private void updateEntries() throws IOException
+  {
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    updateFifoContents();
+    final int smJoin = getSMJoin();
+    final boolean fJoinTX = (smJoin & 0x1) != 0x0;
+    final boolean fJoinRX = (smJoin & 0x2) != 0x0;
+    final int smfReadPtr = getSMFReadPtr();
+    final int txReadPtr = smfReadPtr & 0xf;
+    final int rxReadPtr = (smfReadPtr & 0xf0) >> 4;
+    final int smfLevel = getSMFLevel();
+    final int txLevel = smfLevel & 0xf;
+    final int rxLevel = (smfLevel >>> 4) & 0xf;
+    lbBottomLine.setText(fJoinTX || fJoinRX ?
+                         txtBottomJoined : txtBottomUnjoined);
+    lbSeparators[Constants.FIFO_DEPTH].setText(fJoinTX || fJoinRX ? "  " : "||");
+    if (fJoinTX) {
+      lbTopLine.setText(fJoinRX ? txtFJoinBoth : txtFJoinTX);
+    } else {
+      lbTopLine.setText(fJoinRX ? txtFJoinRX : txtFJoinNone);
+    }
+    if (fJoinTX) {
+      if (fJoinRX) {
+        updateEntries(0, 2 * Constants.FIFO_DEPTH, -1, 0);
+      } else {
+        updateEntries(0, 2 * Constants.FIFO_DEPTH, txReadPtr, txLevel);
+      }
+    } else {
+      if (fJoinRX) {
+        updateEntries(0, 2 * Constants.FIFO_DEPTH, rxReadPtr, rxLevel);
+      } else {
+        updateEntries(0, Constants.FIFO_DEPTH, txReadPtr, txLevel);
+        updateEntries(Constants.FIFO_DEPTH, Constants.FIFO_DEPTH,
+                      rxReadPtr, txLevel);
+      }
+    }
+  }
+
   private void checkedUpdateEntries()
   {
     try {
       updateEntries();
     } catch (final IOException e) {
       for (int entryNum = 0; entryNum < Constants.MEMORY_SIZE; entryNum++) {
-        //entries.getElementAt(entryNum).data = null;
         buffer[entryNum] = null;
       }
     }
@@ -280,17 +269,17 @@ public class FifoEntriesViewPanel extends JPanel
     checkedUpdateEntries();
   }
 
+  public void setAutoRotate(final boolean autoRotate)
+  {
+    this.autoRotate = autoRotate;
+  }
+
   public void repaintLater()
   {
     SwingUtilities.invokeLater(() -> {
         final String toolTipText =
           String.format("FIFO registers view for PIO%d, SM%d", pioNum, smNum);
-        //lsEntries.setToolTipText(toolTipText);
         setToolTipText(toolTipText);
-        for (int entryNum = 0; entryNum < 2 * Constants.FIFO_DEPTH; entryNum++) {
-          //final Entry entry = entries.getElementAt(entryNum);
-          //entries.setElementAt(entry, entryNum); // trigger repaint
-        }
       });
   }
 }

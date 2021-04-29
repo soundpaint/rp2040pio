@@ -241,6 +241,9 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case INSTR_MEM31:
       pio.getMemory().set(regNum - Regs.INSTR_MEM0.ordinal(), value, mask, xor);
       break;
+    case FREAD_PTR:
+      // read-only address
+      break;
     case GPIO_PINS:
       pio.getPIOGPIO().setPinsMask(value, mask, xor);
       break;
@@ -265,6 +268,18 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     final int address = regsOffset - SM_SIZE * smNum;
     Constants.checkSmNum(smNum);
     return pio.getSM(smNum).getFIFO().getMemValue(address);
+  }
+
+  private int getFIFOReadPointers()
+  {
+    int readPointers = 0;
+    for (int smNum = SM_SIZE - 1; smNum >= 0; smNum--) {
+      final FIFO fifo = pio.getSM(smNum).getFIFO();
+      readPointers <<= 8;
+      readPointers |= (fifo.getRXReadPointer() << 4) & 0x7;
+      readPointers |= fifo.getTXReadPointer() & 0x7;
+    }
+    return readPointers;
   }
 
   @Override
@@ -423,6 +438,8 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case INSTR_MEM30:
     case INSTR_MEM31:
       return pio.getMemory().get(regNum - Regs.INSTR_MEM0.ordinal()) & 0xffff;
+    case FREAD_PTR:
+      return getFIFOReadPointers();
     case GPIO_PINS:
       return pio.getPIOGPIO().getPins(0, GPIO_NUM);
     case GPIO_PINDIRS:

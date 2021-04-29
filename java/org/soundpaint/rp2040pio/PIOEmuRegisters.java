@@ -247,6 +247,17 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     INSTR_MEM29(Regs.INSTR_MEM0),
     INSTR_MEM30(Regs.INSTR_MEM0),
     INSTR_MEM31(Regs.INSTR_MEM0),
+    FREAD_PTR("Read pointers of all of the SM's %n" +
+              "TX and RX FIFOs.",
+              IntStream.rangeClosed(0, 7).boxed()
+              .map(n -> new BitsInfo(31 - (n << 2),
+                                     28 - (n << 2),
+                                     ((n & 0x1) == 0 ? "TX" : "RX") + "F" +
+                                     (n >> 1) + "_READ_PTR",
+                                     "Offset (0…7) within FIFO memory for%n" +
+                                     "the next FIFO read operation",
+                                     BitsType.RO, 0))
+              .collect(Collectors.toList())),
     GPIO_PINS("Direct read / write access to all of the 32 GPIO pins.",
               IntStream.rangeClosed(0, 31).boxed()
               .map(n -> new BitsInfo(31 - n, 31 - n, "GPIO_PIN" + (31 - n),
