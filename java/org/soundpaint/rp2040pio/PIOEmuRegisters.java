@@ -247,6 +247,28 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     INSTR_MEM29(Regs.INSTR_MEM0),
     INSTR_MEM30(Regs.INSTR_MEM0),
     INSTR_MEM31(Regs.INSTR_MEM0),
+    TXF0("Direct read access to the TX FIFO for the corresponding state%n" +
+         "machine.  Each read pops one word from the FIFO. Attempting to%n" +
+         "read from an empty FIFO has no effect on the FIFO state,%n" +
+         "and sets the sticky FDEBUG_TXUNDER error flag for this FIFO.%n" +
+         "The data returned to the system on a read from an empty FIFO%n" +
+         "is undefined.",
+         new BitsInfo[] {
+           new BitsInfo(31, 0, null, null, BitsType.RF, null)
+         }),
+    TXF1(Regs.TXF0),
+    TXF2(Regs.TXF0),
+    TXF3(Regs.TXF0),
+    RXF0("Direct write access to the RX FIFO for the corresponding state%n" +
+         "machine.  Each write pushes one word to the FIFO.  Attempting to%n" +
+         "write to a full FIFO has no effect on the FIFO state or contents,%n" +
+         "and sets the sticky FDEBUG_RXOVER error flag for this FIFO.",
+         new BitsInfo[] {
+           new BitsInfo(31, 0, null, null, BitsType.WF, 0)
+         }),
+    RXF1(Regs.RXF0),
+    RXF2(Regs.RXF0),
+    RXF3(Regs.RXF0),
     FREAD_PTR("Read pointers of all of the SM's %n" +
               "TX and RX FIFOs.",
               IntStream.rangeClosed(0, 7).boxed()

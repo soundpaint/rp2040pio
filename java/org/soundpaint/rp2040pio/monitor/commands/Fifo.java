@@ -50,8 +50,11 @@ public class Fifo extends Command
   private static final String notes =
     "If none of the FIFO modification options is specified, the status%n"+
     "of the FIFO of the selected is displayed.%n" +
+    "Option '-a' together with option '-v' can be used for directly%n" +
+    "low-level write a value into one of the 8 FIFO's data registers.%n" +
     "Otherwise, for all specified modification options, the corresponding%n" +
-    "these modifications will be performed for the selected state machine.";
+    "modifications will be performed for the selected state machine and%n" +
+    "the selected FIFO (either RX or TX).";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
@@ -65,13 +68,28 @@ public class Fifo extends Command
                                    "value into");
   private static final CmdOptions.IntegerOptionDeclaration optValue =
     CmdOptions.createIntegerOption("VALUE", false, 'v', "value", null,
-                                   "value to write into FIFO memory");
-  private static final CmdOptions.BooleanOptionDeclaration optJoinRx =
-    CmdOptions.createBooleanOption(false, 'r', "joinrx", null,
-                                   "let RX FIFO steal TX FIFO's storage");
-  private static final CmdOptions.BooleanOptionDeclaration optJoinTx =
-    CmdOptions.createBooleanOption(false, 't', "jointx", null,
-                                   "let TX FIFO steal RX FIFO's storage");
+                                   "value to enqueue or directly write " +
+                                   "into FIFO memory");
+  private static final CmdOptions.FlagOptionDeclaration optDequeue =
+    CmdOptions.createFlagOption(false, 'd', "dequeue", CmdOptions.Flag.OFF,
+                                "dequeue value from either RX or TX FIFO");
+  private static final CmdOptions.FlagOptionDeclaration optEnqueue =
+    CmdOptions.createFlagOption(false, 'e', "enqueue", CmdOptions.Flag.OFF,
+                                "enqueue value provided with option -v " +
+                                "into either RX or TX FIFO");
+  private static final CmdOptions.FlagOptionDeclaration optJoin =
+    CmdOptions.createFlagOption(false, 'j', "join", CmdOptions.Flag.OFF,
+                                "let either RX or TX FIFO steal the other " +
+                                "FIFO's storage");
+  private static final CmdOptions.FlagOptionDeclaration optUnjoin =
+    CmdOptions.createFlagOption(false, 'u', "unjoin", CmdOptions.Flag.OFF,
+                                "revoke join operation of either RX or TX FIFO");
+  private static final CmdOptions.FlagOptionDeclaration optTX =
+    CmdOptions.createFlagOption(false, 't', "tx", CmdOptions.Flag.OFF,
+                                "apply modification on TX FIFO");
+  private static final CmdOptions.FlagOptionDeclaration optRX =
+    CmdOptions.createFlagOption(false, 'r', "rx", CmdOptions.Flag.OFF,
+                                "apply modification on RX FIFO");
 
   private enum Type
   {
@@ -84,7 +102,8 @@ public class Fifo extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optAddress, optValue, optJoinRx, optJoinTx });
+          { optPio, optSm, optAddress, optValue,
+              optDequeue, optEnqueue, optJoin, optUnjoin, optTX, optRX });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -108,7 +127,7 @@ public class Fifo extends Command
       }
       final Integer optAddressValue = options.getValue(optAddress);
       final Integer optValueValue = options.getValue(optValue);
-      if (optValueValue != null) {
+      if (optAddressValue != null) {
         final int address = optAddressValue;
         if ((address < 0) || (address > (Constants.FIFO_DEPTH << 1) - 1)) {
           final String message =
@@ -118,23 +137,79 @@ public class Fifo extends Command
           throw new CmdOptions.ParseException(message);
         }
       }
+      if (options.isDefined(optAddress) || options.getValue(optEnqueue).isOn()) {
+        if (optValueValue == null) {
+          throw new CmdOptions.ParseException("missing option: -v");
+        }
+      }
       if (((optAddressValue != null) && (optValueValue == null)) ||
           ((optAddressValue == null) && (optValueValue != null))) {
         final String message =
           "either none of options -a and -v, or both of them must be specified";
         throw new CmdOptions.ParseException(message);
       }
+      if (options.getValue(optRX).isOn() && options.getValue(optTX).isOn()) {
+        final String message =
+          "either option -r and -t can be specified, but not both";
+        throw new CmdOptions.ParseException(message);
+      }
+      int opCount = 0;
+      if (options.getValue(optDequeue).isOn()) opCount++;
+      if (options.getValue(optEnqueue).isOn()) opCount++;
+      if (options.getValue(optJoin).isOn()) opCount++;
+      if (options.getValue(optUnjoin).isOn()) opCount++;
+      if (opCount > 1) {
+        final String message =
+          "only one of options -d, -q, -j and -u may be specified";
+        throw new CmdOptions.ParseException(message);
+      }
+      if (opCount > 0) {
+        if (!options.getValue(optRX).isOn() && !options.getValue(optTX).isOn()) {
+          final String message =
+            "if one of options -d, -q, -j and -u is specified, either " +
+            "option -r or -t must be specified to select a FIFO";
+          throw new CmdOptions.ParseException(message);
+        }
+      } else {
+        if (options.getValue(optRX).isOn() && options.getValue(optTX).isOn()) {
+          final String message =
+            "options -r or -t may be specified only if one of " +
+            "options -d, -q, -j and -u is specified";
+          throw new CmdOptions.ParseException(message);
+        }
+      }
     }
+  }
+
+  private int getSMFReadPtr(final int pioNum, final int smNum)
+    throws IOException
+  {
+    final int addressFReadPtr =
+      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.FREAD_PTR);
+    final int fReadPtr = sdk.readAddress(addressFReadPtr);
+    return (fReadPtr >>> (smNum << 3)) & 0xff;
+  }
+
+  private int getSMFLevel(final int pioNum, final int smNum)
+    throws IOException
+  {
+    final int addressFLevel =
+      PIORegisters.getAddress(pioNum, PIORegisters.Regs.FLEVEL);
+    final int fLevel = sdk.readAddress(addressFLevel);
+    return (fLevel >>> (smNum << 3)) & 0xff;
   }
 
   private void displayFifo(final int pioNum, final int smNum)
     throws IOException
   {
+    final int smfReadPtr = getSMFReadPtr(pioNum, smNum);
+    final int txReadPtr = smfReadPtr & 0xf;
+    final int rxReadPtr = (smfReadPtr & 0xf0) >> 4;
     final int addressFLevel =
       PIORegisters.getAddress(pioNum, PIORegisters.Regs.FLEVEL);
-    final int fLevelValue = sdk.readAddress(addressFLevel);
-    final int rxLevel = (fLevelValue >>> (0x4 + 0x4 * smNum)) & 0x3;
-    final int txLevel = (fLevelValue >>> (0x4 * smNum)) & 0x3;
+    final int smfLevel = getSMFLevel(pioNum, smNum);
+    final int txLevel = smfLevel & 0xf;
+    final int rxLevel = (smfLevel >>> 4) & 0xf;
     final int addressShiftCtrl =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
     final int shiftCtrlValue = sdk.readAddress(addressShiftCtrl);
@@ -143,15 +218,15 @@ public class Fifo extends Command
     final boolean fJoinTxValue =
       (shiftCtrlValue & Constants.SM0_SHIFTCTRL_FJOIN_TX_BITS) != 0x0;
     final StringBuffer fifoHeader = new StringBuffer();
-    Type type = fJoinTxValue ? (fJoinRxValue ? null : Type.TX) : Type.RX;
+    Type type = fJoinRxValue ? (fJoinTxValue ? null : Type.RX) : Type.TX;
     int regCount = 0;
     for (int index = 0; index < (Constants.FIFO_DEPTH << 1); index++) {
       if (!fJoinRxValue && !fJoinTxValue && (index == Constants.FIFO_DEPTH)) {
-        type = Type.TX;
+        type = Type.RX;
         regCount = 0;
       }
       fifoHeader.append(type != null ? type : "__");
-      fifoHeader.append(String.format("%01x      ", regCount++));
+      fifoHeader.append(String.format("%01x       ", regCount++));
     }
     final StringBuffer fifoContents = new StringBuffer();
     for (int fifoMemAddress = 0; fifoMemAddress < (Constants.FIFO_DEPTH << 1);
@@ -159,7 +234,11 @@ public class Fifo extends Command
       final int addressFifoMem =
         PIOEmuRegisters.getFIFOMemAddress(pioNum, smNum, fifoMemAddress);
       final int fifoMemValue = sdk.readAddress(addressFifoMem);
-      fifoContents.append(String.format("%08x ", fifoMemValue));
+      final String readPtr =
+        (!fJoinRxValue && (fifoMemAddress == txReadPtr)) ||
+        (!fJoinTxValue && (fifoMemAddress == rxReadPtr)) ?
+        "→" : " ";
+      fifoContents.append(String.format("%08x%s ", fifoMemValue, readPtr));
     }
     final StringBuffer fifoLevels = new StringBuffer();
     if (!fJoinTxValue) {
@@ -187,6 +266,25 @@ public class Fifo extends Command
                    pioNum, smNum, value, fifoMemAddress);
   }
 
+  private void dequeue(final int pioNum, final int smNum, final Type type)
+    throws IOException
+  {
+    final int address =
+      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.TXF0) + smNum << 2;
+    final int value = sdk.readAddress(address);
+    console.printf("(pio%d:sm%d) dequeued 0x%08x%n", pioNum, smNum, value);
+  }
+
+  private void enqueue(final int pioNum, final int smNum, final Type type,
+                       final int value)
+    throws IOException
+  {
+    final int address =
+      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.RXF0) + smNum << 2;
+    sdk.writeAddress(address, value);
+    console.printf("(pio%d:sm%d) enqueued 0x%08x%n", pioNum, smNum, value);
+  }
+
   private void setFJoin(final int pioNum, final int smNum,
                         final Type type, final boolean join)
     throws IOException
@@ -199,10 +297,10 @@ public class Fifo extends Command
       Constants.SM0_SHIFTCTRL_FJOIN_TX_BITS;
     if (join) {
       sdk.hwSetBits(addressShiftCtrl, mask);
-      console.println(String.format("set join %s ", type));
+      console.printf("(pio%d:sm%d) set join %s ", pioNum, smNum, type);
     } else {
       sdk.hwClearBits(addressShiftCtrl, mask);
-      console.println(String.format("unset join %s ", type));
+      console.printf("(pio%d:sm%d) unset join %s ", pioNum, smNum, type);
     }
   }
 
@@ -217,17 +315,27 @@ public class Fifo extends Command
     final int smNum = options.getValue(optSm);
     final Integer optAddressValue = options.getValue(optAddress);
     final Integer optValueValue = options.getValue(optValue);
-    final Boolean optJoinRxValue = options.getValue(optJoinRx);
-    final Boolean optJoinTxValue = options.getValue(optJoinTx);
-    if ((optAddressValue == null) && (optValueValue == null) &&
-        (optJoinRxValue == null) && (optJoinTxValue == null)) {
+    final boolean optDequeueValue = options.getValue(optDequeue).isOn();
+    final boolean optEnqueueValue = options.getValue(optEnqueue).isOn();
+    final boolean optJoinValue = options.getValue(optJoin).isOn();
+    final boolean optUnjoinValue = options.getValue(optUnjoin).isOn();
+    final boolean haveModOp =
+      optDequeueValue || optEnqueueValue || optJoinValue || optUnjoinValue;
+    if ((optAddressValue == null) && (optValueValue == null) && !haveModOp) {
       displayFifo(pioNum, smNum);
     }
-    if (optJoinRxValue != null) {
-      setFJoin(pioNum, smNum, Type.RX, optJoinRxValue);
+    final Type type = options.getValue(optRX).isOn() ? Type.RX : Type.TX;
+    if (optDequeueValue) {
+      dequeue(pioNum, smNum, type);
     }
-    if (optJoinTxValue != null) {
-      setFJoin(pioNum, smNum, Type.TX, optJoinTxValue);
+    if (optEnqueueValue) {
+      enqueue(pioNum, smNum, type, optValueValue);
+    }
+    if (optJoinValue) {
+      setFJoin(pioNum, smNum, type, true);
+    }
+    if (optUnjoinValue) {
+      setFJoin(pioNum, smNum, type, false);
     }
     if ((optAddressValue != null) && (optValueValue != null)) {
       writeFifoAddress(pioNum, smNum, optAddressValue, optValueValue);

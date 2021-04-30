@@ -654,12 +654,33 @@ public class SM implements Constants
     }
   }
 
+  public void putRXF(final int data)
+  {
+    synchronized(fifo) {
+      fifo.rxPush(data, false);
+      if (isRXFIFOFull()) {
+        // irq.setINTR_SMX_RXNFULL(num); // TODO: Do we need this?
+      }
+    }
+  }
+
   public int get()
   {
     synchronized(fifo) {
       final int value = fifo.rxDMARead();
       if (isRXFIFOEmpty()) {
         irq.setINTR_SMX_RXNEMPTY(num);
+      }
+      return value;
+    }
+  }
+
+  public int getTXF()
+  {
+    synchronized(fifo) {
+      final int value = fifo.txPull(false);
+      if (isTXFIFOEmpty()) {
+        // irq.setINTR_SMX_TXNEMPTY(num); // TODO: Do we need this?
       }
       return value;
     }
