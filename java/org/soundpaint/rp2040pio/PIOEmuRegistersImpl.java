@@ -273,10 +273,10 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
   private int getFIFOReadPointers()
   {
     int readPointers = 0;
-    for (int smNum = SM_SIZE - 1; smNum >= 0; smNum--) {
+    for (int smNum = SM_COUNT - 1; smNum >= 0; smNum--) {
       final FIFO fifo = pio.getSM(smNum).getFIFO();
       readPointers <<= 8;
-      readPointers |= (fifo.getRXReadPointer() << 4) & 0x7;
+      readPointers |= (fifo.getRXReadPointer() & 0x7) << 4;
       readPointers |= fifo.getTXReadPointer() & 0x7;
     }
     return readPointers;

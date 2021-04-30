@@ -46,12 +46,16 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 public class FifoViewPanel extends JPanel
 {
   private static final long serialVersionUID = -2782955870967022886L;
+  private static final boolean initialAutoScroll = true;
+  private static final String autoScrollToolTipText =
+    "automatically rotates display of FIFO cyclic buffer such that the " +
+    "next entry to be dequeued is displayed leftmost";
 
   private final PrintStream console;
   private final SDK sdk;
   private final int refresh;
   private final FifoEntriesViewPanel fifoEntriesViewPanel;
-  private final JCheckBox cbAutoRotate;
+  private final JCheckBox cbAutoScroll;
   private int pioNum;
   private int smNum;
 
@@ -71,7 +75,8 @@ public class FifoViewPanel extends JPanel
     this.refresh = refresh;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("FIFO View"));
-    fifoEntriesViewPanel = new FifoEntriesViewPanel(console, sdk);
+    fifoEntriesViewPanel = new FifoEntriesViewPanel(console, sdk,
+                                                    initialAutoScroll);
 
     final Box pioSelection = new Box(BoxLayout.X_AXIS);
     add(pioSelection);
@@ -96,17 +101,18 @@ public class FifoViewPanel extends JPanel
     add(fifoEntriesViewPanel);
     fifoEntriesViewPanel.smChanged(pioNum, smNum);
 
-    final Box alignSelectionLine = new Box(BoxLayout.X_AXIS);
-    add(alignSelectionLine);
-    cbAutoRotate = new JCheckBox("Auto-Rotate to First Entry");
-    cbAutoRotate.setSelected(true);
-    cbAutoRotate.addActionListener((event) ->
+    final Box scrollSelectionLine = new Box(BoxLayout.X_AXIS);
+    add(scrollSelectionLine);
+    cbAutoScroll = new JCheckBox("Auto-scroll to front entry");
+    cbAutoScroll.setToolTipText(autoScrollToolTipText);
+    cbAutoScroll.setSelected(initialAutoScroll);
+    cbAutoScroll.addActionListener((event) ->
                                    fifoEntriesViewPanel.
-                                   setAutoRotate(cbAutoRotate.isSelected()));
-    alignSelectionLine.add(cbAutoRotate);
-    alignSelectionLine.add(Box.createHorizontalGlue());
+                                   setAutoScroll(cbAutoScroll.isSelected()));
+    scrollSelectionLine.add(cbAutoScroll);
+    scrollSelectionLine.add(Box.createHorizontalGlue());
 
-    new Thread(() -> updateStatus()).start();
+    new Thread(() -> updateLoop()).start();
   }
 
   private void addPioButtons(final Box pioSelection)
@@ -144,7 +150,7 @@ public class FifoViewPanel extends JPanel
     }
   }
 
-  public void updateStatus()
+  public void updateLoop()
   {
     final int addressPhase0 =
       PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
@@ -167,7 +173,13 @@ public class FifoViewPanel extends JPanel
                    cyclesTimeout, millisTimeout);
         }
       } catch (final IOException e) {
-        console.println(e.getMessage());
+        console.printf("update loop: %s%n", e.getMessage());
+        try {
+          Thread.sleep(1000); // limit CPU load in case of persisting
+                              // error
+        } catch (final InterruptedException e2) {
+          // ignore
+        }
       }
     }
   }

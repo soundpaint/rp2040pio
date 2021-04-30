@@ -100,7 +100,7 @@ public class CodeObserver extends JFrame
       options.parse(argv);
       checkValidity(options);
     } catch (final CmdOptions.ParseException e) {
-      console.println(e.getMessage());
+      console.printf("parsing command line args failed: %s%n", e.getMessage());
       System.exit(-1);
       throw new InternalError();
     }
@@ -171,7 +171,7 @@ public class CodeObserver extends JFrame
       setVisible(true);
       return 0;
     } catch (final IOException e) {
-      console.println(e.getMessage());
+      console.printf("initialization failed: %s%n", e.getMessage());
       return -1;
     }
   }

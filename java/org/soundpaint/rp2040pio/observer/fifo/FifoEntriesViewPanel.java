@@ -71,6 +71,43 @@ public class FifoEntriesViewPanel extends JPanel
     txtBottomJoined =
     "└──────────────────────────────────────────────────────────────────────────────┘";
 
+  private static enum ColorScheme
+  {
+    RX, TX;
+  }
+
+  private static enum StateColor
+  {
+    QUEUED(Color.WHITE, Color.RED, Color.WHITE, Color.GREEN),
+    QUEUED_READ_PTR(Color.BLACK, Color.RED, Color.BLACK, Color.GREEN),
+    READ_PTR(Color.BLACK, Color.GRAY, Color.BLACK, Color.GRAY),
+    DEQUEUED(Color.LIGHT_GRAY, Color.GRAY, Color.LIGHT_GRAY, Color.GRAY);
+
+    private final Color fgTX;
+    private final Color bgTX;
+    private final Color fgRX;
+    private final Color bgRX;
+
+    private StateColor(final Color fgTX, final Color bgTX,
+                       final Color fgRX, final Color bgRX)
+    {
+      this.fgTX = fgTX;
+      this.bgTX = bgTX;
+      this.fgRX = fgRX;
+      this.bgRX = bgRX;
+    }
+
+    public Color getFgColor(final ColorScheme colorScheme)
+    {
+      return colorScheme == ColorScheme.RX ? fgRX : fgTX;
+    }
+
+    public Color getBgColor(final ColorScheme colorScheme)
+    {
+      return colorScheme == ColorScheme.RX ? bgRX : bgTX;
+    }
+  }
+
   private final PrintStream console;
   private final SDK sdk;
   private JLabel lbTopLine;
@@ -84,14 +121,15 @@ public class FifoEntriesViewPanel extends JPanel
   private int txLevel;
   private boolean joinRx;
   private boolean joinTx;
-  private boolean autoRotate;
+  private boolean autoScroll;
 
   private FifoEntriesViewPanel()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public FifoEntriesViewPanel(final PrintStream console, final SDK sdk)
+  public FifoEntriesViewPanel(final PrintStream console, final SDK sdk,
+                              final boolean initialAutoScroll)
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
@@ -134,6 +172,7 @@ public class FifoEntriesViewPanel extends JPanel
     lbBottomLine.setFont(codeFont);
     bottomLine.add(lbBottomLine);
     bottomLine.add(Box.createHorizontalGlue());
+    autoScroll = initialAutoScroll;
     repaintLater();
   }
 
@@ -179,37 +218,32 @@ public class FifoEntriesViewPanel extends JPanel
     }
   }
 
-  private void updateEntries(final int startEntryNum, final int entryCount,
-                             final int readPtr, final int level)
+  private void updateEntries(final int entryOffs, final int entryCount,
+                             final int readPtr, final int level,
+                             final ColorScheme colorScheme)
   {
-    final int stopEntryNum = startEntryNum + entryCount;
-    for (int entryNum = startEntryNum;
-         entryNum < 2 * Constants.FIFO_DEPTH; entryNum++) {
-      final boolean isFirst;
-      final boolean isLast;
-      if (autoRotate) {
-        isFirst = entryNum == startEntryNum;
-        isLast = entryNum == startEntryNum + level - 1;
-      } else {
-        isFirst = entryNum == startEntryNum + readPtr;
-        isLast = entryNum == startEntryNum + readPtr + level - 1;
-      }
-      final Integer data = buffer[entryNum];
-      final JLabel lbEntry = lbEntries[entryNum];
+    int entryPtr = autoScroll ? readPtr : entryOffs;
+    for (int displayedEntry = 0; displayedEntry < entryCount; displayedEntry++) {
+      final boolean isQueued =
+        autoScroll ?
+        displayedEntry < level :
+        level > 0 &&
+        (((entryCount + entryPtr - readPtr) & (entryCount - 1)) < level);
+      final boolean isReadPtr =
+        autoScroll ?
+        (readPtr >= 0) && (displayedEntry == 0) :
+        entryPtr == readPtr;
+      final Integer data = buffer[entryPtr];
+      final JLabel lbEntry = lbEntries[entryOffs + displayedEntry];
       lbEntry.setText(data != null ? String.format("%08x", data) : "     ???");
-      if (isFirst && isLast) {
-        lbEntry.setBackground(Color.DARK_GRAY);
-        lbEntry.setForeground(Color.LIGHT_GRAY);
-      } else if (isFirst) {
-        lbEntry.setBackground(Color.GREEN);
-        lbEntry.setForeground(Color.BLACK);
-      } else if (isLast) {
-        lbEntry.setBackground(Color.RED);
-        lbEntry.setForeground(Color.WHITE);
-      } else {
-        lbEntry.setBackground(Color.WHITE);
-        lbEntry.setForeground(Color.BLACK);
-      }
+      final StateColor stateColor =
+        isQueued ?
+        (isReadPtr ? StateColor.QUEUED_READ_PTR : StateColor.QUEUED) :
+        (isReadPtr ? StateColor.READ_PTR : StateColor.DEQUEUED);
+      lbEntry.setOpaque(isQueued);
+      lbEntry.setForeground(stateColor.getFgColor(colorScheme));
+      lbEntry.setBackground(stateColor.getBgColor(colorScheme));
+      entryPtr = ((entryPtr + 1) & (entryCount - 1)) + entryOffs;
     }
   }
 
@@ -236,17 +270,21 @@ public class FifoEntriesViewPanel extends JPanel
     }
     if (fJoinTX) {
       if (fJoinRX) {
-        updateEntries(0, 2 * Constants.FIFO_DEPTH, -1, 0);
+        updateEntries(0, 2 * Constants.FIFO_DEPTH,
+                      -1, 0, ColorScheme.RX);
       } else {
-        updateEntries(0, 2 * Constants.FIFO_DEPTH, txReadPtr, txLevel);
+        updateEntries(0, 2 * Constants.FIFO_DEPTH,
+                      txReadPtr, txLevel, ColorScheme.TX);
       }
     } else {
       if (fJoinRX) {
-        updateEntries(0, 2 * Constants.FIFO_DEPTH, rxReadPtr, rxLevel);
+        updateEntries(0, 2 * Constants.FIFO_DEPTH,
+                      rxReadPtr, rxLevel, ColorScheme.RX);
       } else {
-        updateEntries(0, Constants.FIFO_DEPTH, txReadPtr, txLevel);
+        updateEntries(0, Constants.FIFO_DEPTH,
+                      txReadPtr, txLevel, ColorScheme.TX);
         updateEntries(Constants.FIFO_DEPTH, Constants.FIFO_DEPTH,
-                      rxReadPtr, txLevel);
+                      rxReadPtr, rxLevel, ColorScheme.RX);
       }
     }
   }
@@ -256,7 +294,7 @@ public class FifoEntriesViewPanel extends JPanel
     try {
       updateEntries();
     } catch (final IOException e) {
-      for (int entryNum = 0; entryNum < Constants.MEMORY_SIZE; entryNum++) {
+      for (int entryNum = 0; entryNum < Constants.SM_COUNT; entryNum++) {
         buffer[entryNum] = null;
       }
     }
@@ -269,9 +307,9 @@ public class FifoEntriesViewPanel extends JPanel
     checkedUpdateEntries();
   }
 
-  public void setAutoRotate(final boolean autoRotate)
+  public void setAutoScroll(final boolean autoScroll)
   {
-    this.autoRotate = autoRotate;
+    this.autoScroll = autoScroll;
   }
 
   public void repaintLater()

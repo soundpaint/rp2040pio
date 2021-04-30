@@ -97,7 +97,7 @@ public class CodeViewPanel extends JPanel
     add(codeSmViewPanel);
     add(pbDelay);
     codeSmViewPanel.smChanged(pioNum, smNum);
-    new Thread(() -> updateStatus()).start();
+    new Thread(() -> updateLoop()).start();
   }
 
   private void addPioButtons(final Box pioSelection)
@@ -135,7 +135,7 @@ public class CodeViewPanel extends JPanel
     }
   }
 
-  public void updateStatus()
+  public void updateLoop()
   {
     final int addressPhase0 =
       PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
@@ -158,7 +158,13 @@ public class CodeViewPanel extends JPanel
                    cyclesTimeout, millisTimeout);
         }
       } catch (final IOException e) {
-        console.println(e.getMessage());
+        console.printf("update loop: %s%n", e.getMessage());
+        try {
+          Thread.sleep(1000); // limit CPU load in case of persisting
+                              // error
+        } catch (final InterruptedException e2) {
+          // ignore
+        }
       }
     }
   }

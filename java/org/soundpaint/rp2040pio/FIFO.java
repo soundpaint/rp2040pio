@@ -97,7 +97,7 @@ public class FIFO implements Constants
 
   public synchronized int getRXReadPointer()
   {
-    return 0; // TODO
+    return getJoinRX() ? 0 : 4; // TODO
   }
 
   public synchronized int getRXLevel()
