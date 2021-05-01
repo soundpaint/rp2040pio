@@ -24,9 +24,6 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.util.LinkedList;
-import java.util.Collections;
-
 /**
  * A pair of an RX FIFO and a TX FIFO, each having a capacity of DEPTH
  * words of 32 bits.  One of the FIFOs' capacity can be reconfigured
@@ -36,20 +33,64 @@ import java.util.Collections;
  */
 public class FIFO implements Constants
 {
-  private static final Integer[] INTEGER_PROTOTYPE_ARRAY = new Integer[0];
+  private static int JOINED_FIFO_DEPTH = FIFO_DEPTH + FIFO_DEPTH;
 
-  /**
-   * RX queue from state machine to system.
-   */
-  private final LinkedList<Integer> rx;
+  private static enum Mode
+  {
+    JoinNone(false, false, FIFO_DEPTH, FIFO_DEPTH),
+    JoinTX(true, false, JOINED_FIFO_DEPTH, 0),
+    JoinRX(false, true, 0, JOINED_FIFO_DEPTH),
+    JoinBoth(true, true, 0, 0);
 
-  /**
-   * TX queue from system to state machine.
-   */
-  private final LinkedList<Integer> tx;
+    private final boolean joinTX;
+    private final boolean joinRX;
+    private final int txSize;
+    private final int rxSize;
 
-  private boolean regSHIFTCTRL_FJOIN_RX; // bit 31 of SHIFTCTRL
-  private boolean regSHIFTCTRL_FJOIN_TX; // bit 30 of SHIFTCTRL
+    private Mode(final boolean joinTX, final boolean joinRX,
+                 final int txSize, final int rxSize)
+    {
+      this.joinTX = joinTX;
+      this.joinRX = joinRX;
+      this.txSize = txSize;
+      this.rxSize = rxSize;
+    }
+
+    public boolean isJoinTX() { return joinTX; }
+    public boolean isJoinRX() { return joinRX; }
+    public int getTXSize() { return txSize; }
+    public int getRXSize() { return rxSize; }
+
+    public int incPtrTX(final int ptr)
+    {
+      return
+        txSize == 0 ? 0 :
+        (ptr + 1) & (txSize - 1);
+    }
+
+    public int incPtrRX(final int ptr)
+    {
+      final int rxOffset = JOINED_FIFO_DEPTH - rxSize;
+      return
+        rxSize == 0 ? 0 :
+        ((ptr + 1) & (rxSize - 1)) + rxOffset;
+    }
+
+    public static Mode fromJoins(final boolean joinTX, final boolean joinRX)
+    {
+      return
+        joinTX ? (joinRX ? JoinBoth : JoinTX) : (joinRX ? JoinRX : JoinNone);
+    }
+  }
+
+  private int[] memory;
+  private Mode mode;
+  private int txReadPtr;
+  private int txWritePtr;
+  private boolean txFull;
+  private int rxReadPtr;
+  private int rxWritePtr;
+  private boolean rxFull;
   private boolean regFDEBUG_TXSTALL; // one of bits 27:24 of FDEBUG
   private boolean regFDEBUG_TXOVER; // one of bits 19:16 of FDEBUG
   private boolean regFDEBUG_RXUNDER; // one of bits 11:8 of FDEBUG
@@ -57,66 +98,72 @@ public class FIFO implements Constants
 
   public FIFO()
   {
-    rx = new LinkedList<Integer>();
-    tx = new LinkedList<Integer>();
+    memory = new int[JOINED_FIFO_DEPTH];
     reset();
   }
 
   public synchronized void reset()
   {
-    clear();
-    regSHIFTCTRL_FJOIN_RX = false;
-    regSHIFTCTRL_FJOIN_TX = false;
+    reset(false, false);
+  }
+
+  private void reset(final boolean joinTX, final boolean joinRX)
+  {
+    for (int index = 0; index < memory.length; index++) {
+      memory[index] = 0;
+    }
+    mode = Mode.fromJoins(joinTX, joinRX);
     regFDEBUG_TXSTALL = false;
     regFDEBUG_TXOVER = false;
     regFDEBUG_RXUNDER = false;
     regFDEBUG_RXSTALL = false;
-  }
-
-  public synchronized void clear()
-  {
-    rx.clear();
-    tx.clear();
+    txReadPtr = joinTX && joinRX ? -1 : 0;
+    txWritePtr = txReadPtr;
+    txFull = joinRX;
+    rxReadPtr = joinTX && joinRX ? -1 : (joinRX ? 0 : FIFO_DEPTH);
+    rxWritePtr = rxReadPtr;
+    rxFull = joinTX;
     notifyAll();
   }
 
   public synchronized void setJoinRX(final boolean join)
   {
-    if (join == regSHIFTCTRL_FJOIN_RX)
-      return;
-    regSHIFTCTRL_FJOIN_RX = join;
-    rx.clear();
-    tx.clear();
-    notifyAll();
+    if (mode.isJoinRX() == join) return;
+    reset(mode.isJoinTX(), join);
   }
 
   public boolean getJoinRX()
   {
-    return regSHIFTCTRL_FJOIN_RX;
+    return mode.isJoinRX();
+  }
+
+  private int getRXSize()
+  {
+    return mode.getRXSize();
   }
 
   public synchronized int getRXReadPointer()
   {
-    return getJoinRX() ? 0 : 4; // TODO
-  }
-
-  public synchronized int getRXLevel()
-  {
-    return rx.size();
+    return rxReadPtr;
   }
 
   public synchronized boolean fstatRxFull()
   {
     // bit 0, 1, 2 or 3 (for SM_0…SM_3) of FSTAT
-    return tx.size() >=
-      (regSHIFTCTRL_FJOIN_TX ? 0 :
-       (regSHIFTCTRL_FJOIN_RX ? 2 : 1 ) * FIFO_DEPTH);
+    return rxFull;
   }
 
   public synchronized boolean fstatRxEmpty()
   {
     // bit 8, 9, 10 or 11 (for SM_0…SM_3) of FSTAT
-    return rx.size() == 0;
+    return (rxReadPtr == rxWritePtr) && !rxFull;
+  }
+
+  public synchronized int getRXLevel()
+  {
+    final int rxSize = mode.getRXSize();
+    return
+      rxFull ? rxSize : (rxSize + rxWritePtr - rxReadPtr) & (rxSize - 1);
   }
 
   /**
@@ -124,28 +171,34 @@ public class FIFO implements Constants
    */
   public synchronized boolean rxPush(final int value, final boolean stallIfFull)
   {
+    final boolean modified;
     if (!fstatRxFull()) {
-      rx.add(value);
-      notifyAll();
-      return true;
-    }
-    if (stallIfFull) {
-      regFDEBUG_RXSTALL = true;
+      memory[rxWritePtr] = value;
+      rxWritePtr = mode.incPtrRX(rxWritePtr);
+      rxFull = rxWritePtr == rxReadPtr;
+      modified = true;
+    } else {
+      if (stallIfFull) {
+        regFDEBUG_RXSTALL = true;
+      }
+      modified = false;
     }
     notifyAll();
-    return false;
+    return modified;
   }
 
   public synchronized int rxDMARead()
   {
     final int value;
     if (!fstatRxEmpty()) {
-      value = rx.remove();
-      notifyAll();
+      value = memory[rxReadPtr];
+      rxReadPtr = mode.incPtrRX(rxReadPtr);
+      rxFull = false;
     } else {
       regFDEBUG_RXUNDER = true;
       value = 0;
     }
+    notifyAll();
     return value;
   }
 
@@ -171,48 +224,46 @@ public class FIFO implements Constants
 
   public synchronized void setJoinTX(final boolean join)
   {
-    if (join == regSHIFTCTRL_FJOIN_TX)
-      return;
-    regSHIFTCTRL_FJOIN_TX = join;
-    rx.clear();
-    tx.clear();
-    notifyAll();
+    if (mode.isJoinTX() == join) return;
+    reset(join, mode.isJoinRX());
   }
 
   public boolean getJoinTX()
   {
-    return regSHIFTCTRL_FJOIN_TX;
+    return mode.isJoinTX();
   }
 
   public synchronized int getTXReadPointer()
   {
-    return 0; // TODO
-  }
-
-  public synchronized int getTXLevel()
-  {
-    return tx.size();
+    return txReadPtr;
   }
 
   public synchronized boolean fstatTxFull()
   {
     // bit 16, 17, 18 or 19 (for SM_0…SM_3) of FSTAT
-    return tx.size() >=
-      (regSHIFTCTRL_FJOIN_RX ? 0 :
-       (regSHIFTCTRL_FJOIN_TX ? 2 : 1 ) * FIFO_DEPTH);
+    return txFull;
   }
 
   public synchronized boolean fstatTxEmpty()
   {
     // bit 24, 25, 26 or 27 (for SM_0…SM_3) of FSTAT
-    return tx.size() == 0;
+    return (txReadPtr == txWritePtr) && !txFull;
+  }
+
+  public synchronized int getTXLevel()
+  {
+    final int txSize = mode.getTXSize();
+    return
+      txFull ? txSize : (txSize + txWritePtr - txReadPtr) & (txSize - 1);
   }
 
   public synchronized int txPull(final boolean stallIfEmpty)
   {
     final int value;
     if (!fstatTxEmpty()) {
-      value = tx.remove();
+      value = memory[txReadPtr];
+      txReadPtr = mode.incPtrTX(txReadPtr);
+      txFull = false;
     } else {
       value = 0;
       if (stallIfEmpty) {
@@ -226,13 +277,14 @@ public class FIFO implements Constants
   public synchronized void txDMAWrite(final int value)
   {
     if (!fstatTxFull()) {
-      tx.add(value);
+      memory[txWritePtr] = value;
+      txWritePtr = mode.incPtrTX(txWritePtr);
+      txFull = txWritePtr == txReadPtr;
     } else {
       // overwrite most recent value
-      final Integer[] values = tx.toArray(INTEGER_PROTOTYPE_ARRAY);
-      if (values.length > 0) values[0] = value;
-      tx.clear();
-      Collections.addAll(tx, values);
+      if (txWritePtr >= 0) {
+        memory[txWritePtr] = value;
+      }
       regFDEBUG_TXOVER = true;
     }
     notifyAll();
@@ -260,30 +312,14 @@ public class FIFO implements Constants
 
   public int getMemValue(final int address)
   {
-    if (address < 0) {
-      throw new IllegalArgumentException("address < 0: " + address);
-    }
-    if (address > 2 * FIFO_DEPTH - 1) {
-      throw new IllegalArgumentException("address > " +
-                                         (2 * FIFO_DEPTH - 1) + ": " +
-                                         address);
-    }
-    if (regSHIFTCTRL_FJOIN_RX && regSHIFTCTRL_FJOIN_TX)
-      return 0;
-    if (regSHIFTCTRL_FJOIN_RX) {
-      return address < rx.size() ? rx.get(address) : 0;
-    }
-    if (regSHIFTCTRL_FJOIN_TX || (address < FIFO_DEPTH)) {
-      return address < tx.size() ? tx.get(address) : 0;
-    }
-    return
-      address - FIFO_DEPTH < rx.size() ? rx.get(address - FIFO_DEPTH) : 0;
+    Constants.checkFIFOAddr(address, "address");
+    return memory[address];
   }
 
   public void setMemValue(final int address, final int value)
   {
-    // TODO: Replace LinkedList FIFOs with static buffer, to be able
-    // to implement this method.
+    Constants.checkFIFOAddr(address, "address");
+    memory[address] = value;
   }
 }
 
