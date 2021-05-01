@@ -142,11 +142,11 @@ public class Fifo extends Command
           throw new CmdOptions.ParseException("missing option: -v");
         }
       }
-      if (((optAddressValue != null) && (optValueValue == null)) ||
-          ((optAddressValue == null) && (optValueValue != null))) {
-        final String message =
-          "either none of options -a and -v, or both of them must be specified";
-        throw new CmdOptions.ParseException(message);
+      if (optValueValue != null) {
+        if (!options.isDefined(optAddress) &&
+            !options.getValue(optEnqueue).isOn()) {
+          throw new CmdOptions.ParseException("missing option: -a or -e");
+        }
       }
       if (options.getValue(optRX).isOn() && options.getValue(optTX).isOn()) {
         final String message =
@@ -154,13 +154,14 @@ public class Fifo extends Command
         throw new CmdOptions.ParseException(message);
       }
       int opCount = 0;
+      if (optAddressValue != null) opCount++;
       if (options.getValue(optDequeue).isOn()) opCount++;
       if (options.getValue(optEnqueue).isOn()) opCount++;
       if (options.getValue(optJoin).isOn()) opCount++;
       if (options.getValue(optUnjoin).isOn()) opCount++;
       if (opCount > 1) {
         final String message =
-          "only one of options -d, -q, -j and -u may be specified";
+          "only one of options -a, -d, -q, -j and -u may be specified";
         throw new CmdOptions.ParseException(message);
       }
       if (opCount > 0) {
@@ -241,12 +242,12 @@ public class Fifo extends Command
       fifoContents.append(String.format("%08x%s ", fifoMemValue, readPtr));
     }
     final StringBuffer fifoLevels = new StringBuffer();
-    if (!fJoinTxValue) {
-      fifoLevels.append(String.format("RX_LEVEL=%01x", rxLevel));
-    }
     if (!fJoinRxValue) {
-      if (fifoLevels.length() > 0) fifoLevels.append(", ");
       fifoLevels.append(String.format("TX_LEVEL=%01x", txLevel));
+    }
+    if (!fJoinTxValue) {
+      if (fifoLevels.length() > 0) fifoLevels.append(", ");
+      fifoLevels.append(String.format("RX_LEVEL=%01x", rxLevel));
     }
     console.printf("(pio%d:sm%d) %s%n", pioNum, smNum, fifoHeader);
     console.printf("           %s%n", fifoContents);
@@ -269,20 +270,24 @@ public class Fifo extends Command
   private void dequeue(final int pioNum, final int smNum, final Type type)
     throws IOException
   {
-    final int address =
-      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.TXF0) + smNum << 2;
+    final int address = type == Type.TX ?
+      PIOEmuRegisters.getTXFAddress(pioNum, smNum) :
+      PIORegisters.getRXFAddress(pioNum, smNum);
     final int value = sdk.readAddress(address);
-    console.printf("(pio%d:sm%d) dequeued 0x%08x%n", pioNum, smNum, value);
+    console.printf("(pio%d:sm%d) dequeued 0x%08x from %s%n",
+                   pioNum, smNum, value, type);
   }
 
   private void enqueue(final int pioNum, final int smNum, final Type type,
                        final int value)
     throws IOException
   {
-    final int address =
-      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.RXF0) + smNum << 2;
+    final int address = type == Type.RX ?
+      PIOEmuRegisters.getRXFAddress(pioNum, smNum) :
+      PIORegisters.getTXFAddress(pioNum, smNum);
     sdk.writeAddress(address, value);
-    console.printf("(pio%d:sm%d) enqueued 0x%08x%n", pioNum, smNum, value);
+    console.printf("(pio%d:sm%d) enqueued 0x%08x to %s%n",
+                   pioNum, smNum, value, type);
   }
 
   private void setFJoin(final int pioNum, final int smNum,
@@ -297,10 +302,10 @@ public class Fifo extends Command
       Constants.SM0_SHIFTCTRL_FJOIN_TX_BITS;
     if (join) {
       sdk.hwSetBits(addressShiftCtrl, mask);
-      console.printf("(pio%d:sm%d) set join %s ", pioNum, smNum, type);
+      console.printf("(pio%d:sm%d) set join %s%n", pioNum, smNum, type);
     } else {
       sdk.hwClearBits(addressShiftCtrl, mask);
-      console.printf("(pio%d:sm%d) unset join %s ", pioNum, smNum, type);
+      console.printf("(pio%d:sm%d) unset join %s%n", pioNum, smNum, type);
     }
   }
 

@@ -85,7 +85,7 @@ public interface Constants
     return pioNum == 0 ? PIO0_BASE : PIO1_BASE;
   }
 
-  public static int getPIOEmuAddress(final int pioNum)
+  public static int getPIOEmuBaseAddress(final int pioNum)
   {
     checkPioNum(pioNum, "PIO index number");
     return pioNum == 0 ? PIO0_EMU_BASE : PIO1_EMU_BASE;

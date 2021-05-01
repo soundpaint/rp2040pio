@@ -212,7 +212,7 @@ public class FIFO implements Constants
   {
     final int value;
     if (!fstatTxEmpty()) {
-      value = rx.remove();
+      value = tx.remove();
     } else {
       value = 0;
       if (stallIfEmpty) {
@@ -230,7 +230,7 @@ public class FIFO implements Constants
     } else {
       // overwrite most recent value
       final Integer[] values = tx.toArray(INTEGER_PROTOTYPE_ARRAY);
-      values[0] = value;
+      if (values.length > 0) values[0] = value;
       tx.clear();
       Collections.addAll(tx, values);
       regFDEBUG_TXOVER = true;
@@ -270,14 +270,14 @@ public class FIFO implements Constants
     }
     if (regSHIFTCTRL_FJOIN_RX && regSHIFTCTRL_FJOIN_TX)
       return 0;
-    if (regSHIFTCTRL_FJOIN_TX) {
-      return address < tx.size() ? tx.get(address) : 0;
-    }
-    if (regSHIFTCTRL_FJOIN_RX || (address < FIFO_DEPTH)) {
+    if (regSHIFTCTRL_FJOIN_RX) {
       return address < rx.size() ? rx.get(address) : 0;
     }
+    if (regSHIFTCTRL_FJOIN_TX || (address < FIFO_DEPTH)) {
+      return address < tx.size() ? tx.get(address) : 0;
+    }
     return
-      address - FIFO_DEPTH < tx.size() ? tx.get(address - FIFO_DEPTH) : 0;
+      address - FIFO_DEPTH < rx.size() ? rx.get(address - FIFO_DEPTH) : 0;
   }
 
   public void setMemValue(final int address, final int value)

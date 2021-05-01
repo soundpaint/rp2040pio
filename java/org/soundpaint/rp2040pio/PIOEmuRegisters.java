@@ -269,8 +269,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     RXF1(Regs.RXF0),
     RXF2(Regs.RXF0),
     RXF3(Regs.RXF0),
-    FREAD_PTR("Read pointers of all of the SM's %n" +
-              "TX and RX FIFOs.",
+    FREAD_PTR("Read pointers of all of the SM's TX and RX FIFOs.",
               IntStream.rangeClosed(0, 7).boxed()
               .map(n -> new BitsInfo(31 - (n << 2),
                                      28 - (n << 2),
@@ -380,7 +379,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     if (register == null) {
       throw new NullPointerException("register");
     }
-    return Constants.getPIOEmuAddress(pioNum) + 0x4 * register.ordinal();
+    return Constants.getPIOEmuBaseAddress(pioNum) + 0x4 * register.ordinal();
   }
 
   public static int getSMAddress(final int pioNum,
@@ -420,7 +419,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                          register);
     }
     return
-      Constants.getPIOEmuAddress(pioNum) +
+      Constants.getPIOEmuBaseAddress(pioNum) +
       0x4 * (register.ordinal() + smNum * SM_SIZE);
   }
 
@@ -431,7 +430,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     Constants.checkSmNum(smNum);
     Constants.checkFIFOAddr(address, "FIFO address");
     return
-      Constants.getPIOEmuAddress(pioNum) +
+      Constants.getPIOEmuBaseAddress(pioNum) +
       0x4 * (Regs.SM0_FIFO_MEM0.ordinal() + smNum * SM_SIZE + address);
   }
 
@@ -441,13 +440,31 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     Constants.checkPioNum(pioNum, "PIO index number");
     Constants.checkSmMemAddr(memoryAddress, "memory address");
     return
-      Constants.getPIOEmuAddress(pioNum) +
+      Constants.getPIOEmuBaseAddress(pioNum) +
       0x4 * (Regs.INSTR_MEM0.ordinal() + memoryAddress);
+  }
+
+  public static int getTXFAddress(final int pioNum, final int smNum)
+  {
+    Constants.checkPioNum(pioNum, "PIO index number");
+    Constants.checkSmNum(smNum);
+    return
+      Constants.getPIOEmuBaseAddress(pioNum) +
+      0x4 * (Regs.TXF0.ordinal() + smNum);
+  }
+
+  public static int getRXFAddress(final int pioNum, final int smNum)
+  {
+    Constants.checkPioNum(pioNum, "PIO index number");
+    Constants.checkSmNum(smNum);
+    return
+      Constants.getPIOEmuBaseAddress(pioNum) +
+      0x4 * (Regs.RXF0.ordinal() + smNum);
   }
 
   public PIOEmuRegisters(final int pioNum, final LongSupplier wallClockSupplier)
   {
-    super(Constants.getPIOEmuAddress(pioNum), (short)REGS.length,
+    super(Constants.getPIOEmuBaseAddress(pioNum), (short)REGS.length,
           wallClockSupplier);
   }
 }

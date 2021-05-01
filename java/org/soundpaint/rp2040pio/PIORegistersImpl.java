@@ -331,7 +331,7 @@ public class PIORegistersImpl extends PIORegisters
     case RXF1:
     case RXF2:
     case RXF3:
-      return pio.getSM(regNum - Regs.TXF0.ordinal()).get();
+      return pio.getSM(regNum - Regs.RXF0.ordinal()).get();
     case IRQ:
       return pio.getIRQ().readRegIRQ();
     case IRQ_FORCE:

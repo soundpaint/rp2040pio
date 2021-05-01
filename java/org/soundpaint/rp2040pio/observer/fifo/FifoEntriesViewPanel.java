@@ -233,9 +233,9 @@ public class FifoEntriesViewPanel extends JPanel
         autoScroll ?
         (readPtr >= 0) && (displayedEntry == 0) :
         entryPtr == readPtr;
-      final Integer data = buffer[entryPtr];
+      final Integer data = entryPtr >= 0 ? buffer[entryPtr] : null;
       final JLabel lbEntry = lbEntries[entryOffs + displayedEntry];
-      lbEntry.setText(data != null ? String.format("%08x", data) : "     ???");
+      lbEntry.setText(data != null ? String.format("%08x", data) : "  ????  ");
       final StateColor stateColor =
         isQueued ?
         (isReadPtr ? StateColor.QUEUED_READ_PTR : StateColor.QUEUED) :
@@ -243,7 +243,9 @@ public class FifoEntriesViewPanel extends JPanel
       lbEntry.setOpaque(isQueued);
       lbEntry.setForeground(stateColor.getFgColor(colorScheme));
       lbEntry.setBackground(stateColor.getBgColor(colorScheme));
-      entryPtr = ((entryPtr + 1) & (entryCount - 1)) + entryOffs;
+      if (entryPtr >= 0) {
+        entryPtr = ((entryPtr + 1) & (entryCount - 1)) + entryOffs;
+      }
     }
   }
 
