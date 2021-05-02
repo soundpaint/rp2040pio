@@ -167,7 +167,6 @@ public class CodeSmViewPanel extends JPanel
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     final int pc = getPC();
     final int memoryAllocation = pioSdk.getMemoryAllocation();
-    final int pendingDelay = getPendingDelay();
 
     final int addressExecCtrl =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
@@ -202,17 +201,17 @@ public class CodeSmViewPanel extends JPanel
       final Instruction instruction = instructions.getElementAt(address);
       instruction.text = instructionText;
       instruction.isCurrentAddress = isCurrentAddress;
-      if (isCurrentAddress) {
-        updateDelayDisplay(instruction, pendingDelay,
-                           instructionInfo.getDelay());
-      }
     }
+    updateDelayDisplay(pioSdk);
     lsInstructions.ensureIndexIsVisible(pc);
   }
 
-  private void updateDelayDisplay(final Instruction instruction,
-                                  final int pendingDelay, final int totalDelay)
+  private void updateDelayDisplay(final PIOSDK pioSdk) throws IOException
   {
+    final PIOSDK.InstructionInfo instructionInfo =
+      pioSdk.getCurrentInstruction(smNum, true, true);
+    final int totalDelay = instructionInfo.getDelay();
+    final int pendingDelay = getPendingDelay();
     final int completedDelay = totalDelay - pendingDelay;
     final float progress;
     final String progressText;
@@ -222,7 +221,8 @@ public class CodeSmViewPanel extends JPanel
     } else {
       progress = ((float)completedDelay) / totalDelay;
       progressText =
-        String.format("%d of %d cycles", completedDelay, totalDelay);
+        String.format("delay: %d of %d %s", completedDelay, totalDelay,
+                      totalDelay == 1 ? "cycle" : "cycles");
     }
     final int progressValue = Math.round(progress * 1000.0f);
     this.progressText = progressText;
