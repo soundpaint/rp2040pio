@@ -58,6 +58,10 @@ public class MonitorCommandsDocsBuilder
   {
     final StringBuilder s = new StringBuilder();
     final String commandName = command.getFullName();
+    s.append(String.format(".. index::%n"));
+    s.append(String.format("   single: monitor command; %s%n", commandName));
+    s.append(String.format("   single: %s%n", commandName));
+    s.append(String.format("%n"));
     s.append(String.format(".. _%s-command-label:%n", commandName));
     s.append(String.format("%n"));
     s.append(String.format(commandName + "%n"));
@@ -89,6 +93,9 @@ public class MonitorCommandsDocsBuilder
   private String createCommandsOverview(final CommandRegistry commandRegistry)
   {
     final StringBuilder s = new StringBuilder();
+    s.append(String.format(".. index::%n"));
+    s.append(String.format("   single: monitor; commands overview%n"));
+    s.append(String.format("%n"));
     s.append(String.format(".. _commands-overview:%n"));
     s.append(String.format("%n"));
     s.append(String.format("Overview%n"));

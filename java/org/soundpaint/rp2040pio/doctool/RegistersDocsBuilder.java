@@ -124,6 +124,18 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     return labels.toString();
   }
 
+  private String createDetailTableIndices(final List<T> regsList)
+  {
+    final StringBuilder labels = new StringBuilder();
+    for (final T reg : regsList) {
+      labels.append(String.format(".. index::%n"));
+      labels.append(String.format("   single: register details; %s%n",
+                                  reg.toString()));
+      labels.append(String.format("   single: %s%n%n", reg.toString()));
+    }
+    return labels.toString();
+  }
+
   private String formatRegNames(final List<T> regsList)
   {
     final StringBuilder regNames = new StringBuilder();
@@ -161,6 +173,7 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
   {
     final StringBuilder s = new StringBuilder();
     s.append(createDetailTableLabels(regsList));
+    s.append(createDetailTableIndices(regsList));
     final String regNames = formatRegNames(regsList);
     final String registersSetId =
       DocsBuilder.createIdFromLabel(registersSetLabel);
@@ -215,6 +228,10 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     final String registersSetId =
       DocsBuilder.createIdFromLabel(registersSetLabel);
     s.append(String.format(".. _section-top_%s:%n", registersSetId));
+    s.append(String.format("%n"));
+    s.append(String.format(".. index::%n"));
+    s.append(String.format("   single: %s%n", registersSetLabel));
+    s.append(String.format("   single: registers set; %s%n", registersSetLabel));
     s.append(String.format("%n"));
     final String sectionHeader = String.format("%s", registersSetLabel);
     s.append(String.format("%s%n", sectionHeader));
