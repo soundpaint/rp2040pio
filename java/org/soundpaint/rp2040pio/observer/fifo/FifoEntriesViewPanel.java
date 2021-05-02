@@ -31,6 +31,7 @@ import java.awt.Font;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Objects;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
@@ -110,11 +111,13 @@ public class FifoEntriesViewPanel extends JPanel
 
   private final PrintStream console;
   private final SDK sdk;
-  private JLabel lbTopLine;
-  private JLabel lbBottomLine;
+  private final JLabel lbTopLine;
+  private final JLabel lbBottomLine;
   private final JLabel[] lbEntries;
   private final JLabel[] lbSeparators;
   private final Integer[] buffer;
+  private final JLabel[] lbOsrBits;
+  private final JLabel[] lbIsrBits;
   private int pioNum;
   private int smNum;
   private int rxLevel;
@@ -172,8 +175,37 @@ public class FifoEntriesViewPanel extends JPanel
     lbBottomLine.setFont(codeFont);
     bottomLine.add(lbBottomLine);
     bottomLine.add(Box.createHorizontalGlue());
+
+    lbOsrBits = new JLabel[32];
+    lbIsrBits = new JLabel[32];
+    final Box shiftRegsLine = new Box(BoxLayout.X_AXIS);
+    add(shiftRegsLine);
+    shiftRegsLine.add(createShiftRegisterPanel(shiftRegsLine, "OSR Register",
+                                               lbOsrBits));
+    shiftRegsLine.add(Box.createHorizontalGlue());
+    shiftRegsLine.add(createShiftRegisterPanel(shiftRegsLine, "ISR Register",
+                                               lbIsrBits));
+    shiftRegsLine.add(Box.createHorizontalGlue());
+
     autoScroll = initialAutoScroll;
+    SwingUtils.setPreferredWidthAsMaximum(this);
     repaintLater();
+  }
+
+  private JPanel createShiftRegisterPanel(final Box parent, final String title,
+                                          final JLabel[] lbBits)
+  {
+    final JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+    panel.setBorder(BorderFactory.createTitledBorder(title));
+    parent.add(panel);
+    for (int bit = 0; bit < 32; bit++) {
+      final JLabel lbBit = new JLabel("?");
+      lbBit.setFont(codeFont);
+      lbBits[bit] = lbBit;
+      panel.add(lbBit);
+    }
+    return panel;
   }
 
   private int getSMJoin() throws IOException
@@ -291,14 +323,66 @@ public class FifoEntriesViewPanel extends JPanel
     }
   }
 
+  private void unsetShiftReg(final JLabel[] lbBits)
+  {
+    for (int bit = 0; bit < lbBits.length; bit++) {
+      final JLabel lbBit = lbBits[bit];
+      lbBit.setText("?");
+      lbBit.setForeground(Color.LIGHT_GRAY);
+      lbBit.setBackground(Color.GRAY);
+      lbBit.setOpaque(false);
+    }
+  }
+
+  private void updateShiftReg(final Color activeColor, final JLabel[] lbBits,
+                              final PIOEmuRegisters.Regs regShiftReg,
+                              final PIOEmuRegisters.Regs levelReg)
+    throws IOException
+  {
+    final int addressShiftReg =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum, regShiftReg);
+    final int value = sdk.readAddress(addressShiftReg);
+    final int addressLevel =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum, levelReg);
+    final int level = sdk.readAddress(addressLevel);
+    final int bitCount = lbBits.length;
+    for (int bit = 0; bit < bitCount; bit++) {
+      final int bitValue = (value >>> bit) & 0x1;
+      final JLabel lbBit = lbBits[bitCount - bit - 1];
+      lbBit.setText(bitValue == 0x1 ? "1" : "0");
+      if (bit < level) {
+        lbBit.setForeground(Color.BLACK);
+        lbBit.setBackground(activeColor);
+        lbBit.setOpaque(true);
+      } else {
+        lbBit.setForeground(Color.LIGHT_GRAY);
+        lbBit.setBackground(Color.GRAY);
+        lbBit.setOpaque(false);
+      }
+    }
+  }
+
+  private void updateShiftRegs() throws IOException
+  {
+    updateShiftReg(Color.RED, lbOsrBits,
+                   PIOEmuRegisters.Regs.SM0_OSR,
+                   PIOEmuRegisters.Regs.SM0_OSR_SHIFT_COUNT);
+    updateShiftReg(Color.GREEN, lbIsrBits,
+                   PIOEmuRegisters.Regs.SM0_ISR,
+                   PIOEmuRegisters.Regs.SM0_ISR_SHIFT_COUNT);
+  }
+
   private void checkedUpdateEntries()
   {
     try {
       updateEntries();
+      updateShiftRegs();
     } catch (final IOException e) {
       for (int entryNum = 0; entryNum < Constants.SM_COUNT; entryNum++) {
         buffer[entryNum] = null;
       }
+      unsetShiftReg(lbOsrBits);
+      unsetShiftReg(lbIsrBits);
     }
   }
 

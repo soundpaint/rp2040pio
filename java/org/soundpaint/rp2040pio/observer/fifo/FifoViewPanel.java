@@ -98,9 +98,6 @@ public class FifoViewPanel extends JPanel
     smSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(smSelection);
 
-    add(fifoEntriesViewPanel);
-    fifoEntriesViewPanel.smChanged(pioNum, smNum);
-
     final Box scrollSelectionLine = new Box(BoxLayout.X_AXIS);
     add(scrollSelectionLine);
     cbAutoScroll = new JCheckBox("Auto-scroll to front entry");
@@ -111,6 +108,12 @@ public class FifoViewPanel extends JPanel
                                    setAutoScroll(cbAutoScroll.isSelected()));
     scrollSelectionLine.add(cbAutoScroll);
     scrollSelectionLine.add(Box.createHorizontalGlue());
+
+    final Box fifoEntriesViewBox = new Box(BoxLayout.X_AXIS);
+    add(fifoEntriesViewBox);
+    fifoEntriesViewBox.add(fifoEntriesViewPanel);
+    fifoEntriesViewBox.add(Box.createHorizontalGlue());
+    fifoEntriesViewPanel.smChanged(pioNum, smNum);
 
     new Thread(() -> updateLoop()).start();
   }
