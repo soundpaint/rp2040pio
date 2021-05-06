@@ -87,6 +87,9 @@ public class SM implements Constants
   {
     public Instruction instruction;
     public Instruction.ResultState resultState;
+    public boolean processing;
+    public boolean smEnabled;
+    public boolean clockEnabled;
     public boolean isDelayCycle;
     public int regX;
     public int regY;
@@ -132,6 +135,9 @@ public class SM implements Constants
     {
       instruction = null;
       resultState = null;
+      processing = false;
+      smEnabled = false;
+      clockEnabled = false;
       isDelayCycle = false;
       regX = 0;
       regY = 0;
@@ -393,10 +399,18 @@ public class SM implements Constants
       status.regPINCTRL_OUT_BASE;
   }
 
-  public void clockRaisingEdge(final long wallClock)
+  public void clockRaisingEdge(final boolean smEnabled, final long wallClock)
   {
-    pll.raisingEdge(wallClock);
-    if (pll.getClockEnable()) {
+    status.smEnabled = smEnabled;
+    if (smEnabled) {
+      pll.raisingEdge(wallClock);
+      status.clockEnabled = pll.getClockEnable();
+    } else {
+      status.clockEnabled = false;
+    }
+    status.processing =
+      status.clockEnabled || (status.pendingDMAInstruction >= 0);
+    if (status.processing) {
       try {
         fetchAndDecode();
       } catch (final Decoder.DecodeException e) {
@@ -407,8 +421,10 @@ public class SM implements Constants
 
   public void clockFallingEdge(final long wallClock)
   {
-    pll.fallingEdge(wallClock);
-    if (pll.getClockEnable()) {
+    if (status.smEnabled) {
+      pll.fallingEdge(wallClock);
+    }
+    if (status.processing) {
       execute();
     }
   }

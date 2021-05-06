@@ -310,10 +310,8 @@ public class PIO implements Constants, Clock.TransitionListener
   {
     synchronized(sms) {
       for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-        if (smIsEnabled(smNum)) {
-          final SM sm = getSM(smNum);
-          sm.clockRaisingEdge(wallClock);
-        }
+        final SM sm = getSM(smNum);
+        sm.clockRaisingEdge(smIsEnabled(smNum), wallClock);
       }
     }
   }
@@ -322,10 +320,8 @@ public class PIO implements Constants, Clock.TransitionListener
   public void fallingEdge(final long wallClock) {
     synchronized(sms) {
       for (int smNum = 0; smNum < SM_COUNT; smNum++) {
-        if (smIsEnabled(smNum)) {
-          final SM sm = getSM(smNum);
-          sm.clockFallingEdge(wallClock);
-        }
+        final SM sm = getSM(smNum);
+        sm.clockFallingEdge(wallClock);
       }
     }
   }
