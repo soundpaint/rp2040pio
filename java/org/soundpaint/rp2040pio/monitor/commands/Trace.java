@@ -177,7 +177,7 @@ public class Trace extends Command
         try {
           Thread.sleep(wait0);
         } catch (final InterruptedException e) {
-          // ignore
+          console.printf("(pio*:sm*) Interrupted: %s%n", e.getMessage());
         }
       }
       sdk.triggerCyclePhase0(true);
@@ -185,7 +185,7 @@ public class Trace extends Command
         try {
           Thread.sleep(wait1);
         } catch (final InterruptedException e) {
-          // ignore
+          console.printf("(pio*:sm*) Interrupted: %s%n", e.getMessage());
         }
       }
       sdk.triggerCyclePhase1(true);

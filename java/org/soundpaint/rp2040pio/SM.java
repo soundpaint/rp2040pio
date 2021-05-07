@@ -98,7 +98,7 @@ public class SM implements Constants
     public int osrValue;
     public int osrShiftCount;
     public int pendingDelay;
-    public int pendingDMAInstruction;
+    public int pendingForcedInstruction;
     public int pendingExecInstruction;
     public int regADDR; // bits 0…4 of SMx_ADDR
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
@@ -146,7 +146,7 @@ public class SM implements Constants
       osrValue = 0;
       osrShiftCount = 32;
       pendingDelay = 0;
-      pendingDMAInstruction = -1;
+      pendingForcedInstruction = -1;
       pendingExecInstruction = -1;
       regADDR = 0;
       regEXECCTRL_STATUS_SEL = false;
@@ -399,17 +399,17 @@ public class SM implements Constants
       status.regPINCTRL_OUT_BASE;
   }
 
-  public void clockRaisingEdge(final boolean smEnabled, final long wallClock)
+  public void clockRisingEdge(final boolean smEnabled, final long wallClock)
   {
     status.smEnabled = smEnabled;
     if (smEnabled) {
-      pll.raisingEdge(wallClock);
+      pll.risingEdge(wallClock);
       status.clockEnabled = pll.getClockEnable();
     } else {
       status.clockEnabled = false;
     }
     status.processing =
-      status.clockEnabled || (status.pendingDMAInstruction >= 0);
+      status.clockEnabled || (status.pendingForcedInstruction >= 0);
     if (status.processing) {
       try {
         fetchAndDecode();
@@ -855,10 +855,10 @@ public class SM implements Constants
 
   private short fetch()
   {
-    final int pendingDMAInstruction = status.pendingDMAInstruction;
-    if (pendingDMAInstruction >= 0) {
-      status.pendingDMAInstruction = -1;
-      return (short)pendingDMAInstruction;
+    final int pendingForcedInstruction = status.pendingForcedInstruction;
+    if (pendingForcedInstruction >= 0) {
+      status.pendingForcedInstruction = -1;
+      return (short)pendingForcedInstruction;
     }
     final int pendingExecInstruction = status.pendingExecInstruction;
     if (pendingExecInstruction >= 0) {
@@ -906,12 +906,30 @@ public class SM implements Constants
     return instruction.getOpCode();
   }
 
-  public void insertDMAInstruction(final int instruction)
+  public int getPendingForcedInstruction()
+  {
+    return status.pendingForcedInstruction;
+  }
+
+  public int getFORCED_INSTR()
+  {
+    if (status.pendingForcedInstruction > 0) {
+      return 0x00010000 | (status.pendingForcedInstruction & 0x0000ffff);
+    }
+    return 0x0;
+  }
+
+  public int getPendingExecInstruction()
+  {
+    return status.pendingExecInstruction;
+  }
+
+  public void forceInstruction(final int instruction)
   {
     synchronized(memory.FETCH_LOCK) {
-      if (status.pendingDMAInstruction >= 0) {
+      if (status.pendingForcedInstruction >= 0) {
         console.println("WARNING: " +
-                        "discarding already pending DMA instruction");
+                        "discarding already pending forced instruction");
       }
       if (instruction < 0) {
         throw new IllegalArgumentException("instruction < 0: " + instruction);
@@ -920,7 +938,7 @@ public class SM implements Constants
         throw new IllegalArgumentException("instruction > 65535: " +
                                            instruction);
       }
-      status.pendingDMAInstruction = instruction;
+      status.pendingForcedInstruction = instruction;
     }
   }
 
@@ -944,7 +962,7 @@ public class SM implements Constants
   public boolean isExecStalled()
   {
     synchronized(memory.FETCH_LOCK) {
-      return (status.pendingDMAInstruction >= 0) && isStalled();
+      return (status.pendingForcedInstruction >= 0) && isStalled();
     }
   }
 
@@ -956,7 +974,8 @@ public class SM implements Constants
   private void fetchAndDecode() throws Decoder.DecodeException
   {
     synchronized(memory.FETCH_LOCK) {
-      if ((status.pendingDMAInstruction < 0) && status.consumePendingDelay()) {
+      if ((status.pendingForcedInstruction < 0) &&
+          status.consumePendingDelay()) {
         status.isDelayCycle = true;
         return;
       }

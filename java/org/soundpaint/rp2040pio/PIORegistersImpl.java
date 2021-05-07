@@ -213,7 +213,7 @@ public class PIORegistersImpl extends PIORegisters
     case SM2_INSTR:
     case SM3_INSTR:
       pio.getSM((regNum - Regs.SM0_INSTR.ordinal()) / SM_SIZE).
-        insertDMAInstruction(value & mask);
+        forceInstruction(value & mask);
       break;
     case SM0_PINCTRL:
     case SM1_PINCTRL:
@@ -315,7 +315,7 @@ public class PIORegistersImpl extends PIORegisters
     final Regs register = REGS[regNum];
     switch (register) {
     case CTRL:
-      return pio.getSM_ENABLED();
+      return pio.getCtrl();
     case FSTAT:
       return readFStat();
     case FDEBUG:

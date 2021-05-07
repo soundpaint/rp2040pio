@@ -42,7 +42,7 @@ public interface Clock
 
   public static interface TransitionListener
   {
-    void raisingEdge(final long wallClock);
+    void risingEdge(final long wallClock);
     void fallingEdge(final long wallClock);
   }
 

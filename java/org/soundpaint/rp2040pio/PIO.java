@@ -236,6 +236,11 @@ public class PIO implements Constants, Clock.TransitionListener
     this.smEnabled = smEnabled;
   }
 
+  public int getCtrl()
+  {
+    return getSM_ENABLED();
+  }
+
   public void setCtrl(final int ctrl, final int mask)
   {
     synchronized(sms) {
@@ -306,12 +311,12 @@ public class PIO implements Constants, Clock.TransitionListener
   }
 
   @Override
-  public void raisingEdge(final long wallClock)
+  public void risingEdge(final long wallClock)
   {
     synchronized(sms) {
       for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         final SM sm = getSM(smNum);
-        sm.clockRaisingEdge(smIsEnabled(smNum), wallClock);
+        sm.clockRisingEdge(smIsEnabled(smNum), wallClock);
       }
     }
   }

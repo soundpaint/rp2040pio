@@ -220,7 +220,7 @@ public class PIOSDK implements Constants
   /**
    * Note: This method is synchronized since we have only a single
    * instance of a decoder, with a single instance of each
-   * instruction.  Therefor, use of this decoder and access to
+   * instruction.  Therefore, use of this decoder and access to
    * instances of Instruction objects must be serialized.
    *
    * @param smNum Index of state machine.  For decoding an

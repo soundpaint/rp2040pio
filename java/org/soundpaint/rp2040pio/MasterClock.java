@@ -280,10 +280,10 @@ public class MasterClock implements Clock, Constants
     return wallClock;
   }
 
-  private void announceRaisingEdge()
+  private void announceRisingEdge()
   {
     for (final TransitionListener listener : listeners) {
-      listener.raisingEdge(wallClock);
+      listener.risingEdge(wallClock);
     }
   }
 
@@ -315,7 +315,7 @@ public class MasterClock implements Clock, Constants
       console.println("warning: cyclePhase0: unexpected phase: " + phase);
       return;
     }
-    announceRaisingEdge();
+    announceRisingEdge();
     phase = Phase.PHASE_0_STABLE;
     synchronized(registerWaitLock) {
       registerWaitLock.notifyAll();

@@ -107,7 +107,7 @@ public class PLL implements Clock.TransitionListener
   }
 
   @Override
-  public void raisingEdge(final long wallClock)
+  public void risingEdge(final long wallClock)
   {
     /*
      * TODO: Clarify: Sect. 3.5.5. "Clock Dividers", Fig. 46: "clock

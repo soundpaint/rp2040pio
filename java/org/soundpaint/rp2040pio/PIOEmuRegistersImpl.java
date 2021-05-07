@@ -188,6 +188,11 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM2_PENDING_DELAY:
     case SM3_PENDING_DELAY:
       break; // (for now) read-only address
+    case SM0_FORCED_INSTR:
+    case SM1_FORCED_INSTR:
+    case SM2_FORCED_INSTR:
+    case SM3_FORCED_INSTR:
+      break; // (for now) read-only address
     case SM0_CLK_ENABLE:
     case SM1_CLK_ENABLE:
     case SM2_CLK_ENABLE:
@@ -396,6 +401,13 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
       return
         pio.getSM((regNum - Regs.SM0_PENDING_DELAY.ordinal()) / SM_SIZE).
         getPendingDelay();
+    case SM0_FORCED_INSTR:
+    case SM1_FORCED_INSTR:
+    case SM2_FORCED_INSTR:
+    case SM3_FORCED_INSTR:
+      return
+        pio.getSM((regNum - Regs.SM0_FORCED_INSTR.ordinal()) / SM_SIZE).
+        getFORCED_INSTR();
     case SM0_CLK_ENABLE:
     case SM1_CLK_ENABLE:
     case SM2_CLK_ENABLE:
