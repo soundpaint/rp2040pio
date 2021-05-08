@@ -386,7 +386,7 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM3_DELAY:
       return
         pio.getSM((regNum - Regs.SM0_DELAY.ordinal()) / SM_SIZE).
-        getDelay();
+        getTotalDelay();
     case SM0_DELAY_CYCLE:
     case SM1_DELAY_CYCLE:
     case SM2_DELAY_CYCLE:

@@ -97,8 +97,10 @@ public class SM implements Constants
     public int isrShiftCount;
     public int osrValue;
     public int osrShiftCount;
+    public int totalDelay;
     public int pendingDelay;
     public int pendingForcedInstruction;
+    public boolean isForcedInstruction;
     public int pendingExecInstruction;
     public int regADDR; // bits 0…4 of SMx_ADDR
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
@@ -145,8 +147,10 @@ public class SM implements Constants
       isrShiftCount = 0;
       osrValue = 0;
       osrShiftCount = 32;
+      totalDelay = 0;
       pendingDelay = 0;
       pendingForcedInstruction = -1;
+      isForcedInstruction = false;
       pendingExecInstruction = -1;
       regADDR = 0;
       regEXECCTRL_STATUS_SEL = false;
@@ -223,6 +227,7 @@ public class SM implements Constants
         throw new IllegalArgumentException("delay > 31: " + delay);
       }
       this.pendingDelay = delay;
+      this.totalDelay = delay;
     }
 
     @Override
@@ -408,11 +413,20 @@ public class SM implements Constants
     } else {
       status.clockEnabled = false;
     }
+    // Sect. 3.5.7: ... instructions written to the INSTR register
+    // ... execute immediately, ignoring the state machine clock
+    // divider.
     status.processing =
       status.clockEnabled || (status.pendingForcedInstruction >= 0);
     if (status.processing) {
       try {
-        fetchAndDecode();
+        if ((status.pendingForcedInstruction >= 0) ||
+            !status.consumePendingDelay()) {
+          status.isDelayCycle = false;
+          fetchAndDecode();
+        } else {
+          status.isDelayCycle = true;
+        }
       } catch (final Decoder.DecodeException e) {
         console.println(e.getMessage());
       }
@@ -425,7 +439,12 @@ public class SM implements Constants
       pll.fallingEdge(wallClock);
     }
     if (status.processing) {
-      execute();
+      try {
+        execute();
+      } catch (final RuntimeException e) {
+        e.printStackTrace(console);
+        console.printf("internal error: %s%n", e.getMessage());
+      }
     }
   }
 
@@ -858,6 +877,7 @@ public class SM implements Constants
     final int pendingForcedInstruction = status.pendingForcedInstruction;
     if (pendingForcedInstruction >= 0) {
       status.pendingForcedInstruction = -1;
+      status.isForcedInstruction = true;
       return (short)pendingForcedInstruction;
     }
     final int pendingExecInstruction = status.pendingExecInstruction;
@@ -966,6 +986,18 @@ public class SM implements Constants
     }
   }
 
+  /**
+   * Tracking the total delay of the latest instruction with delay in
+   * effect is, strictly speaking, not necessary for the emulation,
+   * but highly useful as additional information for client
+   * applications, e.g. when displaying the percentage of already
+   * passed delay.
+   */
+  public int getTotalDelay()
+  {
+    return status.totalDelay;
+  }
+
   public int getPendingDelay()
   {
     return status.pendingDelay;
@@ -974,12 +1006,6 @@ public class SM implements Constants
   private void fetchAndDecode() throws Decoder.DecodeException
   {
     synchronized(memory.FETCH_LOCK) {
-      if ((status.pendingForcedInstruction < 0) &&
-          status.consumePendingDelay()) {
-        status.isDelayCycle = true;
-        return;
-      }
-      status.isDelayCycle = false;
       final short word = fetch();
       final Instruction instruction =
         decoder.decode(word,
@@ -994,8 +1020,9 @@ public class SM implements Constants
 
   private void execute()
   {
-    if (status.isDelayCycle)
+    if (status.isDelayCycle && !status.isForcedInstruction) {
       return;
+    }
     final Instruction instruction = status.instruction;
     if (instruction == null) {
       throw new InternalError("seems emulator started with falling " +
@@ -1010,8 +1037,14 @@ public class SM implements Constants
       // delay.
       updatePC();
     }
-    if (status.resultState != Instruction.ResultState.STALL) {
-      status.setPendingDelay(instruction.getDelay());
+    // Sect. 3.5.7: "Delay cycles are ignored on instructions
+    // written to the INSTR register."
+    if (!status.isForcedInstruction) {
+      if (status.resultState != Instruction.ResultState.STALL) {
+        status.setPendingDelay(instruction.getDelay());
+      }
+    } else {
+      status.isForcedInstruction = false;
     }
   }
 
@@ -1020,27 +1053,9 @@ public class SM implements Constants
     return status.resultState == Instruction.ResultState.STALL;
   }
 
-  public int getDelay()
-  {
-    final Instruction instruction = status.instruction;
-    if (instruction == null) {
-      /*
-       * Trying to access instruction before any decode has been
-       * executed.
-       *
-       * TODO: The RP2040 datasheet is unclear for this situation; for
-       * details, see method #getOpCode().
-       *
-       * For this specific case, we assume a delay value of 0.
-       */
-      return 0;
-    }
-    return instruction.getDelay();
-  }
-
   public boolean isDelayCycle()
   {
-    return status.isDelayCycle;
+    return !status.isForcedInstruction && status.isDelayCycle;
   }
 
   @Override

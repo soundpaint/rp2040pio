@@ -531,7 +531,7 @@ public abstract class Instruction
           return null;
         }),
       PC(0b101, "pc", (sm, data) -> {
-          sm.setPC(data);
+          sm.setPC(data & 0x1f);
           return null;
         }),
       ISR(0b110, "isr", (sm, data) -> {
@@ -820,7 +820,7 @@ public abstract class Instruction
           return null;
         }),
       PC(0b101, "pc", (sm, data) -> {
-          sm.setPC(data);
+          sm.setPC(data & 0x1f);
           return null;
         }),
       ISR(0b110, "isr", (sm, data) -> {
@@ -860,8 +860,8 @@ public abstract class Instruction
     private enum Operation
     {
       NONE(0b00, "", (data) -> data),
-      INVERT(0b01, "x", (data) -> ~data),
-      BIT_REVERSE(0b10, "y", (data) -> Integer.reverse(data)),
+      INVERT(0b01, "!", (data) -> ~data),
+      BIT_REVERSE(0b10, "::", (data) -> Integer.reverse(data)),
       RESERVED_3(0b11, "???", null);
 
       private final int code;
@@ -950,7 +950,7 @@ public abstract class Instruction
     {
       if (isNop()) return "";
       final String strOp = op.toString();
-      return dst + ", " + (!strOp.isEmpty() ? strOp + " " : "") + src;
+      return dst + ", " + (!strOp.isEmpty() ? strOp : "") + src;
     }
   }
 
