@@ -73,10 +73,6 @@ public class PIOSDK implements Constants
    */
   public static class InstructionInfo
   {
-    public static final int INSTR_UNKNOWN = -3;
-    public static final int INSTR_EXECED = -2;
-    public static final int INSTR_FORCED = -1;
-
     private final int origin;
     private final String mnemonic;
     private final String fullStatement;
@@ -89,9 +85,10 @@ public class PIOSDK implements Constants
     }
 
     /**
-     * @param origin Either memory address (0…31), or INSTR_FORCED for
-     * an enforced instruction, or INSTR_EXECED for an EXEC'd
-     * instruction, or INSTR_UNKNOWN if the origin is not available.
+     * @param origin Either memory address (0…31), or
+     * INSTR_ORIGIN_FORCED for an enforced instruction, or
+     * INSTR_ORIGIN_EXECED for an EXEC'd instruction, or
+     * INSTR_ORIGIN_UNKNOWN if the origin is not available.
      */
     public InstructionInfo(final int origin,
                            final String mnemonic, final String fullStatement,
@@ -99,9 +96,9 @@ public class PIOSDK implements Constants
     {
       // instruction & state machine will change, hence save snapshot
       // of relevant info
-      if (origin < INSTR_UNKNOWN) {
+      if (origin < INSTR_ORIGIN_UNKNOWN) {
         final String message =
-          String.format("origin < %d: %d", INSTR_UNKNOWN, origin);
+          String.format("origin < %d: %d", INSTR_ORIGIN_UNKNOWN, origin);
         throw new IllegalArgumentException(message);
       }
       if (origin >= MEMORY_SIZE) {
@@ -118,7 +115,7 @@ public class PIOSDK implements Constants
 
     public InstructionInfo(final Exception e)
     {
-      this.origin = INSTR_UNKNOWN;
+      this.origin = INSTR_ORIGIN_UNKNOWN;
       this.mnemonic = "err";
       this.fullStatement = e.getMessage();
       this.isDelayCycle = false;
@@ -211,8 +208,38 @@ public class PIOSDK implements Constants
                                isDelayCycle, delay);
   }
 
+  private int getInstrOrigin(final int smNum) throws IOException
+  {
+    final int instrOriginAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_INSTR_ORIGIN);
+    final int instrOrigin = registers.readAddress(instrOriginAddress);
+    final int originMode = (instrOrigin >>> 5) & 0x3;
+    return
+      originMode == INSTR_ORIGIN_MEMORY ?
+      instrOrigin & (MEMORY_SIZE - 1) :
+      ~((~originMode) & 0x3);
+  }
+
+  private String renderOrigin(final int origin)
+  {
+    if (origin >= 0) {
+      return String.format("%02x", origin);
+    }
+    switch (origin) {
+    case INSTR_ORIGIN_UNKNOWN:
+      return "??";
+    case INSTR_ORIGIN_FORCED:
+      return "[forced]";
+    case INSTR_ORIGIN_EXECED:
+      return "[EXEC'd]";
+    default:
+      throw new InternalError("unexpected case fall-through");
+    }
+  }
+
   public InstructionInfo getCurrentInstruction(final int smNum,
-                                               final boolean showAddress,
+                                               final boolean showOrigin,
                                                final boolean format)
     throws IOException
   {
@@ -220,12 +247,9 @@ public class PIOSDK implements Constants
     final int smInstrAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_INSTR);
     final int opCode = registers.readAddress(smInstrAddress) & 0xffff;
-
-    final int smPCAddress =
-      PIOEmuRegisters.getSMAddress(pioNum, smNum, PIOEmuRegisters.Regs.SM0_PC);
-    final int pc = registers.readAddress(smPCAddress);
+    final int origin = getInstrOrigin(smNum);
     final String addressLabel =
-      showAddress ? String.format("%02x:", pc) : "";
+      showOrigin ? renderOrigin(origin) + ": " : "";
 
     final int smDelayCycleAddress =
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
@@ -238,7 +262,7 @@ public class PIOSDK implements Constants
                                    PIOEmuRegisters.Regs.SM0_DELAY);
     final int delay = registers.readAddress(smDelayAddress);
 
-    return getInstructionFromOpCode(smNum, pc, addressLabel, opCode, format,
+    return getInstructionFromOpCode(smNum, origin, addressLabel, opCode, format,
                                     isDelayCycle, delay);
   }
 

@@ -38,6 +38,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
@@ -58,13 +59,23 @@ public class CodeSmViewPanel extends JPanel
   private static final String noWrapSymbol = "  ";
   private static final String breakPointSymbol = ""; //"🛑";
   private static final String noBreakPointSymbol = ""; //" ";
-  private static final Font codeFont = new Font(Font.MONOSPACED,
-                                                Font.PLAIN, 12);
   private static final String errorText = "error: connection to server lost";
+
+  private static final Color fgDefault = Color.BLACK;
+  private static final Color bgDefault = Color.WHITE;
+  private static final Color fgCurrent = Color.WHITE;
+  private static final Color bgCurrent = Color.RED;
+  private static final Color fgCurrentInactive = Color.LIGHT_GRAY;
+  private static final Color bgCurrentInactive = new Color(0xb04f4f);
+
+  public static final Font codeFont = new Font(Font.MONOSPACED, Font.PLAIN, 12);
 
   private static class Instruction
   {
     public boolean isCurrentAddress;
+    public int totalDelay;
+    public int completedDelay;
+    public boolean currentIsMemoryInstruction;
     public String text;
   }
 
@@ -90,8 +101,17 @@ public class CodeSmViewPanel extends JPanel
                                          isSelected, cellHasFocus);
       setText(instruction.text);
       if (instruction.isCurrentAddress) {
-        setBackground(Color.RED);
-        setForeground(Color.WHITE);
+        if (!instruction.currentIsMemoryInstruction) {
+          setForeground(fgCurrentInactive);
+          setBackground(bgCurrentInactive);
+        } else if ((instruction.totalDelay == 0) ||
+                   (instruction.completedDelay == 0)) {
+          setForeground(fgCurrent);
+          setBackground(bgCurrent);
+        } else {
+          setForeground(Color.LIGHT_GRAY);
+          setBackground(Color.RED.darker());
+        }
       }
       setFont(codeFont);
       return this;
@@ -101,6 +121,7 @@ public class CodeSmViewPanel extends JPanel
   private final PrintStream console;
   private final SDK sdk;
   private final JProgressBar pbDelay;
+  private final JTextField taForcedOrExecdInstruction;
   private final DefaultListModel<Instruction> instructions;
   private final JList<Instruction> lsInstructions;
   private int pioNum;
@@ -116,14 +137,17 @@ public class CodeSmViewPanel extends JPanel
   }
 
   public CodeSmViewPanel(final PrintStream console, final SDK sdk,
-                         final JProgressBar pbDelay)
+                         final JProgressBar pbDelay,
+                         final JTextField taForcedOrExecdInstruction)
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
     Objects.requireNonNull(pbDelay);
+    Objects.requireNonNull(taForcedOrExecdInstruction);
     this.console = console;
     this.sdk = sdk;
     this.pbDelay = pbDelay;
+    this.taForcedOrExecdInstruction = taForcedOrExecdInstruction;
     instructions = new DefaultListModel<Instruction>();
     for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
       instructions.addElement(new Instruction());
@@ -179,6 +203,14 @@ public class CodeSmViewPanel extends JPanel
       Constants.SM0_EXECCTRL_WRAP_BOTTOM_LSB;
 
     final int breakPoints = getBreakPoints();
+    final int pendingDelay = getPendingDelay();
+
+    final PIOSDK.InstructionInfo currentInstructionInfo =
+      pioSdk.getCurrentInstruction(smNum, true, true);
+    final int origin = currentInstructionInfo.getOrigin();
+    final boolean currentIsMemoryInstruction =
+      (origin != Constants.INSTR_ORIGIN_FORCED) &&
+      (origin != Constants.INSTR_ORIGIN_EXECED);
 
     for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
       final boolean isCurrentAddress = address == pc;
@@ -201,17 +233,37 @@ public class CodeSmViewPanel extends JPanel
       final Instruction instruction = instructions.getElementAt(address);
       instruction.text = instructionText;
       instruction.isCurrentAddress = isCurrentAddress;
+      instruction.currentIsMemoryInstruction = currentIsMemoryInstruction;
+      final int totalDelay = instructionInfo.getDelay();
+      instruction.totalDelay = totalDelay;
+      if (isCurrentAddress) {
+        instruction.completedDelay = totalDelay - pendingDelay;
+      } else {
+        instruction.completedDelay = 0;
+      }
     }
-    updateDelayDisplay(pioSdk);
+    updateDelayDisplay(currentInstructionInfo, pendingDelay);
+    if (currentIsMemoryInstruction) {
+      taForcedOrExecdInstruction.setForeground(fgDefault);
+      taForcedOrExecdInstruction.setBackground(bgDefault);
+      taForcedOrExecdInstruction.setOpaque(false);
+      taForcedOrExecdInstruction.setText("");
+    } else {
+      final String forcedOrExecdInstrText =
+        " " + currentInstructionInfo.getFullStatement();
+      taForcedOrExecdInstruction.setForeground(fgCurrent);
+      taForcedOrExecdInstruction.setBackground(bgCurrent);
+      taForcedOrExecdInstruction.setOpaque(true);
+      taForcedOrExecdInstruction.setText(forcedOrExecdInstrText);
+    }
     lsInstructions.ensureIndexIsVisible(pc);
   }
 
-  private void updateDelayDisplay(final PIOSDK pioSdk) throws IOException
+  private void updateDelayDisplay(final PIOSDK.InstructionInfo instructionInfo,
+                                  final int pendingDelay)
+    throws IOException
   {
-    final PIOSDK.InstructionInfo instructionInfo =
-      pioSdk.getCurrentInstruction(smNum, true, true);
     final int totalDelay = instructionInfo.getDelay();
-    final int pendingDelay = getPendingDelay();
     final int completedDelay = totalDelay - pendingDelay;
     final float progress;
     final String progressText;
@@ -221,7 +273,7 @@ public class CodeSmViewPanel extends JPanel
     } else {
       progress = ((float)completedDelay) / totalDelay;
       progressText =
-        String.format("delay: %d of %d %s", completedDelay, totalDelay,
+        String.format("delay: %d of %d %s done", completedDelay, totalDelay,
                       totalDelay == 1 ? "cycle" : "cycles");
     }
     final int progressValue = Math.round(progress * 1000.0f);

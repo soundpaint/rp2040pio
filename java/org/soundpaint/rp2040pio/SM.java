@@ -86,6 +86,7 @@ public class SM implements Constants
   public class Status
   {
     public Instruction instruction;
+    public int origin;
     public Instruction.ResultState resultState;
     public boolean processing;
     public boolean smEnabled;
@@ -136,6 +137,7 @@ public class SM implements Constants
     private void reset()
     {
       instruction = null;
+      origin = INSTR_ORIGIN_UNKNOWN;
       resultState = null;
       processing = false;
       smEnabled = false;
@@ -158,7 +160,7 @@ public class SM implements Constants
       regEXECCTRL_SIDE_EN = false;
       regEXECCTRL_SIDE_PINDIR = PIO.PinDir.GPIO_LEVELS;
       regEXECCTRL_JMP_PIN = 0;
-      regEXECCTRL_WRAP_TOP = 0x1f;
+      regEXECCTRL_WRAP_TOP = MEMORY_SIZE - 1;
       regEXECCTRL_WRAP_BOTTOM = 0x00;
       regSHIFTCTRL_PULL_THRESH = 0;
       regSHIFTCTRL_PUSH_THRESH = 0;
@@ -329,9 +331,9 @@ public class SM implements Constants
     status.regEXECCTRL_SIDE_EN = ((execctrl >>> 30) & 0x1) != 0x0;
     status.regEXECCTRL_SIDE_PINDIR =
       PIO.PinDir.fromValue((execctrl >>> 29) & 0x1);
-    status.regEXECCTRL_JMP_PIN = (execctrl >>> 24) & 0x1f;
-    status.regEXECCTRL_WRAP_TOP = (execctrl >>> 12) & 0x1f;
-    status.regEXECCTRL_WRAP_BOTTOM = (execctrl >>> 7) & 0x1f;
+    status.regEXECCTRL_JMP_PIN = (execctrl >>> 24) & (MEMORY_SIZE - 1);
+    status.regEXECCTRL_WRAP_TOP = (execctrl >>> 12) & (MEMORY_SIZE - 1);
+    status.regEXECCTRL_WRAP_BOTTOM = (execctrl >>> 7) & (MEMORY_SIZE - 1);
     status.regEXECCTRL_STATUS_SEL = ((execctrl >>> 4) & 0x1) != 0x0;
     status.regEXECCTRL_STATUS_N = execctrl & 0xf;
   }
@@ -430,6 +432,8 @@ public class SM implements Constants
       } catch (final Decoder.DecodeException e) {
         console.println(e.getMessage());
       }
+    } else {
+      status.origin = INSTR_ORIGIN_UNKNOWN;
     }
   }
 
@@ -865,7 +869,7 @@ public class SM implements Constants
     if (status.regADDR == status.regEXECCTRL_WRAP_TOP) {
       status.regADDR = status.regEXECCTRL_WRAP_BOTTOM;
     } else {
-      status.regADDR = (status.regADDR + 1) & 0x1f;
+      status.regADDR = (status.regADDR + 1) & (MEMORY_SIZE - 1);
     }
     if (((status.regBREAKPOINTS >>> status.regADDR) & 0x1) != 0x0) {
       masterClock.setMode(MasterClock.Mode.SINGLE_STEP);
@@ -878,15 +882,18 @@ public class SM implements Constants
     if (pendingForcedInstruction >= 0) {
       status.pendingForcedInstruction = -1;
       status.isForcedInstruction = true;
+      status.origin = INSTR_ORIGIN_FORCED;
       return (short)pendingForcedInstruction;
     }
     final int pendingExecInstruction = status.pendingExecInstruction;
     if (pendingExecInstruction >= 0) {
       status.pendingExecInstruction = -1;
+      status.origin = INSTR_ORIGIN_EXECED;
       return (short)pendingExecInstruction;
     }
     // notify blocking methods that condition may have changed
     memory.FETCH_LOCK.notifyAll();
+    status.origin = status.regADDR & (MEMORY_SIZE - 1);
     return memory.get(status.regADDR);
   }
 
@@ -984,6 +991,14 @@ public class SM implements Constants
     synchronized(memory.FETCH_LOCK) {
       return (status.pendingForcedInstruction >= 0) && isStalled();
     }
+  }
+
+  public int getINSTR_ORIGIN()
+  {
+    final int origin = status.origin;
+    final int mode = origin < 0 ? origin & 0x3 : INSTR_ORIGIN_MEMORY;
+    final int address = origin < 0 ? 0 : origin & (MEMORY_SIZE - 1);
+    return (mode << 5) | address;
   }
 
   /**

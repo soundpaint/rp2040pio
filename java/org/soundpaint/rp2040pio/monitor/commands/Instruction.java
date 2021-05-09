@@ -114,7 +114,7 @@ public class Instruction extends Command
     if ((forcedInstr & 0x00010000) != 0x0) {
       final PIOSDK.InstructionInfo forcedInstrInfo =
         pioSdk.getInstructionFromOpCode(smNum,
-                                        PIOSDK.InstructionInfo.INSTR_FORCED,
+                                        Constants.INSTR_ORIGIN_FORCED,
                                         "", forcedInstr & 0xffff,
                                         true, false, 0);
       console.printf("(pio%d:sm%d) force instruction: %s%n", pioNum, smNum,
@@ -131,7 +131,7 @@ public class Instruction extends Command
     sdk.writeAddress(instrAddress, opCode);
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     final PIOSDK.InstructionInfo forcedInstrInfo =
-      pioSdk.getInstructionFromOpCode(smNum, PIOSDK.InstructionInfo.INSTR_FORCED,
+      pioSdk.getInstructionFromOpCode(smNum, Constants.INSTR_ORIGIN_FORCED,
                                       "", opCode, true, false, 0);
     console.printf("(pio%d:sm%d) set force instruction: %s%n", pioNum, smNum,
                    forcedInstrInfo.getFullStatement());

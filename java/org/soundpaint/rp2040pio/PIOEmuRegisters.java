@@ -86,6 +86,37 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM0_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
     SM0_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
     SM0_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM0_INSTR_ORIGIN("Direct read-only access to the origin of the SM's%n" +
+                     "currently executed instruction.  The mode bits%n" +
+                     "determine the origin category.  If the origin%n" +
+                     "category is memory address, the memory address bits%n" +
+                     "will contain the memory instruction's address.%n" +
+                     "Otherwise, the bits of the memory address are%n" +
+                     "undefined.%n" +
+                     "Note that for memory instructions, the address may%n" +
+                     "differ from the value of the instruction pointer PC,%n" +
+                     "if the PC has already been updated while the%n" +
+                     "instruction is still in progress.",
+                     new BitsInfo[] {
+                       new BitsInfo(31, 7, null, null, BitsType.RESERVED, null),
+                       new BitsInfo(6, 5, "CATEGORY",
+                                    "For forced instructions,%n" +
+                                    "this is the value " +
+                                    (INSTR_ORIGIN_FORCED & 0x3) +
+                                    ".%n" +
+                                    "For EXEC'd instructions,%n" +
+                                    "this is the value " +
+                                    (INSTR_ORIGIN_EXECED & 0x3) +
+                                    ".%n" +
+                                    "Otherwise (e.g. after reset),%n" +
+                                    "this is the value " +
+                                    (INSTR_ORIGIN_UNKNOWN & 0x3) +
+                                    ".%n",
+                                    BitsType.RO, INSTR_ORIGIN_UNKNOWN & 0x3),
+                       new BitsInfo(4, 0, "MEMORY_ADDRESS",
+                                    "memory address value (0x00…0x1f)",
+                                    BitsType.RO, 0)
+                     }),
     SM0_DELAY("Direct read-only access to the SM's%n" +
               "currently executed instruction's number of delay cycles.",
               new BitsInfo[] {
@@ -178,6 +209,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM1_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
     SM1_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
     SM1_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM1_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
     SM1_DELAY(Regs.SM0_DELAY),
     SM1_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
     SM1_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
@@ -200,6 +232,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM2_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
     SM2_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
     SM2_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM2_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
     SM2_DELAY(Regs.SM0_DELAY),
     SM2_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
     SM2_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
@@ -222,6 +255,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM3_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
     SM3_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
     SM3_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM3_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
     SM3_DELAY(Regs.SM0_DELAY),
     SM3_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
     SM3_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
@@ -424,6 +458,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     case SM0_FIFO_MEM5:
     case SM0_FIFO_MEM6:
     case SM0_FIFO_MEM7:
+    case SM0_INSTR_ORIGIN:
     case SM0_DELAY:
     case SM0_DELAY_CYCLE:
     case SM0_PENDING_DELAY:

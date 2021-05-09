@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
@@ -114,26 +115,57 @@ public class Execute extends Command
     }
   }
 
+  private int getPendingDelay(final int pioNum, final int smNum)
+    throws IOException
+  {
+    final int addressPendingDelay =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_PENDING_DELAY);
+    final int pendingDelay = sdk.readAddress(addressPendingDelay);
+    return pendingDelay & 0x1f;
+  }
+
   private void displayInstruction(final int pioNum, final int smNum,
-                                  final PIOSDK pioSdk, final int instr)
+                                  final PIOSDK pioSdk,
+                                  final int origin, final int opCode)
     throws IOException
   {
     final PIOSDK.InstructionInfo instructionInfo =
-      pioSdk.getInstructionFromOpCode(smNum, PIOSDK.InstructionInfo.INSTR_FORCED,
-                                      "", instr, false, false, 0);
-    console.printf("(pio%d:sm%d) %s%n",
+      pioSdk.getInstructionFromOpCode(smNum, origin, "", opCode,
+                                      false, false, 0);
+    console.printf("(pio%d:sm%d) last executed: %s%n",
                    pioNum, smNum, instructionInfo.getToolTipText());
   }
 
-  private void displayCurrentInstruction(final int pioNum, final int smNum,
-                                         final SDK sdk, final PIOSDK pioSdk)
+  private void displayInstructions(final int pioNum, final int smNum,
+                                   final SDK sdk, final PIOSDK pioSdk)
     throws IOException
   {
-    final int instrAddress =
-      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_INSTR);
-    final int instr = sdk.readAddress(instrAddress);
-    console.println("instruction currently being executed:");
-    displayInstruction(pioNum, smNum, pioSdk, instr);
+    final PIOSDK.InstructionInfo currentInstrInfo =
+      pioSdk.getCurrentInstruction(smNum, true, true);
+    console.printf("(pio%d:sm%d) last executed: %s%n", pioNum, smNum,
+                   currentInstrInfo.getFullStatement());
+
+    final int forcedInstrAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_FORCED_INSTR);
+    final int forcedInstr = sdk.readAddress(forcedInstrAddress);
+    if ((forcedInstr & 0x00010000) != 0x0) {
+      final PIOSDK.InstructionInfo forcedInstrInfo =
+        pioSdk.getInstructionFromOpCode(smNum,
+                                        Constants.INSTR_ORIGIN_FORCED,
+                                        "", forcedInstr & 0xffff,
+                                        true, false, 0);
+      console.printf("(pio%d:sm%d) forced instr : %s%n", pioNum, smNum,
+                     forcedInstrInfo.getFullStatement());
+    }
+
+    final int pendingDelay = getPendingDelay(pioNum, smNum);
+    final int totalDelay = currentInstrInfo.getDelay();
+    if (totalDelay > 0) {
+      console.printf("(pio%d:sm%d) pending delay: %d of %d cycles done%n",
+                     pioNum, smNum, totalDelay - pendingDelay, totalDelay);
+    }
   }
 
   private void writeInstruction(final int pioNum, final int smNum,
@@ -145,7 +177,8 @@ public class Execute extends Command
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_INSTR);
     sdk.writeAddress(instrAddress, instr);
     console.println("instruction written for insertion:");
-    displayInstruction(pioNum, smNum, pioSdk, instr);
+    displayInstruction(pioNum, smNum, pioSdk,
+                       Constants.INSTR_ORIGIN_FORCED, instr);
   }
 
   /**
@@ -160,7 +193,7 @@ public class Execute extends Command
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     final Integer optInstructionValue = options.getValue(optInstruction);
     if (optInstructionValue == null) {
-      displayCurrentInstruction(pioNum, smNum, sdk, pioSdk);
+      displayInstructions(pioNum, smNum, sdk, pioSdk);
     } else {
       writeInstruction(pioNum, smNum, sdk, pioSdk, optInstructionValue);
     }

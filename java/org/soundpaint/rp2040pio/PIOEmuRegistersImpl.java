@@ -173,6 +173,11 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM3_FIFO_MEM7:
       setFIFOMemValue(regNum - Regs.SM0_FIFO_MEM0.ordinal(), value, mask, xor);
       break;
+    case SM0_INSTR_ORIGIN:
+    case SM1_INSTR_ORIGIN:
+    case SM2_INSTR_ORIGIN:
+    case SM3_INSTR_ORIGIN:
+      break; // (for now) read-only address
     case SM0_DELAY:
     case SM1_DELAY:
     case SM2_DELAY:
@@ -380,6 +385,13 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM3_FIFO_MEM6:
     case SM3_FIFO_MEM7:
       return getFIFOMemValue(regNum - Regs.SM0_FIFO_MEM0.ordinal());
+    case SM0_INSTR_ORIGIN:
+    case SM1_INSTR_ORIGIN:
+    case SM2_INSTR_ORIGIN:
+    case SM3_INSTR_ORIGIN:
+      return
+        pio.getSM((regNum - Regs.SM0_INSTR_ORIGIN.ordinal()) / SM_SIZE).
+        getINSTR_ORIGIN();
     case SM0_DELAY:
     case SM1_DELAY:
     case SM2_DELAY:

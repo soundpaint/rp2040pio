@@ -36,6 +36,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
@@ -50,6 +51,7 @@ public class CodeViewPanel extends JPanel
   private final SDK sdk;
   private final int refresh;
   private final CodeSmViewPanel codeSmViewPanel;
+  private final JTextField taForcedOrExecdInstruction;
   private final JProgressBar pbDelay;
   private int pioNum;
   private int smNum;
@@ -71,7 +73,9 @@ public class CodeViewPanel extends JPanel
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("Code View"));
     pbDelay = new JProgressBar(0, 1000);
-    codeSmViewPanel = new CodeSmViewPanel(console, sdk, pbDelay);
+    taForcedOrExecdInstruction = new JTextField();
+    codeSmViewPanel =
+      new CodeSmViewPanel(console, sdk, pbDelay, taForcedOrExecdInstruction);
 
     final Box pioSelection = new Box(BoxLayout.X_AXIS);
     add(pioSelection);
@@ -93,9 +97,16 @@ public class CodeViewPanel extends JPanel
     smSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(smSelection);
 
-    pbDelay.setStringPainted(true);
     add(codeSmViewPanel);
+
+    taForcedOrExecdInstruction.setEditable(false);
+    taForcedOrExecdInstruction.setFont(CodeSmViewPanel.codeFont);
+    SwingUtils.setPreferredHeightAsMaximum(taForcedOrExecdInstruction);
+    add(taForcedOrExecdInstruction);
+
+    pbDelay.setStringPainted(true);
     add(pbDelay);
+
     codeSmViewPanel.smChanged(pioNum, smNum);
     new Thread(() -> updateLoop()).start();
   }

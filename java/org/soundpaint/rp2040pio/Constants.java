@@ -174,6 +174,12 @@ public interface Constants
 
   public static final int REGISTER_SERVER_DEFAULT_PORT_NUMBER = 2040;
 
+  // Instruction Origin
+  public static final int INSTR_ORIGIN_UNKNOWN = -3;
+  public static final int INSTR_ORIGIN_EXECED = -2;
+  public static final int INSTR_ORIGIN_FORCED = -1;
+  public static final int INSTR_ORIGIN_MEMORY = 0;
+
   public enum GPIO_Function {
     XIP(0, "xip"),
     SPI(1, "spi"),
