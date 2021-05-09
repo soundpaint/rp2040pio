@@ -940,15 +940,25 @@ public class SM implements Constants
 
   public int getFORCED_INSTR()
   {
-    if (status.pendingForcedInstruction > 0) {
+    if (status.pendingForcedInstruction >= 0) {
       return 0x00010000 | (status.pendingForcedInstruction & 0x0000ffff);
     }
     return 0x0;
   }
 
+  public void clearPendingForcedInstruction()
+  {
+    status.pendingForcedInstruction = -1;
+  }
+
   public int getPendingExecInstruction()
   {
     return status.pendingExecInstruction;
+  }
+
+  public void clearPendingExecInstruction()
+  {
+    status.pendingExecInstruction = -1;
   }
 
   public void forceInstruction(final int instruction)

@@ -80,9 +80,16 @@ public class Execute extends Command
   private static final CmdOptions.IntegerOptionDeclaration optSm =
     CmdOptions.createIntegerOption("NUMBER", false, 's', "sm", 0,
                                    "SM number, one of 0, 1, 2 or 3");
-  private static final CmdOptions.IntegerOptionDeclaration optInstruction =
-    CmdOptions.createIntegerOption("CODE", false, 'i', "instruction", null,
-                                   "opcode of instruction to be executed");
+  private static final CmdOptions.IntegerOptionDeclaration optForce =
+    CmdOptions.createIntegerOption("CODE", false, 'f', "force", null,
+                                   "opcode of forced instruction to be " +
+                                   "executed");
+  private static final CmdOptions.FlagOptionDeclaration optCancel =
+    CmdOptions.createFlagOption(false, 'c', "cancel", CmdOptions.Flag.OFF,
+                                "cancel pending forced instruction, if any");
+  private static final CmdOptions.FlagOptionDeclaration optDelete =
+    CmdOptions.createFlagOption(false, 'd', "delete", CmdOptions.Flag.OFF,
+                                "delete pending EXEC'd instruction, if any");
 
   private final SDK sdk;
 
@@ -90,7 +97,7 @@ public class Execute extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optInstruction });
+          { optPio, optSm, optForce, optCancel, optDelete });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -111,6 +118,11 @@ public class Execute extends Command
       if ((smNum < 0) || (smNum > Constants.SM_COUNT - 1)) {
         throw new CmdOptions.
           ParseException("SM number must be one of 0, 1, 2 or 3");
+      }
+      if (options.isDefined(optForce) && options.getValue(optCancel).isOn()) {
+        throw new CmdOptions.
+          ParseException("at most one of options \"-c\" and \"-f\" may be " +
+                         "specified at the same time");
       }
     }
   }
@@ -168,7 +180,31 @@ public class Execute extends Command
     }
   }
 
-  private void writeInstruction(final int pioNum, final int smNum,
+  private void deleteExecdInstruction(final int pioNum, final int smNum,
+                                      final SDK sdk, final PIOSDK pioSdk)
+    throws IOException
+  {
+    final int clearExecdAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_CLEAR_EXECD);
+    sdk.writeAddress(clearExecdAddress, 0);
+    console.printf("(pio%d:sm%d) deleted any pending EXEC'd instruction%n",
+                   pioNum, smNum);
+  }
+
+  private void cancelForcedInstruction(final int pioNum, final int smNum,
+                                       final SDK sdk, final PIOSDK pioSdk)
+    throws IOException
+  {
+    final int clearForcedAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_CLEAR_FORCED);
+    sdk.writeAddress(clearForcedAddress, 0);
+    console.printf("(pio%d:sm%d) cancelled any pending forced instruction%n",
+                   pioNum, smNum);
+  }
+
+  private void forceInstruction(final int pioNum, final int smNum,
                                 final SDK sdk, final PIOSDK pioSdk,
                                 final int instr)
     throws IOException
@@ -191,11 +227,20 @@ public class Execute extends Command
     final int pioNum = options.getValue(optPio);
     final int smNum = options.getValue(optSm);
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-    final Integer optInstructionValue = options.getValue(optInstruction);
-    if (optInstructionValue == null) {
+    final Integer optForceValue = options.getValue(optForce);
+    if (optForceValue != null) {
+      forceInstruction(pioNum, smNum, sdk, pioSdk, optForceValue);
+    }
+    if (options.getValue(optCancel).isOn()) {
+      cancelForcedInstruction(pioNum, smNum, sdk, pioSdk);
+    }
+    if (options.getValue(optDelete).isOn()) {
+      deleteExecdInstruction(pioNum, smNum, sdk, pioSdk);
+    }
+    if ((optForceValue == null) &&
+        !options.getValue(optCancel).isOn() &&
+        !options.getValue(optDelete).isOn()) {
       displayInstructions(pioNum, smNum, sdk, pioSdk);
-    } else {
-      writeInstruction(pioNum, smNum, sdk, pioSdk, optInstructionValue);
     }
     return true;
   }

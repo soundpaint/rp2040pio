@@ -173,6 +173,20 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM3_FIFO_MEM7:
       setFIFOMemValue(regNum - Regs.SM0_FIFO_MEM0.ordinal(), value, mask, xor);
       break;
+    case SM0_CLEAR_FORCED:
+    case SM1_CLEAR_FORCED:
+    case SM2_CLEAR_FORCED:
+    case SM3_CLEAR_FORCED:
+      pio.getSM(regNum - Regs.SM0_CLEAR_FORCED.ordinal()).
+        clearPendingForcedInstruction();
+      break;
+    case SM0_CLEAR_EXECD:
+    case SM1_CLEAR_EXECD:
+    case SM2_CLEAR_EXECD:
+    case SM3_CLEAR_EXECD:
+      pio.getSM(regNum - Regs.SM0_CLEAR_FORCED.ordinal()).
+        clearPendingExecInstruction();
+      break;
     case SM0_INSTR_ORIGIN:
     case SM1_INSTR_ORIGIN:
     case SM2_INSTR_ORIGIN:
@@ -385,6 +399,16 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM3_FIFO_MEM6:
     case SM3_FIFO_MEM7:
       return getFIFOMemValue(regNum - Regs.SM0_FIFO_MEM0.ordinal());
+    case SM0_CLEAR_FORCED:
+    case SM1_CLEAR_FORCED:
+    case SM2_CLEAR_FORCED:
+    case SM3_CLEAR_FORCED:
+      return 0; // write-only address
+    case SM0_CLEAR_EXECD:
+    case SM1_CLEAR_EXECD:
+    case SM2_CLEAR_EXECD:
+    case SM3_CLEAR_EXECD:
+      return 0; // write-only address
     case SM0_INSTR_ORIGIN:
     case SM1_INSTR_ORIGIN:
     case SM2_INSTR_ORIGIN:

@@ -86,6 +86,18 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM0_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
     SM0_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
     SM0_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM0_CLEAR_FORCED("When writing to this address, any pending%n" +
+                     "forced instruction is cancelled, provided that%n" +
+                     "instruction fetch & decode has not yet been started.",
+                     new BitsInfo[] {
+                       new BitsInfo(31, 0, null, null, BitsType.WF, 0)
+                     }),
+    SM0_CLEAR_EXECD("When writing to this address, any pending%n" +
+                    "EXEC'd instruction is cancelled, provided that%n" +
+                    "instruction fetch & decode has not yet been started.",
+                    new BitsInfo[] {
+                      new BitsInfo(31, 0, null, null, BitsType.WF, 0)
+                    }),
     SM0_INSTR_ORIGIN("Direct read-only access to the origin of the SM's%n" +
                      "currently executed instruction.  The mode bits%n" +
                      "determine the origin category.  If the origin%n" +
@@ -209,6 +221,8 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM1_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
     SM1_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
     SM1_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM1_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED),
+    SM1_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD),
     SM1_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
     SM1_DELAY(Regs.SM0_DELAY),
     SM1_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
@@ -232,6 +246,8 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM2_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
     SM2_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
     SM2_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM2_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED),
+    SM2_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD),
     SM2_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
     SM2_DELAY(Regs.SM0_DELAY),
     SM2_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
@@ -255,6 +271,8 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM3_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
     SM3_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
     SM3_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM3_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED),
+    SM3_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD),
     SM3_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
     SM3_DELAY(Regs.SM0_DELAY),
     SM3_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
@@ -458,6 +476,8 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     case SM0_FIFO_MEM5:
     case SM0_FIFO_MEM6:
     case SM0_FIFO_MEM7:
+    case SM0_CLEAR_FORCED:
+    case SM0_CLEAR_EXECD:
     case SM0_INSTR_ORIGIN:
     case SM0_DELAY:
     case SM0_DELAY_CYCLE:
