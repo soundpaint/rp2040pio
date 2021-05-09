@@ -73,6 +73,11 @@ public class PIOSDK implements Constants
    */
   public static class InstructionInfo
   {
+    public static final int INSTR_UNKNOWN = -3;
+    public static final int INSTR_EXECED = -2;
+    public static final int INSTR_FORCED = -1;
+
+    private final int origin;
     private final String mnemonic;
     private final String fullStatement;
     private final boolean isDelayCycle;
@@ -83,11 +88,28 @@ public class PIOSDK implements Constants
       throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public InstructionInfo(final String mnemonic, final String fullStatement,
+    /**
+     * @param origin Either memory address (0…31), or INSTR_FORCED for
+     * an enforced instruction, or INSTR_EXECED for an EXEC'd
+     * instruction, or INSTR_UNKNOWN if the origin is not available.
+     */
+    public InstructionInfo(final int origin,
+                           final String mnemonic, final String fullStatement,
                            final boolean isDelayCycle, final int delay)
     {
       // instruction & state machine will change, hence save snapshot
       // of relevant info
+      if (origin < INSTR_UNKNOWN) {
+        final String message =
+          String.format("origin < %d: %d", INSTR_UNKNOWN, origin);
+        throw new IllegalArgumentException(message);
+      }
+      if (origin >= MEMORY_SIZE) {
+        final String message =
+          String.format("origin >= %d: %d", MEMORY_SIZE, origin);
+        throw new IllegalArgumentException(message);
+      }
+      this.origin = origin;
       this.mnemonic = mnemonic;
       this.fullStatement = fullStatement;
       this.isDelayCycle = isDelayCycle;
@@ -96,11 +118,14 @@ public class PIOSDK implements Constants
 
     public InstructionInfo(final Exception e)
     {
+      this.origin = INSTR_UNKNOWN;
       this.mnemonic = "err";
       this.fullStatement = e.getMessage();
       this.isDelayCycle = false;
       this.delay = 0;
     }
+
+    public int getOrigin() { return origin; }
 
     public String getMnemnonic() { return mnemonic; }
 
@@ -144,7 +169,7 @@ public class PIOSDK implements Constants
    * instances of Instruction objects must be serialized.
    */
   public synchronized InstructionInfo
-    getInstructionFromOpCode(final int smNum,
+    getInstructionFromOpCode(final int smNum, final int origin,
                              final String addressLabel, final int opCode,
                              final boolean format,
                              final boolean isDelayCycle, final int delay)
@@ -182,7 +207,7 @@ public class PIOSDK implements Constants
     final String formattedFullStatement =
       format ? fullStatement : fullStatement.replaceAll("\\s{2,}", " ");
 
-    return new InstructionInfo(mnemonic, formattedFullStatement,
+    return new InstructionInfo(origin, mnemonic, formattedFullStatement,
                                isDelayCycle, delay);
   }
 
@@ -213,7 +238,7 @@ public class PIOSDK implements Constants
                                    PIOEmuRegisters.Regs.SM0_DELAY);
     final int delay = registers.readAddress(smDelayAddress);
 
-    return getInstructionFromOpCode(smNum, addressLabel, opCode, format,
+    return getInstructionFromOpCode(smNum, pc, addressLabel, opCode, format,
                                     isDelayCycle, delay);
   }
 
@@ -246,7 +271,7 @@ public class PIOSDK implements Constants
     final boolean isDelayCycle = false;
     final int delay = 0;
     return
-      getInstructionFromOpCode(smNum, addressLabel, opCode, format,
+      getInstructionFromOpCode(smNum, address, addressLabel, opCode, format,
                                isDelayCycle, delay);
   }
 

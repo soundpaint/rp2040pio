@@ -119,7 +119,8 @@ public class Execute extends Command
     throws IOException
   {
     final PIOSDK.InstructionInfo instructionInfo =
-      pioSdk.getInstructionFromOpCode(smNum, "", instr, false, false, 0);
+      pioSdk.getInstructionFromOpCode(smNum, PIOSDK.InstructionInfo.INSTR_FORCED,
+                                      "", instr, false, false, 0);
     console.printf("(pio%d:sm%d) %s%n",
                    pioNum, smNum, instructionInfo.getToolTipText());
   }
