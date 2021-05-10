@@ -102,7 +102,7 @@ public class SM implements Constants
     public int pendingDelay;
     public int pendingForcedInstruction;
     public boolean isForcedInstruction;
-    public int pendingExecInstruction;
+    public int pendingExecdInstruction;
     public int regADDR; // bits 0…4 of SMx_ADDR
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
     public PIO.PinDir regEXECCTRL_SIDE_PINDIR; // bit 29 of SMx_EXECCTRL
@@ -153,7 +153,7 @@ public class SM implements Constants
       pendingDelay = 0;
       pendingForcedInstruction = -1;
       isForcedInstruction = false;
-      pendingExecInstruction = -1;
+      pendingExecdInstruction = -1;
       regADDR = 0;
       regEXECCTRL_STATUS_SEL = false;
       regEXECCTRL_STATUS_N = 0;
@@ -423,6 +423,7 @@ public class SM implements Constants
     if (status.processing) {
       try {
         if ((status.pendingForcedInstruction >= 0) ||
+            (status.pendingExecdInstruction >= 0) ||
             !status.consumePendingDelay()) {
           status.isDelayCycle = false;
           fetchAndDecode();
@@ -885,11 +886,11 @@ public class SM implements Constants
       status.origin = INSTR_ORIGIN_FORCED;
       return (short)pendingForcedInstruction;
     }
-    final int pendingExecInstruction = status.pendingExecInstruction;
-    if (pendingExecInstruction >= 0) {
-      status.pendingExecInstruction = -1;
-      status.origin = INSTR_ORIGIN_EXECED;
-      return (short)pendingExecInstruction;
+    final int pendingExecdInstruction = status.pendingExecdInstruction;
+    if (pendingExecdInstruction >= 0) {
+      status.pendingExecdInstruction = -1;
+      status.origin = INSTR_ORIGIN_EXECD;
+      return (short)pendingExecdInstruction;
     }
     // notify blocking methods that condition may have changed
     memory.FETCH_LOCK.notifyAll();
@@ -951,14 +952,22 @@ public class SM implements Constants
     status.pendingForcedInstruction = -1;
   }
 
-  public int getPendingExecInstruction()
+  public int getPendingExecdInstruction()
   {
-    return status.pendingExecInstruction;
+    return status.pendingExecdInstruction;
   }
 
-  public void clearPendingExecInstruction()
+  public int getEXECD_INSTR()
   {
-    status.pendingExecInstruction = -1;
+    if (status.pendingExecdInstruction >= 0) {
+      return 0x00010000 | (status.pendingExecdInstruction & 0x0000ffff);
+    }
+    return 0x0;
+  }
+
+  public void clearPendingExecdInstruction()
+  {
+    status.pendingExecdInstruction = -1;
   }
 
   public void forceInstruction(final int instruction)
@@ -979,10 +988,10 @@ public class SM implements Constants
     }
   }
 
-  public void insertExecInstruction(final int instruction)
+  public void execInstruction(final int instruction)
   {
     synchronized(memory.FETCH_LOCK) {
-      if (status.pendingExecInstruction >= 0) {
+      if (status.pendingExecdInstruction >= 0) {
         throw new InternalError("already have pending EXEC instruction");
       }
       if (instruction < 0) {
@@ -992,7 +1001,7 @@ public class SM implements Constants
         throw new IllegalArgumentException("instruction > 65535: " +
                                            instruction);
       }
-      status.pendingExecInstruction = instruction;
+      status.pendingExecdInstruction = instruction;
     }
   }
 

@@ -176,7 +176,7 @@ public interface Constants
 
   // Instruction Origin
   public static final int INSTR_ORIGIN_UNKNOWN = -3;
-  public static final int INSTR_ORIGIN_EXECED = -2;
+  public static final int INSTR_ORIGIN_EXECD = -2;
   public static final int INSTR_ORIGIN_FORCED = -1;
   public static final int INSTR_ORIGIN_MEMORY = 0;
 

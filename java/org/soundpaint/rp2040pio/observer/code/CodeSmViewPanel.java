@@ -207,6 +207,13 @@ public class CodeSmViewPanel extends JPanel
     final boolean isForced = (forcedInstr & 0x00010000) != 0x0;
     final int forcedOpCode = isForced ? forcedInstr & 0xffff : 0x0;
 
+    final int execdInstrAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_EXECD_INSTR);
+    final int execdInstr = sdk.readAddress(execdInstrAddress);
+    final boolean isExecd = (execdInstr & 0x00010000) != 0x0;
+    final int execdOpCode = isExecd ? execdInstr & 0xffff : 0x0;
+
     for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
       final boolean isCurrentAddress = address == pc;
       final PIOSDK.InstructionInfo instructionInfo =
@@ -235,26 +242,41 @@ public class CodeSmViewPanel extends JPanel
       pioSdk.getCurrentInstruction(smNum, true, true);
     final int origin = currentInstructionInfo.getOrigin();
     updateDelayDisplay(currentInstructionInfo, pendingDelay);
-    updateForcedOrExecdInstructionDisplay(pioSdk, isForced, forcedOpCode);
+    updateForcedOrExecdInstructionDisplay(pioSdk, isForced, forcedOpCode,
+                                          isExecd, execdOpCode);
     lsInstructions.ensureIndexIsVisible(pc);
   }
 
   private void updateForcedOrExecdInstructionDisplay(final PIOSDK pioSdk,
                                                      final boolean isForced,
-                                                     final int opCode)
+                                                     final int forcedOpCode,
+                                                     final boolean isExecd,
+                                                     final int execdOpCode)
     throws IOException
   {
     if (isForced) {
       final PIOSDK.InstructionInfo forcedInstrInfo =
         pioSdk.getInstructionFromOpCode(smNum,
                                         Constants.INSTR_ORIGIN_FORCED,
-                                        "", opCode, true, false, 0);
+                                        "", forcedOpCode, true, false, 0);
       taForcedOrExecdInstruction.setForeground(fgCurrent);
       taForcedOrExecdInstruction.setBackground(bgCurrent);
       taForcedOrExecdInstruction.setOpaque(true);
       final String displayText =
         String.format("  [f] %04x %s",
-                      opCode, forcedInstrInfo.getFullStatement());
+                      forcedOpCode, forcedInstrInfo.getFullStatement());
+      taForcedOrExecdInstruction.setText(displayText);
+    } else if (isExecd) {
+      final PIOSDK.InstructionInfo execdInstrInfo =
+        pioSdk.getInstructionFromOpCode(smNum,
+                                        Constants.INSTR_ORIGIN_EXECD,
+                                        "", execdOpCode, true, false, 0);
+      taForcedOrExecdInstruction.setForeground(fgCurrent);
+      taForcedOrExecdInstruction.setBackground(bgCurrent);
+      taForcedOrExecdInstruction.setOpaque(true);
+      final String displayText =
+        String.format("  [x] %04x %s",
+                      execdOpCode, execdInstrInfo.getFullStatement());
       taForcedOrExecdInstruction.setText(displayText);
     } else {
       taForcedOrExecdInstruction.setForeground(fgDefault);

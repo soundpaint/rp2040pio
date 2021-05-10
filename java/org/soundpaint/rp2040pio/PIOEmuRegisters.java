@@ -118,7 +118,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                     ".%n" +
                                     "For EXEC'd instructions,%n" +
                                     "this is the value " +
-                                    (INSTR_ORIGIN_EXECED & 0x3) +
+                                    (INSTR_ORIGIN_EXECD & 0x3) +
                                     ".%n" +
                                     "Otherwise (e.g. after reset),%n" +
                                     "this is the value " +
@@ -152,7 +152,9 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                      BitsType.RO, 0)
                       }),
     SM0_FORCED_INSTR("Direct read-only access to the op-code of a forced%n" +
-                      "instruction.",
+                     "instruction that is awaiting execution during the%n" +
+                     "next clock cycle.  For writing a forced instruction,%n" +
+                     "use SMx_INSTR of PIORegisters instead.",
                       new BitsInfo[] {
                         new BitsInfo(31, 17, null, null,
                                      BitsType.RESERVED, null),
@@ -165,6 +167,24 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                      "otherwise, 0x0000.",
                                      BitsType.RO, 0)
                       }),
+    SM0_EXECD_INSTR("Direct read/write access to the op-code of an EXEC'd%n" +
+                    "instruction that is awaiting execution during the%n" +
+                    "next clock cycle, unless the state machine's clock%n" +
+                    "signal does not evaluate to true, or there is a%n" +
+                    "pending forced instruction, in which case the forced%n" +
+                    "instruction will be executed first.",
+                    new BitsInfo[] {
+                      new BitsInfo(31, 17, null, null,
+                                   BitsType.RESERVED, null),
+                      new BitsInfo(16, 16, "PENDING",
+                                   "0x1, if an EXEC'd instruction is%n" +
+                                   "awaiting execution, otherwise 0x0.",
+                                   BitsType.RO, 0),
+                      new BitsInfo(15, 0, "INSTR",
+                                   "Instruction op-code, if any;%n" +
+                                   "otherwise, 0x0000.",
+                                   BitsType.RW, 0)
+                    }),
     SM0_CLK_ENABLE("Read-only access to the SM's delay status.",
                    new BitsInfo[] {
                      new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
@@ -228,6 +248,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM1_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
     SM1_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
     SM1_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
+    SM1_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
     SM1_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
     SM1_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
     SM1_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
@@ -253,6 +274,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM2_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
     SM2_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
     SM2_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
+    SM2_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
     SM2_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
     SM2_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
     SM2_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
@@ -278,6 +300,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM3_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
     SM3_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
     SM3_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
+    SM3_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
     SM3_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
     SM3_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
     SM3_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
@@ -483,6 +506,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     case SM0_DELAY_CYCLE:
     case SM0_PENDING_DELAY:
     case SM0_FORCED_INSTR:
+    case SM0_EXECD_INSTR:
     case SM0_CLK_ENABLE:
     case SM0_BREAKPOINTS:
     case SM0_TRACEPOINTS:

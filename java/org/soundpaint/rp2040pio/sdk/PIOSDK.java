@@ -87,7 +87,7 @@ public class PIOSDK implements Constants
     /**
      * @param origin Either memory address (0…31), or
      * INSTR_ORIGIN_FORCED for an enforced instruction, or
-     * INSTR_ORIGIN_EXECED for an EXEC'd instruction, or
+     * INSTR_ORIGIN_EXECD for an EXEC'd instruction, or
      * INSTR_ORIGIN_UNKNOWN if the origin is not available.
      */
     public InstructionInfo(final int origin,
@@ -231,7 +231,7 @@ public class PIOSDK implements Constants
       return "??";
     case INSTR_ORIGIN_FORCED:
       return "[forced]";
-    case INSTR_ORIGIN_EXECED:
+    case INSTR_ORIGIN_EXECD:
       return "[EXEC'd]";
     default:
       throw new InternalError("unexpected case fall-through");

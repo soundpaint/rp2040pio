@@ -68,11 +68,20 @@ public class Execute extends Command
     "Options -p and -s select the state machine that this command%n" +
     "applies to.  Default is PIO0 and SM0.%n" +
     "%n" +
-    "If option -i is not specified, the instruction currently being%n" +
-    "executed by the selected state machine will be displayed.%n" +
+    "If neither of options -c, -d, -e, -f is specified, the instruction%n" +
+    "currently being executed by the selected state machine and any%n" +
+    "pending forced or EXEC'd instruction will be displayed.%n" +
     "%n" +
-    "If option -i is specified, the specified instruction is written%n" +
-    "for immediate execution.";
+    "If option -f is specified, the specified instruction is written%n" +
+    "for immediate execution (forced instruction).%n" +
+    "If option -c is specified, any pending forced instruction%n" +
+    "will be cancelled.%n" +
+    "If option -e is specified, the specified instruction is written%n" +
+    "for execution on the next enabled clock cycle (EXEC'd instruction),%n" +
+    "provided that there is no pending forced instruction that would have%n" +
+    "higher priority of execution.%n" +
+    "If option -d is specified, any pending EXEC'd instruction%n" +
+    "will be deleted.";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
@@ -82,8 +91,12 @@ public class Execute extends Command
                                    "SM number, one of 0, 1, 2 or 3");
   private static final CmdOptions.IntegerOptionDeclaration optForce =
     CmdOptions.createIntegerOption("CODE", false, 'f', "force", null,
-                                   "opcode of forced instruction to be " +
-                                   "executed");
+                                   "set or overwrite opcode of forced " +
+                                   "instruction to be executed");
+  private static final CmdOptions.IntegerOptionDeclaration optExec =
+    CmdOptions.createIntegerOption("CODE", false, 'e', "exec", null,
+                                   "set or overwrite opcode of EXEC'd " +
+                                   "instruction to be executed");
   private static final CmdOptions.FlagOptionDeclaration optCancel =
     CmdOptions.createFlagOption(false, 'c', "cancel", CmdOptions.Flag.OFF,
                                 "cancel pending forced instruction, if any");
@@ -97,7 +110,7 @@ public class Execute extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optForce, optCancel, optDelete });
+          { optPio, optSm, optForce, optExec, optCancel, optDelete });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -122,6 +135,11 @@ public class Execute extends Command
       if (options.isDefined(optForce) && options.getValue(optCancel).isOn()) {
         throw new CmdOptions.
           ParseException("at most one of options \"-c\" and \"-f\" may be " +
+                         "specified at the same time");
+      }
+      if (options.isDefined(optExec) && options.getValue(optDelete).isOn()) {
+        throw new CmdOptions.
+          ParseException("at most one of options \"-e\" and \"-d\" may be " +
                          "specified at the same time");
       }
     }
@@ -149,15 +167,10 @@ public class Execute extends Command
                    pioNum, smNum, instructionInfo.getToolTipText());
   }
 
-  private void displayInstructions(final int pioNum, final int smNum,
-                                   final SDK sdk, final PIOSDK pioSdk)
+  private void displayForcedInstruction(final int pioNum, final int smNum,
+                                        final SDK sdk, final PIOSDK pioSdk)
     throws IOException
   {
-    final PIOSDK.InstructionInfo currentInstrInfo =
-      pioSdk.getCurrentInstruction(smNum, true, true);
-    console.printf("(pio%d:sm%d) last executed: %s%n", pioNum, smNum,
-                   currentInstrInfo.getFullStatement());
-
     final int forcedInstrAddress =
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_FORCED_INSTR);
@@ -171,13 +184,50 @@ public class Execute extends Command
       console.printf("(pio%d:sm%d) forced instr : %s%n", pioNum, smNum,
                      forcedInstrInfo.getFullStatement());
     }
+  }
 
+  private void displayExecdInstruction(final int pioNum, final int smNum,
+                                       final SDK sdk, final PIOSDK pioSdk)
+    throws IOException
+  {
+    final int execdInstrAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_EXECD_INSTR);
+    final int execdInstr = sdk.readAddress(execdInstrAddress);
+    if ((execdInstr & 0x00010000) != 0x0) {
+      final PIOSDK.InstructionInfo execdInstrInfo =
+        pioSdk.getInstructionFromOpCode(smNum,
+                                        Constants.INSTR_ORIGIN_EXECD,
+                                        "", execdInstr & 0xffff,
+                                        true, false, 0);
+      console.printf("(pio%d:sm%d) execd instr  : %s%n", pioNum, smNum,
+                     execdInstrInfo.getFullStatement());
+    }
+  }
+
+  private void displayPendingDelay(final int pioNum, final int smNum,
+                                   final PIOSDK.InstructionInfo currentInstrInfo)
+    throws IOException
+  {
     final int pendingDelay = getPendingDelay(pioNum, smNum);
     final int totalDelay = currentInstrInfo.getDelay();
     if (totalDelay > 0) {
       console.printf("(pio%d:sm%d) pending delay: %d of %d cycles done%n",
                      pioNum, smNum, totalDelay - pendingDelay, totalDelay);
     }
+  }
+
+  private void displayInstructions(final int pioNum, final int smNum,
+                                   final SDK sdk, final PIOSDK pioSdk)
+    throws IOException
+  {
+    final PIOSDK.InstructionInfo currentInstrInfo =
+      pioSdk.getCurrentInstruction(smNum, true, true);
+    console.printf("(pio%d:sm%d) last executed: %s%n", pioNum, smNum,
+                   currentInstrInfo.getFullStatement());
+    displayForcedInstruction(pioNum, smNum, sdk, pioSdk);
+    displayExecdInstruction(pioNum, smNum, sdk, pioSdk);
+    displayPendingDelay(pioNum, smNum, currentInstrInfo);
   }
 
   private void deleteExecdInstruction(final int pioNum, final int smNum,
@@ -192,6 +242,20 @@ public class Execute extends Command
                    pioNum, smNum);
   }
 
+  private void setExecdInstruction(final int pioNum, final int smNum,
+                                   final SDK sdk, final PIOSDK pioSdk,
+                                   final int instr)
+    throws IOException
+  {
+    final int execdInstrAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_EXECD_INSTR);
+    sdk.writeAddress(execdInstrAddress, instr);
+    console.println("EXEC'd instruction written for pending execution:");
+    displayInstruction(pioNum, smNum, pioSdk,
+                       Constants.INSTR_ORIGIN_EXECD, instr);
+  }
+
   private void cancelForcedInstruction(final int pioNum, final int smNum,
                                        final SDK sdk, final PIOSDK pioSdk)
     throws IOException
@@ -204,15 +268,15 @@ public class Execute extends Command
                    pioNum, smNum);
   }
 
-  private void forceInstruction(final int pioNum, final int smNum,
-                                final SDK sdk, final PIOSDK pioSdk,
-                                final int instr)
+  private void setForcedInstruction(final int pioNum, final int smNum,
+                                    final SDK sdk, final PIOSDK pioSdk,
+                                    final int instr)
     throws IOException
   {
     final int instrAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_INSTR);
     sdk.writeAddress(instrAddress, instr);
-    console.println("instruction written for insertion:");
+    console.println("forced instruction written for pending execution:");
     displayInstruction(pioNum, smNum, pioSdk,
                        Constants.INSTR_ORIGIN_FORCED, instr);
   }
@@ -228,16 +292,21 @@ public class Execute extends Command
     final int smNum = options.getValue(optSm);
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     final Integer optForceValue = options.getValue(optForce);
+    final Integer optExecValue = options.getValue(optExec);
     if (optForceValue != null) {
-      forceInstruction(pioNum, smNum, sdk, pioSdk, optForceValue);
+      setForcedInstruction(pioNum, smNum, sdk, pioSdk, optForceValue);
     }
     if (options.getValue(optCancel).isOn()) {
       cancelForcedInstruction(pioNum, smNum, sdk, pioSdk);
+    }
+    if (optExecValue != null) {
+      setExecdInstruction(pioNum, smNum, sdk, pioSdk, optExecValue);
     }
     if (options.getValue(optDelete).isOn()) {
       deleteExecdInstruction(pioNum, smNum, sdk, pioSdk);
     }
     if ((optForceValue == null) &&
+        (optExecValue == null) &&
         !options.getValue(optCancel).isOn() &&
         !options.getValue(optDelete).isOn()) {
       displayInstructions(pioNum, smNum, sdk, pioSdk);

@@ -539,7 +539,7 @@ public abstract class Instruction
           return null;
         }),
       EXEC(0b111, "exec", (sm, data) -> {
-          sm.insertExecInstruction(data);
+          sm.execInstruction(data);
           return null;
         });
 
@@ -816,7 +816,7 @@ public abstract class Instruction
         }),
       RESERVED_3(0b011, "???", null),
       EXEC(0b100, "exec", (sm, data) -> {
-          sm.insertExecInstruction(data);
+          sm.execInstruction(data);
           return null;
         }),
       PC(0b101, "pc", (sm, data) -> {

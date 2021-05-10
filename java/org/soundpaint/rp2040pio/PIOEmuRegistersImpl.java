@@ -184,8 +184,8 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM1_CLEAR_EXECD:
     case SM2_CLEAR_EXECD:
     case SM3_CLEAR_EXECD:
-      pio.getSM(regNum - Regs.SM0_CLEAR_FORCED.ordinal()).
-        clearPendingExecInstruction();
+      pio.getSM(regNum - Regs.SM0_CLEAR_EXECD.ordinal()).
+        clearPendingExecdInstruction();
       break;
     case SM0_INSTR_ORIGIN:
     case SM1_INSTR_ORIGIN:
@@ -212,6 +212,13 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM2_FORCED_INSTR:
     case SM3_FORCED_INSTR:
       break; // (for now) read-only address
+    case SM0_EXECD_INSTR:
+    case SM1_EXECD_INSTR:
+    case SM2_EXECD_INSTR:
+    case SM3_EXECD_INSTR:
+      pio.getSM((regNum - Regs.SM0_EXECD_INSTR.ordinal()) / SM_SIZE).
+        execInstruction(value & mask);
+      break;
     case SM0_CLK_ENABLE:
     case SM1_CLK_ENABLE:
     case SM2_CLK_ENABLE:
@@ -444,6 +451,13 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
       return
         pio.getSM((regNum - Regs.SM0_FORCED_INSTR.ordinal()) / SM_SIZE).
         getFORCED_INSTR();
+    case SM0_EXECD_INSTR:
+    case SM1_EXECD_INSTR:
+    case SM2_EXECD_INSTR:
+    case SM3_EXECD_INSTR:
+      return
+        pio.getSM((regNum - Regs.SM0_EXECD_INSTR.ordinal()) / SM_SIZE).
+        getEXECD_INSTR();
     case SM0_CLK_ENABLE:
     case SM1_CLK_ENABLE:
     case SM2_CLK_ENABLE:
