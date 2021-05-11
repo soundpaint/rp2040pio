@@ -97,12 +97,12 @@ public class CodeViewPanel extends JPanel
     smSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(smSelection);
 
-    add(codeSmViewPanel);
-
     taForcedOrExecdInstruction.setEditable(false);
     taForcedOrExecdInstruction.setFont(CodeSmViewPanel.codeFont);
     SwingUtils.setPreferredHeightAsMaximum(taForcedOrExecdInstruction);
     add(taForcedOrExecdInstruction);
+
+    add(codeSmViewPanel);
 
     pbDelay.setStringPainted(true);
     add(pbDelay);

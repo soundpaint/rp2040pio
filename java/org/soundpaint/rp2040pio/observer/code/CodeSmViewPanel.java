@@ -102,7 +102,7 @@ public class CodeSmViewPanel extends JPanel
       if (instruction.isCurrentAddress) {
         final boolean isActive =
           (instruction.pendingDelay == 0) && !instruction.isForced;
-        if (isActive) {
+        if (isActive && list.isEnabled()) {
           setForeground(fgCurrent);
           setBackground(bgCurrent);
         } else {
@@ -244,6 +244,7 @@ public class CodeSmViewPanel extends JPanel
     updateDelayDisplay(currentInstructionInfo, pendingDelay);
     updateForcedOrExecdInstructionDisplay(pioSdk, isForced, forcedOpCode,
                                           isExecd, execdOpCode);
+    lsInstructions.setEnabled(pioSdk.smGetEnabled(smNum));
     lsInstructions.ensureIndexIsVisible(pc);
   }
 
