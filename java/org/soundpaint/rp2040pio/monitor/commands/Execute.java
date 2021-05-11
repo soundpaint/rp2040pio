@@ -57,8 +57,8 @@ public class Execute extends Command
 {
   private static final String fullName = "execute";
   private static final String singleLineDescription =
-    "write instruction for immediate execution or display " +
-    "instruction currently executed";
+    "set instruction for immediate execution or display " +
+    "instructions currently executed or pending for execution";
   private static final String notes =
     "Writes an instruction for immediate execution (including jumps)%n" +
     "and then resuming execution or displays the currently excuted%n" +
