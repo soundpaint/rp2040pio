@@ -65,7 +65,7 @@ public class CodeSmViewPanel extends JPanel
   private static final Color bgDefault = Color.WHITE;
   private static final Color fgCurrent = Color.WHITE;
   private static final Color bgCurrent = Color.RED;
-  private static final Color fgCurrentInactive = Color.LIGHT_GRAY;
+  private static final Color fgCurrentInactive = new Color(0x9f9f9f);
   private static final Color bgCurrentInactive = new Color(0xb04f4f);
 
   public static final Font codeFont = new Font(Font.MONOSPACED, Font.PLAIN, 12);
@@ -240,11 +240,11 @@ public class CodeSmViewPanel extends JPanel
     }
     final PIOSDK.InstructionInfo currentInstructionInfo =
       pioSdk.getCurrentInstruction(smNum, true, true);
-    final int origin = currentInstructionInfo.getOrigin();
     updateDelayDisplay(currentInstructionInfo, pendingDelay);
+    final boolean smEnabled = pioSdk.smGetEnabled(smNum);
     updateForcedOrExecdInstructionDisplay(pioSdk, isForced, forcedOpCode,
-                                          isExecd, execdOpCode);
-    lsInstructions.setEnabled(pioSdk.smGetEnabled(smNum));
+                                          isExecd, execdOpCode, smEnabled);
+    lsInstructions.setEnabled(smEnabled);
     lsInstructions.ensureIndexIsVisible(pc);
   }
 
@@ -252,7 +252,8 @@ public class CodeSmViewPanel extends JPanel
                                                      final boolean isForced,
                                                      final int forcedOpCode,
                                                      final boolean isExecd,
-                                                     final int execdOpCode)
+                                                     final int execdOpCode,
+                                                     final boolean smEnabled)
     throws IOException
   {
     if (isForced) {
@@ -272,8 +273,13 @@ public class CodeSmViewPanel extends JPanel
         pioSdk.getInstructionFromOpCode(smNum,
                                         Constants.INSTR_ORIGIN_EXECD,
                                         "", execdOpCode, true, false, 0);
-      taForcedOrExecdInstruction.setForeground(fgCurrent);
-      taForcedOrExecdInstruction.setBackground(bgCurrent);
+      if (smEnabled) {
+        taForcedOrExecdInstruction.setForeground(fgCurrent);
+        taForcedOrExecdInstruction.setBackground(bgCurrent);
+      } else {
+        taForcedOrExecdInstruction.setForeground(fgCurrentInactive);
+        taForcedOrExecdInstruction.setBackground(bgCurrentInactive);
+      }
       taForcedOrExecdInstruction.setOpaque(true);
       final String displayText =
         String.format("  [x] %04x %s",

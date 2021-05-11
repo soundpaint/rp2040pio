@@ -177,14 +177,14 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM1_CLEAR_FORCED:
     case SM2_CLEAR_FORCED:
     case SM3_CLEAR_FORCED:
-      pio.getSM(regNum - Regs.SM0_CLEAR_FORCED.ordinal()).
+      pio.getSM((regNum - Regs.SM0_CLEAR_FORCED.ordinal()) / SM_SIZE).
         clearPendingForcedInstruction();
       break;
     case SM0_CLEAR_EXECD:
     case SM1_CLEAR_EXECD:
     case SM2_CLEAR_EXECD:
     case SM3_CLEAR_EXECD:
-      pio.getSM(regNum - Regs.SM0_CLEAR_EXECD.ordinal()).
+      pio.getSM((regNum - Regs.SM0_CLEAR_EXECD.ordinal()) / SM_SIZE).
         clearPendingExecdInstruction();
       break;
     case SM0_INSTR_ORIGIN:
