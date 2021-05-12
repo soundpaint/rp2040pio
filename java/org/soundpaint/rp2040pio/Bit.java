@@ -75,6 +75,11 @@ public enum Bit
     return direction == Direction.IN ? superScriptLabel : subScriptLabel;
   }
 
+  public Bit inverse()
+  {
+    return this == LOW ? HIGH : LOW;
+  }
+
   @Override
   public String toString()
   {

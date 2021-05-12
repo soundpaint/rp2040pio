@@ -25,30 +25,91 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.PrintStream;
+import java.util.function.Function;
 
 /**
  * General-Purpose Set of 32 Peripheral I/O Terminals
  */
 public class GPIO implements Constants
 {
-  private class Terminal
+  private enum Override
+  {
+    BYPASS((value) -> value, (value) -> value),
+    INVERT((value) -> value.inverse(), (value) -> value.inverse()),
+    ALWAYS_LOW((value) -> Bit.LOW, (value) -> Direction.IN),
+    ALWAYS_HIGH((value) -> Bit.HIGH, (value) -> Direction.OUT);
+
+    private static final Override[] values = Override.values();
+
+    private final Function<Bit, Bit> fnBit;
+    private final Function<Direction, Direction> fnDirection;
+
+    private Override(final Function<Bit, Bit> fnBit,
+                     final Function<Direction, Direction> fnDirection)
+    {
+      if (fnBit == null) throw new NullPointerException("fnBit");
+      this.fnBit = fnBit;
+      if (fnDirection == null) throw new NullPointerException("fnDirection");
+      this.fnDirection = fnDirection;
+    }
+
+    public Bit apply(final Bit value)
+    {
+      return fnBit.apply(value);
+    }
+
+    public Direction apply(final Direction value)
+    {
+      return fnDirection.apply(value);
+    }
+
+    public static Override fromValue(final int value)
+    {
+      if (value < 0) {
+        final String message = String.format("value < 0: %d", value);
+        throw new IllegalArgumentException(message);
+      }
+      if (value > values.length) {
+        final String message =
+          String.format("value >= %d: %d", values.length, value);
+        throw new IllegalArgumentException(message);
+      }
+      return values[value];
+    }
+
+    public int getValue() { return ordinal(); }
+  }
+
+  private static class Terminal
   {
     private int num;
     private GPIO_Function function;
+    private Override irqOverride;
+    private Override inputOverride;
+    private Override oeOverride;
+    private Override outputOverride;
+    private Bit externalInput;
 
     private Terminal()
     {
+      throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
     private Terminal(final int num)
     {
       Constants.checkGpioPin(num, "GPIO port");
       this.num = num;
+      reset();
     }
 
     public void reset()
     {
       function = GPIO_Function.NULL;
+      irqOverride = Override.BYPASS;
+      inputOverride = Override.BYPASS;
+      oeOverride = Override.BYPASS;
+      outputOverride = Override.BYPASS;
+      externalInput = Bit.LOW;
     }
   }
 
@@ -116,18 +177,46 @@ public class GPIO implements Constants
                       final int mask, final boolean xor)
   {
     final int oldValue = getCTRL(gpio);
-    final int newValue =
-      Constants.hwSetBits(oldValue, value, mask, xor);
-    setFunction(gpio,
-                GPIO_Function.fromValue((newValue &
-                                         IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS) >>
-                                        IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB,
-                                        GPIO_Function.NULL));
+    final int newValue = Constants.hwSetBits(oldValue, value, mask, xor);
+    final Terminal terminal = terminals[gpio];
+
+    final Override irqOverride =
+      Override.fromValue((newValue & IO_BANK0_GPIO0_CTRL_IRQOVER_BITS) >>
+                         IO_BANK0_GPIO0_CTRL_IRQOVER_LSB);
+    terminal.irqOverride = irqOverride;
+
+    final Override inputOverride =
+      Override.fromValue((newValue & IO_BANK0_GPIO0_CTRL_INOVER_BITS) >>
+                         IO_BANK0_GPIO0_CTRL_INOVER_LSB);
+    terminal.inputOverride = inputOverride;
+
+    final Override oeOverride =
+      Override.fromValue((newValue & IO_BANK0_GPIO0_CTRL_OEOVER_BITS) >>
+                         IO_BANK0_GPIO0_CTRL_OEOVER_LSB);
+    terminal.oeOverride = oeOverride;
+
+    final Override outputOverride =
+      Override.fromValue((newValue & IO_BANK0_GPIO0_CTRL_OUTOVER_BITS) >>
+                         IO_BANK0_GPIO0_CTRL_OUTOVER_LSB);
+    terminal.outputOverride = outputOverride;
+
+    final GPIO_Function fn =
+      GPIO_Function.fromValue((newValue & IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS) >>
+                              IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB,
+                              GPIO_Function.NULL);
+    terminal.function = fn;
   }
 
   public int getCTRL(final int gpio)
   {
-    return getFunction(gpio).getValue() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
+    Constants.checkGpioPin(gpio, "GPIO port");
+    final Terminal terminal = terminals[gpio];
+    return
+      (terminal.irqOverride.getValue() << IO_BANK0_GPIO0_CTRL_IRQOVER_LSB) |
+      (terminal.inputOverride.getValue() << IO_BANK0_GPIO0_CTRL_INOVER_LSB) |
+      (terminal.oeOverride.getValue() << IO_BANK0_GPIO0_CTRL_OEOVER_LSB) |
+      (terminal.outputOverride.getValue() << IO_BANK0_GPIO0_CTRL_OUTOVER_LSB) |
+      (terminal.function.getValue() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB);
   }
 
   public int getSTATUS(final int gpio)
@@ -146,31 +235,41 @@ public class GPIO implements Constants
        IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB);
   }
 
-  public Bit getIrqToProc(final int gpio)
+  private Bit getIrqToProc(final int gpio)
+  {
+    Constants.checkGpioPin(gpio, "GPIO port");
+    final Terminal terminal = terminals[gpio];
+    return terminal.irqOverride.apply(getIrqFromPad(gpio));
+  }
+
+  private Bit getIrqFromPad(final int gpio)
   {
     // not implemented by this emulator
     return Bit.LOW;
   }
 
-  public Bit getIrqFromPad(final int gpio)
+  private Bit getInToPeri(final int gpio)
   {
-    // not implemented by this emulator
-    return Bit.LOW;
+    Constants.checkGpioPin(gpio, "GPIO port");
+    final Terminal terminal = terminals[gpio];
+    return terminal.inputOverride.apply(terminal.externalInput);
   }
 
-  public Bit getInToPeri(final int gpio)
+  private Bit getInFromPad(final int gpio)
   {
-    // not implemented by this emulator
-    return Bit.LOW;
+    Constants.checkGpioPin(gpio, "GPIO port");
+    final Terminal terminal = terminals[gpio];
+    return terminal.externalInput;
   }
 
-  public Bit getInFromPad(final int gpio)
+  private Direction getOeToPad(final int gpio)
   {
-    // not implemented by this emulator
-    return Bit.LOW;
+    Constants.checkGpioPin(gpio, "GPIO port");
+    final Terminal terminal = terminals[gpio];
+    return terminal.oeOverride.apply(getOeFromPeripheral(gpio));
   }
 
-  public Direction getOeToPad(final int gpio)
+  private Direction getOeFromPeripheral(final int gpio)
   {
     switch (getFunction(gpio)) {
     case XIP:
@@ -182,9 +281,9 @@ public class GPIO implements Constants
       // not implemented by this emulator
       return Direction.IN;
     case PIO0:
-      return pio0.getOeToPad(gpio);
+      return pio0.getDirection(gpio);
     case PIO1:
-      return pio1.getOeToPad(gpio);
+      return pio1.getDirection(gpio);
     case GPCK:
     case USB:
       // not implemented by this emulator
@@ -196,33 +295,14 @@ public class GPIO implements Constants
     }
   }
 
-  public Direction getOeFromPeripheral(final int gpio)
+  private Bit getOutToPad(final int gpio)
   {
-    switch (getFunction(gpio)) {
-    case XIP:
-    case SPI:
-    case UART:
-    case I2C:
-    case PWM:
-    case SIO:
-      // not implemented by this emulator
-      return Direction.IN;
-    case PIO0:
-      return pio0.getOeFromPeripheral(gpio);
-    case PIO1:
-      return pio1.getOeFromPeripheral(gpio);
-    case GPCK:
-    case USB:
-      // not implemented by this emulator
-      return Direction.IN;
-    case NULL:
-      return Direction.IN;
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
+    Constants.checkGpioPin(gpio, "GPIO port");
+    final Terminal terminal = terminals[gpio];
+    return terminal.outputOverride.apply(getOutFromPeripheral(gpio));
   }
 
-  public Bit getOutToPad(final int gpio)
+  private Bit getOutFromPeripheral(final int gpio)
   {
     switch (getFunction(gpio)) {
     case XIP:
@@ -234,35 +314,9 @@ public class GPIO implements Constants
       // not implemented by this emulator
       return Bit.LOW;
     case PIO0:
-      return pio0.getOutToPad(gpio);
+      return pio0.getLevel(gpio);
     case PIO1:
-      return pio1.getOutToPad(gpio);
-    case GPCK:
-    case USB:
-      // not implemented by this emulator
-      return Bit.LOW;
-    case NULL:
-      return Bit.LOW;
-    default:
-      throw new InternalError("unexpected case fall-through");
-    }
-  }
-
-  public Bit getOutFromPeripheral(final int gpio)
-  {
-    switch (getFunction(gpio)) {
-    case XIP:
-    case SPI:
-    case UART:
-    case I2C:
-    case PWM:
-    case SIO:
-      // not implemented by this emulator
-      return Bit.LOW;
-    case PIO0:
-      return pio0.getOutFromPeripheral(gpio);
-    case PIO1:
-      return pio1.getOutFromPeripheral(gpio);
+      return pio1.getLevel(gpio);
     case GPCK:
     case USB:
       // not implemented by this emulator

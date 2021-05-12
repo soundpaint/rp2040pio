@@ -50,6 +50,11 @@ public enum Direction
     throw new IllegalArgumentException("value not a direction: " + value);
   }
 
+  public Direction inverse()
+  {
+    return this == IN ? OUT : IN;
+  }
+
   @Override
   public String toString()
   {

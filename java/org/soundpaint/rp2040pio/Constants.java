@@ -95,6 +95,14 @@ public interface Constants
   public static final int PICO_PWR_UP_VALUE = 0xa55a5aa5;
 
   // GPIO registers addressing
+  public static final int IO_BANK0_GPIO0_CTRL_IRQOVER_LSB = 28;
+  public static final int IO_BANK0_GPIO0_CTRL_IRQOVER_BITS = 0x30000000;
+  public static final int IO_BANK0_GPIO0_CTRL_INOVER_LSB = 16;
+  public static final int IO_BANK0_GPIO0_CTRL_INOVER_BITS = 0x00030000;
+  public static final int IO_BANK0_GPIO0_CTRL_OEOVER_LSB = 12;
+  public static final int IO_BANK0_GPIO0_CTRL_OEOVER_BITS = 0x00003000;
+  public static final int IO_BANK0_GPIO0_CTRL_OUTOVER_LSB = 8;
+  public static final int IO_BANK0_GPIO0_CTRL_OUTOVER_BITS = 0x00000300;
   public static final int IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB = 0;
   public static final int IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS = 0x0000001f;
   public static final int IO_BANK0_GPIO0_STATUS_IRQTOPROC_LSB = 26;

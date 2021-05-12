@@ -155,32 +155,6 @@ public class PIOGPIO implements Constants
       setDirection(gpioNum, Direction.fromValue(newDirection));
     }
   }
-
-  public Direction getOeToPad(final int gpioNum)
-  {
-    final Direction beforeRegisterOverride = getOeFromPeripheral(gpioNum);
-    // TODO: Check if we need to implement register override.
-    final Direction afterRegisterOverride = beforeRegisterOverride;
-    return afterRegisterOverride;
-  }
-
-  public Direction getOeFromPeripheral(final int gpioNum)
-  {
-    return getDirection(gpioNum);
-  }
-
-  public Bit getOutToPad(final int gpioNum)
-  {
-    final Bit beforeRegisterOverride = getOutFromPeripheral(gpioNum);
-    // TODO: Check if we need to implement register override.
-    final Bit afterRegisterOverride = beforeRegisterOverride;
-    return afterRegisterOverride;
-  }
-
-  public Bit getOutFromPeripheral(final int gpioNum)
-  {
-    return getLevel(gpioNum);
-  }
 }
 
 /*
