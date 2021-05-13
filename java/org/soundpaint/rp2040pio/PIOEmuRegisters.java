@@ -193,7 +193,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                   "enable signal evaluates to 0x1.",
                                   BitsType.RO, 0)
                    }),
-    SM0_BREAKPOINTS("Each bit of this values corresponds to each of the%n" +
+    SM0_BREAKPOINTS("Each bit of this value corresponds to each of the%n" +
                     "32 memory locations of the PIO instruction memory%n" +
                     "(with the LSB of the word corresponding to the lowest%n" +
                     "memory address).  Setting a bit to 1 marks the%n" +

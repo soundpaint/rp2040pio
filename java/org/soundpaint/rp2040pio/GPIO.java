@@ -154,6 +154,29 @@ public class GPIO implements Constants
 
   public PIO getPIO1() { return pio1; }
 
+  public synchronized int getGPIO_STATUS()
+  {
+    int status = 0x0;
+    for (int port = 0; port < terminals.length; port++) {
+      status <<= 0x1;
+      status |= terminals[terminals.length - 1 - port].externalInput.getValue();
+    }
+    return status;
+  }
+
+  public synchronized void setGPIO_STATUS(final int bits, final int mask,
+                                          final boolean xor)
+  {
+    final int oldStatus = getGPIO_STATUS();
+    final int newStatus =
+      (mask & (xor ? oldStatus ^ bits : bits)) |
+      (~mask & oldStatus);
+    for (int port = 0; port < terminals.length; port++) {
+      terminals[port].externalInput =
+        Bit.fromValue((newStatus >>> port) & 0x1);
+    }
+  }
+
   /**
    * Set GPIOx_CTRL_FUNCSEL to 6 (for PIO0) or 7 (for PIO1), see
    * Sect. 2.19.2. "Function Select" of RP2040 datasheet for details.

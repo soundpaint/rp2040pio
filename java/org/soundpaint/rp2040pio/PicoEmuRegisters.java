@@ -26,6 +26,8 @@ package org.soundpaint.rp2040pio;
 
 import java.util.List;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs;
 
 /**
@@ -124,7 +126,17 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
                   "completed a cycle.",
                   new BitsInfo[] {
                     new BitsInfo(31, 0, null, null, BitsType.RO, null)
-                  });
+                  }),
+    GPIO_PINS("Each bit of this value corresponds to each of the%n" +
+              "32 GPIO pins' pad input state that is provided from%n" +
+              "some external source.",
+              IntStream.rangeClosed(0, 31).boxed()
+              .map(n -> new BitsInfo(31 - n, 31 - n,
+                                     "INFROMPAD_GPIO" + (31 - n),
+                                     "signal value 0x0 or 0x1, as%n" +
+                                     "provided by some external source.",
+                                     BitsType.RW, 0))
+              .collect(Collectors.toList()));
 
     public static String getRegisterSetLabel()
     {

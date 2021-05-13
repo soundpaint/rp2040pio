@@ -31,6 +31,7 @@ import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Direction;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
+import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
@@ -63,12 +64,15 @@ public class Gpio extends Command
     "for clearing or setting its status or for specifying its pin%n" +
     "direction by enabling or disabling its output, respectively.%n" +
     "Use options \"-p\" and \"-g\" option to specify which PIO and GPIO%n" +
-    "pin to apply the operation.%n" +
+    "pin to apply the operation.  Option \"-p\" can be ommitted when%n" +
+    "clearing or setting GPIO pin status; in that case, the operation%n" +
+    "will apply the new pin status as external input for the specified%n" +
+    "pin.%n" +
     "%n" +
     "If none of options \"-i\", \"-s\", \"-c\", \"-e\", \"-d\" is%n" +
     "specified, the current status of all GPIO pins will be displayed,%n" +
-    "depending on option \"-p\" for either of the PIOs or for the GPIO%n" +
-    "after function selection.";
+    "depending on option \"-p\" for either of the PIOs or, if \"-p\" is%n" +
+    "not specified, for the GPIO after function selection.";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", null,
@@ -130,25 +134,30 @@ public class Gpio extends Command
           throw new CmdOptions.ParseException(message);
         }
       }
-      int count = 0;
-      if (options.getValue(optInit) == CmdOptions.Flag.ON) count++;
-      if (options.getValue(optSet) == CmdOptions.Flag.ON) count++;
-      if (options.getValue(optClear) == CmdOptions.Flag.ON) count++;
-      if (options.getValue(optEnable) == CmdOptions.Flag.ON) count++;
-      if (options.getValue(optDisable) == CmdOptions.Flag.ON) count++;
+      int editOpCount = 0;
+      if (options.getValue(optSet) == CmdOptions.Flag.ON) editOpCount++;
+      if (options.getValue(optClear) == CmdOptions.Flag.ON) editOpCount++;
+      int manageOpCount = 0;
+      if (options.getValue(optInit) == CmdOptions.Flag.ON) manageOpCount++;
+      if (options.getValue(optEnable) == CmdOptions.Flag.ON) manageOpCount++;
+      if (options.getValue(optDisable) == CmdOptions.Flag.ON) manageOpCount++;
+
+      final int count = editOpCount + manageOpCount;
       if (count > 1) {
         throw new CmdOptions.
           ParseException("at most one of options \"-i\", \"-s\", \"-c\", " +
                          "\"e\" and \"-d\" may be specified at the same time");
       }
       if (count > 0) {
-        if (!options.isDefined(optPio)) {
-          throw new CmdOptions.
-            ParseException("option not specified: " + optPio);
-        }
         if (!options.isDefined(optGpio)) {
           throw new CmdOptions.
             ParseException("option not specified: " + optGpio);
+        }
+      }
+      if (manageOpCount > 0) {
+        if (!options.isDefined(optPio)) {
+          throw new CmdOptions.
+            ParseException("option not specified: " + optPio);
         }
       }
     }
@@ -167,26 +176,42 @@ public class Gpio extends Command
                    pioNum, gpioNum, pioNum);
   }
 
-  private void setGpio(final int pioNum, final int gpioNum)
+  private void setGpio(final Integer pioNum, final int gpioNum)
     throws IOException
   {
-    final int address =
-      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINS);
-    final int mask = 0x1 << gpioNum;
-    sdk.hwSetBits(address, mask);
-    console.printf("(pio%d:sm*) set GPIO pin %02x of PIO%d to 1%n",
-                   pioNum, gpioNum, pioNum);
+    if (pioNum != null) {
+      final int address =
+        PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINS);
+      final int mask = 0x1 << gpioNum;
+      sdk.hwSetBits(address, mask);
+      console.printf("(pio%d:sm*) set GPIO pin %02x of PIO%d to 1%n",
+                     pioNum, gpioNum, pioNum);
+    } else {
+      final int address =
+        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.GPIO_PINS);
+      final int mask = 0x1 << gpioNum;
+      sdk.hwSetBits(address, mask);
+      console.printf("(pio*:sm*) set GPIO pin %02x to 1%n", gpioNum, pioNum);
+    }
   }
 
-  private void clearGpio(final int pioNum, final int gpioNum)
+  private void clearGpio(final Integer pioNum, final int gpioNum)
     throws IOException
   {
-    final int address =
-      PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINS);
-    final int mask = 0x1 << gpioNum;
-    sdk.hwClearBits(address, mask);
-    console.printf("(pio%d:sm*) set GPIO pin %02x of PIO%d to 0%n",
-                   pioNum, gpioNum, pioNum);
+    if (pioNum != null) {
+      final int address =
+        PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINS);
+      final int mask = 0x1 << gpioNum;
+      sdk.hwClearBits(address, mask);
+      console.printf("(pio%d:sm*) set GPIO pin %02x of PIO%d to 0%n",
+                     pioNum, gpioNum, pioNum);
+    } else {
+      final int address =
+        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.GPIO_PINS);
+      final int mask = 0x1 << gpioNum;
+      sdk.hwClearBits(address, mask);
+      console.printf("(pio*:sm*) set GPIO pin %02x to 0%n", gpioNum, pioNum);
+    }
   }
 
   private void enableGpio(final int pioNum, final int gpioNum)
@@ -226,8 +251,8 @@ public class Gpio extends Command
     final boolean enable = options.getValue(optEnable) == CmdOptions.Flag.ON;
     final boolean disable = options.getValue(optDisable) == CmdOptions.Flag.ON;
     if (init || clear || set | enable | disable) {
-      final int pioNum = options.getValue(optPio);
-      final int gpioNum = options.getValue(optGpio);
+      final Integer pioNum = options.getValue(optPio);
+      final Integer gpioNum = options.getValue(optGpio);
       if (init) {
         initGpio(pioNum, gpioNum);
       } else if (set) {
