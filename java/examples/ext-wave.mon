@@ -7,17 +7,13 @@
 # (yet) provide loops; hence we have to unroll any periodic activity
 # for now.
 
-# Connect GPIO pin 23 with PIO 0
+# Set GPIO pin 23 to 1
 
-gpio --pio=0 --gpio=23 -i
-
-# Set GPIO pin 23 to 1 for PIO0
-
-gpio --pio=0 --gpio=23 --set
+gpio --gpio=23 --set
 
 # Show effect
 
-gpio --pio=0
+gpio
 
 # Await *absolute* clock cycle 0x00000002.
 #
@@ -43,13 +39,13 @@ wait --address=0x58000014 --value=0x2 --cycles=5 --time=300000
 
 wait --address=0x5800000c --value=1 --cycles=0 --time=0
 
-# Now, clear GPIO pin 23 to 1 for PIO0
+# Now, clear GPIO pin 23 to 1
 
-gpio --pio=0 --gpio=23 --clear
+gpio --gpio=23 --clear
 
 # Show effect
 
-gpio --pio=0
+gpio
 
 # Now wait again, but this time nor for an absolute amount of clock
 # cycles, but for 3 clock cycles to pass.  This can be done by
@@ -67,8 +63,8 @@ wait --address=0x5800000c --value=1 --cycles=0 --time=0
 
 # GPIO pin 23 := 1, and show effect.
 
-gpio --pio=0 --gpio=23 --set
-gpio --pio=0
+gpio --gpio=23 --set
+gpio
 
 # Wait again 3 cycles
 
@@ -77,8 +73,8 @@ wait --address=0x5800000c --value=1 --cycles=0 --time=0
 
 # GPIO pin 23 := 0, and show effect.
 
-gpio --pio=0 --gpio=23 --clear
-gpio --pio=0
+gpio --gpio=23 --clear
+gpio
 
 # Wait.
 
@@ -87,19 +83,19 @@ wait --address=0x5800000c --value=1 --cycles=0 --time=0
 
 # GPIO pin 23 := 1, and show effect.
 
-gpio --pio=0 --gpio=23 --set
-gpio --pio=0
+gpio --gpio=23 --set
+gpio
 
 # And so on, for some more cycles...
 
 wait --address=0x58000014 --mask=0 --value=1 --cycles=3 --time=0
 wait --address=0x5800000c --value=1 --cycles=0 --time=0
-gpio --pio=0 --gpio=23 --clear
-gpio --pio=0
+gpio --gpio=23 --clear
+gpio
 wait --address=0x58000014 --mask=0 --value=1 --cycles=3 --time=0
 wait --address=0x5800000c --value=1 --cycles=0 --time=0
-gpio --pio=0 --gpio=23 --set
-gpio --pio=0
+gpio --gpio=23 --set
+gpio
 
 # And the same with abbreviated syntax.  Note that options "--cycles"
 # and "--time" can be completely dropped if we choose to use the
@@ -108,21 +104,21 @@ gpio --pio=0
 
 wa -a 0x58000014 -m 0 -v 1 -c 3
 wa -a 0x5800000c -v 1
-g -p 0 -g 23 -c
-g -p 0
+g -g 23 -c
+g
 wa -a 0x58000014 -m 0 -v 1 -c 3
 wa -a 0x5800000c -v 1
-g -p 0 -g 23 -s
-g -p 0
+g -g 23 -s
+g
 
 # And some more cycles, this time without showing each change.
 
 wa -a 0x58000014 -m 0 -v 1 -c 3
 wa -a 0x5800000c -v 1
-g -p 0 -g 23 -c
+g -g 23 -c
 wa -a 0x58000014 -m 0 -v 1 -c 3
 wa -a 0x5800000c -v 1
-g -p 0 -g 23 -s
+g -g 23 -s
 
 # And finally quit, when we are done.
 

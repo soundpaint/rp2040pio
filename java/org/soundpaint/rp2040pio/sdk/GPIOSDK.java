@@ -81,10 +81,20 @@ public class GPIOSDK implements Constants
         (gpioStatusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
         Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;
       final Direction direction = Direction.fromValue(gpioOeFromPeri);
-      final int gpioOutFromPeri =
-        (gpioStatusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
-        Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
-      final Bit level = Bit.fromValue(gpioOutFromPeri);
+      final Bit level;
+      if (direction == Direction.OUT) {
+        final int gpioOutFromPeri =
+          (gpioStatusValue &
+           Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
+          Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
+        level = Bit.fromValue(gpioOutFromPeri);
+      } else {
+        final int gpioInFromPad =
+          (gpioStatusValue &
+           Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
+          Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB;
+        level = Bit.fromValue(gpioInFromPad);
+      }
       pinStates[gpioNum] = PinState.fromValues(direction, level);
     }
     return pinStates;

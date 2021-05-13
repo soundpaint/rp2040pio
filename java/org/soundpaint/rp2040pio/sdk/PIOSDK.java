@@ -30,6 +30,7 @@ import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
 import org.soundpaint.rp2040pio.Direction;
+import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.Instruction;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
@@ -1182,7 +1183,20 @@ public class PIOSDK implements Constants
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
       final Direction direction =
         Direction.fromValue((pinDirs >>> gpioNum) & 0x1);
-      final Bit level = Bit.fromValue((pins >>> gpioNum) & 0x1);
+      final Bit level;
+      if (direction == Direction.OUT) {
+        level = Bit.fromValue((pins >>> gpioNum) & 0x1);
+      } else {
+        final int gpioStatusAddress =
+          GPIOIOBank0Registers.
+          getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
+        final int gpioStatusValue = registers.readAddress(gpioStatusAddress);
+        final int gpioInFromPad =
+          (gpioStatusValue &
+           Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
+          Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB;
+        level = Bit.fromValue(gpioInFromPad);
+      }
       pinStates[gpioNum] = PinState.fromValues(direction, level);
     }
     return pinStates;
