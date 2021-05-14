@@ -95,20 +95,33 @@ public class GPIOPanel extends JPanel
     new Thread(() -> updateStatus()).start();
   }
 
-  private void updateStatus(final int statusValue)
+  private void updateStatus(final int statusValue) throws IOException
   {
     final int gpioOeFromPeri =
       (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
       Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;
-    final Direction oeValue = Direction.fromValue(gpioOeFromPeri);
+    final Direction direction = Direction.fromValue(gpioOeFromPeri);
     final int gpioOutFromPeri =
       (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
       Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
-    final Bit outValue = Bit.fromValue(gpioOutFromPeri);
+    final Bit level;
+    if (direction == Direction.OUT) {
+      level = Bit.fromValue(gpioOutFromPeri);
+    } else {
+      final int gpioStatusAddress =
+        GPIOIOBank0Registers.
+        getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
+      final int gpioStatusValue = sdk.readAddress(gpioStatusAddress);
+      final int gpioInFromPad =
+        (gpioStatusValue &
+         Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
+        Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB;
+      level = Bit.fromValue(gpioInFromPad);
+    }
     final ImageIcon icon =
-      oeValue == Direction.IN ?
-      (outValue == Bit.HIGH ? ledGreenOn : ledGreenOff) :
-      (outValue == Bit.HIGH ? ledRedOn : ledRedOff);
+      direction == Direction.IN ?
+      (level == Bit.HIGH ? ledGreenOn : ledGreenOff) :
+      (level == Bit.HIGH ? ledRedOn : ledRedOff);
     if (icon != lbStatus.getIcon()) {
       lbStatus.setIcon(icon);
       SwingUtilities.invokeLater(() -> repaint());

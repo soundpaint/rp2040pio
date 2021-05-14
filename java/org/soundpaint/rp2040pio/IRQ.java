@@ -173,8 +173,7 @@ public class IRQ implements Constants
 
   public void setIRQ0_INTE(final int value, final int mask, final boolean xor)
   {
-    setIRQ0_INTE(((mask & (xor ? regIRQ0_INTE ^ value : value)) |
-                  (~mask & regIRQ0_INTE)));
+    setIRQ0_INTE(Constants.hwSetBits(regIRQ0_INTE, value, mask, xor));
   }
 
   private void setIRQ0_INTE(final int value)
@@ -189,8 +188,7 @@ public class IRQ implements Constants
 
   public void setIRQ1_INTE(final int value, final int mask, final boolean xor)
   {
-    setIRQ1_INTE(((mask & (xor ? regIRQ1_INTE ^ value : value)) |
-                  (~mask & regIRQ1_INTE)));
+    setIRQ1_INTE(Constants.hwSetBits(regIRQ1_INTE, value, mask, xor));
   }
 
   private void setIRQ1_INTE(final int value)
@@ -205,8 +203,7 @@ public class IRQ implements Constants
 
   public void setIRQ0_INTF(final int value, final int mask, final boolean xor)
   {
-    setIRQ0_INTF(((mask & (xor ? regIRQ0_INTF ^ value : value)) |
-                  (~mask & regIRQ0_INTF)));
+    setIRQ0_INTF(Constants.hwSetBits(regIRQ0_INTF, value, mask, xor));
   }
 
   private void setIRQ0_INTF(final int value)
@@ -221,8 +218,7 @@ public class IRQ implements Constants
 
   public void setIRQ1_INTF(final int value, final int mask, final boolean xor)
   {
-    setIRQ1_INTF(((mask & (xor ? regIRQ1_INTF ^ value : value)) |
-                  (~mask & regIRQ1_INTF)));
+    setIRQ1_INTF(Constants.hwSetBits(regIRQ1_INTF, value, mask, xor));
   }
 
   private void setIRQ1_INTF(final int value)

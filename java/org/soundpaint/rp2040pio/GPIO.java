@@ -167,13 +167,10 @@ public class GPIO implements Constants
   public synchronized void setGPIO_STATUS(final int bits, final int mask,
                                           final boolean xor)
   {
-    final int oldStatus = getGPIO_STATUS();
-    final int newStatus =
-      (mask & (xor ? oldStatus ^ bits : bits)) |
-      (~mask & oldStatus);
+    final int status = Constants.hwSetBits(getGPIO_STATUS(), bits, mask, xor);
     for (int port = 0; port < terminals.length; port++) {
       terminals[port].externalInput =
-        Bit.fromValue((newStatus >>> port) & 0x1);
+        Bit.fromValue((status >>> port) & 0x1);
     }
   }
 
@@ -199,32 +196,31 @@ public class GPIO implements Constants
   public void setCTRL(final int gpio, final int value,
                       final int mask, final boolean xor)
   {
-    final int oldValue = getCTRL(gpio);
-    final int newValue = Constants.hwSetBits(oldValue, value, mask, xor);
+    final int ctrl = Constants.hwSetBits(getCTRL(gpio), value, mask, xor);
     final Terminal terminal = terminals[gpio];
 
     final Override irqOverride =
-      Override.fromValue((newValue & IO_BANK0_GPIO0_CTRL_IRQOVER_BITS) >>
+      Override.fromValue((ctrl & IO_BANK0_GPIO0_CTRL_IRQOVER_BITS) >>
                          IO_BANK0_GPIO0_CTRL_IRQOVER_LSB);
     terminal.irqOverride = irqOverride;
 
     final Override inputOverride =
-      Override.fromValue((newValue & IO_BANK0_GPIO0_CTRL_INOVER_BITS) >>
+      Override.fromValue((ctrl & IO_BANK0_GPIO0_CTRL_INOVER_BITS) >>
                          IO_BANK0_GPIO0_CTRL_INOVER_LSB);
     terminal.inputOverride = inputOverride;
 
     final Override oeOverride =
-      Override.fromValue((newValue & IO_BANK0_GPIO0_CTRL_OEOVER_BITS) >>
+      Override.fromValue((ctrl & IO_BANK0_GPIO0_CTRL_OEOVER_BITS) >>
                          IO_BANK0_GPIO0_CTRL_OEOVER_LSB);
     terminal.oeOverride = oeOverride;
 
     final Override outputOverride =
-      Override.fromValue((newValue & IO_BANK0_GPIO0_CTRL_OUTOVER_BITS) >>
+      Override.fromValue((ctrl & IO_BANK0_GPIO0_CTRL_OUTOVER_BITS) >>
                          IO_BANK0_GPIO0_CTRL_OUTOVER_LSB);
     terminal.outputOverride = outputOverride;
 
     final GPIO_Function fn =
-      GPIO_Function.fromValue((newValue & IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS) >>
+      GPIO_Function.fromValue((ctrl & IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS) >>
                               IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB,
                               GPIO_Function.NULL);
     terminal.function = fn;
@@ -355,8 +351,7 @@ public class GPIO implements Constants
                                  final boolean xor)
   {
     regINPUT_SYNC_BYPASS =
-      (mask & (xor ? regINPUT_SYNC_BYPASS ^ bits : bits)) |
-      (~mask & regINPUT_SYNC_BYPASS);
+      Constants.hwSetBits(regINPUT_SYNC_BYPASS, bits, mask, xor);
   }
 
   public int getInputSyncByPass()

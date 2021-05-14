@@ -50,9 +50,7 @@ public class Memory implements Constants
   public void set(final int address, final int value,
                   final int mask, final boolean xor)
   {
-    set(address,
-        (short)((mask & (xor ? get(address) ^ value : value)) |
-                (~mask & get(address))));
+    set(address, (short)Constants.hwSetBits(get(address), value, mask, xor));
   }
 
   private void set(final int address, final short value)
