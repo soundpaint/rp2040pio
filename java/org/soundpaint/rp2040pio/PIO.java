@@ -318,6 +318,7 @@ public class PIO implements Constants, Clock.TransitionListener
         final SM sm = getSM(smNum);
         sm.clockFallingEdge(wallClock);
       }
+      pioGpio.applyCollatedWrites();
     }
   }
 }

@@ -72,14 +72,15 @@ public class SM implements Constants
       this.countGetter = countGetter;
     }
 
-    public void setPins(final SM sm, final int data)
+    public void collatePins(final SM sm, final int data)
     {
-      sm.pioGpio.setPins(data, baseGetter.apply(sm), countGetter.apply(sm));
+      sm.pioGpio.collatePins(data, baseGetter.apply(sm), countGetter.apply(sm));
     }
 
-    public void setPinDirs(final SM sm, final int data)
+    public void collatePinDirs(final SM sm, final int data)
     {
-      sm.pioGpio.setPinDirs(data, baseGetter.apply(sm), countGetter.apply(sm));
+      sm.pioGpio.
+        collatePinDirs(data, baseGetter.apply(sm), countGetter.apply(sm));
     }
   };
 
@@ -186,14 +187,14 @@ public class SM implements Constants
       return pioGpio.getLevel(regEXECCTRL_JMP_PIN);
     }
 
-    public void setPins(final int pins, final int base, final int count)
+    public void collatePins(final int pins, final int base, final int count)
     {
-      pioGpio.setPins(pins, base, count);
+      pioGpio.collatePins(pins, base, count);
     }
 
-    public void setPinDirs(final int pins, final int base, final int count)
+    public void collatePinDirs(final int pins, final int base, final int count)
     {
-      pioGpio.setPinDirs(pins, base, count);
+      pioGpio.collatePinDirs(pins, base, count);
     }
 
     public boolean osrEmpty()

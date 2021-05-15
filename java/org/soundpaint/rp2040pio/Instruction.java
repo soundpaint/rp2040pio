@@ -145,9 +145,9 @@ public abstract class Instruction
     final PIO.PinDir execCtrlSidePinDir = smStatus.regEXECCTRL_SIDE_PINDIR;
     if (sideSetCount > 0) {
       if (execCtrlSidePinDir == PIO.PinDir.GPIO_LEVELS) {
-        smStatus.setPins(sideSet, pinCtrlSidesetBase, sideSetCount);
+        smStatus.collatePins(sideSet, pinCtrlSidesetBase, sideSetCount);
       } else {
-        smStatus.setPinDirs(sideSet, pinCtrlSidesetBase, sideSetCount);
+        smStatus.collatePinDirs(sideSet, pinCtrlSidesetBase, sideSetCount);
       }
     }
   }
@@ -512,7 +512,7 @@ public abstract class Instruction
     public enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
-          SM.IOMapping.OUT.setPins(sm, data);
+          SM.IOMapping.OUT.collatePins(sm, data);
           return null;
         }),
       X(0b001, "x", (sm, data) -> {
@@ -527,7 +527,7 @@ public abstract class Instruction
           return null;
         }),
       PINDIRS(0b100, "pindirs", (sm, data) -> {
-          SM.IOMapping.OUT.setPinDirs(sm, data);
+          SM.IOMapping.OUT.collatePinDirs(sm, data);
           return null;
         }),
       PC(0b101, "pc", (sm, data) -> {
@@ -803,7 +803,7 @@ public abstract class Instruction
     private enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
-          SM.IOMapping.OUT.setPins(sm, data);
+          SM.IOMapping.OUT.collatePins(sm, data);
           return null;
         }),
       X(0b001, "x", (sm, data) -> {
@@ -1023,7 +1023,7 @@ public abstract class Instruction
     public enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
-          SM.IOMapping.SET.setPins(sm, data);
+          SM.IOMapping.SET.collatePins(sm, data);
           return null;
         }),
       X(0b001, "x", (sm, data) -> {
@@ -1036,7 +1036,7 @@ public abstract class Instruction
         }),
       RESERVED_3(0b011, "???", null),
       PINDIRS(0b100, "pindirs", (sm, data) -> {
-          SM.IOMapping.SET.setPinDirs(sm, data);
+          SM.IOMapping.SET.collatePinDirs(sm, data);
           return null;
         }),
       RESERVED_5(0b101, "???", null),

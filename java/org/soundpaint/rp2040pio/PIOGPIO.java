@@ -30,7 +30,9 @@ package org.soundpaint.rp2040pio;
 public class PIOGPIO implements Constants
 {
   private final GPIO gpio;
-  private final PinState[] states;
+  private final Bit[] collatedLevels;
+  private final Direction[] collatedDirections;
+  private final PinState[] appliedStates;
 
   private PIOGPIO()
   {
@@ -43,27 +45,32 @@ public class PIOGPIO implements Constants
       throw new NullPointerException("gpio");
     }
     this.gpio = gpio;
-    states = new PinState[GPIO_NUM];
+    collatedLevels = new Bit[GPIO_NUM];
+    collatedDirections = new Direction[GPIO_NUM];
+    appliedStates = new PinState[GPIO_NUM];
     reset();
   }
 
   public void reset()
   {
-    for (int gpioNum = 0; gpioNum < states.length; gpioNum++) {
-      states[gpioNum] = PinState.IN_LOW;
+    for (int gpioNum = 0; gpioNum < GPIO_NUM; gpioNum++) {
+      collatedLevels[gpioNum] = null;
+      collatedDirections[gpioNum] = null;
+      appliedStates[gpioNum] = PinState.IN_LOW;
     }
   }
 
   public GPIO getGPIO() { return gpio; }
 
-  public void setLevel(final int gpioNum, final Bit level)
+  private void setLevel(final int gpioNum, final Bit level)
   {
     if (level == null) {
       throw new NullPointerException("level");
     }
     Constants.checkGpioPin(gpioNum, "GPIO pin number");
-    final PinState pinState = states[gpioNum];
-    states[gpioNum] = PinState.fromValues(pinState.getDirection(), level);
+    final PinState pinState = appliedStates[gpioNum];
+    appliedStates[gpioNum] =
+      PinState.fromValues(pinState.getDirection(), level);
   }
 
   public Bit getLevel(final int gpioNum)
@@ -71,23 +78,24 @@ public class PIOGPIO implements Constants
     // TODO: Clarify what happens when reading from a GPIO with pin
     // direction set to OUT.
     Constants.checkGpioPin(gpioNum, "GPIO pin number");
-    return states[gpioNum].getLevel();
+    return appliedStates[gpioNum].getLevel();
   }
 
-  public void setDirection(final int gpioNum, final Direction direction)
+  private void setDirection(final int gpioNum, final Direction direction)
   {
     if (direction == null) {
       throw new NullPointerException("direction");
     }
     Constants.checkGpioPin(gpioNum, "GPIO pin number");
-    final PinState pinState = states[gpioNum];
-    states[gpioNum] = PinState.fromValues(direction, pinState.getLevel());
+    final PinState pinState = appliedStates[gpioNum];
+    appliedStates[gpioNum] =
+      PinState.fromValues(direction, pinState.getLevel());
   }
 
   public Direction getDirection(final int gpioNum)
   {
     Constants.checkGpioPin(gpioNum, "GPIO pin number");
-    return states[gpioNum].getDirection();
+    return appliedStates[gpioNum].getDirection();
   }
 
   public int getPins(final int base, final int count)
@@ -99,6 +107,22 @@ public class PIOGPIO implements Constants
       pins = (pins << 0x1) | getLevel((base - pin - 1) & 0x1f).getValue();
     }
     return pins;
+  }
+
+  private void collateLevel(final int gpioNum, final Bit bit)
+  {
+    // As of now, SMs do not run parallel in separate threads, but one
+    // after the other with ascending SM number.  Therefore, no
+    // further action / writer tracking needs to be taken for assuring
+    // output priority (cp. Sect. 3.5.6.1 of RP2040 datasheet).
+    collatedLevels[gpioNum] = bit;
+  }
+
+  public void collatePins(final int pins, final int base, final int count)
+  {
+    for (int pin = 0; pin < count; pin++) {
+      collateLevel((base + pin) & 0x1f, Bit.fromValue((pins >>> pin) & 0x1));
+    }
   }
 
   public void setPins(final int pins, final int base, final int count)
@@ -133,6 +157,23 @@ public class PIOGPIO implements Constants
     return pinDirs;
   }
 
+  private void collatePinDir(final int gpioNum, final Direction direction)
+  {
+    // As of now, SMs do not run parallel in separate threads, but one
+    // after the other with ascending SM number.  Therefore, no
+    // further action / writer tracking needs to be taken for assuring
+    // output priority (cp. Sect. 3.5.6.1 of RP2040 datasheet).
+    collatedDirections[gpioNum] = direction;
+  }
+
+  public void collatePinDirs(final int pinDirs, final int base, final int count)
+  {
+    for (int pin = 0; pin < count; pin++) {
+      collatePinDir((base + pin) & 0x1f,
+                    Direction.fromValue((pinDirs >>> pin) & 0x1));
+    }
+  }
+
   public void setPinDirs(final int pinDirs, final int base, final int count)
   {
     Constants.checkGpioPin(base, "GPIO pin base");
@@ -153,6 +194,22 @@ public class PIOGPIO implements Constants
       final int newDirection = Constants.hwSetBits(oldDirection, pinDir,
                                                    maskBit, xor);
       setDirection(gpioNum, Direction.fromValue(newDirection));
+    }
+  }
+
+  public void applyCollatedWrites()
+  {
+    for (int gpioNum = 0; gpioNum < GPIO_NUM; gpioNum++) {
+      final PinState state = appliedStates[gpioNum];
+      final Bit collatedLevel = collatedLevels[gpioNum];
+      final Direction collatedDirection = collatedDirections[gpioNum];
+      final Bit level =
+        collatedLevel == null ? state.getLevel() : collatedLevel;
+      final Direction direction =
+        collatedDirection == null ? state.getDirection() : collatedDirection;
+      appliedStates[gpioNum] = PinState.fromValues(direction, level);
+      collatedLevels[gpioNum] = null;
+      collatedDirections[gpioNum] = null;
     }
   }
 }
