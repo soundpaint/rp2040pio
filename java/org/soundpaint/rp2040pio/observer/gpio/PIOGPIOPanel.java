@@ -1,5 +1,5 @@
 /*
- * @(#)GPIOPanel.java 1.00 21/04/10
+ * @(#)PIOGPIOPanel.java 1.00 21/05/16
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,7 +24,6 @@
  */
 package org.soundpaint.rp2040pio.observer.gpio;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Objects;
 import javax.swing.Box;
@@ -34,17 +33,13 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Bit;
-import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Direction;
-import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
-import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class GPIOPanel extends JPanel
+public class PIOGPIOPanel extends JPanel
 {
-  private static final long serialVersionUID = 2863884535718464586L;
+  private static final long serialVersionUID = -4710787733361262765L;
 
   private final PrintStream console;
-  private final SDK sdk;
   private final int refresh;
   private final int gpioNum;
   private final ImageIcon ledGreenOff;
@@ -53,24 +48,22 @@ public class GPIOPanel extends JPanel
   private final ImageIcon ledRedOn;
   private final JLabel lbStatus;
 
-  private GPIOPanel()
+  private PIOGPIOPanel()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public GPIOPanel(final PrintStream console, final SDK sdk,
-                   final int refresh, final int gpioNum,
-                   final ImageIcon ledGreenOff, final ImageIcon ledGreenOn,
-                   final ImageIcon ledRedOff, final ImageIcon ledRedOn)
+  public PIOGPIOPanel(final PrintStream console,
+                      final int refresh, final int gpioNum,
+                      final ImageIcon ledGreenOff, final ImageIcon ledGreenOn,
+                      final ImageIcon ledRedOff, final ImageIcon ledRedOn)
   {
     Objects.requireNonNull(console);
-    Objects.requireNonNull(sdk);
     Objects.requireNonNull(ledGreenOff);
     Objects.requireNonNull(ledGreenOn);
     Objects.requireNonNull(ledRedOff);
     Objects.requireNonNull(ledRedOn);
     this.console = console;
-    this.sdk = sdk;
     this.refresh = refresh;
     this.gpioNum = gpioNum;
     this.ledGreenOff = ledGreenOff;
@@ -92,32 +85,10 @@ public class GPIOPanel extends JPanel
     add(ledBox);
     add(Box.createVerticalGlue());
     setMaximumSize(getPreferredSize());
-    new Thread(() -> updateStatus()).start();
   }
 
-  private void updateStatus(final int statusValue) throws IOException
+  public void updateStatus(final Direction direction, final Bit level)
   {
-    final int gpioOeFromPeri =
-      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
-      Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;
-    final Direction direction = Direction.fromValue(gpioOeFromPeri);
-    final int gpioOutFromPeri =
-      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
-      Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
-    final Bit level;
-    if (direction == Direction.OUT) {
-      level = Bit.fromValue(gpioOutFromPeri);
-    } else {
-      final int gpioStatusAddress =
-        GPIOIOBank0Registers.
-        getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
-      final int gpioStatusValue = sdk.readAddress(gpioStatusAddress);
-      final int gpioInFromPad =
-        (gpioStatusValue &
-         Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
-        Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB;
-      level = Bit.fromValue(gpioInFromPad);
-    }
     final ImageIcon icon =
       direction == Direction.IN ?
       (level == Bit.HIGH ? ledGreenOn : ledGreenOff) :
@@ -125,27 +96,6 @@ public class GPIOPanel extends JPanel
     if (icon != lbStatus.getIcon()) {
       lbStatus.setIcon(icon);
       SwingUtilities.invokeLater(() -> repaint());
-    }
-  }
-
-  public void updateStatus()
-  {
-    while (true) {
-      final int statusAddress =
-        GPIOIOBank0Registers.
-        getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
-      try {
-        while (true) {
-          updateStatus(sdk.readAddress(statusAddress));
-          try {
-            Thread.sleep(refresh);
-          } catch (final InterruptedException e) {
-            // ignore
-          }
-        }
-      } catch (final IOException e) {
-        console.println(e.getMessage());
-      }
     }
   }
 }

@@ -25,16 +25,20 @@
 package org.soundpaint.rp2040pio.observer.gpio;
 
 import java.awt.BorderLayout;
+import java.awt.Container;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.RegisterClient;
 import org.soundpaint.rp2040pio.Registers;
+import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -165,8 +169,30 @@ public class GPIOObserver extends JFrame
   {
     final int refresh = options.getValue(optRefresh);
     try {
-      getContentPane().add(new GPIOArrayPanel(console, sdk, refresh));
-      getContentPane().add(new ActionPanel(this), BorderLayout.SOUTH);
+      final Container contentPane = getContentPane();
+      contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.PAGE_AXIS));
+
+      final PIOGPIOArrayPanel pioGpioArrayPanel0 =
+        new PIOGPIOArrayPanel(console, sdk.getPIO0SDK(), refresh);
+      SwingUtils.setPreferredHeightAsMaximum(pioGpioArrayPanel0);
+      contentPane.add(pioGpioArrayPanel0);
+
+      final PIOGPIOArrayPanel pioGpioArrayPanel1 =
+        new PIOGPIOArrayPanel(console, sdk.getPIO1SDK(), refresh);
+      SwingUtils.setPreferredHeightAsMaximum(pioGpioArrayPanel1);
+      contentPane.add(pioGpioArrayPanel1);
+
+      final GPIOArrayPanel gpioArrayPanel =
+        new GPIOArrayPanel(console, sdk, refresh);
+      SwingUtils.setPreferredHeightAsMaximum(gpioArrayPanel);
+      contentPane.add(gpioArrayPanel);
+
+      contentPane.add(Box.createVerticalGlue());
+
+      final ActionPanel actionPanel = new ActionPanel(this);
+      SwingUtils.setPreferredHeightAsMaximum(actionPanel);
+      contentPane.add(actionPanel);
+
       pack();
       setVisible(true);
       return 0;
