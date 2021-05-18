@@ -169,30 +169,8 @@ public class GPIOObserver extends JFrame
   {
     final int refresh = options.getValue(optRefresh);
     try {
-      final Container contentPane = getContentPane();
-      contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.PAGE_AXIS));
-
-      final PIOGPIOArrayPanel pioGpioArrayPanel0 =
-        new PIOGPIOArrayPanel(console, sdk.getPIO0SDK(), refresh);
-      SwingUtils.setPreferredHeightAsMaximum(pioGpioArrayPanel0);
-      contentPane.add(pioGpioArrayPanel0);
-
-      final PIOGPIOArrayPanel pioGpioArrayPanel1 =
-        new PIOGPIOArrayPanel(console, sdk.getPIO1SDK(), refresh);
-      SwingUtils.setPreferredHeightAsMaximum(pioGpioArrayPanel1);
-      contentPane.add(pioGpioArrayPanel1);
-
-      final GPIOArrayPanel gpioArrayPanel =
-        new GPIOArrayPanel(console, sdk, refresh);
-      SwingUtils.setPreferredHeightAsMaximum(gpioArrayPanel);
-      contentPane.add(gpioArrayPanel);
-
-      contentPane.add(Box.createVerticalGlue());
-
-      final ActionPanel actionPanel = new ActionPanel(this);
-      SwingUtils.setPreferredHeightAsMaximum(actionPanel);
-      contentPane.add(actionPanel);
-
+      getContentPane().add(new GPIOViewPanel(console, sdk, refresh));
+      getContentPane().add(new ActionPanel(this), BorderLayout.SOUTH);
       pack();
       setVisible(true);
       return 0;

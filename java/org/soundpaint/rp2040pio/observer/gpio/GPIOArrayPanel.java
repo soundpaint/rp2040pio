@@ -30,7 +30,6 @@ import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.SwingUtils;
@@ -43,10 +42,6 @@ public class GPIOArrayPanel extends JPanel
   private final PrintStream console;
   private final SDK sdk;
   private final int refresh;
-  private final ImageIcon ledGreenOff;
-  private final ImageIcon ledGreenOn;
-  private final ImageIcon ledRedOff;
-  private final ImageIcon ledRedOn;
 
   private GPIOArrayPanel()
   {
@@ -62,18 +57,13 @@ public class GPIOArrayPanel extends JPanel
     this.console = console;
     this.sdk = sdk;
     this.refresh = refresh;
-    ledGreenOff = SwingUtils.createImageIcon("led-green-off16x16.png", "off");
-    ledGreenOn = SwingUtils.createImageIcon("led-green-on16x16.png", "on");
-    ledRedOff = SwingUtils.createImageIcon("led-red-off16x16.png", "off");
-    ledRedOn = SwingUtils.createImageIcon("led-red-on16x16.png", "on");
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("GPIO Pins"));
     final Box box = new Box(BoxLayout.X_AXIS);
     add(box);
     box.add(Box.createHorizontalStrut(15));
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
-      box.add(new GPIOPanel(console, sdk, refresh, gpioNum,
-                            ledGreenOff, ledGreenOn, ledRedOff, ledRedOn));
+      box.add(new GPIOPanel(console, sdk, refresh, gpioNum));
       box.add(Box.createHorizontalStrut((gpioNum & 0x7) == 0x7 ? 15 : 5));
     }
     box.add(Box.createHorizontalGlue());

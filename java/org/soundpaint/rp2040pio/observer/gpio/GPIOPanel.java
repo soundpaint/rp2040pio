@@ -47,10 +47,6 @@ public class GPIOPanel extends JPanel
   private final SDK sdk;
   private final int refresh;
   private final int gpioNum;
-  private final ImageIcon ledGreenOff;
-  private final ImageIcon ledGreenOn;
-  private final ImageIcon ledRedOff;
-  private final ImageIcon ledRedOn;
   private final JLabel lbStatus;
 
   private GPIOPanel()
@@ -59,24 +55,14 @@ public class GPIOPanel extends JPanel
   }
 
   public GPIOPanel(final PrintStream console, final SDK sdk,
-                   final int refresh, final int gpioNum,
-                   final ImageIcon ledGreenOff, final ImageIcon ledGreenOn,
-                   final ImageIcon ledRedOff, final ImageIcon ledRedOn)
+                   final int refresh, final int gpioNum)
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
-    Objects.requireNonNull(ledGreenOff);
-    Objects.requireNonNull(ledGreenOn);
-    Objects.requireNonNull(ledRedOff);
-    Objects.requireNonNull(ledRedOn);
     this.console = console;
     this.sdk = sdk;
     this.refresh = refresh;
     this.gpioNum = gpioNum;
-    this.ledGreenOff = ledGreenOff;
-    this.ledGreenOn = ledGreenOn;
-    this.ledRedOff = ledRedOff;
-    this.ledRedOn = ledRedOn;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     add(Box.createVerticalStrut(5));
     final Box gpioNumBox = new Box(BoxLayout.X_AXIS);
@@ -87,7 +73,7 @@ public class GPIOPanel extends JPanel
     add(Box.createVerticalStrut(5));
     final Box ledBox = new Box(BoxLayout.X_AXIS);
     ledBox.add(Box.createHorizontalGlue());
-    ledBox.add(lbStatus = new JLabel(ledGreenOff));
+    ledBox.add(lbStatus = new JLabel(GPIOViewPanel.ledInLow));
     ledBox.add(Box.createHorizontalGlue());
     add(ledBox);
     add(Box.createVerticalGlue());
@@ -120,8 +106,8 @@ public class GPIOPanel extends JPanel
     }
     final ImageIcon icon =
       direction == Direction.IN ?
-      (level == Bit.HIGH ? ledGreenOn : ledGreenOff) :
-      (level == Bit.HIGH ? ledRedOn : ledRedOff);
+      (level == Bit.HIGH ? GPIOViewPanel.ledInHigh : GPIOViewPanel.ledInLow) :
+      (level == Bit.HIGH ? GPIOViewPanel.ledOutHigh : GPIOViewPanel.ledOutLow);
     if (icon != lbStatus.getIcon()) {
       lbStatus.setIcon(icon);
       SwingUtilities.invokeLater(() -> repaint());
