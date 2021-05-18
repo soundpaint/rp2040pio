@@ -44,7 +44,6 @@ public class PIOGPIOArrayPanel extends JPanel
 
   private final PrintStream console;
   private final SDK sdk;
-  private final int refresh;
   private final PIOGPIOPanel[] panels;
   private int pioNum;
 
@@ -53,15 +52,13 @@ public class PIOGPIOArrayPanel extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIOGPIOArrayPanel(final PrintStream console, final SDK sdk,
-                           final int refresh)
+  public PIOGPIOArrayPanel(final PrintStream console, final SDK sdk)
     throws IOException
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
     this.console = console;
     this.sdk = sdk;
-    this.refresh = refresh;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     updateTitle();
     final Box box = new Box(BoxLayout.X_AXIS);
@@ -69,7 +66,7 @@ public class PIOGPIOArrayPanel extends JPanel
     box.add(Box.createHorizontalStrut(15));
     panels = new PIOGPIOPanel[Constants.GPIO_NUM];
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
-      final PIOGPIOPanel panel = new PIOGPIOPanel(console, refresh, gpioNum);
+      final PIOGPIOPanel panel = new PIOGPIOPanel(console, gpioNum);
       panels[gpioNum] = panel;
       box.add(panel);
       box.add(Box.createHorizontalStrut((gpioNum & 0x7) == 0x7 ? 15 : 5));
@@ -103,7 +100,7 @@ public class PIOGPIOArrayPanel extends JPanel
       updateStatus();
     } catch (final IOException e) {
       for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
-        panels[gpioNum].updateStatus(null, null);
+        panels[gpioNum].markAsUnknown();
       }
     }
   }
@@ -116,9 +113,7 @@ public class PIOGPIOArrayPanel extends JPanel
 
   public void repaintLater()
   {
-    SwingUtilities.invokeLater(() -> {
-        repaint();
-      });
+    SwingUtilities.invokeLater(() -> repaint());
   }
 }
 

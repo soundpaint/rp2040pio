@@ -45,7 +45,6 @@ public class GPIOPanel extends JPanel
 
   private final PrintStream console;
   private final SDK sdk;
-  private final int refresh;
   private final int gpioNum;
   private final JLabel lbStatus;
 
@@ -54,14 +53,12 @@ public class GPIOPanel extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public GPIOPanel(final PrintStream console, final SDK sdk,
-                   final int refresh, final int gpioNum)
+  public GPIOPanel(final PrintStream console, final SDK sdk, final int gpioNum)
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
     this.console = console;
     this.sdk = sdk;
-    this.refresh = refresh;
     this.gpioNum = gpioNum;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     add(Box.createVerticalStrut(5));
@@ -78,11 +75,14 @@ public class GPIOPanel extends JPanel
     add(ledBox);
     add(Box.createVerticalGlue());
     setMaximumSize(getPreferredSize());
-    new Thread(() -> updateStatus()).start();
   }
 
-  private void updateStatus(final int statusValue) throws IOException
+  public void updateStatus() throws IOException
   {
+    final int statusAddress =
+      GPIOIOBank0Registers.
+      getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
+    final int statusValue = sdk.readAddress(statusAddress);
     final int gpioOeFromPeri =
       (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
       Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;
@@ -110,28 +110,14 @@ public class GPIOPanel extends JPanel
       (level == Bit.HIGH ? GPIOViewPanel.ledOutHigh : GPIOViewPanel.ledOutLow);
     if (icon != lbStatus.getIcon()) {
       lbStatus.setIcon(icon);
-      SwingUtilities.invokeLater(() -> repaint());
     }
   }
 
-  public void updateStatus()
+  public void markAsUnknown()
   {
-    while (true) {
-      final int statusAddress =
-        GPIOIOBank0Registers.
-        getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
-      try {
-        while (true) {
-          updateStatus(sdk.readAddress(statusAddress));
-          try {
-            Thread.sleep(refresh);
-          } catch (final InterruptedException e) {
-            // ignore
-          }
-        }
-      } catch (final IOException e) {
-        console.println(e.getMessage());
-      }
+    final ImageIcon icon = GPIOViewPanel.ledUnknown;
+    if (icon != lbStatus.getIcon()) {
+      lbStatus.setIcon(icon);
     }
   }
 }

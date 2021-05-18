@@ -31,6 +31,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -41,34 +42,63 @@ public class GPIOArrayPanel extends JPanel
 
   private final PrintStream console;
   private final SDK sdk;
-  private final int refresh;
+  private final GPIOPanel[] panels;
 
   private GPIOArrayPanel()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public GPIOArrayPanel(final PrintStream console, final SDK sdk,
-                        final int refresh)
+  public GPIOArrayPanel(final PrintStream console, final SDK sdk)
     throws IOException
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
     this.console = console;
     this.sdk = sdk;
-    this.refresh = refresh;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("GPIO Pins"));
     final Box box = new Box(BoxLayout.X_AXIS);
     add(box);
     box.add(Box.createHorizontalStrut(15));
+    panels = new GPIOPanel[Constants.GPIO_NUM];
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
-      box.add(new GPIOPanel(console, sdk, refresh, gpioNum));
+      final GPIOPanel panel = new GPIOPanel(console, sdk, gpioNum);
+      panels[gpioNum] = panel;
+      box.add(panel);
       box.add(Box.createHorizontalStrut((gpioNum & 0x7) == 0x7 ? 15 : 5));
     }
     box.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(box);
     add(Box.createVerticalGlue());
+  }
+
+  public void updateStatus() throws IOException
+  {
+    for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
+      panels[gpioNum].updateStatus();
+    }
+  }
+
+  private void checkedUpdate()
+  {
+    try {
+      updateStatus();
+    } catch (final IOException e) {
+      for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
+        panels[gpioNum].markAsUnknown();
+      }
+    }
+  }
+
+  public void update()
+  {
+    checkedUpdate();
+  }
+
+  public void repaintLater()
+  {
+    SwingUtilities.invokeLater(() -> repaint());
   }
 }
 

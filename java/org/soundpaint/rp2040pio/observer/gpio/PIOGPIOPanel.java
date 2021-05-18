@@ -40,7 +40,6 @@ public class PIOGPIOPanel extends JPanel
   private static final long serialVersionUID = -4710787733361262765L;
 
   private final PrintStream console;
-  private final int refresh;
   private final int gpioNum;
   private final JLabel lbStatus;
 
@@ -49,12 +48,10 @@ public class PIOGPIOPanel extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIOGPIOPanel(final PrintStream console,
-                      final int refresh, final int gpioNum)
+  public PIOGPIOPanel(final PrintStream console, final int gpioNum)
   {
     Objects.requireNonNull(console);
     this.console = console;
-    this.refresh = refresh;
     this.gpioNum = gpioNum;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     add(Box.createVerticalStrut(5));
@@ -75,18 +72,20 @@ public class PIOGPIOPanel extends JPanel
 
   public void updateStatus(final Direction direction, final Bit level)
   {
-    final ImageIcon icon;
-    if ((direction == null) || (level == null)) {
-      icon = GPIOViewPanel.ledUnknown;
-    } else {
-      icon =
-        direction == Direction.IN ?
-        (level == Bit.HIGH ? GPIOViewPanel.ledInHigh : GPIOViewPanel.ledInLow) :
-        (level == Bit.HIGH ? GPIOViewPanel.ledOutHigh : GPIOViewPanel.ledOutLow);
-    }
+    final ImageIcon icon =
+      direction == Direction.IN ?
+      (level == Bit.HIGH ? GPIOViewPanel.ledInHigh : GPIOViewPanel.ledInLow) :
+      (level == Bit.HIGH ? GPIOViewPanel.ledOutHigh : GPIOViewPanel.ledOutLow);
     if (icon != lbStatus.getIcon()) {
       lbStatus.setIcon(icon);
-      SwingUtilities.invokeLater(() -> repaint());
+    }
+  }
+
+  public void markAsUnknown()
+  {
+    final ImageIcon icon = GPIOViewPanel.ledUnknown;
+    if (icon != lbStatus.getIcon()) {
+      lbStatus.setIcon(icon);
     }
   }
 }
