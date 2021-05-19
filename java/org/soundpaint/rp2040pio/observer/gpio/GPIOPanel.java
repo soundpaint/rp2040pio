@@ -77,32 +77,52 @@ public class GPIOPanel extends JPanel
     setMaximumSize(getPreferredSize());
   }
 
-  public void updateStatus() throws IOException
+  public void updateStatus(final GPIOArrayPanel.Override override)
+    throws IOException
   {
     final int statusAddress =
       GPIOIOBank0Registers.
       getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
     final int statusValue = sdk.readAddress(statusAddress);
-    final int gpioOeFromPeri =
-      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
-      Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;
-    final Direction direction = Direction.fromValue(gpioOeFromPeri);
-    final int gpioOutFromPeri =
-      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
-      Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
+
+    final Direction direction;
+    if (override == GPIOArrayPanel.Override.BEFORE) {
+      final int gpioOeFromPeri =
+        (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
+        Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;
+      direction = Direction.fromValue(gpioOeFromPeri);
+    } else /* GPIOArrayPanel.Override.AFTER */ {
+      final int gpioOeToPad =
+        (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OETOPAD_BITS) >>>
+        Constants.IO_BANK0_GPIO0_STATUS_OETOPAD_LSB;
+      direction = Direction.fromValue(gpioOeToPad);
+    }
+
     final Bit level;
     if (direction == Direction.OUT) {
-      level = Bit.fromValue(gpioOutFromPeri);
+      if (override == GPIOArrayPanel.Override.BEFORE) {
+        final int gpioOutFromPeri =
+          (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
+          Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
+        level = Bit.fromValue(gpioOutFromPeri);
+      } else /* GPIOArrayPanel.Override.AFTER */ {
+        final int gpioOutToPad =
+          (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTTOPAD_BITS) >>>
+          Constants.IO_BANK0_GPIO0_STATUS_OUTTOPAD_LSB;
+        level = Bit.fromValue(gpioOutToPad);
+      }
     } else {
-      final int gpioStatusAddress =
-        GPIOIOBank0Registers.
-        getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
-      final int gpioStatusValue = sdk.readAddress(gpioStatusAddress);
-      final int gpioInFromPad =
-        (gpioStatusValue &
-         Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
-        Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB;
-      level = Bit.fromValue(gpioInFromPad);
+      if (override == GPIOArrayPanel.Override.BEFORE) {
+        final int gpioInFromPad =
+          (statusValue & Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
+          Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB;
+        level = Bit.fromValue(gpioInFromPad);
+      } else /* GPIOArrayPanel.Override.AFTER */ {
+        final int gpioInToPeri =
+          (statusValue & Constants.IO_BANK0_GPIO0_STATUS_INTOPERI_BITS) >>>
+          Constants.IO_BANK0_GPIO0_STATUS_INTOPERI_LSB;
+        level = Bit.fromValue(gpioInToPeri);
+      }
     }
     final ImageIcon icon =
       direction == Direction.IN ?

@@ -110,7 +110,7 @@ public interface Constants
   public static final int IO_BANK0_GPIO0_STATUS_IRQFROMPAD_LSB = 24;
   public static final int IO_BANK0_GPIO0_STATUS_IRQFROMPAD_BITS = 0x01000000;
   public static final int IO_BANK0_GPIO0_STATUS_INTOPERI_LSB = 19;
-  public static final int IO_BANK0_GPIO0_STATUS_INTOPERI_BITS = 0x000800000;
+  public static final int IO_BANK0_GPIO0_STATUS_INTOPERI_BITS = 0x00080000;
   public static final int IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB = 17;
   public static final int IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS = 0x00020000;
   public static final int IO_BANK0_GPIO0_STATUS_OETOPAD_LSB = 13;

@@ -30,7 +30,10 @@ import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PinState;
@@ -60,7 +63,17 @@ public class PIOGPIOArrayPanel extends JPanel
     this.console = console;
     this.sdk = sdk;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    updateTitle();
+    setBorder(BorderFactory.createTitledBorder("PIO View of GPIO Pins"));
+
+    final Box pioSelection = new Box(BoxLayout.X_AXIS);
+    add(pioSelection);
+    final JLabel lbPio = new JLabel("PIO");
+    pioSelection.add(lbPio);
+    pioSelection.add(Box.createHorizontalStrut(15));
+    addPioButtons(pioSelection);
+    pioSelection.add(Box.createHorizontalGlue());
+    SwingUtils.setPreferredHeightAsMaximum(pioSelection);
+
     final Box box = new Box(BoxLayout.X_AXIS);
     add(box);
     box.add(Box.createHorizontalStrut(15));
@@ -76,10 +89,18 @@ public class PIOGPIOArrayPanel extends JPanel
     add(Box.createVerticalGlue());
   }
 
-  private void updateTitle()
+  private void addPioButtons(final Box pioSelection)
   {
-    final String title = String.format("PIO%d View of GPIO Pins", pioNum);
-    setBorder(BorderFactory.createTitledBorder(title));
+    final ButtonGroup bgPio = new ButtonGroup();
+    for (int pioNum = 0; pioNum < Constants.PIO_NUM; pioNum++) {
+      if (pioNum != 0) pioSelection.add(Box.createHorizontalStrut(10));
+      final JRadioButton rbPio = new JRadioButton(String.valueOf(pioNum));
+      rbPio.setSelected(pioNum == 0);
+      final int finalPioNum = pioNum;
+      rbPio.addActionListener((event) -> pioChanged(finalPioNum));
+      bgPio.add(rbPio);
+      pioSelection.add(rbPio);
+    }
   }
 
   public void updateStatus() throws IOException
@@ -93,10 +114,9 @@ public class PIOGPIOArrayPanel extends JPanel
     }
   }
 
-  private void checkedUpdate()
+  public void checkedUpdate()
   {
     try {
-      updateTitle();
       updateStatus();
     } catch (final IOException e) {
       for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
@@ -105,7 +125,7 @@ public class PIOGPIOArrayPanel extends JPanel
     }
   }
 
-  public void pioChanged(final int pioNum)
+  private void pioChanged(final int pioNum)
   {
     this.pioNum = pioNum;
     checkedUpdate();

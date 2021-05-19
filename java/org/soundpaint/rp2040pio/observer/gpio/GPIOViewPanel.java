@@ -27,15 +27,10 @@ package org.soundpaint.rp2040pio.observer.gpio;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Objects;
-import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -70,7 +65,6 @@ public class GPIOViewPanel extends JPanel
   private final int refresh;
   private final PIOGPIOArrayPanel pioGpioArrayPanel;
   private final GPIOArrayPanel gpioArrayPanel;
-  private int pioNum;
 
   private GPIOViewPanel()
   {
@@ -87,16 +81,6 @@ public class GPIOViewPanel extends JPanel
     this.sdk = sdk;
     this.refresh = refresh;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    setBorder(BorderFactory.createTitledBorder("GPIO View"));
-
-    final Box pioSelection = new Box(BoxLayout.X_AXIS);
-    add(pioSelection);
-    final JLabel lbPio = new JLabel("PIO");
-    pioSelection.add(lbPio);
-    pioSelection.add(Box.createHorizontalStrut(15));
-    addPioButtons(pioSelection);
-    pioSelection.add(Box.createHorizontalGlue());
-    SwingUtils.setPreferredHeightAsMaximum(pioSelection);
 
     pioGpioArrayPanel = new PIOGPIOArrayPanel(console, sdk);
     SwingUtils.setPreferredHeightAsMaximum(pioGpioArrayPanel);
@@ -107,26 +91,7 @@ public class GPIOViewPanel extends JPanel
     add(gpioArrayPanel);
 
     add(Box.createVerticalGlue());
-
-    pioGpioArrayPanel.pioChanged(pioNum);
     new Thread(() -> updateLoop()).start();
-  }
-
-  private void addPioButtons(final Box pioSelection)
-  {
-    final ButtonGroup bgPio = new ButtonGroup();
-    for (int pioNum = 0; pioNum < Constants.PIO_NUM; pioNum++) {
-      if (pioNum != 0) pioSelection.add(Box.createHorizontalStrut(10));
-      final JRadioButton rbPio = new JRadioButton(String.valueOf(pioNum));
-      rbPio.setSelected(pioNum == 0);
-      final int finalPioNum = pioNum;
-      rbPio.addActionListener((event) -> {
-          this.pioNum = finalPioNum;
-          pioGpioArrayPanel.pioChanged(finalPioNum);
-        });
-      bgPio.add(rbPio);
-      pioSelection.add(rbPio);
-    }
   }
 
   public void updateLoop()
@@ -147,9 +112,9 @@ public class GPIOViewPanel extends JPanel
         while (true) {
           sdk.wait(addressPhase1, expectedValue, mask,
                    cyclesTimeout, millisTimeout1);
-          pioGpioArrayPanel.pioChanged(pioNum);
+          pioGpioArrayPanel.checkedUpdate();
           pioGpioArrayPanel.repaintLater();
-          gpioArrayPanel.update();
+          gpioArrayPanel.checkedUpdate();
           gpioArrayPanel.repaintLater();
           sdk.wait(addressPhase0, expectedValue, mask,
                    cyclesTimeout, millisTimeout2);

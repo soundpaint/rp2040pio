@@ -30,7 +30,10 @@ import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.SwingUtils;
@@ -40,9 +43,15 @@ public class GPIOArrayPanel extends JPanel
 {
   private static final long serialVersionUID = -2035403823264488596L;
 
+  public enum Override
+  {
+    BEFORE, AFTER
+  }
+
   private final PrintStream console;
   private final SDK sdk;
   private final GPIOPanel[] panels;
+  private Override override;
 
   private GPIOArrayPanel()
   {
@@ -57,7 +66,17 @@ public class GPIOArrayPanel extends JPanel
     this.console = console;
     this.sdk = sdk;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    setBorder(BorderFactory.createTitledBorder("GPIO Pins"));
+    setBorder(BorderFactory.createTitledBorder("GPIO View of GPIO Pins"));
+
+    final Box overrideSelection = new Box(BoxLayout.X_AXIS);
+    add(overrideSelection);
+    final JLabel lbOverride = new JLabel("Override");
+    overrideSelection.add(lbOverride);
+    overrideSelection.add(Box.createHorizontalStrut(15));
+    addOverrideButtons(overrideSelection);
+    overrideSelection.add(Box.createHorizontalGlue());
+    SwingUtils.setPreferredHeightAsMaximum(overrideSelection);
+
     final Box box = new Box(BoxLayout.X_AXIS);
     add(box);
     box.add(Box.createHorizontalStrut(15));
@@ -73,14 +92,29 @@ public class GPIOArrayPanel extends JPanel
     add(Box.createVerticalGlue());
   }
 
+  private void addOverrideButtons(final Box overrideSelection)
+  {
+    final ButtonGroup bgOverride = new ButtonGroup();
+    final JRadioButton rbBefore = new JRadioButton("Before");
+    rbBefore.addActionListener((event) -> overrideChanged(Override.BEFORE));
+    bgOverride.add(rbBefore);
+    overrideSelection.add(rbBefore);
+    overrideSelection.add(Box.createHorizontalStrut(10));
+    final JRadioButton rbAfter = new JRadioButton("After");
+    rbAfter.setSelected(true);
+    rbAfter.addActionListener((event) -> overrideChanged(Override.AFTER));
+    bgOverride.add(rbAfter);
+    overrideSelection.add(rbAfter);
+  }
+
   public void updateStatus() throws IOException
   {
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
-      panels[gpioNum].updateStatus();
+      panels[gpioNum].updateStatus(override);
     }
   }
 
-  private void checkedUpdate()
+  public void checkedUpdate()
   {
     try {
       updateStatus();
@@ -91,8 +125,9 @@ public class GPIOArrayPanel extends JPanel
     }
   }
 
-  public void update()
+  private void overrideChanged(final Override override)
   {
+    this.override = override;
     checkedUpdate();
   }
 
