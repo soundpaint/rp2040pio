@@ -164,16 +164,17 @@ public class FifoViewPanel extends JPanel
     final int expectedValue = 0x1; // update upon stable cycle phase 1
     final int mask = 0xffffffff;
     final int cyclesTimeout = 0;
-    final int millisTimeout = 1000; // but at least every second
+    final int millisTimeout1 = refresh / 2;
+    final int millisTimeout2 = refresh - millisTimeout1;
     while (true) {
       try {
         while (true) {
           sdk.wait(addressPhase1, expectedValue, mask,
-                   cyclesTimeout, millisTimeout);
+                   cyclesTimeout, millisTimeout1);
           fifoEntriesViewPanel.smChanged(pioNum, smNum);
           fifoEntriesViewPanel.repaintLater();
           sdk.wait(addressPhase0, expectedValue, mask,
-                   cyclesTimeout, millisTimeout);
+                   cyclesTimeout, millisTimeout2);
         }
       } catch (final IOException e) {
         console.printf("update loop: %s%n", e.getMessage());
