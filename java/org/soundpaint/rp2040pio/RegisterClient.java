@@ -29,6 +29,8 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.function.LongSupplier;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -107,34 +109,68 @@ public class RegisterClient extends AbstractRegisters
 
   private final PrintStream console;
   private final Socket socket;
-  private final PrintWriter out;
-  private final BufferedReader in;
   private final LongSupplier wallClockSupplier;
 
+  /**
+   * Creates a register client, but does not yet connect to any
+   * emulation server.
+   *
+   * @see #connect
+   */
   public RegisterClient(final PrintStream console) throws IOException
-  {
-    this(console, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
-  }
-
-  public RegisterClient(final PrintStream console, final int port)
-    throws IOException
-  {
-    this(console, "localhost", port);
-  }
-
-  public RegisterClient(final PrintStream console,
-                        final String host, final int port)
-    throws IOException
   {
     super(0x0, (short)0x0, null/* TODO */);
     if (console == null) {
       throw new NullPointerException("console");
     }
     this.console = console;
-    socket = new Socket(host, port);
-    out = new PrintWriter(socket.getOutputStream(), true);
-    in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    socket = new Socket();
     wallClockSupplier = () -> getWallClock();
+  }
+
+  /**
+   * Creates register client and connects to the default port of the
+   * specified host.  If host is null, connects to localhost.
+   */
+  public RegisterClient(final PrintStream console, final String host)
+    throws IOException
+  {
+    this(console);
+    connect(host);
+  }
+
+  /**
+   * Creates register client and connects to the specified port of the
+   * specified host.  If host is null, connects to localhost.
+   */
+  public RegisterClient(final PrintStream console,
+                        final String host, final int port)
+    throws IOException
+  {
+    this(console);
+    connect(host, port);
+  }
+
+  /**
+   * Connects this register client to the default port of the
+   * specified host.  If host is null, connects to localhost.
+   */
+  public void connect(final String host)
+    throws IOException
+  {
+    connect(host, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
+  }
+
+  /**
+   * Connects this register client to the specified port of the
+   * specified host.  If host is null, connects to localhost.
+   */
+  public void connect(final String host, final int port)
+    throws IOException
+  {
+    socket.connect(host != null ?
+                   new InetSocketAddress(host, port) :
+                   new InetSocketAddress(InetAddress.getByName(null), port));
   }
 
   @Override
@@ -159,6 +195,9 @@ public class RegisterClient extends AbstractRegisters
   private synchronized Response getResponse(final String request)
     throws IOException
   {
+    final PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+    final BufferedReader in =
+      new BufferedReader(new InputStreamReader(socket.getInputStream()));
     out.println(request);
     final String response = in.readLine();
     if (response == null) {

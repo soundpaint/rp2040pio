@@ -143,7 +143,7 @@ public class CodeObserver extends JFrame
     final int port = options.getValue(optPort);
     try {
       console.printf("connecting to emulation server at port %d…%n", port);
-      return new RegisterClient(console, port);
+      return new RegisterClient(console, null, port);
     } catch (final IOException e) {
       console.println("failed to connect to emulation server: " +
                       e.getMessage());

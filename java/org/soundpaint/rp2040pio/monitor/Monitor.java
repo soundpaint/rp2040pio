@@ -164,7 +164,7 @@ public class Monitor
     final int port = options.getValue(optPort);
     try {
       console.printf("connecting to emulation server at port %d…%n", port);
-      return new RegisterClient(console, port);
+      return new RegisterClient(console, null, port);
     } catch (final IOException e) {
       final String message =
         String.format("failed to connect to emulation server: %s%n" +
