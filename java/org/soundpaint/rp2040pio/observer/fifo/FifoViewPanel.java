@@ -36,10 +36,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -53,7 +50,6 @@ public class FifoViewPanel extends JPanel
 
   private final PrintStream console;
   private final SDK sdk;
-  private final int refresh;
   private final FifoEntriesViewPanel fifoEntriesViewPanel;
   private final JCheckBox cbAutoScroll;
   private int pioNum;
@@ -64,15 +60,13 @@ public class FifoViewPanel extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public FifoViewPanel(final PrintStream console, final SDK sdk,
-                       final int refresh)
+  public FifoViewPanel(final PrintStream console, final SDK sdk)
     throws IOException
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
     this.console = console;
     this.sdk = sdk;
-    this.refresh = refresh;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("FIFO View"));
     fifoEntriesViewPanel = new FifoEntriesViewPanel(console, sdk,
@@ -114,8 +108,6 @@ public class FifoViewPanel extends JPanel
     fifoEntriesViewBox.add(fifoEntriesViewPanel);
     fifoEntriesViewBox.add(Box.createHorizontalGlue());
     fifoEntriesViewPanel.smChanged(pioNum, smNum);
-
-    new Thread(() -> updateLoop()).start();
   }
 
   private void addPioButtons(final Box pioSelection)
@@ -153,39 +145,10 @@ public class FifoViewPanel extends JPanel
     }
   }
 
-  public void updateLoop()
+  public void updateView()
   {
-    final int addressPhase0 =
-      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
-                                  MASTERCLK_TRIGGER_PHASE0);
-    final int addressPhase1 =
-      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
-                                  MASTERCLK_TRIGGER_PHASE1);
-    final int expectedValue = 0x1; // update upon stable cycle phase 1
-    final int mask = 0xffffffff;
-    final int cyclesTimeout = 0;
-    final int millisTimeout1 = refresh / 2;
-    final int millisTimeout2 = refresh - millisTimeout1;
-    while (true) {
-      try {
-        while (true) {
-          sdk.wait(addressPhase1, expectedValue, mask,
-                   cyclesTimeout, millisTimeout1);
-          fifoEntriesViewPanel.smChanged(pioNum, smNum);
-          fifoEntriesViewPanel.repaintLater();
-          sdk.wait(addressPhase0, expectedValue, mask,
-                   cyclesTimeout, millisTimeout2);
-        }
-      } catch (final IOException e) {
-        console.printf("update loop: %s%n", e.getMessage());
-        try {
-          Thread.sleep(1000); // limit CPU load in case of persisting
-                              // error
-        } catch (final InterruptedException e2) {
-          // ignore
-        }
-      }
-    }
+    fifoEntriesViewPanel.smChanged(pioNum, smNum);
+    fifoEntriesViewPanel.repaintLater();
   }
 }
 

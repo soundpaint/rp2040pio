@@ -24,19 +24,10 @@
  */
 package org.soundpaint.rp2040pio.observer.gpio;
 
-import java.awt.Container;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.List;
-import javax.swing.JFrame;
 import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.CmdOptions;
-import org.soundpaint.rp2040pio.RegisterClient;
-import org.soundpaint.rp2040pio.Registers;
-import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.observer.GUIObserver;
-import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
  * Emulation GPIO Status Observation

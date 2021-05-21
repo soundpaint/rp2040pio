@@ -61,7 +61,7 @@ public abstract class GUIObserver extends JFrame
                                    REGISTER_SERVER_DEFAULT_PORT_NUMBER,
                                    "use PORT as server port number");
   private static final CmdOptions.IntegerOptionDeclaration optRefresh =
-    CmdOptions.createIntegerOption("TIME", false, 'r', "refresh", 10000,
+    CmdOptions.createIntegerOption("TIME", false, 'r', "refresh", 1000,
                                    "autorefresh after <TIME> millis or " +
                                    "no autorefresh, if 0");
   private static final List<CmdOptions.OptionDeclaration<?>>

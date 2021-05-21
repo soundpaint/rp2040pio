@@ -37,9 +37,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -49,7 +47,6 @@ public class CodeViewPanel extends JPanel
 
   private final PrintStream console;
   private final SDK sdk;
-  private final int refresh;
   private final CodeSmViewPanel codeSmViewPanel;
   private final JTextField taForcedOrExecdInstruction;
   private final JProgressBar pbDelay;
@@ -61,15 +58,13 @@ public class CodeViewPanel extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public CodeViewPanel(final PrintStream console, final SDK sdk,
-                       final int refresh)
+  public CodeViewPanel(final PrintStream console, final SDK sdk)
     throws IOException
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
     this.console = console;
     this.sdk = sdk;
-    this.refresh = refresh;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("Code View"));
     pbDelay = new JProgressBar(0, 1000);
@@ -108,7 +103,6 @@ public class CodeViewPanel extends JPanel
     add(pbDelay);
 
     codeSmViewPanel.smChanged(pioNum, smNum);
-    new Thread(() -> updateLoop()).start();
   }
 
   private void addPioButtons(final Box pioSelection)
@@ -146,39 +140,10 @@ public class CodeViewPanel extends JPanel
     }
   }
 
-  public void updateLoop()
+  public void updateView()
   {
-    final int addressPhase0 =
-      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
-                                  MASTERCLK_TRIGGER_PHASE0);
-    final int addressPhase1 =
-      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
-                                  MASTERCLK_TRIGGER_PHASE1);
-    final int expectedValue = 0x1; // update upon stable cycle phase 1
-    final int mask = 0xffffffff;
-    final int cyclesTimeout = 0;
-    final int millisTimeout1 = refresh / 2;
-    final int millisTimeout2 = refresh - millisTimeout1;
-    while (true) {
-      try {
-        while (true) {
-          sdk.wait(addressPhase1, expectedValue, mask,
-                   cyclesTimeout, millisTimeout1);
-          codeSmViewPanel.smChanged(pioNum, smNum);
-          codeSmViewPanel.repaintLater();
-          sdk.wait(addressPhase0, expectedValue, mask,
-                   cyclesTimeout, millisTimeout2);
-        }
-      } catch (final IOException e) {
-        console.printf("update loop: %s%n", e.getMessage());
-        try {
-          Thread.sleep(1000); // limit CPU load in case of persisting
-                              // error
-        } catch (final InterruptedException e2) {
-          // ignore
-        }
-      }
-    }
+    codeSmViewPanel.smChanged(pioNum, smNum);
+    codeSmViewPanel.repaintLater();
   }
 }
 
