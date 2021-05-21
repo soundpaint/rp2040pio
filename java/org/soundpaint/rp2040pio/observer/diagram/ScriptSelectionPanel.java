@@ -22,7 +22,7 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio.diagram;
+package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Component;
 import java.awt.event.KeyEvent;

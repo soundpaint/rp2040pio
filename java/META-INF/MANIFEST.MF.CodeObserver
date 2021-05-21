@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Specification-Title: N.A.
 Created-By: Jürgen Reuter
-Implementation-Title: RP2040 PIO Emulator
+Implementation-Title: RP2040 PIO Emulator Code Observer
 Specification-Vendor: Juergen Reuter
 Implementation-Vendor: Juergen Reuter
 Main-Class: org.soundpaint.rp2040pio.observer.code.CodeObserver

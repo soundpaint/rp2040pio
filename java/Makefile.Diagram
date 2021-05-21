@@ -28,7 +28,7 @@ BUILD_DIR=$(ROOT_BUILD_DIR)/Diagram
 COMPILE_CLASSPATH=$(JAVA_DIR):$(BUILD_DIR)
 RUN_CLASSPATH=.
 PIO_DIR=$(JAVA_DIR)/org/soundpaint/rp2040pio
-JAVA_SRC=$(wildcard $(PIO_DIR)/diagram/Main.java)
+JAVA_SRC=$(wildcard $(PIO_DIR)/observer/diagram/Diagram.java)
 JAVA_OBJ=$(patsubst $(JAVA_DIR)/%.java,$(BUILD_DIR)/%.class,$(JAVA_SRC))
 
 IMAGES_SRC_DIR=$(JAVA_DIR)/images
@@ -82,7 +82,7 @@ depend:
 
 run: all
 	cd $(JAR_DIR) ; java -jar $(JAR_OBJ)
-	#cd $(BUILD_DIR) ; java -ea -cp $(RUN_CLASSPATH) org.soundpaint.rp2040pio.Main
+	#cd $(BUILD_DIR) ; java -ea -cp $(RUN_CLASSPATH) org.soundpaint.rp2040pio.observer.diagram.Diagram
 
 objclean:
 	- rm -rf $(BUILD_DIR)

@@ -1,5 +1,5 @@
 /*
- * @(#)Main.java 1.00 21/01/31
+ * @(#)Diagram.java 1.00 21/01/31
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -22,7 +22,7 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio.diagram;
+package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -46,7 +46,7 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * configuration is hard-wired in order to make it running out of the
  * box.
  */
-public class Main
+public class Diagram
 {
   private static final String PRG_NAME = "TimingDiagram";
   private static final String PRG_ID_AND_VERSION =
@@ -73,12 +73,12 @@ public class Main
   private final SDK sdk;
   private final TimingDiagram diagram;
 
-  private Main()
+  private Diagram()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public Main(final PrintStream console, final String[] argv)
+  public Diagram(final PrintStream console, final String[] argv)
     throws IOException
   {
     if (console == null) {
@@ -222,7 +222,7 @@ public class Main
   {
     final PrintStream console = System.out;
     try {
-      new Main(System.out, argv);
+      new Diagram(System.out, argv);
     } catch (final IOException e) {
       console.println(e.getMessage());
     }
