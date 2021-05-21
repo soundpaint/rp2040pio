@@ -24,8 +24,6 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.util.function.LongSupplier;
-
 /**
  * Facade to the internal subsystems of a PIO.  The layout of
  * registers follows the list of registers in Sect. 3.7 of the RP2040
@@ -36,9 +34,9 @@ public class PIORegistersImpl extends PIORegisters
 {
   private final PIO pio;
 
-  public PIORegistersImpl(final PIO pio, final LongSupplier wallClockSupplier)
+  public PIORegistersImpl(final PIO pio)
   {
-    super(pio.getIndex(), wallClockSupplier);
+    super(pio.getIndex());
     if (pio == null) {
       throw new NullPointerException("pio");
     }

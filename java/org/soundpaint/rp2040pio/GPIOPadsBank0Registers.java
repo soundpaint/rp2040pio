@@ -24,8 +24,6 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.util.function.LongSupplier;
-
 /**
  * Facade to the internal GPIO Pads Bank 0 subsystem.  The layout of
  * registers follows the list of registers in Sect. 2.19.6 of the
@@ -98,9 +96,9 @@ public abstract class GPIOPadsBank0Registers extends AbstractRegisters
     return PADS_BANK0_BASE + 0x4 * (Regs.GPIO0.ordinal() + gpioNum);
   }
 
-  public GPIOPadsBank0Registers(final LongSupplier wallClockSupplier)
+  public GPIOPadsBank0Registers()
   {
-    super(PADS_BANK0_BASE, (short)REGS.length, wallClockSupplier);
+    super(PADS_BANK0_BASE, (short)REGS.length);
   }
 }
 

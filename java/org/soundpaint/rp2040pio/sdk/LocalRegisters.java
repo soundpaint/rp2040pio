@@ -27,7 +27,6 @@ package org.soundpaint.rp2040pio.sdk;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.LongSupplier;
 import org.soundpaint.rp2040pio.AbstractRegisters;
 import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.GPIO;
@@ -50,7 +49,6 @@ public class LocalRegisters extends AbstractRegisters
   private final PIOEmuRegistersImpl pio0EmuRegisters;
   private final PIORegistersImpl pio1Registers;
   private final PIOEmuRegistersImpl pio1EmuRegisters;
-  private final LongSupplier wallClockSupplier;
 
   /*
    * TODO: Really should replace this simple-minded list approach with
@@ -61,42 +59,30 @@ public class LocalRegisters extends AbstractRegisters
 
   public LocalRegisters(final Emulator emulator)
   {
-    super(0x0, (short)0x0, null/* TODO */);
+    super(0x0, (short)0x0);
     this.emulator = emulator;
 
-    wallClockSupplier = () -> getWallClock();
-
     registersList = new ArrayList<AbstractRegisters>();
-    picoEmuRegisters = new PicoEmuRegistersImpl(emulator, wallClockSupplier);
+    picoEmuRegisters = new PicoEmuRegistersImpl(emulator);
     registersList.add(picoEmuRegisters);
 
     final GPIO gpio = emulator.getGPIO();
-    gpioIOBank0Registers =
-      new GPIOIOBank0RegistersImpl(gpio, wallClockSupplier);
+    gpioIOBank0Registers = new GPIOIOBank0RegistersImpl(gpio);
     registersList.add(gpioIOBank0Registers);
-    gpioPadsBank0Registers =
-      new GPIOPadsBank0RegistersImpl(gpio, wallClockSupplier);
+    gpioPadsBank0Registers = new GPIOPadsBank0RegistersImpl(gpio);
     registersList.add(gpioPadsBank0Registers);
 
     final PIO pio0 = emulator.getPIO0();
-    pio0Registers = new PIORegistersImpl(pio0, wallClockSupplier);
+    pio0Registers = new PIORegistersImpl(pio0);
     registersList.add(pio0Registers);
-    pio0EmuRegisters = new PIOEmuRegistersImpl(pio0, wallClockSupplier);
+    pio0EmuRegisters = new PIOEmuRegistersImpl(pio0);
     registersList.add(pio0EmuRegisters);
 
     final PIO pio1 = emulator.getPIO1();
-    pio1Registers = new PIORegistersImpl(pio1, wallClockSupplier);
+    pio1Registers = new PIORegistersImpl(pio1);
     registersList.add(pio1Registers);
-    pio1EmuRegisters = new PIOEmuRegistersImpl(pio1, wallClockSupplier);
+    pio1EmuRegisters = new PIOEmuRegistersImpl(pio1);
     registersList.add(pio1EmuRegisters);
-  }
-
-  @Override
-  public LongSupplier getWallClockSupplier() { return wallClockSupplier; }
-
-  private Long getWallClock()
-  {
-    return emulator.getMasterClock().getWallClock();
   }
 
   public int getGPIOAddress(final GPIOIOBank0RegistersImpl.Regs register)

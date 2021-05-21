@@ -25,7 +25,6 @@
 package org.soundpaint.rp2040pio;
 
 import java.util.List;
-import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs;
@@ -218,9 +217,9 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
     return EMULATOR_BASE + 0x4 * register.ordinal();
   }
 
-  public PicoEmuRegisters(final LongSupplier wallClockSupplier)
+  public PicoEmuRegisters()
   {
-    super(EMULATOR_BASE, (short)REGS.length, wallClockSupplier);
+    super(EMULATOR_BASE, (short)REGS.length);
   }
 }
 

@@ -24,8 +24,6 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.util.function.LongSupplier;
-
 /**
  * Facade to the internal GPIO IO Bank 0 subsystem.  The layout of
  * registers follows the list of registers in Sect. 2.19.6 of the
@@ -49,10 +47,8 @@ public class GPIOIOBank0RegistersImpl extends GPIOIOBank0Registers
 
   private final GPIO gpio;
 
-  public GPIOIOBank0RegistersImpl(final GPIO gpio,
-                                  final LongSupplier wallClockSupplier)
+  public GPIOIOBank0RegistersImpl(final GPIO gpio)
   {
-    super(wallClockSupplier);
     if (gpio == null) {
       throw new NullPointerException("gpio");
     }

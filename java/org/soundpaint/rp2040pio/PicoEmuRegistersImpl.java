@@ -24,7 +24,6 @@
  */
 package org.soundpaint.rp2040pio;
 
-import java.util.function.LongSupplier;
 import org.soundpaint.rp2040pio.Clock;
 
 /**
@@ -37,10 +36,8 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
 {
   private final Emulator emulator;
 
-  public PicoEmuRegistersImpl(final Emulator emulator,
-                              final LongSupplier wallClockSupplier)
+  public PicoEmuRegistersImpl(final Emulator emulator)
   {
-    super(wallClockSupplier);
     this.emulator = emulator;
   }
 

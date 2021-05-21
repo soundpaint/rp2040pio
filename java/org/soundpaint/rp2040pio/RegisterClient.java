@@ -32,7 +32,6 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.function.LongSupplier;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -109,7 +108,6 @@ public class RegisterClient extends AbstractRegisters
 
   private final PrintStream console;
   private final Socket socket;
-  private final LongSupplier wallClockSupplier;
 
   /**
    * Creates a register client, but does not yet connect to any
@@ -119,13 +117,12 @@ public class RegisterClient extends AbstractRegisters
    */
   public RegisterClient(final PrintStream console) throws IOException
   {
-    super(0x0, (short)0x0, null/* TODO */);
+    super(0x0, (short)0x0);
     if (console == null) {
       throw new NullPointerException("console");
     }
     this.console = console;
     socket = new Socket();
-    wallClockSupplier = () -> getWallClock();
   }
 
   /**
@@ -171,25 +168,6 @@ public class RegisterClient extends AbstractRegisters
     socket.connect(host != null ?
                    new InetSocketAddress(host, port) :
                    new InetSocketAddress(InetAddress.getByName(null), port));
-  }
-
-  @Override
-  public LongSupplier getWallClockSupplier() { return wallClockSupplier; }
-
-  private Long getWallClock()
-  {
-    try {
-      final int addressLSB =
-        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
-      final int addressMSB =
-        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
-      final int wallClockLSB = readAddress(addressLSB);
-      final int wallClockMSB = readAddress(addressMSB);
-      return (((long)wallClockMSB) << 32) | wallClockLSB;
-    } catch (final IOException e) {
-      console.println(e.getMessage());
-      return null;
-    }
   }
 
   private synchronized Response getResponse(final String request)

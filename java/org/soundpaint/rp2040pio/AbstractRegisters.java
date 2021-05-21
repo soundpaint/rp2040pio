@@ -25,7 +25,6 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
-import java.util.function.LongSupplier;
 
 public abstract class AbstractRegisters implements Registers
 {
@@ -33,7 +32,6 @@ public abstract class AbstractRegisters implements Registers
   private final short size;
   private final int addrMin;
   private final int addrMax;
-  private final LongSupplier wallClockSupplier;
 
   private AbstractRegisters()
   {
@@ -52,8 +50,7 @@ public abstract class AbstractRegisters implements Registers
    * The maximum allowed address computes as &lt;code&gt;baseAddress +
    * size * 0x4&lt;/code&gt;.
    */
-  protected AbstractRegisters(final int baseAddress, final short size,
-                              final LongSupplier wallClockSupplier)
+  protected AbstractRegisters(final int baseAddress, final short size)
   {
     checkAddressAligned(baseAddress);
     if ((baseAddress & 0x3fff) != 0x0) {
@@ -70,7 +67,6 @@ public abstract class AbstractRegisters implements Registers
     }
     this.baseAddress = baseAddress;
     this.size = size;
-    this.wallClockSupplier = wallClockSupplier;
     addrMin = baseAddress;
     addrMax = baseAddress | 0x3fff;
   }
@@ -79,8 +75,6 @@ public abstract class AbstractRegisters implements Registers
   public int getBaseAddress() { return baseAddress; }
 
   public int getSize() { return size; }
-
-  public LongSupplier getWallClockSupplier() { return wallClockSupplier; }
 
   protected void checkRegNum(final int regNum, final int limit)
   {
