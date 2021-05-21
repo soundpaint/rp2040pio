@@ -101,8 +101,7 @@ public abstract class GUIObserver extends JFrame
     add(new ActionPanel(this), BorderLayout.SOUTH);
     options = parseArgs(argv);
     printAbout();
-    final Registers registers = new RegisterClient(console, null, getPort());
-    sdk = new SDK(console, registers);
+    sdk = new SDK(console, createRegisters("GUI event thread"));
   }
 
   protected PrintStream getConsole()
@@ -180,12 +179,13 @@ public abstract class GUIObserver extends JFrame
     console.println(Constants.getAbout());
   }
 
-  private Registers createRegisters()
+  private Registers createRegisters(final String threadName)
   {
     final int port = getPort();
     try {
-      console.printf("connecting to emulation server at port %d…%n", port);
-      return new RegisterClient(console);
+      console.printf("%s: connecting to emulation server at port %d…%n",
+                     threadName, port);
+      return new RegisterClient(console, null, port);
     } catch (final IOException e) {
       console.println("failed to connect to emulation server: " +
                       e.getMessage());
@@ -221,6 +221,7 @@ public abstract class GUIObserver extends JFrame
 
   private void updateLoop()
   {
+    final Registers registers = createRegisters("update loop thread");
     final int addressPhase0 =
       PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
                                   MASTERCLK_TRIGGER_PHASE0);
@@ -236,11 +237,11 @@ public abstract class GUIObserver extends JFrame
     while (true) {
       try {
         while (true) {
-          sdk.wait(addressPhase1, expectedValue, mask,
-                   cyclesTimeout, millisTimeout1);
+          registers.wait(addressPhase1, expectedValue, mask,
+                         cyclesTimeout, millisTimeout1);
           updateView();
-          sdk.wait(addressPhase0, expectedValue, mask,
-                   cyclesTimeout, millisTimeout2);
+          registers.wait(addressPhase0, expectedValue, mask,
+                         cyclesTimeout, millisTimeout2);
         }
       } catch (final IOException e) {
         console.printf("update loop: %s%n", e.getMessage());

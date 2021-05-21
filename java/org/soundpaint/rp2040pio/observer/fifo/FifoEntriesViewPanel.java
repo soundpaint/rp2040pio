@@ -396,6 +396,7 @@ public class FifoEntriesViewPanel extends JPanel
   public void setAutoScroll(final boolean autoScroll)
   {
     this.autoScroll = autoScroll;
+    checkedUpdateEntries();
   }
 
   public void repaintLater()
