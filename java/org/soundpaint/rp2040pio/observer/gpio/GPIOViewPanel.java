@@ -31,7 +31,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
-import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -62,7 +61,6 @@ public class GPIOViewPanel extends JPanel
 
   private final PrintStream console;
   private final SDK sdk;
-  private final int refresh;
   private final PIOGPIOArrayPanel pioGpioArrayPanel;
   private final GPIOArrayPanel gpioArrayPanel;
 
@@ -71,15 +69,13 @@ public class GPIOViewPanel extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public GPIOViewPanel(final PrintStream console, final SDK sdk,
-                       final int refresh)
+  public GPIOViewPanel(final PrintStream console, final SDK sdk)
     throws IOException
   {
     Objects.requireNonNull(console);
     Objects.requireNonNull(sdk);
     this.console = console;
     this.sdk = sdk;
-    this.refresh = refresh;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 
     pioGpioArrayPanel = new PIOGPIOArrayPanel(console, sdk);
@@ -91,44 +87,14 @@ public class GPIOViewPanel extends JPanel
     add(gpioArrayPanel);
 
     add(Box.createVerticalGlue());
-    new Thread(() -> updateLoop()).start();
   }
 
-  public void updateLoop()
+  public void updateView()
   {
-    final int addressPhase0 =
-      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
-                                  MASTERCLK_TRIGGER_PHASE0);
-    final int addressPhase1 =
-      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
-                                  MASTERCLK_TRIGGER_PHASE1);
-    final int expectedValue = 0x1; // update upon stable cycle phase 1
-    final int mask = 0xffffffff;
-    final int cyclesTimeout = 0;
-    final int millisTimeout1 = refresh / 2;
-    final int millisTimeout2 = refresh - millisTimeout1;
-    while (true) {
-      try {
-        while (true) {
-          sdk.wait(addressPhase1, expectedValue, mask,
-                   cyclesTimeout, millisTimeout1);
-          pioGpioArrayPanel.checkedUpdate();
-          pioGpioArrayPanel.repaintLater();
-          gpioArrayPanel.checkedUpdate();
-          gpioArrayPanel.repaintLater();
-          sdk.wait(addressPhase0, expectedValue, mask,
-                   cyclesTimeout, millisTimeout2);
-        }
-      } catch (final IOException e) {
-        console.printf("update loop: %s%n", e.getMessage());
-        try {
-          Thread.sleep(1000); // limit CPU load in case of persisting
-                              // error
-        } catch (final InterruptedException e2) {
-          // ignore
-        }
-      }
-    }
+    pioGpioArrayPanel.checkedUpdate();
+    pioGpioArrayPanel.repaintLater();
+    gpioArrayPanel.checkedUpdate();
+    gpioArrayPanel.repaintLater();
   }
 }
 

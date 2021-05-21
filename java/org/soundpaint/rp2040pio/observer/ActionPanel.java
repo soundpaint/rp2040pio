@@ -22,7 +22,7 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio.observer.gpio;
+package org.soundpaint.rp2040pio.observer;
 
 import java.awt.event.KeyEvent;
 import java.util.Objects;
@@ -33,17 +33,17 @@ import javax.swing.JButton;
 
 public class ActionPanel extends Box
 {
-  private static final long serialVersionUID = 6121910615245291580L;
+  private static final long serialVersionUID = -3674776627922144842L;
 
-  public ActionPanel(final GPIOObserver gpioObserver)
+  public ActionPanel(final GUIObserver observer)
   {
     super(BoxLayout.X_AXIS);
-    Objects.requireNonNull(gpioObserver);
+    Objects.requireNonNull(observer);
     setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
     add(Box.createHorizontalGlue());
     final JButton btClose = new JButton("Close");
     btClose.setMnemonic(KeyEvent.VK_C);
-    btClose.addActionListener((event) -> { gpioObserver.close(); });
+    btClose.addActionListener((event) -> { observer.close(); });
     add(btClose);
   }
 }
