@@ -137,8 +137,8 @@ public class Save extends Command
   {
     out.printf("# ; PIO Program Hexdump%n");
     out.printf("# ; automatically created on %s%n", Instant.now());
-    out.printf("# ; by Monitor Control Program %s%n",
-               Constants.getProgramAndVersion());
+    out.printf("# ; by Monitor Control Program%n");
+    out.printf("# ; %s%n", Constants.getEmulatorIdAndVersionWithOs());
     if (name != null) {
       // TODO: Escape program name ("\r", "\n", "\"", …)?
       out.printf("# .program %s%n", name);

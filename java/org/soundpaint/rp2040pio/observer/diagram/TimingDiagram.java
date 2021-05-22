@@ -56,10 +56,18 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 public class TimingDiagram extends JFrame implements Constants
 {
   private static final long serialVersionUID = -8853990994193814003L;
+  private static final String APP_TITLE = "Diagram";
+  private static final String APP_FULL_NAME =
+    "Timing Diagram Creator Version 0.1";
 
-  public static String getAboutText()
+  public static String getAppTitle()
   {
-    return String.format("Timing Diagram App%n%s%n", Constants.getAbout());
+    return APP_TITLE;
+  }
+
+  public static String getAppFullName()
+  {
+    return APP_FULL_NAME;
   }
 
   private final PrintStream console;

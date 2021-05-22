@@ -206,7 +206,7 @@ public class RegisterServer
     if (args.length > 0) {
       return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[0]);
     }
-    return createResponse(ResponseStatus.OK, sdk.getVersion());
+    return createResponse(ResponseStatus.OK, sdk.getEmulatorInfo());
   }
 
   private String handleGetHelp(final String[] args)

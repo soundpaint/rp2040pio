@@ -35,19 +35,17 @@ import org.soundpaint.rp2040pio.observer.GUIObserver;
 public class FifoObserver extends GUIObserver
 {
   private static final long serialVersionUID = 5938495055310591092L;
-
-  private static final String PRG_NAME = "FIFO Observer";
-  private static final String PRG_ID_AND_VERSION =
-    "Emulation FIFO Observer Version 0.1 for " +
-    Constants.getProgramAndVersion();
+  private static final String APP_TITLE = "FIFO Observer";
+  private static final String APP_FULL_NAME =
+    "Emulation FIFO Observer Version 0.1";
 
   private final FifoViewPanel fifoViewPanel;
 
   public FifoObserver(final PrintStream console, final String[] argv)
     throws IOException
   {
-    super(PRG_NAME, PRG_ID_AND_VERSION, console, argv);
-    add(fifoViewPanel = new FifoViewPanel(console, getSDK()));
+    super(APP_TITLE, APP_FULL_NAME, console, argv);
+    add(fifoViewPanel = new FifoViewPanel(console, getSDK(), APP_TITLE));
     pack();
     setVisible(true);
     startUpdating();

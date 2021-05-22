@@ -211,7 +211,7 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  public String getVersion() throws IOException
+  public String getEmulatorInfo() throws IOException
   {
     final Response response = getResponse("v");
     checkResponse(response);

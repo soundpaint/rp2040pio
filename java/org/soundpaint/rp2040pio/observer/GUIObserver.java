@@ -47,8 +47,8 @@ public abstract class GUIObserver extends JFrame
 {
   private static final long serialVersionUID = 3771005056052179959L;
 
-  private static final String DEFAULT_VERSION =
-    "Emulation Observer Version 0.1 for " + Constants.getProgramAndVersion();
+  private static final String DEFAULT_APP_FULL_NAME =
+    "Emulation Observer Version 0.1";
   private static final CmdOptions.FlagOptionDeclaration optVersion =
     CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
                                 "display version information and exit");
@@ -69,8 +69,8 @@ public abstract class GUIObserver extends JFrame
     Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
                   { optVersion, optHelp, optPort, optRefresh });
 
-  private final String title;
-  private final String version;
+  private final String appTitle;
+  private final String appFullName;
   private final PrintStream console;
   private final CmdOptions options;
   private final SDK sdk;
@@ -80,13 +80,13 @@ public abstract class GUIObserver extends JFrame
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public GUIObserver(final String title, final String version,
+  public GUIObserver(final String appTitle, final String appFullName,
                      final PrintStream console, final String[] argv)
     throws IOException
   {
-    super(title);
-    if (title == null) {
-      throw new NullPointerException("title");
+    super(appTitle);
+    if (appTitle == null) {
+      throw new NullPointerException("appTitle");
     }
     if (console == null) {
       throw new NullPointerException("console");
@@ -94,19 +94,26 @@ public abstract class GUIObserver extends JFrame
     if (argv == null) {
       throw new NullPointerException("argv");
     }
-    this.title = title;
-    this.version = version != null ? version : DEFAULT_VERSION;
+    this.appTitle = appTitle;
+    this.appFullName =
+      appFullName != null ? appFullName : DEFAULT_APP_FULL_NAME;
     this.console = console;
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     add(new ActionPanel(this), BorderLayout.SOUTH);
+    setJMenuBar(new MenuBar(this, console));
     options = parseArgs(argv);
     printAbout();
     sdk = new SDK(console, createRegisters("GUI event thread"));
   }
 
-  protected PrintStream getConsole()
+  public String getAppTitle()
   {
-    return console;
+    return appTitle;
+  }
+
+  public String getAppFullName()
+  {
+    return appFullName;
   }
 
   protected SDK getSDK()
@@ -123,7 +130,7 @@ public abstract class GUIObserver extends JFrame
   {
     final CmdOptions options;
     try {
-      options = new CmdOptions(title, version, null, optionDeclarations);
+      options = new CmdOptions(appTitle, appFullName, null, optionDeclarations);
       options.parse(argv);
       checkValidity0(options);
     } catch (final CmdOptions.ParseException e) {
@@ -132,7 +139,8 @@ public abstract class GUIObserver extends JFrame
       throw new InternalError();
     }
     if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
-      console.println(version);
+      console.println(appFullName);
+      console.println(Constants.getEmulatorAbout());
       System.exit(0);
       throw new InternalError();
     }
@@ -175,8 +183,8 @@ public abstract class GUIObserver extends JFrame
 
   private void printAbout()
   {
-    console.println(title);
-    console.println(Constants.getAbout());
+    console.println(appFullName);
+    console.println(Constants.getEmulatorAbout());
   }
 
   private Registers createRegisters(final String threadName)

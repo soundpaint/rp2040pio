@@ -163,11 +163,6 @@ public class SDK implements Constants
 
   // -------- PicoEmuRegisters convenience methods --------
 
-  public String getVersion() throws IOException
-  {
-    return registers.getVersion();
-  }
-
   public void reset() throws IOException
   {
     final int address =
@@ -198,6 +193,11 @@ public class SDK implements Constants
   public void triggerCyclePhase1(final boolean await) throws IOException
   {
     triggerCyclePhaseX(PicoEmuRegisters.Regs.MASTERCLK_TRIGGER_PHASE1, await);
+  }
+
+  public String getEmulatorInfo() throws IOException
+  {
+    return registers.getEmulatorInfo();
   }
 }
 

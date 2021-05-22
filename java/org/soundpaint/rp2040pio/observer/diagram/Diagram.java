@@ -48,9 +48,6 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  */
 public class Diagram
 {
-  private static final String PRG_NAME = "TimingDiagram";
-  private static final String PRG_ID_AND_VERSION =
-    "TimingDiagram Version 0.1 for " + Constants.getProgramAndVersion();
   private static final CmdOptions.FlagOptionDeclaration optVersion =
     CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
                                 "display version information and exit");
@@ -105,8 +102,9 @@ public class Diagram
   {
     final CmdOptions options;
     try {
-      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION, null,
-                               optionDeclarations);
+      options = new CmdOptions(TimingDiagram.getAppTitle(),
+                               TimingDiagram.getAppFullName(),
+                               null, optionDeclarations);
       options.parse(argv);
       checkValidity(options);
     } catch (final CmdOptions.ParseException e) {
@@ -115,7 +113,8 @@ public class Diagram
       throw new InternalError();
     }
     if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
-      console.println(PRG_ID_AND_VERSION);
+      console.println(TimingDiagram.getAppFullName());
+      console.println(Constants.getEmulatorAbout());
       System.exit(0);
       throw new InternalError();
     }
@@ -139,7 +138,8 @@ public class Diagram
 
   private void printAbout()
   {
-    console.printf(TimingDiagram.getAboutText());
+    console.println(TimingDiagram.getAppFullName());
+    console.println(Constants.getEmulatorAbout());
   }
 
   private Registers connect()

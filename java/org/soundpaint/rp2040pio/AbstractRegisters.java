@@ -39,9 +39,9 @@ public abstract class AbstractRegisters implements Registers
   }
 
   @Override
-  public String getVersion() throws IOException
+  public String getEmulatorInfo() throws IOException
   {
-    return Constants.getProgramAndVersion();
+    return Constants.getEmulatorIdAndVersionWithOs();
   }
 
   /**

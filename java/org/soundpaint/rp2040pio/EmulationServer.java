@@ -34,9 +34,8 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class EmulationServer
 {
-  private static final String PRG_NAME = "EmulationServer";
-  private static final String PRG_ID_AND_VERSION =
-    "Emulation Server Version 0.1 for " + Constants.getProgramAndVersion();
+  private static final String PRG_TITLE = "EmulationServer";
+  private static final String PRG_FULL_NAME = "Emulation Server Version 0.1";
 
   private static final CmdOptions.FlagOptionDeclaration optVersion =
     CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
@@ -79,7 +78,7 @@ public class EmulationServer
   {
     final CmdOptions options;
     try {
-      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION, null,
+      options = new CmdOptions(PRG_TITLE, PRG_FULL_NAME, null,
                                optionDeclarations);
       options.parse(argv);
       checkValidity(options);
@@ -89,7 +88,8 @@ public class EmulationServer
       throw new InternalError();
     }
     if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
-      console.println(PRG_ID_AND_VERSION);
+      console.println(PRG_FULL_NAME);
+      console.println(Constants.getEmulatorIdAndVersionWithOs());
       System.exit(0);
       throw new InternalError();
     }
@@ -119,7 +119,7 @@ public class EmulationServer
   private void printAbout()
   {
     console.println("Emulation Server Daemon");
-    console.println(Constants.getAbout());
+    console.println(Constants.getEmulatorAbout());
   }
 
   private void run()

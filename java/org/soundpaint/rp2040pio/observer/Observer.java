@@ -35,13 +35,13 @@ import org.soundpaint.rp2040pio.Registers;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Emulation Register Status Observation
+ * Emulation Register Status Observation (Command-Line Version)
  */
 public class Observer
 {
-  private static final String PRG_NAME = "Observer";
-  private static final String PRG_ID_AND_VERSION =
-    "Emulation Observer Version 0.1 for " + Constants.getProgramAndVersion();
+  private static final String APP_TITLE = "Observer";
+  private static final String APP_FULL_NAME = "Emulation Observer Version 0.1";
+
   private static final CmdOptions.FlagOptionDeclaration optVersion =
     CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
                                 "display version information and exit");
@@ -93,7 +93,7 @@ public class Observer
   {
     final CmdOptions options;
     try {
-      options = new CmdOptions(PRG_NAME, PRG_ID_AND_VERSION, null,
+      options = new CmdOptions(APP_TITLE, APP_FULL_NAME, null,
                                optionDeclarations);
       options.parse(argv);
       checkValidity(options);
@@ -103,7 +103,8 @@ public class Observer
       throw new InternalError();
     }
     if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
-      console.println(PRG_ID_AND_VERSION);
+      console.println(APP_FULL_NAME);
+      console.println(Constants.getEmulatorAbout());
       System.exit(0);
       throw new InternalError();
     }
@@ -138,8 +139,8 @@ public class Observer
 
   private void printAbout()
   {
-    console.println("Observer App");
-    console.println(Constants.getAbout());
+    console.println("Observer App for");
+    console.println(Constants.getEmulatorAbout());
   }
 
   private Registers connect()

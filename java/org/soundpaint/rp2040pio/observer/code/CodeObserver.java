@@ -35,19 +35,17 @@ import org.soundpaint.rp2040pio.observer.GUIObserver;
 public class CodeObserver extends GUIObserver
 {
   private static final long serialVersionUID = -8266192991979578046L;
-
-  private static final String PRG_NAME = "Code Observer";
-  private static final String PRG_ID_AND_VERSION =
-    "Emulation Code Observer Version 0.1 for " +
-    Constants.getProgramAndVersion();
+  private static final String APP_TITLE = "Code Observer";
+  private static final String APP_FULL_NAME =
+    "Emulation Code Observer Version 0.1";
 
   private final CodeViewPanel codeViewPanel;
 
   public CodeObserver(final PrintStream console, final String[] argv)
     throws IOException
   {
-    super(PRG_NAME, PRG_ID_AND_VERSION, console, argv);
-    add(codeViewPanel = new CodeViewPanel(console, getSDK()));
+    super(APP_TITLE, APP_FULL_NAME, console, argv);
+    add(codeViewPanel = new CodeViewPanel(console, getSDK(), APP_TITLE));
     pack();
     setVisible(true);
     startUpdating();

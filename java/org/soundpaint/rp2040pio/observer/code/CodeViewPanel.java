@@ -58,7 +58,8 @@ public class CodeViewPanel extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public CodeViewPanel(final PrintStream console, final SDK sdk)
+  public CodeViewPanel(final PrintStream console, final SDK sdk,
+                       final String borderTitle)
     throws IOException
   {
     Objects.requireNonNull(console);
@@ -66,7 +67,7 @@ public class CodeViewPanel extends JPanel
     this.console = console;
     this.sdk = sdk;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    setBorder(BorderFactory.createTitledBorder("Code View"));
+    setBorder(BorderFactory.createTitledBorder(borderTitle));
     pbDelay = new JProgressBar(0, 1000);
     taForcedOrExecdInstruction = new JTextField();
     codeSmViewPanel =

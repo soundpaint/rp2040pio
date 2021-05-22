@@ -28,38 +28,39 @@ public interface Constants
 {
   public static final String PROGRAM_ID = "RP2040 PIO Emulator";
   public static final String VERSION_ID = "0.1";
-  public static final String COPYRIGHT_INFO =
+  public static final String COPYRIGHT_NOTICE =
     String.format("© 2021 by J. Reuter%n" +
                   "Karlsruhe, Germany");
 
-  public static String getProgramId()
+  public static String getEmulatorId()
   {
     return PROGRAM_ID;
   }
 
-  public static String getVersionId()
+  public static String getEmulatorVersion()
   {
     return VERSION_ID;
   }
 
-  public static String getCopyrightInfo()
+  public static String getCopyrightNotice()
   {
-    return COPYRIGHT_INFO;
+    return COPYRIGHT_NOTICE;
   }
 
-  public static String getProgramAndVersion()
+  public static String getEmulatorIdAndVersionWithOs()
   {
     return
-      getProgramId() +
-      " Version " + getVersionId() +
+      getEmulatorId() +
+      " Version " + getEmulatorVersion() +
       " / " + System.getProperty("os.name") +
       " " + System.getProperty("os.version");
   }
 
-  public static String getAbout()
+  public static String getEmulatorAbout()
   {
     return
-      String.format("%s%n%s", getProgramAndVersion(), getCopyrightInfo());
+      String.format("%s%n%s", getEmulatorIdAndVersionWithOs(),
+                    getCopyrightNotice());
   }
 
   public static final int GPIO_NUM = 32;

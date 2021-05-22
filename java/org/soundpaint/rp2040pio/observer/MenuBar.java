@@ -1,5 +1,5 @@
 /*
- * @(#)MenuBar.java 1.00 21/04/07
+ * @(#)MenuBar.java 1.00 21/05/22
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -22,12 +22,14 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio.observer.diagram;
+package org.soundpaint.rp2040pio.observer;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.io.PrintStream;
 import java.util.Objects;
 import javax.swing.KeyStroke;
+import javax.swing.JDialog;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -37,39 +39,30 @@ import org.soundpaint.rp2040pio.SwingUtils;
 
 public class MenuBar extends JMenuBar
 {
-  private static final long serialVersionUID = -5984414867480448181L;
+  private static final long serialVersionUID = -5235397033202919401L;
 
-  private final TimingDiagram timingDiagram;
-  private final ViewPropertiesDialog viewPropertiesDialog;
+  private final GUIObserver observer;
+  private final JDialog licenseDialog;
 
   private MenuBar()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public MenuBar(final TimingDiagram timingDiagram,
-                 final ScriptDialog scriptDialog)
+  public MenuBar(final GUIObserver observer, final PrintStream console)
   {
-    Objects.requireNonNull(timingDiagram);
-    this.timingDiagram = timingDiagram;
-    add(createFileMenu(scriptDialog));
-    add(createViewMenu());
+    Objects.requireNonNull(observer);
+    this.observer = observer;
+    final LicenseView licenseView = new LicenseView(console);
+    licenseDialog = licenseView.createDialog(this, licenseView.getTitle());
+    add(createFileMenu());
     add(createHelpMenu());
-    viewPropertiesDialog = new ViewPropertiesDialog(timingDiagram);
   }
 
-  private JMenu createFileMenu(final ScriptDialog scriptDialog)
+  private JMenu createFileMenu()
   {
     final JMenu file = new JMenu("File");
     file.setMnemonic(KeyEvent.VK_F);
-
-    final JMenuItem script = new JMenuItem("Load…");
-    script.setMnemonic(KeyEvent.VK_L);
-    script.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,
-                                                 ActionEvent.ALT_MASK));
-    script.getAccessibleContext().setAccessibleDescription("Run load script");
-    script.addActionListener((event) -> { scriptDialog.setVisible(true); });
-    file.add(script);
 
     final JMenuItem close =
       SwingUtils.createIconMenuItem("quit16x16.png", "Quit");
@@ -77,25 +70,9 @@ public class MenuBar extends JMenuBar
     close.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,
                                                 ActionEvent.ALT_MASK));
     close.getAccessibleContext().setAccessibleDescription("Quit");
-    close.addActionListener((event) -> { timingDiagram.close(); });
+    close.addActionListener((event) -> observer.close());
     file.add(close);
     return file;
-  }
-
-  private JMenu createViewMenu()
-  {
-    final JMenu view = new JMenu("View");
-    view.setMnemonic(KeyEvent.VK_V);
-
-    final JMenuItem properties = new JMenuItem("Properties…");
-    properties.setMnemonic(KeyEvent.VK_P);
-    properties.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,
-                                                     ActionEvent.ALT_MASK));
-    properties.getAccessibleContext().
-      setAccessibleDescription("View properties");
-    properties.addActionListener((event) -> { viewPropertiesDialog.open(); });
-    view.add(properties);
-    return view;
   }
 
   private JMenu createHelpMenu()
@@ -103,7 +80,7 @@ public class MenuBar extends JMenuBar
     final JMenu help = new JMenu("Help");
     help.setMnemonic(KeyEvent.VK_H);
 
-    final String appTitle = TimingDiagram.getAppTitle();
+    final String appTitle = observer.getAppTitle();
     final JMenuItem about = new JMenuItem(String.format("About %s…", appTitle));
     about.setMnemonic(KeyEvent.VK_A);
     about.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A,
@@ -112,13 +89,21 @@ public class MenuBar extends JMenuBar
     about.addActionListener((event) -> {
         final String message =
           String.format("%s%n%s for%n%s",
-                        TimingDiagram.getAppTitle(),
-                        TimingDiagram.getAppFullName(),
+                        observer.getAppTitle(), observer.getAppFullName(),
                         Constants.getEmulatorAbout());
         JOptionPane.showMessageDialog(this, message, "About",
                                       JOptionPane.INFORMATION_MESSAGE);
       });
     help.add(about);
+
+    final JMenuItem license = new JMenuItem("License…");
+    license.setMnemonic(KeyEvent.VK_L);
+    license.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,
+                                                  ActionEvent.ALT_MASK));
+    license.getAccessibleContext().setAccessibleDescription("Copying License");
+    license.addActionListener((event) -> licenseDialog.setVisible(true));
+    help.add(license);
+
     return help;
   }
 }

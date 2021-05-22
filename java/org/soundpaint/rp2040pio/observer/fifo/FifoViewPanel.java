@@ -60,7 +60,8 @@ public class FifoViewPanel extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public FifoViewPanel(final PrintStream console, final SDK sdk)
+  public FifoViewPanel(final PrintStream console, final SDK sdk,
+                       final String borderTitle)
     throws IOException
   {
     Objects.requireNonNull(console);
@@ -68,7 +69,7 @@ public class FifoViewPanel extends JPanel
     this.console = console;
     this.sdk = sdk;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    setBorder(BorderFactory.createTitledBorder("FIFO View"));
+    setBorder(BorderFactory.createTitledBorder(borderTitle));
     fifoEntriesViewPanel = new FifoEntriesViewPanel(console, sdk,
                                                     initialAutoScroll);
 

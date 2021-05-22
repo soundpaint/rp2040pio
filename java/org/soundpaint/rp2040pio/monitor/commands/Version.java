@@ -56,7 +56,7 @@ public class Version extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    console.println(sdk.getVersion());
+    console.println(sdk.getEmulatorInfo());
     return true;
   }
 }

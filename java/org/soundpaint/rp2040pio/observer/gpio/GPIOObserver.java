@@ -35,18 +35,16 @@ import org.soundpaint.rp2040pio.observer.GUIObserver;
 public class GPIOObserver extends GUIObserver
 {
   private static final long serialVersionUID = -4777618004050203269L;
-
-  private static final String PRG_NAME = "GPIO Observer";
-  private static final String PRG_ID_AND_VERSION =
-    "Emulation GPIO Observer Version 0.1 for " +
-    Constants.getProgramAndVersion();
+  private static final String APP_TITLE = "GPIO Observer";
+  private static final String APP_FULL_NAME =
+    "Emulation GPIO Observer Version 0.1";
 
   private final GPIOViewPanel gpioViewPanel;
 
   public GPIOObserver(final PrintStream console, final String[] argv)
     throws IOException
   {
-    super(PRG_NAME, PRG_ID_AND_VERSION, console, argv);
+    super(APP_TITLE, APP_FULL_NAME, console, argv);
     add(gpioViewPanel = new GPIOViewPanel(console, getSDK()));
     pack();
     setVisible(true);

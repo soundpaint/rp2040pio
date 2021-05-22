@@ -602,7 +602,7 @@ public class CmdOptions
     final StringBuffer sb = new StringBuffer();
     sb.append(String.format("Usage: %s%n%n", getUsage()));
     if (prgSingleLineDescription != null) {
-      sb.append(String.format("%s%n", prgSingleLineDescription));
+      sb.append(String.format("%s%n%n", prgSingleLineDescription));
     }
     final String optionsHelp = getOptionsHelp();
     if (!optionsHelp.isEmpty()) {

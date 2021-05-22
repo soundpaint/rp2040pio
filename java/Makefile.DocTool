@@ -31,10 +31,10 @@ PIO_DIR=$(JAVA_DIR)/org/soundpaint/rp2040pio
 JAVA_SRC=$(wildcard $(PIO_DIR)/doctool/RegistersDocsBuilder.java)
 JAVA_OBJ=$(patsubst $(JAVA_DIR)/%.java,$(BUILD_DIR)/%.class,$(JAVA_SRC))
 
-IMAGES_SRC_DIR=$(JAVA_DIR)/images
-IMAGES_OBJ_DIR=$(BUILD_DIR)/images
-IMAGES_SRC=$(wildcard $(IMAGES_SRC_DIR)/*.png)
-IMAGES_OBJ=$(patsubst $(IMAGES_SRC_DIR)/%,$(IMAGES_OBJ_DIR)/%,$(IMAGES_SRC))
+MEDIA_SRC_DIR=$(JAVA_DIR)/media
+MEDIA_OBJ_DIR=$(BUILD_DIR)/media
+MEDIA_SRC=$(wildcard $(MEDIA_SRC_DIR)/*.png $(MEDIA_SRC_DIR)/*.html)
+MEDIA_OBJ=$(patsubst $(MEDIA_SRC_DIR)/%,$(MEDIA_OBJ_DIR)/%,$(MEDIA_SRC))
 
 EXAMPLES_SRC_DIR=$(JAVA_DIR)/examples
 EXAMPLES_OBJ_DIR=$(BUILD_DIR)/examples
@@ -46,14 +46,14 @@ JAR_OBJ=$(JAR_DIR)/rp2040pio_doctool.jar
 all: obj jar
 
 obj: $(BUILD_DIR) $(JAVA_OBJ) \
-	$(IMAGES_OBJ_DIR) $(IMAGES_OBJ) \
+	$(MEDIA_OBJ_DIR) $(MEDIA_OBJ) \
 	$(EXAMPLES_OBJ_DIR) $(EXAMPLES_OBJ)
 
 $(BUILD_DIR):
 	mkdir -p $@
 
-$(IMAGES_OBJ_DIR):
-	echo BUILD_IMAGES_DIR=$(IMAGES_OBJ_DIR)
+$(MEDIA_OBJ_DIR):
+	echo BUILD_MEDIA_DIR=$(MEDIA_OBJ_DIR)
 	mkdir -p $@
 
 $(EXAMPLES_OBJ_DIR):
@@ -72,7 +72,7 @@ $(JAR_OBJ): $(JAR_DIR) $(JAVA_OBJ)
 	cd $(BUILD_DIR); \
 	jar -0cvfm ../$(JAR_OBJ) ../$(JAVA_DIR)/META-INF/MANIFEST.MF.DocTool .
 
-$(IMAGES_OBJ_DIR)/%.png: $(IMAGES_SRC_DIR)/%.png
+$(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%
 	cp -pf $< $@
 
 $(EXAMPLES_OBJ_DIR)/%.hex: $(EXAMPLES_SRC_DIR)/%.hex

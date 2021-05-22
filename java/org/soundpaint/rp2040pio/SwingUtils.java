@@ -38,7 +38,7 @@ public class SwingUtils
                                           final String label)
     throws IOException
   {
-    final String iconPath = "/images/" + iconFileName;
+    final String iconPath = "/media/" + iconFileName;
     final URL iconURL = SwingUtils.class.getResource(iconPath);
     if (iconURL != null) {
       return new ImageIcon(iconURL, label);
