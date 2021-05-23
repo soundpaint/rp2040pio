@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.PinState;
+import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -88,23 +89,26 @@ public class MonitorUtils
   }
 
   /**
-   * @param pioNum Either 0 or 1 for GPIO pins of PIO0 or PIO1 or
-   * &lt;code&gt;null&lt;/code&gt; for global GPIO pins.
+   * Global GPIO view of pins.
    */
-  public static String gpioDisplay(final SDK sdk, final Integer pioNum)
+  public static String gpioDisplay(final SDK sdk, final GPIOSDK.Override override)
     throws IOException
   {
-    final PinState[] pinStates;
-    final String pioNumId;
-    if (pioNum != null) {
-      Constants.checkPioNum(pioNum, "PIO index number");
-      final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-      pinStates = pioSdk.getPinStates();
-      pioNumId = String.format("%d", pioNum);
-    } else {
-      pinStates = sdk.getGPIOSDK().getPinStates();
-      pioNumId = "*";
-    }
+    final PinState[] pinStates = sdk.getGPIOSDK().getPinStates(override);
+    final String gpioPinBits = asBitArrayDisplay(pinStates);
+    return String.format("(pio%s:sm*) %s%n", "*", gpioPinBits);
+  }
+
+  /**
+   * @param pioNum Either 0 or 1 for GPIO pins of PIO0 or PIO1.
+   */
+  public static String gpioDisplay(final SDK sdk, final int pioNum)
+    throws IOException
+  {
+    Constants.checkPioNum(pioNum, "PIO index number");
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    final PinState[] pinStates = pioSdk.getPinStates();
+    final String pioNumId = String.format("%d", pioNum);
     final String gpioPinBits = asBitArrayDisplay(pinStates);
     return String.format("(pio%s:sm*) %s%n", pioNumId, gpioPinBits);
   }

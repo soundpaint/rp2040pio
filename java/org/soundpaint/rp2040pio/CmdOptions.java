@@ -621,15 +621,17 @@ public class CmdOptions
       new HashMap<Character, OptionDeclaration<?>>();
     for (final OptionDeclaration<?> declaration : declarations) {
       final Character shortName = declaration.getShortName();
-      if (shortName2Declaration.containsKey(shortName)) {
-        final OptionDeclaration<?> otherDeclaration =
-          shortName2Declaration.get(shortName);
-        final String message =
-          String.format("duplicate short name '%s' for options:%n%s%n%s",
-                        shortName, declaration, otherDeclaration);
-        throw new IllegalArgumentException(message);
+      if (shortName != null) {
+        if (shortName2Declaration.containsKey(shortName)) {
+          final OptionDeclaration<?> otherDeclaration =
+            shortName2Declaration.get(shortName);
+          final String message =
+            String.format("duplicate short name '%s' for options:%n%s%n%s",
+                          shortName, declaration, otherDeclaration);
+          throw new IllegalArgumentException(message);
+        }
+        shortName2Declaration.put(shortName, declaration);
       }
-      shortName2Declaration.put(shortName, declaration);
     }
   }
 

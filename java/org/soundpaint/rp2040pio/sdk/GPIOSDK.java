@@ -39,6 +39,11 @@ import org.soundpaint.rp2040pio.Registers;
  */
 public class GPIOSDK implements Constants
 {
+  public enum Override
+  {
+    BEFORE, AFTER
+  }
+
   private final Registers registers;
 
   public GPIOSDK(final Registers registers)
@@ -49,13 +54,13 @@ public class GPIOSDK implements Constants
     this.registers = registers;
   }
 
-  public void setFunction(final int pin, final GPIO_Function fn)
+  public void setFunction(final int gpioNum, final GPIO_Function fn)
     throws IOException
   {
-    Constants.checkGpioPin(pin, "GPIO pin number");
+    Constants.checkGpioPin(gpioNum, "GPIO pin number");
 
     final int padsGpioAddress =
-      GPIOPadsBank0Registers.getGPIOAddress(pin);
+      GPIOPadsBank0Registers.getGPIOAddress(gpioNum);
     final int padsValues = Bit.LOW.getValue() << PADS_BANK0_GPIO0_IE_LSB;
     final int padsWriteMask = PADS_BANK0_GPIO0_IE_BITS;
     registers.hwWriteMasked(padsGpioAddress, padsValues, padsWriteMask);
@@ -63,13 +68,66 @@ public class GPIOSDK implements Constants
     final GPIOIOBank0Registers.Regs ioBank0Reg =
       GPIOIOBank0Registers.Regs.GPIO0_CTRL;
     final int ioGpioAddress =
-      GPIOIOBank0Registers.getGPIOAddress(pin, ioBank0Reg);
+      GPIOIOBank0Registers.getGPIOAddress(gpioNum, ioBank0Reg);
     final int ioValues = fn.getValue() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
     final int ioWriteMask = IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS;
     registers.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
   }
 
-  public PinState[] getPinStates() throws IOException
+  public static Direction getDirectionFromStatus(final int statusValue,
+                                                 final Override override)
+  {
+    if (override == null) {
+      throw new NullPointerException("override");
+    }
+    final int gpioOe = override == Override.BEFORE ?
+      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
+      Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB :
+      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OETOPAD_BITS) >>>
+      Constants.IO_BANK0_GPIO0_STATUS_OETOPAD_LSB;
+    return Direction.fromValue(gpioOe);
+  }
+
+  public static Bit getOutputLevelFromStatus(final int statusValue,
+                                             final Override override)
+  {
+    if (override == null) {
+      throw new NullPointerException("override");
+    }
+    final int gpioOut = override == Override.BEFORE ?
+      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
+      Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB :
+      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_OUTTOPAD_BITS) >>>
+      Constants.IO_BANK0_GPIO0_STATUS_OUTTOPAD_LSB;
+    return Bit.fromValue(gpioOut);
+  }
+
+  public static Bit getInputLevelFromStatus(final int statusValue,
+                                            final Override override)
+  {
+    if (override == null) {
+      throw new NullPointerException("override");
+    }
+    final int gpioIn = override == Override.BEFORE ?
+      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
+      Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB :
+      (statusValue & Constants.IO_BANK0_GPIO0_STATUS_INTOPERI_BITS) >>>
+      Constants.IO_BANK0_GPIO0_STATUS_INTOPERI_LSB;
+    return Bit.fromValue(gpioIn);
+  }
+
+  public Bit getInputLevel(final int gpioNum, final Override override)
+    throws IOException
+  {
+    Constants.checkGpioPin(gpioNum, "GPIO pin number");
+    final int gpioStatusAddress =
+      GPIOIOBank0Registers.
+      getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
+    final int gpioStatusValue = registers.readAddress(gpioStatusAddress);
+    return getInputLevelFromStatus(gpioStatusValue, override);
+  }
+
+  public PinState[] getPinStates(final Override override) throws IOException
   {
     final PinState[] pinStates = new PinState[Constants.GPIO_NUM];
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
@@ -89,11 +147,7 @@ public class GPIOSDK implements Constants
           Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
         level = Bit.fromValue(gpioOutFromPeri);
       } else {
-        final int gpioInFromPad =
-          (gpioStatusValue &
-           Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
-          Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB;
-        level = Bit.fromValue(gpioInFromPad);
+        level = getInputLevelFromStatus(gpioStatusValue, override);
       }
       pinStates[gpioNum] = PinState.fromValues(direction, level);
     }

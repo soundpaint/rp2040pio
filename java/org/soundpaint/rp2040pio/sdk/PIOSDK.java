@@ -1187,15 +1187,7 @@ public class PIOSDK implements Constants
       if (direction == Direction.OUT) {
         level = Bit.fromValue((pins >>> gpioNum) & 0x1);
       } else {
-        final int gpioStatusAddress =
-          GPIOIOBank0Registers.
-          getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
-        final int gpioStatusValue = registers.readAddress(gpioStatusAddress);
-        final int gpioInFromPad =
-          (gpioStatusValue &
-           Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_BITS) >>>
-          Constants.IO_BANK0_GPIO0_STATUS_INFROMPAD_LSB;
-        level = Bit.fromValue(gpioInFromPad);
+        level = gpioSdk.getInputLevel(gpioNum, GPIOSDK.Override.AFTER);
       }
       pinStates[gpioNum] = PinState.fromValues(direction, level);
     }

@@ -26,16 +26,14 @@ package org.soundpaint.rp2040pio.monitor.commands;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.Direction;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
-import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.monitor.MonitorUtils;
+import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -49,6 +47,33 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  */
 public class Gpio extends Command
 {
+  private enum Policy
+  {
+    PASS("pass"), INVERT("invert"), LOW("low"), HIGH("high");
+
+    private final String displayValue;
+
+    private Policy(final String displayValue)
+    {
+      this.displayValue = displayValue;
+    }
+
+    public String getDisplayValue()
+    {
+      return displayValue;
+    }
+
+    public static Policy fromValue(final int value)
+    {
+      if ((value < 0) || (value >= POLICIES.length)) {
+        throw new IllegalArgumentException("value: " + value);
+      }
+      return POLICIES[value];
+    }
+  }
+
+  private static final Policy[] POLICIES = Policy.values();
+
   private static final String fullName = "gpio";
   private static final String singleLineDescription =
     "display or change status of GPIO pins";
@@ -69,10 +94,16 @@ public class Gpio extends Command
     "will apply the new pin status as external input for the specified%n" +
     "pin.%n" +
     "%n" +
-    "If none of options \"-i\", \"-s\", \"-c\", \"-e\", \"-d\" is%n" +
-    "specified, the current status of all GPIO pins will be displayed,%n" +
-    "depending on option \"-p\" for either of the PIOs or, if \"-p\" is%n" +
-    "not specified, for the GPIO after function selection.";
+    "If none of options \"-i\", \"-s\", \"-c\", \"-e\", \"-d\", nor any of%n" +
+    "the override options is specified, the current status of all GPIO pins%n" +
+    "will be displayed, depending on option \"-p\" for either of the PIOs or,%n" +
+    "if \"-p\" is not specified, for the GPIO after function selection." +
+    "%n" +
+    "One of options \"--override-irq\", \"--override-in\", \"--override-oe\", and%n" +
+    "\"--override-out\" may be specified together with one of policy options%n" +
+    "\"--pass\", \"--invert\", \"--low\", \"--high\" to change override policy%n" +
+    "of the specified GPIO pin.  If no policy option is specified, the current%n" +
+    "policy is displayed for the specified override target.";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", null,
@@ -98,6 +129,38 @@ public class Gpio extends Command
     CmdOptions.createFlagOption(false, 'd', "disable", CmdOptions.Flag.OFF,
                                 "disable GPIO output of the specified PIO, " +
                                 "setting direction to \"in\"");
+  private static final CmdOptions.FlagOptionDeclaration optBefore =
+    CmdOptions.createFlagOption(false, null, "before", CmdOptions.Flag.OFF,
+                                "when displaying global GPIO status, show " +
+                                "status before rather than after override");
+  private static final CmdOptions.FlagOptionDeclaration optOverrideIrq =
+    CmdOptions.createFlagOption(false, null, "override-irq", CmdOptions.Flag.OFF,
+                                "specify override policy for a GPIO pin " +
+                                "interrupt input");
+  private static final CmdOptions.FlagOptionDeclaration optOverrideIn =
+    CmdOptions.createFlagOption(false, null, "override-in", CmdOptions.Flag.OFF,
+                                "specify override policy for a GPIO pin " +
+                                "peripheral input");
+  private static final CmdOptions.FlagOptionDeclaration optOverrideOe =
+    CmdOptions.createFlagOption(false, null, "override-oe", CmdOptions.Flag.OFF,
+                                "specify override policy for a GPIO pin " +
+                                "output enable");
+  private static final CmdOptions.FlagOptionDeclaration optOverrideOut =
+    CmdOptions.createFlagOption(false, null, "override-out", CmdOptions.Flag.OFF,
+                                "specify override policy for a GPIO pin " +
+                                "output level");
+  private static final CmdOptions.FlagOptionDeclaration optPass =
+    CmdOptions.createFlagOption(false, null, "pass", CmdOptions.Flag.OFF,
+                                "select 'pass' override policy");
+  private static final CmdOptions.FlagOptionDeclaration optInvert =
+    CmdOptions.createFlagOption(false, null, "invert", CmdOptions.Flag.OFF,
+                                "select 'invert' override policy");
+  private static final CmdOptions.FlagOptionDeclaration optLow =
+    CmdOptions.createFlagOption(false, null, "low", CmdOptions.Flag.OFF,
+                                "select 'low' override policy");
+  private static final CmdOptions.FlagOptionDeclaration optHigh =
+    CmdOptions.createFlagOption(false, null, "high", CmdOptions.Flag.OFF,
+                                "select 'high' override policy");
 
   private final SDK sdk;
 
@@ -106,7 +169,9 @@ public class Gpio extends Command
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
           { optPio, optGpio,
-              optInit, optSet, optClear, optEnable, optDisable });
+              optInit, optSet, optClear, optEnable, optDisable, optBefore,
+              optOverrideIrq, optOverrideIn, optOverrideOe, optOverrideOut,
+              optPass, optInvert, optLow, optHigh });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -141,18 +206,50 @@ public class Gpio extends Command
       if (options.getValue(optInit) == CmdOptions.Flag.ON) manageOpCount++;
       if (options.getValue(optEnable) == CmdOptions.Flag.ON) manageOpCount++;
       if (options.getValue(optDisable) == CmdOptions.Flag.ON) manageOpCount++;
+      int overrideOpCount = 0;
+      if (options.getValue(optOverrideIrq) == CmdOptions.Flag.ON) overrideOpCount++;
+      if (options.getValue(optOverrideIn) == CmdOptions.Flag.ON) overrideOpCount++;
+      if (options.getValue(optOverrideOe) == CmdOptions.Flag.ON) overrideOpCount++;
+      if (options.getValue(optOverrideOut) == CmdOptions.Flag.ON) overrideOpCount++;
+      int overridePolicyCount = 0;
+      if (options.getValue(optPass) == CmdOptions.Flag.ON) overridePolicyCount++;
+      if (options.getValue(optInvert) == CmdOptions.Flag.ON) overridePolicyCount++;
+      if (options.getValue(optLow) == CmdOptions.Flag.ON) overridePolicyCount++;
+      if (options.getValue(optHigh) == CmdOptions.Flag.ON) overridePolicyCount++;
 
-      final int count = editOpCount + manageOpCount;
+      final int count = editOpCount + manageOpCount + overrideOpCount;
       if (count > 1) {
         throw new CmdOptions.
           ParseException("at most one of options \"-i\", \"-s\", \"-c\", " +
-                         "\"e\" and \"-d\" may be specified at the same time");
+                         "\"-e\", \"-d\" and the override options may be specified " +
+                         "at the same time");
       }
       if (count > 0) {
         if (!options.isDefined(optGpio)) {
           throw new CmdOptions.
             ParseException("option not specified: " + optGpio);
         }
+        if (options.getValue(optBefore) == CmdOptions.Flag.ON) {
+          throw new CmdOptions.
+            ParseException("option 'before' only valid when no operation is specified");
+        }
+      }
+      if (count == 0) {
+        if (options.isDefined(optGpio)) {
+          throw new CmdOptions.
+            ParseException("option may be specified only together with an operation: " +
+                           optGpio);
+        }
+      }
+      if (overridePolicyCount > 1) {
+        throw new CmdOptions.
+          ParseException("at most one of options \"--pass\", \"--invert\", " +
+                         "\"--low\", and \"--high\" may be specified " +
+                         "at the same time");
+      }
+      if (overrideOpCount < overridePolicyCount) {
+        throw new CmdOptions.
+          ParseException("override policy may not be specified without override option");
       }
       if (manageOpCount > 0) {
         if (!options.isDefined(optPio)) {
@@ -160,12 +257,25 @@ public class Gpio extends Command
             ParseException("option not specified: " + optPio);
         }
       }
+      if (overrideOpCount > 0) {
+        if (options.isDefined(optPio)) {
+          throw new CmdOptions.
+            ParseException("option must not be specified for overrides: " + optPio);
+        }
+      }
     }
   }
 
-  private void displayGpio(final Integer optPioValue) throws IOException
+  private void displayGpio(final Integer optPioValue, final boolean before)
+    throws IOException
   {
-    console.printf(MonitorUtils.gpioDisplay(sdk, optPioValue));
+    final GPIOSDK.Override override =
+      before ? GPIOSDK.Override.BEFORE : GPIOSDK.Override.AFTER;
+    final String gpioDisplay =
+      optPioValue != null ?
+      MonitorUtils.gpioDisplay(sdk, optPioValue) :
+      MonitorUtils.gpioDisplay(sdk, override);
+    console.printf(gpioDisplay);
   }
 
   private void initGpio(final int pioNum, final int gpioNum) throws IOException
@@ -240,6 +350,43 @@ public class Gpio extends Command
                    pioNum, gpioNum, pioNum);
   }
 
+  private void setOverride(final String target, final String policy, final int gpioNum,
+                           final int overridePolicy, final int lsb, final int policyBits)
+    throws IOException
+  {
+    final int address =
+      GPIOIOBank0Registers.getGPIOAddress(gpioNum,
+                                          GPIOIOBank0Registers.Regs.GPIO0_CTRL);
+    sdk.hwWriteMasked(address, overridePolicy << lsb, policyBits);
+    console.printf("(pio*:sm*) set %s override of GPIO pin %02x to policy '%s'%n",
+                   target, gpioNum, policy);
+  }
+
+  private void displayOverride(final String target, final int gpioNum,
+                               final int lsb, final int policyBits)
+    throws IOException
+  {
+    final int address =
+      GPIOIOBank0Registers.getGPIOAddress(gpioNum,
+                                          GPIOIOBank0Registers.Regs.GPIO0_CTRL);
+    final int ctrl = sdk.readAddress(address);
+    final Policy policy = Policy.fromValue((ctrl & policyBits) >>> lsb);
+    console.printf("(pio*:sm*) %s override of GPIO pin %02x policy is '%s'%n",
+                   target, gpioNum, policy.getDisplayValue());
+  }
+
+  private void displayOrSetOverride(final String target, final String policy,
+                                    final int gpioNum, final Integer overridePolicy,
+                                    final int lsb, final int policyBits)
+    throws IOException
+  {
+    if (policy != null) {
+      setOverride(target, policy, gpioNum, overridePolicy, lsb, policyBits);
+    } else {
+      displayOverride(target, gpioNum, lsb, policyBits);
+    }
+  }
+
   /**
    * Returns true if no error occurred and the command has been
    * executed.
@@ -252,7 +399,30 @@ public class Gpio extends Command
     final boolean set = options.getValue(optSet) == CmdOptions.Flag.ON;
     final boolean enable = options.getValue(optEnable) == CmdOptions.Flag.ON;
     final boolean disable = options.getValue(optDisable) == CmdOptions.Flag.ON;
-    if (init || clear || set | enable | disable) {
+    final boolean overrideIrq = options.getValue(optOverrideIrq) == CmdOptions.Flag.ON;
+    final boolean overrideIn = options.getValue(optOverrideIn) == CmdOptions.Flag.ON;
+    final boolean overrideOe = options.getValue(optOverrideOe) == CmdOptions.Flag.ON;
+    final boolean overrideOut = options.getValue(optOverrideOut) == CmdOptions.Flag.ON;
+    final String policy;
+    final Integer policyBits;
+    if (options.getValue(optHigh) == CmdOptions.Flag.ON) {
+      policy = "high";
+      policyBits = 0x3;
+    } else if (options.getValue(optLow) == CmdOptions.Flag.ON) {
+      policy = "low";
+      policyBits = 0x2;
+    } else if (options.getValue(optInvert) == CmdOptions.Flag.ON) {
+      policy = "invert";
+      policyBits = 0x1;
+    } else if (options.getValue(optPass) == CmdOptions.Flag.ON) {
+      policy = "pass";
+      policyBits = 0x0;
+    } else {
+      policy = null;
+      policyBits = null;
+    }
+    if (init || clear || set || enable || disable ||
+        overrideIrq || overrideIn || overrideOe || overrideOut) {
       final Integer pioNum = options.getValue(optPio);
       final Integer gpioNum = options.getValue(optGpio);
       if (init) {
@@ -265,9 +435,28 @@ public class Gpio extends Command
         enableGpio(pioNum, gpioNum);
       } else if (disable) {
         disableGpio(pioNum, gpioNum);
+      } else if (overrideIrq) {
+        displayOrSetOverride("IRQ ", policy, gpioNum, policyBits,
+                             Constants.IO_BANK0_GPIO0_CTRL_IRQOVER_LSB,
+                             Constants.IO_BANK0_GPIO0_CTRL_IRQOVER_BITS);
+      } else if (overrideIn) {
+        displayOrSetOverride("input", policy, gpioNum, policyBits,
+                             Constants.IO_BANK0_GPIO0_CTRL_INOVER_LSB,
+                             Constants.IO_BANK0_GPIO0_CTRL_INOVER_BITS);
+      } else if (overrideOe) {
+        displayOrSetOverride("output enable", policy, gpioNum, policyBits,
+                             Constants.IO_BANK0_GPIO0_CTRL_OEOVER_LSB,
+                             Constants.IO_BANK0_GPIO0_CTRL_OEOVER_BITS);
+      } else if (overrideOut) {
+        displayOrSetOverride("output", policy, gpioNum, policyBits,
+                             Constants.IO_BANK0_GPIO0_CTRL_OUTOVER_LSB,
+                             Constants.IO_BANK0_GPIO0_CTRL_OUTOVER_BITS);
+      } else {
+        throw new InternalError("unexpected case fall-through");
       }
     } else {
-      displayGpio(options.getValue(optPio));
+      final boolean before = options.getValue(optBefore) == CmdOptions.Flag.ON;
+      displayGpio(options.getValue(optPio), before);
     }
     return true;
   }

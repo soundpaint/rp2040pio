@@ -37,21 +37,17 @@ import javax.swing.JRadioButton;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.SwingUtils;
+import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class GPIOArrayPanel extends JPanel
 {
   private static final long serialVersionUID = -2035403823264488596L;
 
-  public enum Override
-  {
-    BEFORE, AFTER
-  }
-
   private final PrintStream console;
   private final SDK sdk;
   private final GPIOPanel[] panels;
-  private Override override;
+  private GPIOSDK.Override override;
 
   private GPIOArrayPanel()
   {
@@ -96,15 +92,16 @@ public class GPIOArrayPanel extends JPanel
   {
     final ButtonGroup bgOverride = new ButtonGroup();
     final JRadioButton rbBefore = new JRadioButton("Before");
-    rbBefore.addActionListener((event) -> overrideChanged(Override.BEFORE));
+    rbBefore.addActionListener((event) -> overrideChanged(GPIOSDK.Override.BEFORE));
     bgOverride.add(rbBefore);
     overrideSelection.add(rbBefore);
     overrideSelection.add(Box.createHorizontalStrut(10));
     final JRadioButton rbAfter = new JRadioButton("After");
     rbAfter.setSelected(true);
-    rbAfter.addActionListener((event) -> overrideChanged(Override.AFTER));
+    rbAfter.addActionListener((event) -> overrideChanged(GPIOSDK.Override.AFTER));
     bgOverride.add(rbAfter);
     overrideSelection.add(rbAfter);
+    override = GPIOSDK.Override.AFTER;
   }
 
   public void updateStatus() throws IOException
@@ -125,7 +122,7 @@ public class GPIOArrayPanel extends JPanel
     }
   }
 
-  private void overrideChanged(final Override override)
+  private void overrideChanged(final GPIOSDK.Override override)
   {
     this.override = override;
     checkedUpdate();
