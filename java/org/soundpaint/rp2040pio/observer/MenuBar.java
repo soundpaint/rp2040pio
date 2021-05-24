@@ -37,11 +37,11 @@ import javax.swing.JOptionPane;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.SwingUtils;
 
-public class MenuBar extends JMenuBar
+public class MenuBar<T extends GUIObserver> extends JMenuBar
 {
   private static final long serialVersionUID = -5235397033202919401L;
 
-  private final GUIObserver observer;
+  private final T observer;
   private final JDialog licenseDialog;
 
   private MenuBar()
@@ -49,20 +49,32 @@ public class MenuBar extends JMenuBar
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public MenuBar(final GUIObserver observer, final PrintStream console)
+  public MenuBar(final T observer, final PrintStream console)
   {
     Objects.requireNonNull(observer);
     this.observer = observer;
     final LicenseView licenseView = new LicenseView(console);
     licenseDialog = licenseView.createDialog(this, licenseView.getTitle());
     add(createFileMenu());
+    addAdditionalMenus(observer);
     add(createHelpMenu());
+  }
+
+  /**
+   * Override this method to add additional menus to appear between
+   * the file and the help menus that this class already provides.
+   * The default implementation of this method is empty.
+   */
+  protected void addAdditionalMenus(final T observer)
+  {
   }
 
   private JMenu createFileMenu()
   {
-    final JMenu file = new JMenu("File");
-    file.setMnemonic(KeyEvent.VK_F);
+    final JMenu fileMenu = new JMenu("File");
+    fileMenu.setMnemonic(KeyEvent.VK_F);
+
+    addAdditionalFileMenuItems(fileMenu, observer);
 
     final JMenuItem close =
       SwingUtils.createIconMenuItem("quit16x16.png", "Quit");
@@ -71,14 +83,24 @@ public class MenuBar extends JMenuBar
                                                 ActionEvent.ALT_MASK));
     close.getAccessibleContext().setAccessibleDescription("Quit");
     close.addActionListener((event) -> observer.close());
-    file.add(close);
-    return file;
+    fileMenu.add(close);
+    return fileMenu;
+  }
+
+  /**
+   * Override this method to add additional file menu items to appear
+   * before the "Quit" item in the file menu that this class provides.
+   * The default implementation of this method is empty.
+   */
+  protected void addAdditionalFileMenuItems(final JMenu fileMenue,
+                                            final T observer)
+  {
   }
 
   private JMenu createHelpMenu()
   {
-    final JMenu help = new JMenu("Help");
-    help.setMnemonic(KeyEvent.VK_H);
+    final JMenu helpMenu = new JMenu("Help");
+    helpMenu.setMnemonic(KeyEvent.VK_H);
 
     final String appTitle = observer.getAppTitle();
     final JMenuItem about = new JMenuItem(String.format("About %s…", appTitle));
@@ -94,7 +116,7 @@ public class MenuBar extends JMenuBar
         JOptionPane.showMessageDialog(this, message, "About",
                                       JOptionPane.INFORMATION_MESSAGE);
       });
-    help.add(about);
+    helpMenu.add(about);
 
     final JMenuItem license = new JMenuItem("License…");
     license.setMnemonic(KeyEvent.VK_L);
@@ -102,9 +124,9 @@ public class MenuBar extends JMenuBar
                                                   ActionEvent.ALT_MASK));
     license.getAccessibleContext().setAccessibleDescription("Copying License");
     license.addActionListener((event) -> licenseDialog.setVisible(true));
-    help.add(license);
+    helpMenu.add(license);
 
-    return help;
+    return helpMenu;
   }
 }
 

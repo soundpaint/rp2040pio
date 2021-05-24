@@ -41,7 +41,7 @@ public class FifoObserver extends GUIObserver
 
   private final FifoViewPanel fifoViewPanel;
 
-  public FifoObserver(final PrintStream console, final String[] argv)
+  private FifoObserver(final PrintStream console, final String[] argv)
     throws IOException
   {
     super(APP_TITLE, APP_FULL_NAME, console, argv);
@@ -52,7 +52,7 @@ public class FifoObserver extends GUIObserver
   }
 
   @Override
-  public void updateView()
+  protected void updateView()
   {
     fifoViewPanel.updateView();
   }

@@ -83,7 +83,6 @@ public class ViewPropertiesDialog extends JDialog
     }
   }
 
-  private final TimingDiagram timingDiagram;
   private final SignalsPropertiesPanel signalsPropertiesPanel;
 
   private ViewPropertiesDialog()
@@ -91,12 +90,11 @@ public class ViewPropertiesDialog extends JDialog
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ViewPropertiesDialog(final TimingDiagram timingDiagram)
+  public ViewPropertiesDialog(final Diagram diagram)
   {
-    super(timingDiagram, "View Properties");
-    Objects.requireNonNull(timingDiagram);
-    this.timingDiagram = timingDiagram;
-    signalsPropertiesPanel = new SignalsPropertiesPanel(timingDiagram);
+    super(diagram, "View Properties");
+    Objects.requireNonNull(diagram);
+    signalsPropertiesPanel = new SignalsPropertiesPanel(diagram);
     final JScrollPane scrollPane = new JScrollPane(signalsPropertiesPanel);
     final Border loweredEtched =
       BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);

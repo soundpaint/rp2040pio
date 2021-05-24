@@ -42,16 +42,16 @@ public class SignalsPropertiesPanel extends Box
 {
   private static final long serialVersionUID = -8921092912489516701L;
 
-  private final TimingDiagram timingDiagram;
+  private final Diagram diagram;
   private final List<DiagramConfig.Signal> signals;
   private final List<JTextField> signalLabels;
   private final List<JCheckBox> signalVisibilities;
 
-  public SignalsPropertiesPanel(final TimingDiagram timingDiagram)
+  public SignalsPropertiesPanel(final Diagram diagram)
   {
     super(BoxLayout.Y_AXIS);
-    Objects.requireNonNull(timingDiagram);
-    this.timingDiagram = timingDiagram;
+    Objects.requireNonNull(diagram);
+    this.diagram = diagram;
     signals = new ArrayList<DiagramConfig.Signal>();
     signalLabels = new ArrayList<JTextField>();
     signalVisibilities = new ArrayList<JCheckBox>();
@@ -64,9 +64,7 @@ public class SignalsPropertiesPanel extends Box
       signal.setVisible(signalVisibilities.get(index).isSelected());
       index++;
     }
-    timingDiagram.updateListOfSignals(signals);
-    timingDiagram.revalidate();
-    timingDiagram.repaint();
+    diagram.updateListOfSignals(signals);
   }
 
   private void swapSignals(final int index)
@@ -133,7 +131,7 @@ public class SignalsPropertiesPanel extends Box
 
   private void rebuildSignals()
   {
-    timingDiagram.fillInCurrentSignals(signals);
+    diagram.fillInCurrentSignals(signals);
     signalLabels.clear();
     signalVisibilities.clear();
     int index = 0;

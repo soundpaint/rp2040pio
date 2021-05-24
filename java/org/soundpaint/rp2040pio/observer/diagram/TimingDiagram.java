@@ -24,17 +24,12 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
-import java.awt.BorderLayout;
-import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.sdk.Program;
-import org.soundpaint.rp2040pio.sdk.ProgramParser;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -53,57 +48,41 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * SMx.SIGNAL_NAME=(SIGNAL|BIT)
  * GPIOx=(SIGNAL|BIT)
  */
-public class TimingDiagram extends JFrame implements Constants
+public class TimingDiagram implements Constants
 {
-  private static final long serialVersionUID = -8853990994193814003L;
-  private static final String APP_TITLE = "Diagram";
-  private static final String APP_FULL_NAME =
-    "Timing Diagram Creator Version 0.1";
-
-  public static String getAppTitle()
-  {
-    return APP_TITLE;
-  }
-
-  public static String getAppFullName()
-  {
-    return APP_FULL_NAME;
-  }
-
   private final PrintStream console;
   private final SDK sdk;
-  private final PIOSDK pioSdk;
-  private final ScriptDialog scriptDialog;
   private final DiagramConfig diagramConfig;
   private final DiagramPanel diagramPanel;
-  private Program program;
+  private final PIOSDK pioSdk;
 
   private TimingDiagram()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public TimingDiagram(final PrintStream console, final SDK sdk)
+  public TimingDiagram(final PrintStream console, final SDK sdk,
+                       final DiagramConfig diagramConfig,
+                       final DiagramPanel diagramPanel)
     throws IOException
   {
-    super("Timing Diagram");
     if (console == null) {
       throw new NullPointerException("console");
     }
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
+    if (diagramConfig == null) {
+      throw new NullPointerException("diagramConfig");
+    }
+    if (diagramPanel == null) {
+      throw new NullPointerException("diagramPanel");
+    }
     this.console = console;
     this.sdk = sdk;
+    this.diagramConfig = diagramConfig;
+    this.diagramPanel = diagramPanel;
     pioSdk = sdk.getPIO0SDK();
-    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    scriptDialog = new ScriptDialog(this, console);
-    setJMenuBar(new MenuBar(this, scriptDialog));
-    diagramConfig = new DiagramConfig();
-    getContentPane().add(diagramPanel = new DiagramPanel(diagramConfig));
-    getContentPane().
-      add(new ActionPanel(this, scriptDialog), BorderLayout.SOUTH);
-    program = null;
   }
 
   public DiagramConfig.Signal addSignal(final DiagramConfig.Signal signal)
@@ -173,13 +152,6 @@ public class TimingDiagram extends JFrame implements Constants
     return addSignal(null, address, displayFilter);
   }
 
-  public void packAndShow() throws IOException
-  {
-    diagramPanel.updatePreferredHeight();
-    pack();
-    setVisible(true);
-  }
-
   public void clear()
   {
     for (final DiagramConfig.Signal signal : diagramConfig) {
@@ -203,13 +175,6 @@ public class TimingDiagram extends JFrame implements Constants
       sdk.triggerCyclePhase1(true);
     }
     SwingUtilities.invokeLater(() -> diagramPanel.repaint());
-  }
-
-  public void close()
-  {
-    final WindowEvent closeEvent =
-      new WindowEvent(this, WindowEvent.WINDOW_CLOSING);
-    dispatchEvent(closeEvent);
   }
 
   public void fillInCurrentSignals(final List<DiagramConfig.Signal> signals)

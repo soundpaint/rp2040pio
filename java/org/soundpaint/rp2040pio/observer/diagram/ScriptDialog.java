@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.BorderLayout;
+import java.awt.Frame;
 import java.awt.event.KeyEvent;
 import java.io.PrintStream;
 import java.util.Objects;
@@ -72,10 +73,9 @@ public class ScriptDialog extends JDialog
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ScriptDialog(final TimingDiagram timingDiagram,
-                      final PrintStream console)
+  public ScriptDialog(final Frame owner, final PrintStream console)
   {
-    super(timingDiagram, "Load");
+    super(owner, "Load");
     Objects.requireNonNull(console);
     scriptSelectionPanel = new ScriptSelectionPanel(console);
     getContentPane().add(scriptSelectionPanel);

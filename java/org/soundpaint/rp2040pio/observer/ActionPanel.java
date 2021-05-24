@@ -31,20 +31,30 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 
-public class ActionPanel extends Box
+public class ActionPanel<T extends GUIObserver> extends Box
 {
   private static final long serialVersionUID = -3674776627922144842L;
 
-  public ActionPanel(final GUIObserver observer)
+  public ActionPanel(final T observer)
   {
     super(BoxLayout.X_AXIS);
     Objects.requireNonNull(observer);
     setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    addAdditionalButtons(observer);
     add(Box.createHorizontalGlue());
     final JButton btClose = new JButton("Close");
     btClose.setMnemonic(KeyEvent.VK_C);
     btClose.addActionListener((event) -> { observer.close(); });
     add(btClose);
+  }
+
+  /**
+   * Override this method to add additional buttons to appear to the
+   * left side of the close button.  The default implementation of
+   * this method is empty.
+   */
+  protected void addAdditionalButtons(final T observer)
+  {
   }
 }
 

@@ -52,7 +52,7 @@ public class GPIOObserver extends GUIObserver
   }
 
   @Override
-  public void updateView()
+  protected void updateView()
   {
     gpioViewPanel.updateView();
   }

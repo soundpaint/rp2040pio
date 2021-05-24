@@ -26,18 +26,13 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
-import org.soundpaint.rp2040pio.CmdOptions;
-import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.Emulator;
+import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
-import org.soundpaint.rp2040pio.RegisterClient;
-import org.soundpaint.rp2040pio.Registers;
-import org.soundpaint.rp2040pio.sdk.LocalRegisters;
+import org.soundpaint.rp2040pio.observer.GUIObserver;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -46,116 +41,57 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * configuration is hard-wired in order to make it running out of the
  * box.
  */
-public class Diagram
+public class Diagram extends GUIObserver
 {
-  private static final CmdOptions.FlagOptionDeclaration optVersion =
-    CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
-                                "display version information and exit");
-  private static final CmdOptions.FlagOptionDeclaration optHelp =
-    CmdOptions.createFlagOption(false, 'h', "help", CmdOptions.Flag.OFF,
-                                "display this help text and exit");
-  private static final CmdOptions.IntegerOptionDeclaration optPort =
-    CmdOptions.createIntegerOption("PORT", false, 'p', "port",
-                                   Constants.
-                                   REGISTER_SERVER_DEFAULT_PORT_NUMBER,
-                                   "use PORT as server port number");
-  private static final List<CmdOptions.OptionDeclaration<?>>
-    optionDeclarations =
-    Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
-                  { optVersion, optHelp, optPort });
-  private final static boolean RUN_REMOTELY = true;
+  private static final long serialVersionUID = -2547071637413332775L;
 
-  private final PrintStream console;
-  private final CmdOptions options;
-  private final SDK sdk;
-  private final TimingDiagram diagram;
+  private static final String APP_TITLE = "Diagram Creator";
+  private static final String APP_FULL_NAME =
+    "Timing Diagram Creator Version 0.1";
 
-  private Diagram()
-  {
-    throw new UnsupportedOperationException("unsupported empty constructor");
-  }
+  private final DiagramConfig diagramConfig;
+  private final TimingDiagram diagramData;
+  private final DiagramPanel diagramPanel;
+  private final ScriptDialog scriptDialog;
 
-  public Diagram(final PrintStream console, final String[] argv)
+  private Diagram(final PrintStream console, final String[] argv)
     throws IOException
   {
-    if (console == null) {
-      throw new NullPointerException("console");
-    }
-    this.console = console;
-    options = parseArgs(argv);
-    printAbout();
-    final Registers registers;
-    if (RUN_REMOTELY) {
-      // connect to emulator running in another JVM
-      registers = connect();
-    } else {
-      // create and connect to emulator running within this JVM
-      final Emulator emulator = new Emulator(console);
-      registers = new LocalRegisters(emulator);
-    }
-    sdk = new SDK(console, registers);
-    diagram = new TimingDiagram(console, sdk);
-    configureDiagram();
+    super(APP_TITLE, APP_FULL_NAME, console, argv);
+    diagramConfig = new DiagramConfig();
+    diagramPanel = new DiagramPanel(diagramConfig);
+    diagramData =
+      new TimingDiagram(console, getSDK(), diagramConfig, diagramPanel);
+    configureDiagramData();
+    add(diagramPanel);
+    diagramPanel.updatePreferredHeight();
+    scriptDialog = new ScriptDialog(this, console);
+    pack();
+    setVisible(true);
+    startUpdating();
   }
 
-  private CmdOptions parseArgs(final String argv[])
+  @Override
+  protected ActionPanel createActionPanel(final PrintStream console)
   {
-    final CmdOptions options;
-    try {
-      options = new CmdOptions(TimingDiagram.getAppTitle(),
-                               TimingDiagram.getAppFullName(),
-                               null, optionDeclarations);
-      options.parse(argv);
-      checkValidity(options);
-    } catch (final CmdOptions.ParseException e) {
-      console.println(e.getMessage());
-      System.exit(-1);
-      throw new InternalError();
-    }
-    if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
-      console.println(TimingDiagram.getAppFullName());
-      console.println(Constants.getEmulatorAbout());
-      System.exit(0);
-      throw new InternalError();
-    }
-    if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
-      console.println(options.getFullInfo());
-      System.exit(0);
-      throw new InternalError();
-    }
-    return options;
+    return new ActionPanel(this);
   }
 
-  private void checkValidity(final CmdOptions options)
-    throws CmdOptions.ParseException
+  @Override
+  protected MenuBar createMenuBar(final PrintStream console)
   {
-    final int port = options.getValue(optPort);
-    if ((port < 0) || (port > 65535)) {
-      throw new CmdOptions.
-        ParseException("PORT must be in the range 0…65535");
-    }
+    return new MenuBar(this, console);
   }
 
-  private void printAbout()
+  @Override
+  protected void updateView()
   {
-    console.println(TimingDiagram.getAppFullName());
-    console.println(Constants.getEmulatorAbout());
+    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
   }
 
-  private Registers connect()
+  public void showScriptDialog()
   {
-    final int port = options.getValue(optPort);
-    try {
-      console.printf("connecting to emulation server at port %d…%n", port);
-      return new RegisterClient(console, null, port);
-    } catch (final IOException e) {
-      console.println("failed to connect to emulation server: " +
-                      e.getMessage());
-      console.println("check that emulation server runs at port address " +
-                      port);
-      System.exit(-1);
-      throw new InternalError();
-    }
+    scriptDialog.setVisible(true);
   }
 
   private static Supplier<Boolean> createDelayFilter(final SDK sdk,
@@ -178,13 +114,13 @@ public class Diagram
     return displayFilter;
   }
 
-  private void configureDiagram() throws IOException
+  private void configureDiagramData() throws IOException
   {
-    diagram.addSignal(DiagramConfig.createClockSignal("clock")).
+    diagramData.addSignal(DiagramConfig.createClockSignal("clock")).
       setVisible(true);
 
-    diagram.addSignal(PIOEmuRegisters.
-                      getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0).
+    diagramData.addSignal(PIOEmuRegisters.
+                          getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0).
       setVisible(true);
     final GPIOIOBank0Registers.Regs regGpio0Status =
       GPIOIOBank0Registers.Regs.GPIO0_STATUS;
@@ -193,14 +129,15 @@ public class Diagram
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
       final DiagramConfig.Signal signal =
-        diagram.addSignal(label, address, 8, 8);
+        diagramData.addSignal(label, address, 8, 8);
       if (gpioNum == 0) signal.setVisible(true);
     }
+    final SDK sdk = getSDK();
     final int addrSm0Pc =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
-    diagram.addSignal("SM0_PC", addrSm0Pc);
-    diagram.addSignal("SM0_PC (hidden delay)",
-                      addrSm0Pc, createDelayFilter(sdk, 0, 0)).
+    diagramData.addSignal("SM0_PC", addrSm0Pc);
+    diagramData.addSignal("SM0_PC (hidden delay)",
+                          addrSm0Pc, createDelayFilter(sdk, 0, 0)).
       setVisible(true);
     final int instrAddr =
       PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
@@ -208,14 +145,23 @@ public class Diagram
       DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR",
                                             true, null);
-    diagram.addSignal(instr1);
+    diagramData.addSignal(instr1);
     final DiagramConfig.Signal instr2 =
       DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR (hidden delay)",
                                             true, createDelayFilter(sdk, 0, 0));
     instr2.setVisible(true);
-    diagram.addSignal(instr2);
-    diagram.packAndShow();
+    diagramData.addSignal(instr2);
+  }
+
+  public void clear()
+  {
+    diagramData.clear();
+  }
+
+  public void createSnapShot(final int stopCycle) throws IOException
+  {
+    diagramData.createSnapShot(stopCycle);
   }
 
   public static void main(final String argv[])
@@ -226,6 +172,17 @@ public class Diagram
     } catch (final IOException e) {
       console.println(e.getMessage());
     }
+  }
+
+  public void fillInCurrentSignals(final List<DiagramConfig.Signal> signals)
+  {
+    diagramData.fillInCurrentSignals(signals);
+  }
+
+  public void updateListOfSignals(final List<DiagramConfig.Signal> signals)
+  {
+    diagramData.updateListOfSignals(signals);
+    updateView();
   }
 }
 

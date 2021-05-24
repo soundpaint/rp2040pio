@@ -25,12 +25,9 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
-import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.JButton;
@@ -38,63 +35,55 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 
-public class ActionPanel extends Box
+public class ActionPanel
+  extends org.soundpaint.rp2040pio.observer.ActionPanel<Diagram>
 {
   private static final long serialVersionUID = -4136799373128393432L;
   private static final int defaultCycles = 20;
 
-  private final JLabel lbCycles;
-  private final SpinnerModel cyclesModel;
-  private final JSpinner spCycles;
-  private final JButton btEmulate;
-  private final JButton btScript;
-  private final JButton btClose;
-
-  public ActionPanel(final TimingDiagram timingDiagram,
-                     final ScriptDialog scriptDialog)
+  public ActionPanel(final Diagram diagram)
   {
-    super(BoxLayout.X_AXIS);
-    setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    super(diagram);
+  }
 
-    lbCycles = new JLabel("Cycles");
+  @Override
+  protected void addAdditionalButtons(final Diagram diagram)
+  {
+    final JLabel lbCycles = new JLabel("Cycles");
     lbCycles.setDisplayedMnemonic(KeyEvent.VK_Y);
     add(lbCycles);
     add(Box.createHorizontalStrut(5));
-    cyclesModel = new SpinnerNumberModel(defaultCycles, 1, 1000, 1);
-    spCycles = new JSpinner(cyclesModel);
+    final SpinnerModel cyclesModel =
+      new SpinnerNumberModel(defaultCycles, 1, 1000, 1);
+    final JSpinner spCycles = new JSpinner(cyclesModel);
     final int spCyclesHeight = spCycles.getPreferredSize().height;
     spCycles.setMaximumSize(new Dimension(100, spCyclesHeight));
     lbCycles.setLabelFor(spCycles);
     add(spCycles);
     add(Box.createHorizontalStrut(5));
 
-    btEmulate = new JButton("Emulate");
+    final JButton btEmulate = new JButton("Emulate");
     btEmulate.setMnemonic(KeyEvent.VK_E);
     btEmulate.addActionListener((event) -> {
         final int cycles = (Integer)spCycles.getValue();
         try {
-          timingDiagram.createSnapShot(cycles);
+          diagram.createSnapShot(cycles);
         } catch (final IOException e) {
           final String title = "Failed Creating Snapshot";
           final String message = "I/O Error: " + e.getMessage();
           JOptionPane.showMessageDialog(this, message, title,
                                         JOptionPane.WARNING_MESSAGE);
-          timingDiagram.clear();
+          diagram.clear();
         }
       });
     add(btEmulate);
     add(Box.createHorizontalStrut(5));
 
-    btScript = new JButton("Load…");
+    final JButton btScript = new JButton("Load…");
     btScript.setMnemonic(KeyEvent.VK_L);
-    btScript.addActionListener((event) -> { scriptDialog.setVisible(true); });
+    btScript.addActionListener((event) -> { diagram.showScriptDialog(); });
     add(btScript);
     add(Box.createHorizontalGlue());
-
-    btClose = new JButton("Close");
-    btClose.setMnemonic(KeyEvent.VK_C);
-    btClose.addActionListener((event) -> { timingDiagram.close(); });
-    add(btClose);
   }
 }
 

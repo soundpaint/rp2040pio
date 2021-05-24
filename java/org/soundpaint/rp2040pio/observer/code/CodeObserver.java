@@ -41,7 +41,7 @@ public class CodeObserver extends GUIObserver
 
   private final CodeViewPanel codeViewPanel;
 
-  public CodeObserver(final PrintStream console, final String[] argv)
+  private CodeObserver(final PrintStream console, final String[] argv)
     throws IOException
   {
     super(APP_TITLE, APP_FULL_NAME, console, argv);
@@ -52,7 +52,7 @@ public class CodeObserver extends GUIObserver
   }
 
   @Override
-  public void updateView()
+  protected void updateView()
   {
     codeViewPanel.updateView();
   }

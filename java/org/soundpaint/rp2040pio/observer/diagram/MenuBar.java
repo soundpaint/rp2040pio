@@ -26,60 +26,41 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.util.Objects;
+import java.io.PrintStream;
 import javax.swing.KeyStroke;
 import javax.swing.JMenu;
-import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.SwingUtils;
 
-public class MenuBar extends JMenuBar
+public class MenuBar
+  extends org.soundpaint.rp2040pio.observer.MenuBar<Diagram>
 {
   private static final long serialVersionUID = -5984414867480448181L;
 
-  private final TimingDiagram timingDiagram;
   private final ViewPropertiesDialog viewPropertiesDialog;
 
-  private MenuBar()
+  public MenuBar(final Diagram diagram, final PrintStream console)
   {
-    throw new UnsupportedOperationException("unsupported default constructor");
+    super(diagram, console);
+    viewPropertiesDialog = new ViewPropertiesDialog(diagram);
   }
 
-  public MenuBar(final TimingDiagram timingDiagram,
-                 final ScriptDialog scriptDialog)
+  @Override
+  protected void addAdditionalFileMenuItems(final JMenu fileMenu,
+                                            final Diagram diagram)
   {
-    Objects.requireNonNull(timingDiagram);
-    this.timingDiagram = timingDiagram;
-    add(createFileMenu(scriptDialog));
-    add(createViewMenu());
-    add(createHelpMenu());
-    viewPropertiesDialog = new ViewPropertiesDialog(timingDiagram);
-  }
-
-  private JMenu createFileMenu(final ScriptDialog scriptDialog)
-  {
-    final JMenu file = new JMenu("File");
-    file.setMnemonic(KeyEvent.VK_F);
-
     final JMenuItem script = new JMenuItem("Load…");
     script.setMnemonic(KeyEvent.VK_L);
     script.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,
                                                  ActionEvent.ALT_MASK));
     script.getAccessibleContext().setAccessibleDescription("Run load script");
-    script.addActionListener((event) -> { scriptDialog.setVisible(true); });
-    file.add(script);
+    script.addActionListener((event) -> diagram.showScriptDialog());
+    fileMenu.add(script);
+  }
 
-    final JMenuItem close =
-      SwingUtils.createIconMenuItem("quit16x16.png", "Quit");
-    close.setMnemonic(KeyEvent.VK_C);
-    close.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,
-                                                ActionEvent.ALT_MASK));
-    close.getAccessibleContext().setAccessibleDescription("Quit");
-    close.addActionListener((event) -> { timingDiagram.close(); });
-    file.add(close);
-    return file;
+  @Override
+  protected void addAdditionalMenus(final Diagram diagram)
+  {
+    add(createViewMenu());
   }
 
   private JMenu createViewMenu()
@@ -96,30 +77,6 @@ public class MenuBar extends JMenuBar
     properties.addActionListener((event) -> { viewPropertiesDialog.open(); });
     view.add(properties);
     return view;
-  }
-
-  private JMenu createHelpMenu()
-  {
-    final JMenu help = new JMenu("Help");
-    help.setMnemonic(KeyEvent.VK_H);
-
-    final String appTitle = TimingDiagram.getAppTitle();
-    final JMenuItem about = new JMenuItem(String.format("About %s…", appTitle));
-    about.setMnemonic(KeyEvent.VK_A);
-    about.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A,
-                                                ActionEvent.ALT_MASK));
-    about.getAccessibleContext().setAccessibleDescription("About this app");
-    about.addActionListener((event) -> {
-        final String message =
-          String.format("%s%n%s for%n%s",
-                        TimingDiagram.getAppTitle(),
-                        TimingDiagram.getAppFullName(),
-                        Constants.getEmulatorAbout());
-        JOptionPane.showMessageDialog(this, message, "About",
-                                      JOptionPane.INFORMATION_MESSAGE);
-      });
-    help.add(about);
-    return help;
   }
 }
 

@@ -32,6 +32,7 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import javax.swing.JFrame;
+import javax.swing.JMenuBar;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
@@ -99,11 +100,33 @@ public abstract class GUIObserver extends JFrame
       appFullName != null ? appFullName : DEFAULT_APP_FULL_NAME;
     this.console = console;
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    add(new ActionPanel(this), BorderLayout.SOUTH);
-    setJMenuBar(new MenuBar(this, console));
+    add(createActionPanel(console), BorderLayout.SOUTH);
+    setJMenuBar(createMenuBar(console));
     options = parseArgs(argv);
     printAbout();
     sdk = new SDK(console, createRegisters("GUI event thread"));
+  }
+
+  /**
+   * Override this method to provide a custom action panel.  The
+   * default implementation of this method uses the default
+   * ActionPanel implementation in the java package of this class.
+   */
+  protected ActionPanel<? extends GUIObserver>
+    createActionPanel(final PrintStream console)
+  {
+    return new ActionPanel<GUIObserver>(this);
+  }
+
+  /**
+   * Override this method to provide a custom menu bar.  The default
+   * implementation of this method uses the default MenuBar
+   * implementation in the java package of this class.
+   */
+  protected MenuBar<? extends GUIObserver>
+    createMenuBar(final PrintStream console)
+  {
+    return new MenuBar<GUIObserver>(this, console);
   }
 
   public String getAppTitle()
@@ -126,11 +149,32 @@ public abstract class GUIObserver extends JFrame
     return options.getValue(optPort);
   }
 
+  /**
+   * Override this method to add additional option declarations.  The
+   * default implementation returns &lt;code&gt;null&lt;/code&gt;.
+   */
+  protected List<CmdOptions.OptionDeclaration<?>>
+    getAdditionalOptionDeclarations()
+  {
+    return null;
+  }
+
+  private List<CmdOptions.OptionDeclaration<?>> collectOptionDeclarations()
+  {
+    final List<CmdOptions.OptionDeclaration<?>> additionalOptionDeclarations =
+      getAdditionalOptionDeclarations();
+    if (additionalOptionDeclarations != null) {
+      optionDeclarations.addAll(additionalOptionDeclarations);
+    }
+    return optionDeclarations;
+  }
+
   private CmdOptions parseArgs(final String argv[])
   {
     final CmdOptions options;
     try {
-      options = new CmdOptions(appTitle, appFullName, null, optionDeclarations);
+      options = new CmdOptions(appTitle, appFullName, null,
+                               collectOptionDeclarations());
       options.parse(argv);
       checkValidity0(options);
     } catch (final CmdOptions.ParseException e) {
@@ -156,13 +200,12 @@ public abstract class GUIObserver extends JFrame
    * Override this method to add additional checks for command-line
    * option values.  If an error is spotted, the code should throw a
    * &lt;code&gt;CmdOptions.ParseException&lt;/code&gt; with detailed
-   * error reason as message text.  The default implementation does
-   * nothing.
+   * error reason as message text.  The default implementation is
+   * empty.
    */
-  public void checkValidity(final CmdOptions options)
+  protected void checkValidity(final CmdOptions options)
     throws CmdOptions.ParseException
   {
-    // empty default implementation
   }
 
   private void checkValidity0(final CmdOptions options)
