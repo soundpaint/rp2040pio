@@ -31,13 +31,14 @@ public interface Signal
   boolean isClock();
   boolean isBinary();
   boolean isValued();
+  int size();
   int notChangedSince();
   String getRenderedValue();
   String getPreviousRenderedValue();
   String getToolTipText();
   String getPreviousToolTipText();
   void record();
-  void rewind();
+  void rewind(final int index);
   void setVisible(final boolean visible);
   boolean getVisible();
 }

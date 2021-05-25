@@ -64,7 +64,7 @@ public class SignalsPropertiesPanel extends Box
       signal.setVisible(signalVisibilities.get(index).isSelected());
       index++;
     }
-    diagram.updateListOfSignals(signals);
+    diagram.pushSignals(signals);
   }
 
   private void swapSignals(final int index)
@@ -131,7 +131,7 @@ public class SignalsPropertiesPanel extends Box
 
   private void rebuildSignals()
   {
-    diagram.fillInCurrentSignals(signals);
+    diagram.pullSignals(signals);
     signalLabels.clear();
     signalVisibilities.clear();
     int index = 0;

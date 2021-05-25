@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.function.Supplier;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
@@ -71,8 +72,8 @@ public class Diagram extends GUIObserver
     model = new DiagramModel(console, getSDK());
     view = new DiagramView(model);
     configureModel();
-    view.updatePreferredHeight();
-    add(view);
+    view.updatePreferredSize();
+    add(new JScrollPane(view));
     scriptDialog = new ScriptDialog(this, console);
     pack();
     setVisible(true);
@@ -91,11 +92,17 @@ public class Diagram extends GUIObserver
     return new MenuBar(this, console);
   }
 
+  private void modelChanged()
+  {
+    view.updatePreferredSize();
+    SwingUtilities.invokeLater(() -> view.repaint());
+  }
+
   @Override
   protected void updateView()
   {
     model.checkForUpdate();
-    SwingUtilities.invokeLater(() -> view.repaint());
+    modelChanged();
   }
 
   public void showScriptDialog()
@@ -162,14 +169,14 @@ public class Diagram extends GUIObserver
 
   public void clear()
   {
-    model.clear();
-    SwingUtilities.invokeLater(() -> view.repaint());
+    model.resetSignals();
+    modelChanged();
   }
 
   public void applyCycles(final int count) throws IOException
   {
     model.applyCycles(count);
-    SwingUtilities.invokeLater(() -> view.repaint());
+    modelChanged();
   }
 
   public static void main(final String argv[])
@@ -182,16 +189,16 @@ public class Diagram extends GUIObserver
     }
   }
 
-  public void fillInCurrentSignals(final List<Signal> signals)
+  public void pullSignals(final List<Signal> signals)
   {
-    model.fillInCurrentSignals(signals);
-    SwingUtilities.invokeLater(() -> view.repaint());
+    model.pullSignals(signals);
+    modelChanged();
   }
 
-  public void updateListOfSignals(final List<Signal> signals)
+  public void pushSignals(final List<Signal> signals)
   {
-    model.updateListOfSignals(signals);
-    SwingUtilities.invokeLater(() -> view.repaint());
+    model.pushSignals(signals);
+    modelChanged();
   }
 }
 

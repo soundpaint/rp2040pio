@@ -49,22 +49,13 @@ public class SignalFactory
     }
 
     @Override
-    public void reset() {}
-
-    @Override
-    public void record() {}
+    public void record()
+    {
+      record(null, false);
+    }
 
     @Override
     public boolean isClock() { return true; }
-
-    @Override
-    public int notChangedSince() { return 0; }
-
-    @Override
-    protected String renderValue(final Void value) { return null; }
-
-    @Override
-    protected String toolTipTextForValue(final Void value) { return null; }
   }
 
   public static class ValuedSignal<T> extends AbstractSignal<T>

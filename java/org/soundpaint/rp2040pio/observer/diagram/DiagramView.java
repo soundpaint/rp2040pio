@@ -112,6 +112,7 @@ public class DiagramView extends JPanel
 
   private final DiagramModel model;
   private final List<ToolTip> toolTips;
+  private final Dimension preferredSize;
 
   private DiagramView()
   {
@@ -126,6 +127,8 @@ public class DiagramView extends JPanel
     this.model = model;
     toolTips = new ArrayList<ToolTip>();
     setToolTipText("");
+    preferredSize = new Dimension();
+    updatePreferredSize();
   }
 
   @Override
@@ -152,7 +155,7 @@ public class DiagramView extends JPanel
     return null;
   }
 
-  public void updatePreferredHeight()
+  public void updatePreferredSize()
   {
     double y = TOP_MARGIN;
     for (final Signal signal : model) {
@@ -161,7 +164,16 @@ public class DiagramView extends JPanel
       }
     }
     final int preferredHeight = (int)(y + BOTTOM_MARGIN);
-    setPreferredSize(new Dimension(640, preferredHeight));
+    final int preferredWidth =
+      (int)Math.round(LEFT_MARGIN + CLOCK_CYCLE_WIDTH * model.getSignalSize());
+    preferredSize.setSize(preferredWidth, preferredHeight);
+    revalidate();
+  }
+
+  @Override
+  public Dimension getPreferredSize()
+  {
+    return preferredSize;
   }
 
   private void paintGridLine(final Graphics2D g, final double x,
@@ -182,9 +194,9 @@ public class DiagramView extends JPanel
 
   private void paintClockCycle(final JPanel panel, final Graphics2D g,
                                final double xStart, final double yBottom,
-                               final boolean rightBorder)
+                               final SignalFactory.ClockSignal signal)
   {
-    if (rightBorder) return;
+    if (!signal.update()) return;
     final double xFallingEdge = xStart + 0.5 * CLOCK_CYCLE_WIDTH;
     final double xStop = xStart + CLOCK_CYCLE_WIDTH;
     final double yTop = yBottom - BIT_SIGNAL_HEIGHT;
@@ -197,10 +209,8 @@ public class DiagramView extends JPanel
 
   private void paintBitSignalCycle(final JPanel panel, final Graphics2D g,
                                    final double xStart, final double yBottom,
-                                   final SignalFactory.BitSignal signal,
-                                   final boolean rightBorder)
+                                   final SignalFactory.BitSignal signal)
   {
-    if (rightBorder) return;
     if (!signal.update()) return;
     final double y =
       yBottom - (signal.asBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
@@ -244,8 +254,7 @@ public class DiagramView extends JPanel
   private void paintValuedSignalCycle(final JPanel panel, final Graphics2D g,
                                       final double xStart, final double yBottom,
                                       final SignalFactory.ValuedSignal<?> signal,
-                                      final boolean leftBorder,
-                                      final boolean rightBorder)
+                                      final boolean leftBorder)
   {
     // draw only previous event if completed, since current event may
     // be still ongoing such that centered display of text is not yet
@@ -262,7 +271,6 @@ public class DiagramView extends JPanel
     }
 
     // draw lines for current value
-    if (rightBorder) return;
     final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + CLOCK_CYCLE_WIDTH;
@@ -288,27 +296,24 @@ public class DiagramView extends JPanel
 
   private void paintSignalCycle(final JPanel panel, final Graphics2D g,
                                 final double xStart, final double yBottom,
-                                final Signal signal,
-                                final boolean leftBorder,
-                                final boolean rightBorder)
+                                final Signal signal, final boolean leftBorder)
   {
     if (signal instanceof SignalFactory.ClockSignal) {
-      paintClockCycle(panel, g, xStart, yBottom, rightBorder);
+      paintClockCycle(panel, g, xStart, yBottom,
+                      (SignalFactory.ClockSignal)signal);
     } else if (signal instanceof SignalFactory.BitSignal) {
       paintBitSignalCycle(panel, g, xStart, yBottom,
-                          (SignalFactory.BitSignal)signal, rightBorder);
+                          (SignalFactory.BitSignal)signal);
     } else if (signal instanceof SignalFactory.ValuedSignal<?>) {
       paintValuedSignalCycle(panel, g, xStart, yBottom,
-                             (SignalFactory.ValuedSignal<?>)signal,
-                             leftBorder, rightBorder);
+                             (SignalFactory.ValuedSignal<?>)signal, leftBorder);
     } else {
       throw new InternalError("unexpected signal type: " + signal);
     }
   }
 
   private void paintSignalsCycle(final JPanel panel, final Graphics2D g,
-                                 final double xStart, final boolean leftBorder,
-                                 final boolean rightBorder)
+                                 final double xStart, final boolean leftBorder)
   {
     g.setColor(Color.BLACK);
     g.setStroke(PLAIN_STROKE);
@@ -317,8 +322,7 @@ public class DiagramView extends JPanel
       if (signal.getVisible()) {
         final double height =
           signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-        paintSignalCycle(panel, g, xStart, y += height, signal,
-                         leftBorder, rightBorder);
+        paintSignalCycle(panel, g, xStart, y += height, signal, leftBorder);
       }
     }
   }
@@ -353,7 +357,7 @@ public class DiagramView extends JPanel
   {
     toolTips.clear();
     for (final Signal signal : model) {
-      signal.rewind();
+      signal.rewind(0);
     }
     g.setStroke(PLAIN_STROKE);
     paintLabels(panel, g);
@@ -362,9 +366,8 @@ public class DiagramView extends JPanel
     for (int cycle = 0; cycle < stopCycle; cycle++) {
       final double x = LEFT_MARGIN + cycle * CLOCK_CYCLE_WIDTH;
       final boolean leftBorder = cycle == 0;
-      final boolean rightBorder = cycle + 1 == stopCycle;
       paintGridLine(g, x, height);
-      paintSignalsCycle(panel, g, x, leftBorder, rightBorder);
+      paintSignalsCycle(panel, g, x, leftBorder);
     }
     paintGridLine(g, LEFT_MARGIN + stopCycle * CLOCK_CYCLE_WIDTH, height);
   }

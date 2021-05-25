@@ -39,6 +39,7 @@ public class DiagramModel implements Iterable<Signal>
   private final List<Signal> signals;
   private final Object wallClockLock;
   private long wallClock;
+  private int signalSize;
 
   private DiagramModel()
   {
@@ -59,6 +60,7 @@ public class DiagramModel implements Iterable<Signal>
     signals = new ArrayList<Signal>();
     wallClockLock = new Object();
     wallClock = 0;
+    signalSize = 0;
   }
 
   public Iterator<Signal> iterator()
@@ -131,20 +133,22 @@ public class DiagramModel implements Iterable<Signal>
     return addSignal(null, address, displayFilter);
   }
 
-  public void clear()
+  public void resetSignals()
   {
     for (final Signal signal : signals) {
       signal.reset();
     }
+    signalSize = 0;
   }
 
-  public void createRecord()
+  private void appendRecordToSignals()
   {
     for (final Signal signal : signals) {
       if (signal.getVisible()) {
         signal.record();
       }
     }
+    signalSize++;
   }
 
   public void checkForUpdate()
@@ -155,10 +159,10 @@ public class DiagramModel implements Iterable<Signal>
         if (wallClock == this.wallClock) {
           // nothing to update
         } else if (wallClock == this.wallClock + 1) {
-          createRecord();
+          appendRecordToSignals();
         } else {
           // discontinuity in time => restart view
-          clear();
+          resetSignals();
         }
         this.wallClock = wallClock;
       }
@@ -169,6 +173,9 @@ public class DiagramModel implements Iterable<Signal>
 
   public void applyCycles(final int count) throws IOException
   {
+    if (count < 0) {
+      throw new IllegalArgumentException("count < 0: " + count);
+    }
     for (int cycle = 0; cycle < count; cycle++) {
       sdk.triggerCyclePhase1(true);
       checkForUpdate();
@@ -176,7 +183,12 @@ public class DiagramModel implements Iterable<Signal>
     }
   }
 
-  public void fillInCurrentSignals(final List<Signal> targetSignals)
+  public int getSignalSize()
+  {
+    return signalSize;
+  }
+
+  public void pullSignals(final List<Signal> targetSignals)
   {
     targetSignals.clear();
     for (final Signal signal : signals) {
@@ -184,7 +196,7 @@ public class DiagramModel implements Iterable<Signal>
     }
   }
 
-  public void updateListOfSignals(final List<Signal> newSignals)
+  public void pushSignals(final List<Signal> newSignals)
   {
     signals.clear();
     for (final Signal signal : newSignals) {

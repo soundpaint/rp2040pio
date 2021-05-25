@@ -57,7 +57,7 @@ public abstract class AbstractSignal<T> implements Signal
     }
   }
 
-  private List<SignalRecord<T>> signalRecords;
+  private final List<SignalRecord<T>> signalRecords;
   private final String label;
   private T previousValue;
   private T value;
@@ -94,9 +94,18 @@ public abstract class AbstractSignal<T> implements Signal
     // keep visibility unmodified
   }
 
-  public void rewind()
+  @Override
+  public void rewind(final int index)
   {
-    replayIndex = 0;
+    if (index < 0) {
+      throw new IllegalArgumentException("index < 0: " + index);
+    }
+    if (index > signalRecords.size()) {
+      final String message =
+        String.format("index > size: %d > %d", index, signalRecords.size());
+      throw new IllegalArgumentException(message);
+    }
+    replayIndex = index;
   }
 
   @Override
@@ -132,6 +141,12 @@ public abstract class AbstractSignal<T> implements Signal
     final SignalRecord<T> signalRecord =
       new SignalRecord<T>(previousValue, value, notChangedSince);
     signalRecords.add(signalRecord);
+  }
+
+  @Override
+  public int size()
+  {
+    return signalRecords.size();
   }
 
   public boolean update()
