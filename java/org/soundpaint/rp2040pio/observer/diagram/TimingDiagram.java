@@ -28,17 +28,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.function.Supplier;
-import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class TimingDiagram implements Constants
+public class TimingDiagram
 {
   private final PrintStream console;
   private final SDK sdk;
   private final DiagramConfig diagramConfig;
-  private final DiagramPanel diagramPanel;
-  private final PIOSDK pioSdk;
   private final Object wallClockLock;
   private long wallClock;
 
@@ -48,8 +44,7 @@ public class TimingDiagram implements Constants
   }
 
   public TimingDiagram(final PrintStream console, final SDK sdk,
-                       final DiagramConfig diagramConfig,
-                       final DiagramPanel diagramPanel)
+                       final DiagramConfig diagramConfig)
     throws IOException
   {
     if (console == null) {
@@ -61,14 +56,9 @@ public class TimingDiagram implements Constants
     if (diagramConfig == null) {
       throw new NullPointerException("diagramConfig");
     }
-    if (diagramPanel == null) {
-      throw new NullPointerException("diagramPanel");
-    }
     this.console = console;
     this.sdk = sdk;
     this.diagramConfig = diagramConfig;
-    this.diagramPanel = diagramPanel;
-    pioSdk = sdk.getPIO0SDK();
     wallClockLock = new Object();
     wallClock = 0;
   }
@@ -176,9 +166,9 @@ public class TimingDiagram implements Constants
     }
   }
 
-  public void executeCycles(final int cycles) throws IOException
+  public void applyCycles(final int count) throws IOException
   {
-    for (int cycle = 0; cycle < cycles; cycle++) {
+    for (int cycle = 0; cycle < count; cycle++) {
       sdk.triggerCyclePhase1(true);
       checkForUpdate();
       sdk.triggerCyclePhase0(true);

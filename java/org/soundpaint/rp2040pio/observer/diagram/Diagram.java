@@ -61,8 +61,8 @@ public class Diagram extends GUIObserver
     "Timing Diagram Creator Version 0.1";
 
   private final DiagramConfig diagramConfig;
-  private final TimingDiagram diagramData;
-  private final DiagramPanel diagramPanel;
+  private final TimingDiagram model;
+  private final DiagramView diagramView;
   private final ScriptDialog scriptDialog;
 
   private Diagram(final PrintStream console, final String[] argv)
@@ -70,12 +70,11 @@ public class Diagram extends GUIObserver
   {
     super(APP_TITLE, APP_FULL_NAME, console, argv);
     diagramConfig = new DiagramConfig();
-    diagramPanel = new DiagramPanel(diagramConfig);
-    diagramData =
-      new TimingDiagram(console, getSDK(), diagramConfig, diagramPanel);
-    configureDiagramData();
-    add(diagramPanel);
-    diagramPanel.updatePreferredHeight();
+    diagramView = new DiagramView(diagramConfig);
+    model = new TimingDiagram(console, getSDK(), diagramConfig);
+    configureModel();
+    add(diagramView);
+    diagramView.updatePreferredHeight();
     scriptDialog = new ScriptDialog(this, console);
     pack();
     setVisible(true);
@@ -97,8 +96,8 @@ public class Diagram extends GUIObserver
   @Override
   protected void updateView()
   {
-    diagramData.checkForUpdate();
-    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
+    model.checkForUpdate();
+    SwingUtilities.invokeLater(() -> diagramView.repaint());
   }
 
   public void showScriptDialog()
@@ -126,13 +125,12 @@ public class Diagram extends GUIObserver
     return displayFilter;
   }
 
-  private void configureDiagramData() throws IOException
+  private void configureModel() throws IOException
   {
-    diagramData.addSignal(DiagramConfig.createClockSignal("clock")).
-      setVisible(true);
+    model.addSignal(DiagramConfig.createClockSignal("clock")).setVisible(true);
 
-    diagramData.addSignal(PIOEmuRegisters.
-                          getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0).
+    model.addSignal(PIOEmuRegisters.
+                    getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0).
       setVisible(true);
     final GPIOIOBank0Registers.Regs regGpio0Status =
       GPIOIOBank0Registers.Regs.GPIO0_STATUS;
@@ -140,42 +138,40 @@ public class Diagram extends GUIObserver
       final String label = "GPIO " + gpioNum;
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
-      final DiagramConfig.Signal signal =
-        diagramData.addSignal(label, address, 8, 8);
+      final DiagramConfig.Signal signal = model.addSignal(label, address, 8, 8);
       if (gpioNum == 0) signal.setVisible(true);
     }
     final SDK sdk = getSDK();
     final int addrSm0Pc =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
-    diagramData.addSignal("SM0_PC", addrSm0Pc);
-    diagramData.addSignal("SM0_PC (hidden delay)",
-                          addrSm0Pc, createDelayFilter(sdk, 0, 0)).
-      setVisible(true);
+    model.addSignal("SM0_PC", addrSm0Pc);
+    model.addSignal("SM0_PC (hidden delay)",
+                    addrSm0Pc, createDelayFilter(sdk, 0, 0)).setVisible(true);
     final int instrAddr =
       PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     final DiagramConfig.Signal instr1 =
       DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR",
                                             true, null);
-    diagramData.addSignal(instr1);
+    model.addSignal(instr1);
     final DiagramConfig.Signal instr2 =
       DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR (hidden delay)",
                                             true, createDelayFilter(sdk, 0, 0));
     instr2.setVisible(true);
-    diagramData.addSignal(instr2);
+    model.addSignal(instr2);
   }
 
   public void clear()
   {
-    diagramData.clear();
-    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
+    model.clear();
+    SwingUtilities.invokeLater(() -> diagramView.repaint());
   }
 
-  public void executeCycles(final int cycles) throws IOException
+  public void applyCycles(final int count) throws IOException
   {
-    diagramData.executeCycles(cycles);
-    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
+    model.applyCycles(count);
+    SwingUtilities.invokeLater(() -> diagramView.repaint());
   }
 
   public static void main(final String argv[])
@@ -190,14 +186,14 @@ public class Diagram extends GUIObserver
 
   public void fillInCurrentSignals(final List<DiagramConfig.Signal> signals)
   {
-    diagramData.fillInCurrentSignals(signals);
-    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
+    model.fillInCurrentSignals(signals);
+    SwingUtilities.invokeLater(() -> diagramView.repaint());
   }
 
   public void updateListOfSignals(final List<DiagramConfig.Signal> signals)
   {
-    diagramData.updateListOfSignals(signals);
-    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
+    model.updateListOfSignals(signals);
+    SwingUtilities.invokeLater(() -> diagramView.repaint());
   }
 }
 

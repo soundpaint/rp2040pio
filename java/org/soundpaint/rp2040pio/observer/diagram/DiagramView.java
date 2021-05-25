@@ -1,5 +1,5 @@
 /*
- * @(#)DiagramPanel.java 1.00 21/04/07
+ * @(#)DiagramView.java 1.00 21/04/07
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -44,9 +44,9 @@ import java.util.List;
 import javax.swing.JPanel;
 
 /**
- * Panel for drawing the actual diagram.
+ * Panel for drawing the view of the diagram.
  */
-public class DiagramPanel extends JPanel
+public class DiagramView extends JPanel
 {
   private static final long serialVersionUID = 6327282160532117231L;
 
@@ -113,13 +113,12 @@ public class DiagramPanel extends JPanel
   private final DiagramConfig diagramConfig;
   private final List<ToolTip> toolTips;
 
-  private DiagramPanel()
+  private DiagramView()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public DiagramPanel(final DiagramConfig diagramConfig)
-    throws IOException
+  public DiagramView(final DiagramConfig diagramConfig) throws IOException
   {
     if (diagramConfig == null) {
       throw new NullPointerException("diagramConfig");

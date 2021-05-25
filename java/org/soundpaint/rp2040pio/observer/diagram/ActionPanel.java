@@ -73,10 +73,10 @@ public class ActionPanel
     btEmulate.addActionListener((event) -> {
         final int cycles = (Integer)spCycles.getValue();
         try {
-          diagram.executeCycles(cycles);
+          diagram.applyCycles(cycles);
         } catch (final IOException e) {
-          final String title = "Failed Creating Snapshot";
-          final String message = "I/O Error: " + e.getMessage();
+          final String title = "Emulation Failed";
+          final String message = "I/O error: " + e.getMessage();
           JOptionPane.showMessageDialog(this, message, title,
                                         JOptionPane.WARNING_MESSAGE);
           diagram.clear();
