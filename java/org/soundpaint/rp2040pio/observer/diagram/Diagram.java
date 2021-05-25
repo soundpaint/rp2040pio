@@ -40,6 +40,17 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * generated from a specific PIO program.  By now, most of the
  * configuration is hard-wired in order to make it running out of the
  * box.
+ *
+ * TODO: Ellipsis, see e.g. Fig. 55.
+ *
+ * TODO: Labelled external data via GPIO or DMA (e.g. data bits "D0",
+ * "D1", "D2", …).
+ *
+ * Syntax:
+ * CLK=SIGNAL
+ * DMA.SIGNAL_NAME=(SIGNAL|BIT)
+ * SMx.SIGNAL_NAME=(SIGNAL|BIT)
+ * GPIOx=(SIGNAL|BIT)
  */
 public class Diagram extends GUIObserver
 {
@@ -86,6 +97,7 @@ public class Diagram extends GUIObserver
   @Override
   protected void updateView()
   {
+    diagramData.checkForUpdate();
     SwingUtilities.invokeLater(() -> diagramPanel.repaint());
   }
 
@@ -157,11 +169,13 @@ public class Diagram extends GUIObserver
   public void clear()
   {
     diagramData.clear();
+    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
   }
 
-  public void createSnapShot(final int stopCycle) throws IOException
+  public void executeCycles(final int cycles) throws IOException
   {
-    diagramData.createSnapShot(stopCycle);
+    diagramData.executeCycles(cycles);
+    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
   }
 
   public static void main(final String argv[])
@@ -177,12 +191,13 @@ public class Diagram extends GUIObserver
   public void fillInCurrentSignals(final List<DiagramConfig.Signal> signals)
   {
     diagramData.fillInCurrentSignals(signals);
+    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
   }
 
   public void updateListOfSignals(final List<DiagramConfig.Signal> signals)
   {
     diagramData.updateListOfSignals(signals);
-    updateView();
+    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
   }
 }
 

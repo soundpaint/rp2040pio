@@ -28,26 +28,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-/**
- * Framework for displaying a timing diagram resulting from an
- * emulation run.
- *
- * TODO: Ellipsis, see e.g. Fig. 55.
- *
- * TODO: Labelled external data via GPIO or DMA (e.g. data bits "D0",
- * "D1", "D2", …).
- *
- * Syntax:
- * CLK=SIGNAL
- * DMA.SIGNAL_NAME=(SIGNAL|BIT)
- * SMx.SIGNAL_NAME=(SIGNAL|BIT)
- * GPIOx=(SIGNAL|BIT)
- */
 public class TimingDiagram implements Constants
 {
   private final PrintStream console;
@@ -55,6 +39,8 @@ public class TimingDiagram implements Constants
   private final DiagramConfig diagramConfig;
   private final DiagramPanel diagramPanel;
   private final PIOSDK pioSdk;
+  private final Object wallClockLock;
+  private long wallClock;
 
   private TimingDiagram()
   {
@@ -83,6 +69,8 @@ public class TimingDiagram implements Constants
     this.diagramConfig = diagramConfig;
     this.diagramPanel = diagramPanel;
     pioSdk = sdk.getPIO0SDK();
+    wallClockLock = new Object();
+    wallClock = 0;
   }
 
   public DiagramConfig.Signal addSignal(final DiagramConfig.Signal signal)
@@ -157,24 +145,44 @@ public class TimingDiagram implements Constants
     for (final DiagramConfig.Signal signal : diagramConfig) {
       signal.reset();
     }
-    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
   }
 
-  public void createSnapShot(final int stopCycle) throws IOException
+  public void createRecord()
   {
     for (final DiagramConfig.Signal signal : diagramConfig) {
-      signal.reset();
-    }
-    for (int cycle = 0; cycle < stopCycle; cycle++) {
-      sdk.triggerCyclePhase0(true);
-      for (final DiagramConfig.Signal signal : diagramConfig) {
-        if (signal.getVisible()) {
-          signal.record();
-        }
+      if (signal.getVisible()) {
+        signal.record();
       }
-      sdk.triggerCyclePhase1(true);
     }
-    SwingUtilities.invokeLater(() -> diagramPanel.repaint());
+  }
+
+  public void checkForUpdate()
+  {
+    try {
+      synchronized(wallClockLock) {
+        final long wallClock = sdk.getWallClock();
+        if (wallClock == this.wallClock) {
+          // nothing to update
+        } else if (wallClock == this.wallClock + 1) {
+          createRecord();
+        } else {
+          // discontinuity in time => restart view
+          clear();
+        }
+        this.wallClock = wallClock;
+      }
+    } catch (final IOException e) {
+      console.println("error: failed reading wall clock: " + e.getMessage());
+    }
+  }
+
+  public void executeCycles(final int cycles) throws IOException
+  {
+    for (int cycle = 0; cycle < cycles; cycle++) {
+      sdk.triggerCyclePhase1(true);
+      checkForUpdate();
+      sdk.triggerCyclePhase0(true);
+    }
   }
 
   public void fillInCurrentSignals(final List<DiagramConfig.Signal> signals)

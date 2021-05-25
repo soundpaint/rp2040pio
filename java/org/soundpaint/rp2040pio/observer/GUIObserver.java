@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
+import javax.swing.UIManager;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
@@ -69,6 +70,12 @@ public abstract class GUIObserver extends JFrame
     optionDeclarations =
     Arrays.asList(new CmdOptions.OptionDeclaration<?>[]
                   { optVersion, optHelp, optPort, optRefresh });
+
+  static
+  {
+    UIManager.put("OptionPane.okButtonMnemonic", "79"); // 'O' as mnemonic
+    UIManager.put("OptionPane.cancelButtonMnemonic", "67"); // 'C' as mnemonic
+  }
 
   private final String appTitle;
   private final String appFullName;
@@ -137,6 +144,11 @@ public abstract class GUIObserver extends JFrame
   public String getAppFullName()
   {
     return appFullName;
+  }
+
+  protected PrintStream getConsole()
+  {
+    return console;
   }
 
   protected SDK getSDK()

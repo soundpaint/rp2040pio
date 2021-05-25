@@ -39,7 +39,7 @@ public class ActionPanel
   extends org.soundpaint.rp2040pio.observer.ActionPanel<Diagram>
 {
   private static final long serialVersionUID = -4136799373128393432L;
-  private static final int defaultCycles = 20;
+  private static final int defaultCycles = 1;
 
   public ActionPanel(final Diagram diagram)
   {
@@ -49,6 +49,12 @@ public class ActionPanel
   @Override
   protected void addAdditionalButtons(final Diagram diagram)
   {
+    final JButton btScript = new JButton("Load…");
+    btScript.setMnemonic(KeyEvent.VK_L);
+    btScript.addActionListener((event) -> { diagram.showScriptDialog(); });
+    add(btScript);
+    add(Box.createHorizontalGlue());
+
     final JLabel lbCycles = new JLabel("Cycles");
     lbCycles.setDisplayedMnemonic(KeyEvent.VK_Y);
     add(lbCycles);
@@ -67,7 +73,7 @@ public class ActionPanel
     btEmulate.addActionListener((event) -> {
         final int cycles = (Integer)spCycles.getValue();
         try {
-          diagram.createSnapShot(cycles);
+          diagram.executeCycles(cycles);
         } catch (final IOException e) {
           final String title = "Failed Creating Snapshot";
           final String message = "I/O Error: " + e.getMessage();
@@ -77,12 +83,13 @@ public class ActionPanel
         }
       });
     add(btEmulate);
-    add(Box.createHorizontalStrut(5));
+    add(Box.createHorizontalGlue());
 
-    final JButton btScript = new JButton("Load…");
-    btScript.setMnemonic(KeyEvent.VK_L);
-    btScript.addActionListener((event) -> { diagram.showScriptDialog(); });
-    add(btScript);
+    final JButton btClear = new JButton("Clear View");
+    btClear.setMnemonic(KeyEvent.VK_V);
+    btClear.addActionListener((event) -> diagram.clear());
+    add(btClear);
+
     add(Box.createHorizontalGlue());
   }
 }

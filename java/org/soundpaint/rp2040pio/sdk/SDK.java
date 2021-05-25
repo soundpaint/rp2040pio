@@ -199,6 +199,17 @@ public class SDK implements Constants
   {
     return registers.getEmulatorInfo();
   }
+
+  public long getWallClock() throws IOException
+  {
+    final int addressWallClockLsb =
+      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
+    final int addressWallClockMsb =
+      PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_MSB);
+    final int wallClockLsb = registers.readAddress(addressWallClockLsb);
+    final int wallClockMsb = registers.readAddress(addressWallClockMsb);
+    return ((long)wallClockMsb << 32) | wallClockLsb;
+  }
 }
 
 /*

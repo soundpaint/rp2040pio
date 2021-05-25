@@ -35,6 +35,7 @@ import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.monitor.MonitorUtils;
+import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -69,6 +70,10 @@ public class Trace extends Command
     CmdOptions.createFlagOption(false, 'l', "show-local-gpio",
                                 CmdOptions.Flag.OFF,
                                 "show status of (local PIO's) GPIO pins");
+  private static final CmdOptions.FlagOptionDeclaration optBefore =
+    CmdOptions.createFlagOption(false, null, "before", CmdOptions.Flag.OFF,
+                                "when displaying global GPIO status, show " +
+                                "status before rather than after override");
   private static final CmdOptions.IntegerOptionDeclaration optWait =
     CmdOptions.createIntegerOption("NUMBER", false, 'w', "wait", 0,
                                    "before each cycle, sleep for the " +
@@ -92,7 +97,8 @@ public class Trace extends Command
   {
     super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optCycles, optPc, optPioGpio, optGpio, optWait });
+          { optPio, optSm, optCycles, optPc,
+              optPioGpio, optGpio, optBefore, optWait });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -129,6 +135,13 @@ public class Trace extends Command
       throw new CmdOptions.
         ParseException("NUMBER must be a non-negative value", optWait);
     }
+    if (options.getValue(optBefore) == CmdOptions.Flag.ON) {
+      if (!options.isDefined(optGpio)) {
+        throw new CmdOptions.
+          ParseException("option \"before\" may be specified when option "+
+                         "option \"-g\" is specified");
+      }
+    }
   }
 
   private void displayPcValues(final int pioNumFirst,
@@ -143,6 +156,14 @@ public class Trace extends Command
                        sdk.readAddress(addressPioSmPc[pioNum][smNum]));
       }
     }
+  }
+
+  private void displayGpioValues(final boolean before) throws IOException
+  {
+    final GPIOSDK.Override override =
+      before ? GPIOSDK.Override.BEFORE : GPIOSDK.Override.AFTER;
+    final String gpioDisplay = MonitorUtils.gpioDisplay(sdk, override);
+    console.printf(gpioDisplay);
   }
 
   private void displayGpioValues(final int pioNumFirst, final int pioNumLast)
@@ -196,7 +217,8 @@ public class Trace extends Command
         displayGpioValues(pioNumFirst, pioNumLast);
       }
       if (options.getValue(optGpio).isOn()) {
-        console.printf(MonitorUtils.gpioDisplay(sdk, null));
+        final boolean before = options.getValue(optBefore) == CmdOptions.Flag.ON;
+        displayGpioValues(before);
       }
     }
     console.println(cycles + " clock cycle" + (cycles != 1 ? "s" : "") +

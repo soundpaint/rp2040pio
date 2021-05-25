@@ -76,14 +76,14 @@ public class MenuBar<T extends GUIObserver> extends JMenuBar
 
     addAdditionalFileMenuItems(fileMenu, observer);
 
-    final JMenuItem close =
+    final JMenuItem quit =
       SwingUtils.createIconMenuItem("quit16x16.png", "Quit");
-    close.setMnemonic(KeyEvent.VK_C);
-    close.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,
-                                                ActionEvent.ALT_MASK));
-    close.getAccessibleContext().setAccessibleDescription("Quit");
-    close.addActionListener((event) -> observer.close());
-    fileMenu.add(close);
+    quit.setMnemonic(KeyEvent.VK_Q);
+    quit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,
+                                               ActionEvent.ALT_MASK));
+    quit.getAccessibleContext().setAccessibleDescription("Quit");
+    quit.addActionListener((event) -> observer.close());
+    fileMenu.add(quit);
     return fileMenu;
   }
 

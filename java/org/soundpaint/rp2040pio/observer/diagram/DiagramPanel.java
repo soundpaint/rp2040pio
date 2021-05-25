@@ -255,7 +255,7 @@ public class DiagramPanel extends JPanel
       signal.notChangedSince(); // safe prior to signal update
     if (!signal.update()) return;
 
-    if (!leftBorder && (signal.changed() || rightBorder)) {
+    if (signal.changed()) {
       // signal changed => go for printing label of completed value;
       // right border => print label as preview for incomplete value
       paintValuedLabel(panel, g, xStart, yBottom, signal,

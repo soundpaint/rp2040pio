@@ -36,11 +36,16 @@ public class MenuBar
 {
   private static final long serialVersionUID = -5984414867480448181L;
 
+  private final Diagram diagram;
   private final ViewPropertiesDialog viewPropertiesDialog;
 
   public MenuBar(final Diagram diagram, final PrintStream console)
   {
     super(diagram, console);
+    if (diagram == null) {
+      throw new NullPointerException("diagram");
+    }
+    this.diagram = diagram;
     viewPropertiesDialog = new ViewPropertiesDialog(diagram);
   }
 
@@ -74,8 +79,17 @@ public class MenuBar
                                                      ActionEvent.ALT_MASK));
     properties.getAccessibleContext().
       setAccessibleDescription("View properties");
-    properties.addActionListener((event) -> { viewPropertiesDialog.open(); });
+    properties.addActionListener((event) -> viewPropertiesDialog.open());
     view.add(properties);
+
+    final JMenuItem clear = new JMenuItem("Clear View");
+    clear.setMnemonic(KeyEvent.VK_C);
+    clear.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C,
+                                                ActionEvent.ALT_MASK));
+    clear.getAccessibleContext().setAccessibleDescription("Clear View");
+    clear.addActionListener((event) -> diagram.clear());
+    view.add(clear);
+
     return view;
   }
 }
