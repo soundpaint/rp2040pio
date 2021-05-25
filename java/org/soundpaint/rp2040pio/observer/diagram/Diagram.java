@@ -60,7 +60,6 @@ public class Diagram extends GUIObserver
   private static final String APP_FULL_NAME =
     "Timing Diagram Creator Version 0.1";
 
-  private final DiagramConfig diagramConfig;
   private final TimingDiagram model;
   private final DiagramView diagramView;
   private final ScriptDialog scriptDialog;
@@ -69,12 +68,11 @@ public class Diagram extends GUIObserver
     throws IOException
   {
     super(APP_TITLE, APP_FULL_NAME, console, argv);
-    diagramConfig = new DiagramConfig();
-    diagramView = new DiagramView(diagramConfig);
-    model = new TimingDiagram(console, getSDK(), diagramConfig);
+    model = new TimingDiagram(console, getSDK());
+    diagramView = new DiagramView(model);
     configureModel();
-    add(diagramView);
     diagramView.updatePreferredHeight();
+    add(diagramView);
     scriptDialog = new ScriptDialog(this, console);
     pack();
     setVisible(true);
@@ -138,7 +136,7 @@ public class Diagram extends GUIObserver
       final String label = "GPIO " + gpioNum;
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
-      final DiagramConfig.Signal signal = model.addSignal(label, address, 8, 8);
+      final Signal signal = model.addSignal(label, address, 8, 8);
       if (gpioNum == 0) signal.setVisible(true);
     }
     final SDK sdk = getSDK();
@@ -149,12 +147,12 @@ public class Diagram extends GUIObserver
                     addrSm0Pc, createDelayFilter(sdk, 0, 0)).setVisible(true);
     final int instrAddr =
       PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
-    final DiagramConfig.Signal instr1 =
+    final Signal instr1 =
       DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR",
                                             true, null);
     model.addSignal(instr1);
-    final DiagramConfig.Signal instr2 =
+    final Signal instr2 =
       DiagramConfig.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR (hidden delay)",
                                             true, createDelayFilter(sdk, 0, 0));
@@ -184,13 +182,13 @@ public class Diagram extends GUIObserver
     }
   }
 
-  public void fillInCurrentSignals(final List<DiagramConfig.Signal> signals)
+  public void fillInCurrentSignals(final List<Signal> signals)
   {
     model.fillInCurrentSignals(signals);
     SwingUtilities.invokeLater(() -> diagramView.repaint());
   }
 
-  public void updateListOfSignals(final List<DiagramConfig.Signal> signals)
+  public void updateListOfSignals(final List<Signal> signals)
   {
     model.updateListOfSignals(signals);
     SwingUtilities.invokeLater(() -> diagramView.repaint());

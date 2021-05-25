@@ -110,7 +110,7 @@ public class DiagramView extends JPanel
     }
   }
 
-  private final DiagramConfig diagramConfig;
+  private final TimingDiagram model;
   private final List<ToolTip> toolTips;
 
   private DiagramView()
@@ -118,12 +118,12 @@ public class DiagramView extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public DiagramView(final DiagramConfig diagramConfig) throws IOException
+  public DiagramView(final TimingDiagram model) throws IOException
   {
-    if (diagramConfig == null) {
-      throw new NullPointerException("diagramConfig");
+    if (model == null) {
+      throw new NullPointerException("model");
     }
-    this.diagramConfig = diagramConfig;
+    this.model = model;
     toolTips = new ArrayList<ToolTip>();
     setToolTipText("");
   }
@@ -155,7 +155,7 @@ public class DiagramView extends JPanel
   public void updatePreferredHeight()
   {
     double y = TOP_MARGIN;
-    for (final DiagramConfig.Signal signal : diagramConfig) {
+    for (final Signal signal : model) {
       if (signal.getVisible()) {
         y += signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
       }
@@ -288,7 +288,7 @@ public class DiagramView extends JPanel
 
   private void paintSignalCycle(final JPanel panel, final Graphics2D g,
                                 final double xStart, final double yBottom,
-                                final DiagramConfig.Signal signal,
+                                final Signal signal,
                                 final boolean leftBorder,
                                 final boolean rightBorder)
   {
@@ -313,7 +313,7 @@ public class DiagramView extends JPanel
     g.setColor(Color.BLACK);
     g.setStroke(PLAIN_STROKE);
     double y = TOP_MARGIN;
-    for (final DiagramConfig.Signal signal : diagramConfig) {
+    for (final Signal signal : model) {
       if (signal.getVisible()) {
         final double height =
           signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
@@ -337,7 +337,7 @@ public class DiagramView extends JPanel
   private void paintLabels(final JPanel panel, final Graphics2D g)
   {
     double y = TOP_MARGIN;
-    for (final DiagramConfig.Signal signal : diagramConfig) {
+    for (final Signal signal : model) {
       if (signal.getVisible()) {
         final String label = signal.getLabel();
         final double height =
@@ -352,7 +352,7 @@ public class DiagramView extends JPanel
     throws IOException
   {
     toolTips.clear();
-    for (final DiagramConfig.Signal signal : diagramConfig) {
+    for (final Signal signal : model) {
       signal.rewind();
     }
     g.setStroke(PLAIN_STROKE);

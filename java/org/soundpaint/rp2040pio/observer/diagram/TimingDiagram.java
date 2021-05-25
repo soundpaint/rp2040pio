@@ -26,15 +26,17 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class TimingDiagram
+public class TimingDiagram implements Iterable<Signal>
 {
   private final PrintStream console;
   private final SDK sdk;
-  private final DiagramConfig diagramConfig;
+  private final List<Signal> signals;
   private final Object wallClockLock;
   private long wallClock;
 
@@ -43,8 +45,7 @@ public class TimingDiagram
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public TimingDiagram(final PrintStream console, final SDK sdk,
-                       final DiagramConfig diagramConfig)
+  public TimingDiagram(final PrintStream console, final SDK sdk)
     throws IOException
   {
     if (console == null) {
@@ -53,28 +54,30 @@ public class TimingDiagram
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
-    if (diagramConfig == null) {
-      throw new NullPointerException("diagramConfig");
-    }
     this.console = console;
     this.sdk = sdk;
-    this.diagramConfig = diagramConfig;
+    signals = new ArrayList<Signal>();
     wallClockLock = new Object();
     wallClock = 0;
   }
 
-  public DiagramConfig.Signal addSignal(final DiagramConfig.Signal signal)
+  public Iterator<Signal> iterator()
+  {
+    return signals.iterator();
+  }
+
+  public Signal addSignal(final Signal signal)
   {
     if (signal == null) {
       throw new NullPointerException("signal");
     }
-    diagramConfig.addSignal(signal);
+    signals.add(signal);
     return signal;
   }
 
-  public DiagramConfig.Signal addSignal(final String label, final int address,
-                                        final int msb, final int lsb,
-                                        final Supplier<Boolean> displayFilter)
+  public Signal addSignal(final String label, final int address,
+                          final int msb, final int lsb,
+                          final Supplier<Boolean> displayFilter)
     throws IOException
   {
     final DiagramConfig.ValuedSignal<Integer> signal =
@@ -83,15 +86,14 @@ public class TimingDiagram
     return addSignal(signal);
   }
 
-  public DiagramConfig.Signal addSignal(final String label, final int address,
-                                        final int msb, final int lsb)
+  public Signal addSignal(final String label, final int address,
+                          final int msb, final int lsb)
     throws IOException
   {
     return addSignal(label, address, msb, lsb, null);
   }
 
-  public DiagramConfig.Signal addSignal(final String label, final int address,
-                                        final int bit)
+  public Signal addSignal(final String label, final int address, final int bit)
     throws IOException
   {
     final DiagramConfig.BitSignal signal =
@@ -99,32 +101,31 @@ public class TimingDiagram
     return addSignal(signal);
   }
 
-  public DiagramConfig.Signal addSignal(final int address, final int bit)
-    throws IOException
+  public Signal addSignal(final int address, final int bit) throws IOException
   {
     return addSignal(null, address, bit);
   }
 
-  public DiagramConfig.Signal addSignal(final String label, final int address)
+  public Signal addSignal(final String label, final int address)
     throws IOException
   {
     return addSignal(label, address, 31, 0);
   }
 
-  public DiagramConfig.Signal addSignal(final String label, final int address,
-                                        final Supplier<Boolean> displayFilter)
+  public Signal addSignal(final String label, final int address,
+                          final Supplier<Boolean> displayFilter)
     throws IOException
   {
     return addSignal(label, address, 31, 0, displayFilter);
   }
 
-  public DiagramConfig.Signal addSignal(final int address) throws IOException
+  public Signal addSignal(final int address) throws IOException
   {
     return addSignal(null, address);
   }
 
-  public DiagramConfig.Signal addSignal(final int address,
-                                        final Supplier<Boolean> displayFilter)
+  public Signal addSignal(final int address,
+                          final Supplier<Boolean> displayFilter)
     throws IOException
   {
     return addSignal(null, address, displayFilter);
@@ -132,14 +133,14 @@ public class TimingDiagram
 
   public void clear()
   {
-    for (final DiagramConfig.Signal signal : diagramConfig) {
+    for (final Signal signal : signals) {
       signal.reset();
     }
   }
 
   public void createRecord()
   {
-    for (final DiagramConfig.Signal signal : diagramConfig) {
+    for (final Signal signal : signals) {
       if (signal.getVisible()) {
         signal.record();
       }
@@ -175,19 +176,19 @@ public class TimingDiagram
     }
   }
 
-  public void fillInCurrentSignals(final List<DiagramConfig.Signal> signals)
+  public void fillInCurrentSignals(final List<Signal> targetSignals)
   {
-    signals.clear();
-    for (final DiagramConfig.Signal signal : diagramConfig) {
-      signals.add(signal);
+    targetSignals.clear();
+    for (final Signal signal : signals) {
+      targetSignals.add(signal);
     }
   }
 
-  public void updateListOfSignals(final List<DiagramConfig.Signal> signals)
+  public void updateListOfSignals(final List<Signal> newSignals)
   {
-    diagramConfig.clear();
-    for (final DiagramConfig.Signal signal : signals) {
-      diagramConfig.addSignal(signal);
+    signals.clear();
+    for (final Signal signal : newSignals) {
+      signals.add(signal);
     }
   }
 }

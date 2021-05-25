@@ -43,7 +43,7 @@ public class SignalsPropertiesPanel extends Box
   private static final long serialVersionUID = -8921092912489516701L;
 
   private final Diagram diagram;
-  private final List<DiagramConfig.Signal> signals;
+  private final List<Signal> signals;
   private final List<JTextField> signalLabels;
   private final List<JCheckBox> signalVisibilities;
 
@@ -52,7 +52,7 @@ public class SignalsPropertiesPanel extends Box
     super(BoxLayout.Y_AXIS);
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
-    signals = new ArrayList<DiagramConfig.Signal>();
+    signals = new ArrayList<Signal>();
     signalLabels = new ArrayList<JTextField>();
     signalVisibilities = new ArrayList<JCheckBox>();
   }
@@ -60,7 +60,7 @@ public class SignalsPropertiesPanel extends Box
   public void apply()
   {
     int index = 0;
-    for (final DiagramConfig.Signal signal : signals) {
+    for (final Signal signal : signals) {
       signal.setVisible(signalVisibilities.get(index).isSelected());
       index++;
     }
@@ -70,8 +70,8 @@ public class SignalsPropertiesPanel extends Box
   private void swapSignals(final int index)
   {
     Collections.swap(signals, index, index + 1);
-    final DiagramConfig.Signal signal1 = signals.get(index);
-    final DiagramConfig.Signal signal2 = signals.get(index + 1);
+    final Signal signal1 = signals.get(index);
+    final Signal signal2 = signals.get(index + 1);
     final JTextField tfSignal1 = signalLabels.get(index);
     tfSignal1.setText(signal1.getLabel());
     final JTextField tfSignal2 = signalLabels.get(index + 1);
@@ -100,7 +100,7 @@ public class SignalsPropertiesPanel extends Box
     SwingUtils.setPreferredHeightAsMaximum(headerLine);
     add(Box.createVerticalStrut(15));
     int index = 0;
-    for (final DiagramConfig.Signal signal : signals) {
+    for (final Signal signal : signals) {
       if (index > 0) {
         final Box swapLine = new Box(BoxLayout.X_AXIS);
         add(swapLine);
@@ -135,7 +135,7 @@ public class SignalsPropertiesPanel extends Box
     signalLabels.clear();
     signalVisibilities.clear();
     int index = 0;
-    for (final DiagramConfig.Signal signal : signals) {
+    for (final Signal signal : signals) {
       final JTextField tfSignal = new JTextField() {
           @Override
           public void setBorder(final Border border) {}
