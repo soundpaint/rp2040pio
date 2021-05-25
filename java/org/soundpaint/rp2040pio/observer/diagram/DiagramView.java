@@ -110,7 +110,7 @@ public class DiagramView extends JPanel
     }
   }
 
-  private final TimingDiagram model;
+  private final DiagramModel model;
   private final List<ToolTip> toolTips;
 
   private DiagramView()
@@ -118,7 +118,7 @@ public class DiagramView extends JPanel
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public DiagramView(final TimingDiagram model) throws IOException
+  public DiagramView(final DiagramModel model) throws IOException
   {
     if (model == null) {
       throw new NullPointerException("model");
@@ -197,7 +197,7 @@ public class DiagramView extends JPanel
 
   private void paintBitSignalCycle(final JPanel panel, final Graphics2D g,
                                    final double xStart, final double yBottom,
-                                   final DiagramConfig.BitSignal signal,
+                                   final SignalFactory.BitSignal signal,
                                    final boolean rightBorder)
   {
     if (rightBorder) return;
@@ -219,7 +219,7 @@ public class DiagramView extends JPanel
 
   private void paintValuedLabel(final JPanel panel, final Graphics2D g,
                                 final double xStart, final double yBottom,
-                                final DiagramConfig.ValuedSignal<?> signal,
+                                final SignalFactory.ValuedSignal<?> signal,
                                 final int cycles)
   {
     final String label = signal.getPreviousRenderedValue();
@@ -243,7 +243,7 @@ public class DiagramView extends JPanel
 
   private void paintValuedSignalCycle(final JPanel panel, final Graphics2D g,
                                       final double xStart, final double yBottom,
-                                      final DiagramConfig.ValuedSignal<?> signal,
+                                      final SignalFactory.ValuedSignal<?> signal,
                                       final boolean leftBorder,
                                       final boolean rightBorder)
   {
@@ -292,14 +292,14 @@ public class DiagramView extends JPanel
                                 final boolean leftBorder,
                                 final boolean rightBorder)
   {
-    if (signal instanceof DiagramConfig.ClockSignal) {
+    if (signal instanceof SignalFactory.ClockSignal) {
       paintClockCycle(panel, g, xStart, yBottom, rightBorder);
-    } else if (signal instanceof DiagramConfig.BitSignal) {
+    } else if (signal instanceof SignalFactory.BitSignal) {
       paintBitSignalCycle(panel, g, xStart, yBottom,
-                          (DiagramConfig.BitSignal)signal, rightBorder);
-    } else if (signal instanceof DiagramConfig.ValuedSignal<?>) {
+                          (SignalFactory.BitSignal)signal, rightBorder);
+    } else if (signal instanceof SignalFactory.ValuedSignal<?>) {
       paintValuedSignalCycle(panel, g, xStart, yBottom,
-                             (DiagramConfig.ValuedSignal<?>)signal,
+                             (SignalFactory.ValuedSignal<?>)signal,
                              leftBorder, rightBorder);
     } else {
       throw new InternalError("unexpected signal type: " + signal);

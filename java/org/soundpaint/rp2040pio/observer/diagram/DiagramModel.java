@@ -1,5 +1,5 @@
 /*
- * @(#)TimingDiagram.java 1.00 21/02/12
+ * @(#)DiagramModel.java 1.00 21/02/12
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class TimingDiagram implements Iterable<Signal>
+public class DiagramModel implements Iterable<Signal>
 {
   private final PrintStream console;
   private final SDK sdk;
@@ -40,12 +40,12 @@ public class TimingDiagram implements Iterable<Signal>
   private final Object wallClockLock;
   private long wallClock;
 
-  private TimingDiagram()
+  private DiagramModel()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public TimingDiagram(final PrintStream console, final SDK sdk)
+  public DiagramModel(final PrintStream console, final SDK sdk)
     throws IOException
   {
     if (console == null) {
@@ -80,8 +80,8 @@ public class TimingDiagram implements Iterable<Signal>
                           final Supplier<Boolean> displayFilter)
     throws IOException
   {
-    final DiagramConfig.ValuedSignal<Integer> signal =
-      DiagramConfig.createFromRegister(sdk, label, address, msb, lsb,
+    final SignalFactory.ValuedSignal<Integer> signal =
+      SignalFactory.createFromRegister(sdk, label, address, msb, lsb,
                                        displayFilter);
     return addSignal(signal);
   }
@@ -96,8 +96,8 @@ public class TimingDiagram implements Iterable<Signal>
   public Signal addSignal(final String label, final int address, final int bit)
     throws IOException
   {
-    final DiagramConfig.BitSignal signal =
-      DiagramConfig.createFromRegister(sdk, label, address, bit);
+    final SignalFactory.BitSignal signal =
+      SignalFactory.createFromRegister(sdk, label, address, bit);
     return addSignal(signal);
   }
 

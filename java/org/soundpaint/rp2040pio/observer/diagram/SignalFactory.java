@@ -1,5 +1,5 @@
 /*
- * @(#)DiagramConfig.java 1.00 21/02/12
+ * @(#)SignalFactory.java 1.00 21/02/12
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -34,7 +34,7 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 /**
  * Configuration of a timing diagram.
  */
-public class DiagramConfig
+public class SignalFactory
 {
   public static class ClockSignal extends AbstractSignal<Void>
   {
