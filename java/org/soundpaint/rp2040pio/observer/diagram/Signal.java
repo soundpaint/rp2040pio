@@ -34,9 +34,7 @@ public interface Signal
   int size();
   int notChangedSince();
   String getRenderedValue();
-  String getPreviousRenderedValue();
   String getToolTipText();
-  String getPreviousToolTipText();
   void record();
   void rewind(final int index);
   void setVisible(final boolean visible);

@@ -113,14 +113,10 @@ public class SignalFactory
     @Override
     public boolean isBinary() { return true; }
 
-    public boolean asBoolean()
+    public Boolean asBoolean()
     {
-      return getValue() == Bit.HIGH;
-    }
-
-    public boolean previousAsBoolean()
-    {
-      return getPreviousValue() == Bit.HIGH;
+      final Bit value = getValue();
+      return value != null ? (value == Bit.HIGH) : null;
     }
   }
 

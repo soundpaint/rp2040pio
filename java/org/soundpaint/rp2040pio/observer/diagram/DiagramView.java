@@ -211,40 +211,37 @@ public class DiagramView extends JPanel
 
   private void paintBitSignalCycle(final JPanel panel, final Graphics2D g,
                                    final double xStart, final double yBottom,
-                                   final SignalFactory.BitSignal signal)
+                                   final SignalFactory.BitSignal signal,
+                                   final boolean firstCycle)
   {
+    final Boolean previousValue = signal.asBoolean();
     if (!signal.update()) return;
-    final double y =
-      yBottom - (signal.asBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + CLOCK_CYCLE_WIDTH;
-    final double yPrev;
-    if (signal.changed()) {
-      yPrev =
-        yBottom - (signal.previousAsBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
-    } else {
-      yPrev = y;
-    }
-    g.draw(new Line2D.Double(xStart, yPrev, xStable, y));
-    g.draw(new Line2D.Double(xStable, y, xStop, y));
+    final double yStable =
+      yBottom - (signal.asBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
+    final double yPrev =
+      firstCycle ? yStable : yBottom - (previousValue ? BIT_SIGNAL_HEIGHT : 0.0);
+    g.draw(new Line2D.Double(xStart, yPrev, xStable, yStable));
+    g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
   }
 
   private void paintValuedLabel(final JPanel panel, final Graphics2D g,
                                 final double xStart, final double yBottom,
                                 final SignalFactory.ValuedSignal<?> signal,
+                                final String label, final String toolTipText,
                                 final int cycles)
   {
-    final String label = signal.getPreviousRenderedValue();
     if (label != null) {
       final FontMetrics fm = panel.getFontMetrics(panel.getFont());
       final int width = fm.stringWidth(label);
       final double xLabelStart =
         xStart - 0.5 * (cycles * CLOCK_CYCLE_WIDTH - SIGNAL_SETUP_X + width);
+
       final double yTextBottom = yBottom - VALUE_LABEL_MARGIN_BOTTOM;
       g.setFont(VALUE_FONT);
       g.drawString(label, (float)xLabelStart, (float)yTextBottom);
     }
-    final String toolTipText = signal.getPreviousToolTipText();
     if (toolTipText != null) {
       addToolTip((int)(xStart - cycles * CLOCK_CYCLE_WIDTH),
                  (int)(yBottom - VALUED_SIGNAL_HEIGHT),
@@ -256,27 +253,35 @@ public class DiagramView extends JPanel
   private void paintValuedSignalCycle(final JPanel panel, final Graphics2D g,
                                       final double xStart, final double yBottom,
                                       final SignalFactory.ValuedSignal<?> signal,
-                                      final boolean leftBorder)
+                                      final boolean firstCycle,
+                                      final boolean lastCycle)
   {
-    // draw only previous event if completed, since current event may
-    // be still ongoing such that centered display of text is not yet
-    // reached
-    final int notChangedSince =
-      signal.notChangedSince(); // safe prior to signal update
-    if (!signal.update()) return;
+    // safe previous values prior to signal update
+    final int previousNotChangedSince = signal.notChangedSince();
+    final String previousLabel = signal.getRenderedValue();
+    final String previousToolTipText = signal.getToolTipText();
 
-    if (signal.changed()) {
-      // signal changed => go for printing label of completed value;
-      // right border => print label as preview for incomplete value
+    // Draw previous value only if finished, since current value may
+    // be still ongoing such that centered display of text is not yet
+    // reached.  However, if this is the last cycle for that a value
+    // has been recorded, then draw it anyway, since we can not forsee
+    // the future signal and thus print the current state.
+    if (!signal.update() && !lastCycle) return;
+
+    if (signal.changed() && !firstCycle) {
+      // signal changed => print label of previous, now finished
+      // value; but exclude first cycle, as it will be handled on next
+      // turn
       paintValuedLabel(panel, g, xStart, yBottom, signal,
-                       notChangedSince + 1);
+                       previousLabel, previousToolTipText,
+                       previousNotChangedSince + 1);
     }
 
     // draw lines for current value
     final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + CLOCK_CYCLE_WIDTH;
-    if (signal.changed()) {
+    if (signal.changed() && !firstCycle) {
       g.draw(new Line2D.Double(xStart, yTop, xStable, yBottom));
       g.draw(new Line2D.Double(xStart, yBottom, xStable, yTop));
     } else {
@@ -294,28 +299,39 @@ public class DiagramView extends JPanel
       fillG.setPaint(FILL_PAINT);
       fillG.fill(rectangle);
     }
+
+    if (lastCycle) {
+      // print label as preview for not yet finished value
+      paintValuedLabel(panel, g, xStart, yBottom, signal,
+                       signal.getRenderedValue(), signal.getToolTipText(),
+                       -1);
+    }
   }
 
   private void paintSignalCycle(final JPanel panel, final Graphics2D g,
                                 final double xStart, final double yBottom,
-                                final Signal signal, final boolean leftBorder)
+                                final Signal signal, final boolean firstCycle,
+                                final boolean lastCycle)
   {
     if (signal instanceof SignalFactory.ClockSignal) {
       paintClockCycle(panel, g, xStart, yBottom,
                       (SignalFactory.ClockSignal)signal);
     } else if (signal instanceof SignalFactory.BitSignal) {
       paintBitSignalCycle(panel, g, xStart, yBottom,
-                          (SignalFactory.BitSignal)signal);
+                          (SignalFactory.BitSignal)signal,
+                          firstCycle);
     } else if (signal instanceof SignalFactory.ValuedSignal<?>) {
       paintValuedSignalCycle(panel, g, xStart, yBottom,
-                             (SignalFactory.ValuedSignal<?>)signal, leftBorder);
+                             (SignalFactory.ValuedSignal<?>)signal,
+                             firstCycle, lastCycle);
     } else {
       throw new InternalError("unexpected signal type: " + signal);
     }
   }
 
   private void paintSignalsCycle(final JPanel panel, final Graphics2D g,
-                                 final double xStart, final boolean leftBorder)
+                                 final double xStart, final boolean firstCycle,
+                                 final boolean lastCycle)
   {
     g.setColor(Color.BLACK);
     g.setStroke(PLAIN_STROKE);
@@ -324,7 +340,8 @@ public class DiagramView extends JPanel
       if (signal.getVisible()) {
         final double height =
           signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-        paintSignalCycle(panel, g, xStart, y += height, signal, leftBorder);
+        paintSignalCycle(panel, g, xStart, y += height, signal,
+                         firstCycle, lastCycle);
       }
     }
   }
@@ -367,9 +384,10 @@ public class DiagramView extends JPanel
       (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / CLOCK_CYCLE_WIDTH + 1);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
       final double x = LEFT_MARGIN + cycle * CLOCK_CYCLE_WIDTH;
-      final boolean leftBorder = cycle == 0;
+      final boolean firstCycle = cycle == 0;
+      final boolean lastCycle = cycle == model.getSignalSize() - 1;
       paintGridLine(g, x, height);
-      paintSignalsCycle(panel, g, x, leftBorder);
+      paintSignalsCycle(panel, g, x, firstCycle, lastCycle);
     }
     paintGridLine(g, LEFT_MARGIN + stopCycle * CLOCK_CYCLE_WIDTH, height);
   }

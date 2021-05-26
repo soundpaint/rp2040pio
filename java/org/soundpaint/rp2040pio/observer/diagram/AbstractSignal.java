@@ -32,7 +32,6 @@ public abstract class AbstractSignal<T> implements Signal
 {
   private static class SignalRecord<T>
   {
-    private T previousValue;
     private T value;
     private int notChangedSince;
 
@@ -41,10 +40,8 @@ public abstract class AbstractSignal<T> implements Signal
       throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    private SignalRecord(final T previousValue, final T value,
-                         final int notChangedSince)
+    private SignalRecord(final T value, final int notChangedSince)
     {
-      this.previousValue = previousValue;
       this.value = value;
       this.notChangedSince = notChangedSince;
     }
@@ -52,14 +49,13 @@ public abstract class AbstractSignal<T> implements Signal
     @Override
     public String toString()
     {
-      return String.format("SignalRecord(prev=%s,curr=%s,notChangedSince=%d",
-                           previousValue, value, notChangedSince);
+      return String.format("SignalRecord(value=%s,notChangedSince=%d",
+                           value, notChangedSince);
     }
   }
 
   private final List<SignalRecord<T>> signalRecords;
   private final String label;
-  private T previousValue;
   private T value;
   private int notChangedSince;
   private Function<T, String> renderer;
@@ -87,7 +83,6 @@ public abstract class AbstractSignal<T> implements Signal
 
   @Override
   public void reset() {
-    previousValue = null;
     value = null;
     notChangedSince = 0;
     signalRecords.clear();
@@ -106,12 +101,12 @@ public abstract class AbstractSignal<T> implements Signal
       throw new IllegalArgumentException(message);
     }
     replayIndex = index;
+    value = null;
+    notChangedSince = 0;
   }
 
   @Override
   public String getLabel() { return label; }
-
-  public T getPreviousValue() { return previousValue; }
 
   public T getValue() { return value; }
 
@@ -129,7 +124,7 @@ public abstract class AbstractSignal<T> implements Signal
 
   protected void record(final T value, final boolean enforceChanged)
   {
-    this.previousValue = this.value;
+    final T previousValue = this.value;
     this.value = value;
     if (enforceChanged ||
         ((value == null) && (previousValue != null)) ||
@@ -139,7 +134,7 @@ public abstract class AbstractSignal<T> implements Signal
       notChangedSince++;
     }
     final SignalRecord<T> signalRecord =
-      new SignalRecord<T>(previousValue, value, notChangedSince);
+      new SignalRecord<T>(value, notChangedSince);
     signalRecords.add(signalRecord);
   }
 
@@ -153,7 +148,6 @@ public abstract class AbstractSignal<T> implements Signal
   {
     if (replayIndex >= signalRecords.size()) return false;
     final SignalRecord<T> signalRecord = signalRecords.get(replayIndex++);
-    previousValue = signalRecord.previousValue;
     value = signalRecord.value;
     notChangedSince = signalRecord.notChangedSince;
     return true;
@@ -190,12 +184,6 @@ public abstract class AbstractSignal<T> implements Signal
     return renderValue(value);
   }
 
-  @Override
-  public String getPreviousRenderedValue()
-  {
-    return renderValue(previousValue);
-  }
-
   /**
    * Setting the tooltip texter to &lt;code&gt;null&lt;/code&gt;
    * results in reverting to the default behavior of not providing any
@@ -223,12 +211,6 @@ public abstract class AbstractSignal<T> implements Signal
   }
 
   @Override
-  public String getPreviousToolTipText()
-  {
-    return toolTipTextForValue(previousValue);
-  }
-
-  @Override
   public void setVisible(final boolean visible)
   {
     this.visible = visible;
@@ -243,7 +225,7 @@ public abstract class AbstractSignal<T> implements Signal
   @Override
   public String toString()
   {
-    return "Signal[" + label + "]";
+    return String.format("Signal[label=%s, value=%s]", label, value);
   }
 }
 

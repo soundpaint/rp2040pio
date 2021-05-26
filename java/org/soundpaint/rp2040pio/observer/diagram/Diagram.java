@@ -143,13 +143,19 @@ public class Diagram extends GUIObserver
       final String label = "GPIO " + gpioNum;
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
-      final Signal signal = model.addSignal(label, address, 8, 8);
-      if (gpioNum == 0) signal.setVisible(true);
+      model.addSignal(label + " Value", address, 8, 8).setVisible(gpioNum == 0);
+      model.addSignal(label + " Level", address, 8);
     }
     final SDK sdk = getSDK();
     final int addrSm0Pc =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
     model.addSignal("SM0_PC", addrSm0Pc);
+    final int addrSm0RegX =
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGX);
+    model.addSignal("SM0_REGX", addrSm0RegX);
+    final int addrSm0RegY =
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGY);
+    model.addSignal("SM0_REGY", addrSm0RegY);
     model.addSignal("SM0_PC (hidden delay)",
                     addrSm0Pc, createDelayFilter(sdk, 0, 0)).setVisible(true);
     final int instrAddr =
