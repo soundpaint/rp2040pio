@@ -42,6 +42,7 @@ public class MenuBar<T extends GUIObserver> extends JMenuBar
   private static final long serialVersionUID = -5235397033202919401L;
 
   private final T observer;
+  private final JDialog aboutDialog;
   private final JDialog licenseDialog;
 
   private MenuBar()
@@ -53,11 +54,28 @@ public class MenuBar<T extends GUIObserver> extends JMenuBar
   {
     Objects.requireNonNull(observer);
     this.observer = observer;
+    aboutDialog = createAboutDialog();
     final LicenseView licenseView = new LicenseView(console);
     licenseDialog = licenseView.createDialog(this, licenseView.getTitle());
+    licenseDialog.setModal(false);
     add(createFileMenu());
     addAdditionalMenus(observer);
     add(createHelpMenu());
+  }
+
+  private JDialog createAboutDialog()
+  {
+    final JOptionPane aboutPane = new JOptionPane();
+    final String message =
+      String.format("%s%n%s for%n%s%n%s",
+                    observer.getAppTitle(), observer.getAppFullName(),
+                    Constants.getEmulatorIdAndVersionWithOs(),
+                    Constants.getGuiCopyrightNotice());
+    aboutPane.setMessage(message);
+    aboutPane.setMessageType(JOptionPane.INFORMATION_MESSAGE);
+    final JDialog aboutDialog = aboutPane.createDialog(this, "About");
+    aboutDialog.setModal(false);
+    return aboutDialog;
   }
 
   /**
@@ -108,14 +126,7 @@ public class MenuBar<T extends GUIObserver> extends JMenuBar
     about.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A,
                                                 ActionEvent.ALT_MASK));
     about.getAccessibleContext().setAccessibleDescription("About this app");
-    about.addActionListener((event) -> {
-        final String message =
-          String.format("%s%n%s for%n%s",
-                        observer.getAppTitle(), observer.getAppFullName(),
-                        Constants.getEmulatorAbout());
-        JOptionPane.showMessageDialog(this, message, "About",
-                                      JOptionPane.INFORMATION_MESSAGE);
-      });
+    about.addActionListener((event) -> aboutDialog.setVisible(true));
     helpMenu.add(about);
 
     final JMenuItem license = new JMenuItem("License…");

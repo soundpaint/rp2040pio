@@ -78,7 +78,8 @@ public class CommandRegistry implements Iterable<Command>
 
   public CommandRegistry(final PrintStream console,
                          final BufferedReader in,
-                         final SDK sdk)
+                         final SDK sdk,
+                         final String appFullName)
   {
     if (console == null) {
       throw new NullPointerException("console");
@@ -88,10 +89,11 @@ public class CommandRegistry implements Iterable<Command>
       new TreeSet<Command>((cmd1, cmd2) ->
                            cmd1.getFullName().compareTo(cmd2.getFullName()));
     token2commands = new HashMap<String, List<Command>>();
-    quit = installCommands(in, sdk);
+    quit = installCommands(in, sdk, appFullName);
   }
 
-  private Quit installCommands(final BufferedReader in, final SDK sdk)
+  private Quit installCommands(final BufferedReader in, final SDK sdk,
+                               final String appFullName)
   {
     final Quit quit;
     add(new BreakPoints(console, sdk));
@@ -114,7 +116,7 @@ public class CommandRegistry implements Iterable<Command>
     add(new Trace(console, sdk));
     add(new Unassemble(console, sdk));
     add(new Unload(console, sdk));
-    add(new Version(console, sdk));
+    add(new Version(console, sdk, appFullName));
     add(new Wait(console, sdk));
     add(new Wrap(console, sdk));
     add(new Write(console, sdk));

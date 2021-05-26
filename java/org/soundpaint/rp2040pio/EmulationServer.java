@@ -118,8 +118,9 @@ public class EmulationServer
 
   private void printAbout()
   {
-    console.println("Emulation Server Daemon");
-    console.println(Constants.getEmulatorAbout());
+    console.printf("%s%n%s%n%s%n",
+                   "Emulation Server Daemon",
+                   Constants.getEmulatorIdAndVersionWithOs());
   }
 
   private void run()

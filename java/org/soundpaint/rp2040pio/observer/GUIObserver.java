@@ -195,8 +195,7 @@ public abstract class GUIObserver extends JFrame
       throw new InternalError();
     }
     if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
-      console.println(appFullName);
-      console.println(Constants.getEmulatorAbout());
+      printAbout();
       System.exit(0);
       throw new InternalError();
     }
@@ -238,8 +237,10 @@ public abstract class GUIObserver extends JFrame
 
   private void printAbout()
   {
-    console.println(appFullName);
-    console.println(Constants.getEmulatorAbout());
+    console.printf("%s%n%s for%n%s%n%s",
+                   appTitle, appFullName,
+                   Constants.getEmulatorIdAndVersionWithOs(),
+                   Constants.getGuiCopyrightNotice());
   }
 
   private Registers createRegisters(final String threadName)

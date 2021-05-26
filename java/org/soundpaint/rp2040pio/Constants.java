@@ -28,9 +28,36 @@ public interface Constants
 {
   public static final String PROGRAM_ID = "RP2040 PIO Emulator";
   public static final String VERSION_ID = "0.1";
-  public static final String COPYRIGHT_NOTICE =
-    String.format("© 2021 by J. Reuter%n" +
-                  "Karlsruhe, Germany");
+  public static final String COPYRIGHT_TAG_LINE =
+    String.format("Copyright © 2021 by Jürgen Reuter, Karlsruhe, Germany.%n");
+  public static final String CMD_LINE_COPYRIGHT_NOTICE =
+    String.format(COPYRIGHT_TAG_LINE +
+                  "%n" +
+                  "This software comes with ABSOLUTELY NO WARRANTY;%n" +
+                  "for details please look at the license file that you%n" +
+                  "should have received together with this software.%n" +
+                  "This is free software, and you are welcome to%n" +
+                  "redistribute it under certain conditions;%n" +
+                  "for details please look at the license file that you%n" +
+                  "should have received together with this software.%n");
+  public static final String MONITOR_COPYRIGHT_NOTICE =
+    String.format(COPYRIGHT_TAG_LINE +
+                  "%n" +
+                  "This software comes with ABSOLUTELY NO WARRANTY;%n" +
+                  "for details please look at the license file that you%n" +
+                  "should have received together with this software.%n" +
+                  "This is free software, and you are welcome to%n" +
+                  "redistribute it under certain conditions;%n" +
+                  "for details please look at the license file that you%n" +
+                  "should have received together with this software.%n");
+  public static final String GUI_COPYRIGHT_NOTICE =
+    String.format(COPYRIGHT_TAG_LINE +
+                  "%n" +
+                  "This software comes with ABSOLUTELY NO WARRANTY;%n" +
+                  "for details type `Alt-L' in the main window.%n" +
+                  "This is free software, and you are welcome to%n" +
+                  "redistribute it under certain conditions;%n" +
+                  "type `Alt-L' in the main window for details.%n");
 
   public static String getEmulatorId()
   {
@@ -42,9 +69,19 @@ public interface Constants
     return VERSION_ID;
   }
 
-  public static String getCopyrightNotice()
+  public static String getCmdLineCopyrightNotice()
   {
-    return COPYRIGHT_NOTICE;
+    return CMD_LINE_COPYRIGHT_NOTICE;
+  }
+
+  public static String getMonitorCopyrightNotice()
+  {
+    return MONITOR_COPYRIGHT_NOTICE;
+  }
+
+  public static String getGuiCopyrightNotice()
+  {
+    return GUI_COPYRIGHT_NOTICE;
   }
 
   public static String getEmulatorIdAndVersionWithOs()
@@ -52,15 +89,8 @@ public interface Constants
     return
       getEmulatorId() +
       " Version " + getEmulatorVersion() +
-      " / " + System.getProperty("os.name") +
-      " " + System.getProperty("os.version");
-  }
-
-  public static String getEmulatorAbout()
-  {
-    return
-      String.format("%s%n%s", getEmulatorIdAndVersionWithOs(),
-                    getCopyrightNotice());
+      " / jvm " + System.getProperty("java.version") +
+      " / " + System.getProperty("java.class.version");
   }
 
   public static final int GPIO_NUM = 32;

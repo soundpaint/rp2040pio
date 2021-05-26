@@ -142,7 +142,7 @@ public class MonitorCommandsDocsBuilder
       new BufferedReader(new InputStreamReader(System.in));
     final SDK sdk = new SDK(console, registers);
     final CommandRegistry commandRegistry =
-      new CommandRegistry(console, in, sdk);
+      new CommandRegistry(console, in, sdk, null);
     s.append(createCommandsOverview(commandRegistry));
     for (final Command command : commandRegistry) {
       s.append(createCommandDocs(command));

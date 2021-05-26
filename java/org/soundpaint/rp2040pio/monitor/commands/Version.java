@@ -26,6 +26,7 @@ package org.soundpaint.rp2040pio.monitor.commands;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -39,14 +40,17 @@ public class Version extends Command
   private static final String singleLineDescription = "print emulator version";
 
   private final SDK sdk;
+  private final String appFullName;
 
-  public Version(final PrintStream console, final SDK sdk)
+  public Version(final PrintStream console, final SDK sdk,
+                 final String appFullName)
   {
     super(console, fullName, singleLineDescription);
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
     this.sdk = sdk;
+    this.appFullName = appFullName;
   }
 
   /**
@@ -56,7 +60,10 @@ public class Version extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    console.println(sdk.getEmulatorInfo());
+    console.printf("%s%n%s%n%s%n",
+                   appFullName,
+                   sdk.getEmulatorInfo(),
+                   Constants.getCmdLineCopyrightNotice());
     return true;
   }
 }

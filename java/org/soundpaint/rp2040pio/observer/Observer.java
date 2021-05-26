@@ -103,8 +103,7 @@ public class Observer
       throw new InternalError();
     }
     if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
-      console.println(APP_FULL_NAME);
-      console.println(Constants.getEmulatorAbout());
+      printAbout();
       System.exit(0);
       throw new InternalError();
     }
@@ -139,8 +138,10 @@ public class Observer
 
   private void printAbout()
   {
-    console.println("Observer App for");
-    console.println(Constants.getEmulatorAbout());
+    console.printf("%s for%n%s%n%s%n",
+                   APP_FULL_NAME,
+                   Constants.getEmulatorIdAndVersionWithOs(),
+                   Constants.getCmdLineCopyrightNotice());
   }
 
   private Registers connect()

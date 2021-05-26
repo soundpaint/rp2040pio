@@ -49,7 +49,8 @@ import org.soundpaint.rp2040pio.sdk.ProgramParser;
 public class Monitor
 {
   private static final String APP_TITLE = "Monitor";
-  private static final String APP_FULL_NAME = "Emulation Monitor Version 0.1";
+  private static final String APP_FULL_NAME =
+    "Emulation Monitor Control Program Version 0.1";
   private static final CmdOptions.FlagOptionDeclaration optVersion =
     CmdOptions.createFlagOption(false, 'V', "version", CmdOptions.Flag.OFF,
                                 "display version information and exit");
@@ -102,7 +103,7 @@ public class Monitor
       sdk = new SDK(console, connect());
       pioSdk = sdk.getPIO0SDK();
       gpioSdk = sdk.getGPIOSDK();
-      commands = new CommandRegistry(console, in, sdk);
+      commands = new CommandRegistry(console, in, sdk, APP_FULL_NAME);
     } else {
       sdk = null;
       pioSdk = null;
@@ -125,8 +126,7 @@ public class Monitor
       throw new IOException(message);
     }
     if (options.getValue(optVersion) == CmdOptions.Flag.ON) {
-      console.println(APP_FULL_NAME);
-      console.println(Constants.getEmulatorAbout());
+      printAbout();
       return null;
     }
     if (options.getValue(optHelp) == CmdOptions.Flag.ON) {
@@ -153,8 +153,10 @@ public class Monitor
 
   private void printAbout()
   {
-    console.printf("Monitor Control Program%n%s%n%s%n",
-                   Constants.getEmulatorAbout(),
+    console.printf("%s for%n%s%n%s%n%s%n",
+                   APP_FULL_NAME,
+                   Constants.getEmulatorIdAndVersionWithOs(),
+                   Constants.getMonitorCopyrightNotice(),
                    String.format(Command.commandHint));
   }
 

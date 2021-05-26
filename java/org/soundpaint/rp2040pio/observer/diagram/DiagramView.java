@@ -165,7 +165,9 @@ public class DiagramView extends JPanel
     }
     final int preferredHeight = (int)(y + BOTTOM_MARGIN);
     final int preferredWidth =
-      (int)Math.round(LEFT_MARGIN + CLOCK_CYCLE_WIDTH * model.getSignalSize());
+      (int)Math.round(LEFT_MARGIN +
+                      CLOCK_CYCLE_WIDTH * model.getSignalSize() +
+                      RIGHT_MARGIN);
     preferredSize.setSize(preferredWidth, preferredHeight);
     revalidate();
   }
