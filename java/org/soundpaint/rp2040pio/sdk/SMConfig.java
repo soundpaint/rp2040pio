@@ -147,11 +147,11 @@ public class SMConfig implements Constants
     if (bitCount > 7) {
       throw new IllegalArgumentException("bitCount > 7: " + bitCount);
     }
-    pinCtrl &= 0x1fffffff;
-    pinCtrl |= bitCount << 29; // PINCTRL_SIDESET_COUNT
-    execCtrl &= 0x9fffffff;
-    execCtrl |= (optional ? 1 : 0) << 30; // EXECCTRL_SIDE_EN
-    execCtrl |= (pinDirs ? 1 : 0) << 29; // EXECCTRL_SIDE_PINDIR
+    pinCtrl &= ~SM0_PINCTRL_SIDESET_COUNT_BITS;
+    pinCtrl |= bitCount << SM0_PINCTRL_SIDESET_COUNT_LSB;
+    execCtrl &= ~(SM0_EXECCTRL_SIDE_EN_BITS | SM0_EXECCTRL_SIDE_PINDIR_BITS);
+    execCtrl |= (optional ? 1 : 0) << SM0_EXECCTRL_SIDE_EN_LSB;
+    execCtrl |= (pinDirs ? 1 : 0) << SM0_EXECCTRL_SIDE_PINDIR_LSB;
   }
 
   public void setClkDiv(final float div)
@@ -181,9 +181,9 @@ public class SMConfig implements Constants
     if (divFrac > 255) {
       throw new IllegalArgumentException("div int > 255: " + divFrac);
     }
-    clkDiv &= 0x000000ff;
-    clkDiv |= divInt << 16; // CLKDIV_INT
-    clkDiv |= divFrac << 8; // CLKDIV_FRAC
+    clkDiv &= ~(SM0_CLKDIV_INT_BITS | SM0_CLKDIV_FRAC_BITS);
+    clkDiv |= divInt << SM0_CLKDIV_INT_LSB;
+    clkDiv |= divFrac << SM0_CLKDIV_FRAC_LSB;
   }
 
   public void setWrap(final int wrapTarget, final int wrap)
@@ -217,8 +217,8 @@ public class SMConfig implements Constants
       throw new IllegalArgumentException("jmp pin > " + (GPIO_NUM - 1) + ": " +
                                          pin);
     }
-    execCtrl &= 0xe0ffffff;
-    execCtrl |= pin << 24; // EXECCTRL_JMP_PIN
+    execCtrl &= ~SM0_EXECCTRL_JMP_PIN_BITS;
+    execCtrl |= pin << SM0_EXECCTRL_JMP_PIN_LSB;
   }
 
   public void setInShift(final boolean shiftRight,
@@ -233,10 +233,12 @@ public class SMConfig implements Constants
       throw new IllegalArgumentException("push threshold > 31: " +
                                          pushThreshold);
     }
-    shiftCtrl &= 0xfe0affff;
-    shiftCtrl |= (shiftRight ? 1 : 0) << 18; // SHIFTCTRL_IN_SHIFTDIR
-    shiftCtrl |= (autoPush ? 1 : 0) << 16; // SHIFTCTRL_AUTOPUSH
-    shiftCtrl |= pushThreshold << 20; // SHIFTCTRL_PUSH_THRESH
+    shiftCtrl &= ~(SM0_SHIFTCTRL_PUSH_THRESH_BITS |
+                   SM0_SHIFTCTRL_IN_SHIFTDIR_BITS |
+                   SM0_SHIFTCTRL_AUTOPUSH_BITS);
+    shiftCtrl |= pushThreshold << SM0_SHIFTCTRL_PUSH_THRESH_LSB;
+    shiftCtrl |= (autoPush ? 1 : 0) << SM0_SHIFTCTRL_AUTOPUSH_LSB;
+    shiftCtrl |= (shiftRight ? 1 : 0) << SM0_SHIFTCTRL_IN_SHIFTDIR_LSB;
   }
 
   public void setOutShift(final boolean shiftRight,
@@ -251,16 +253,18 @@ public class SMConfig implements Constants
       throw new IllegalArgumentException("pull threshold > 31: " +
                                          pullThreshold);
     }
-    shiftCtrl &= 0xc1f5ffff;
-    shiftCtrl |= (shiftRight ? 1 : 0) << 19; // SHIFTCTRL_OUT_SHIFTDIR
-    shiftCtrl |= (autoPull ? 1 : 0) << 17; // SHIFTCTRL_AUTOPULL
-    shiftCtrl |= pullThreshold << 25; // SHIFTCTRL_PULL_THRESH
+    shiftCtrl &= ~(SM0_SHIFTCTRL_PULL_THRESH_BITS |
+                   SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS |
+                   SM0_SHIFTCTRL_AUTOPULL_BITS);
+    shiftCtrl |= pullThreshold << SM0_SHIFTCTRL_PULL_THRESH_LSB;
+    shiftCtrl |= (shiftRight ? 1 : 0) << SM0_SHIFTCTRL_OUT_SHIFTDIR_LSB;
+    shiftCtrl |= (autoPull ? 1 : 0) << SM0_SHIFTCTRL_AUTOPULL_LSB;
   }
 
   public void setFIFOJoin(final FIFOJoin join)
   {
-    shiftCtrl &= 0x3fffffff;
-    shiftCtrl |= join.ordinal() << 30; // SHIFTCTRL_FJOIN_RX/TX
+    shiftCtrl &= ~(SM0_SHIFTCTRL_FJOIN_RX_BITS | SM0_SHIFTCTRL_FJOIN_TX_BITS);
+    shiftCtrl |= join.ordinal() << SM0_SHIFTCTRL_FJOIN_TX_LSB;
   }
 
   public void setOutSpecial(final boolean sticky, final boolean hasEnablePin,
@@ -275,10 +279,12 @@ public class SMConfig implements Constants
                                          (GPIO_NUM - 1) + ": " +
                                          enablePinIndex);
     }
-    execCtrl &= 0xff01ffff;
-    execCtrl |= (sticky ? 1 : 0) << 17; // EXECCTRL_OUT_STICKY
-    execCtrl |= (hasEnablePin ? 1 : 0) << 18; // EXECCTRL_INLINE_OUT_EN
-    execCtrl |= enablePinIndex << 19; // EXECCTRL_OUT_EN_SEL
+    execCtrl &= ~(SM0_EXECCTRL_OUT_EN_SEL_BITS |
+                  SM0_EXECCTRL_INLINE_OUT_EN_BITS |
+                  SM0_EXECCTRL_OUT_STICKY_BITS);
+    execCtrl |= enablePinIndex << SM0_EXECCTRL_OUT_EN_SEL_LSB;
+    execCtrl |= (hasEnablePin ? 1 : 0) << SM0_EXECCTRL_INLINE_OUT_EN_LSB;
+    execCtrl |= (sticky ? 1 : 0) << SM0_EXECCTRL_OUT_STICKY_LSB;
   }
 
   public void setMoveStatus(final MoveStatusType statusSel,
@@ -292,9 +298,9 @@ public class SMConfig implements Constants
       throw new IllegalArgumentException("status n > 15: " +
                                          statusN);
     }
-    execCtrl &= 0xffffffe0;
-    execCtrl |= statusSel.ordinal() << 4; // EXECCTRL_STATUS_SEL
-    execCtrl |= statusN; // EXECCTRL_STATUS_N
+    execCtrl &= ~(SM0_EXECCTRL_STATUS_SEL_BITS | SM0_EXECCTRL_STATUS_N_BITS);
+    execCtrl |= statusSel.ordinal() << SM0_EXECCTRL_STATUS_SEL_LSB;
+    execCtrl |= statusN << SM0_EXECCTRL_STATUS_N_LSB;
   }
 
   public static SMConfig getDefault()

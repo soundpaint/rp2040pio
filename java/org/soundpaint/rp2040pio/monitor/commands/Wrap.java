@@ -143,6 +143,7 @@ public class Wrap extends Command
     final int writeMask = Constants.SM0_EXECCTRL_WRAP_TOP_BITS;
     final int values = wrap << Constants.SM0_EXECCTRL_WRAP_TOP_LSB;
     sdk.hwWriteMasked(address, values, writeMask);
+    console.printf("(pio%d:sm%d) set wrap=%d%n", pioNum, smNum, wrap);
   }
 
   private void setWrapTarget(final int pioNum, final int smNum,
@@ -154,6 +155,8 @@ public class Wrap extends Command
     final int writeMask = Constants.SM0_EXECCTRL_WRAP_BOTTOM_BITS;
     final int values = wrapTarget << Constants.SM0_EXECCTRL_WRAP_BOTTOM_LSB;
     sdk.hwWriteMasked(address, values, writeMask);
+    console.printf("(pio%d:sm%d) set wrap_target=%d%n",
+                   pioNum, smNum, wrapTarget);
   }
 
   /**

@@ -84,6 +84,22 @@ public class Fifo extends Command
   private static final CmdOptions.FlagOptionDeclaration optUnjoin =
     CmdOptions.createFlagOption(false, 'u', "unjoin", CmdOptions.Flag.OFF,
                                 "revoke join operation of either RX or TX FIFO");
+  private static final CmdOptions.IntegerOptionDeclaration optThreshold =
+    CmdOptions.createIntegerOption("NUMBER", false, null, "threshold", null,
+                                   "set pull threshold (when TX selected) " +
+                                   "or push threshold (when RX selected)");
+  private static final CmdOptions.FlagOptionDeclaration optShiftLeft =
+    CmdOptions.createFlagOption(false, null, "shift-left", CmdOptions.Flag.OFF,
+                                "set shift direction left for OSR (when TX" +
+                                "selected or for ISR (when RX selected)");
+  private static final CmdOptions.FlagOptionDeclaration optShiftRight =
+    CmdOptions.createFlagOption(false, null, "shift-right", CmdOptions.Flag.OFF,
+                                "set shift direction left for OSR (when TX" +
+                                "selected or for ISR (when RX selected)");
+  private static final CmdOptions.BooleanOptionDeclaration optAuto =
+    CmdOptions.createBooleanOption(false, null, "auto", null,
+                                "turn on or off auto-pull (when TX " +
+                                "selected) or auto-push (when RX selected)");
   private static final CmdOptions.FlagOptionDeclaration optTX =
     CmdOptions.createFlagOption(false, 't', "tx", CmdOptions.Flag.OFF,
                                 "apply modification on TX FIFO");
@@ -103,7 +119,9 @@ public class Fifo extends Command
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
           { optPio, optSm, optAddress, optValue,
-              optDequeue, optEnqueue, optJoin, optUnjoin, optTX, optRX });
+              optDequeue, optEnqueue, optJoin, optUnjoin,
+              optThreshold, optShiftLeft, optShiftRight, optAuto,
+              optTX, optRX });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -148,6 +166,17 @@ public class Fifo extends Command
           throw new CmdOptions.ParseException("missing option: -a or -e");
         }
       }
+      final Integer optThresholdValue = options.getValue(optThreshold);
+      if (optThresholdValue != null) {
+        final int threshold = optThresholdValue;
+        if ((threshold < 0) || (threshold > 32 /* assume (32 == 0) */)) {
+          final String message =
+            String.format("expected threshold value in the range 0…%d, " +
+                          "but got: %d", 32, threshold);
+          throw new CmdOptions.ParseException(message);
+        }
+      }
+      final Boolean optAutoValue = options.getValue(optAuto);
       if (options.getValue(optRX).isOn() && options.getValue(optTX).isOn()) {
         final String message =
           "either option -r and -t can be specified, but not both";
@@ -159,15 +188,21 @@ public class Fifo extends Command
       if (options.getValue(optEnqueue).isOn()) opCount++;
       if (options.getValue(optJoin).isOn()) opCount++;
       if (options.getValue(optUnjoin).isOn()) opCount++;
+      if (optThresholdValue != null) opCount++;
+      if (options.getValue(optShiftLeft).isOn()) opCount++;
+      if (options.getValue(optShiftRight).isOn()) opCount++;
+      if (optAutoValue != null) opCount++;
       if (opCount > 1) {
         final String message =
-          "only one of options -a, -d, -q, -j and -u may be specified";
+          "only one of options -a, -d, -q, -j, -u, --threshold, " +
+          "--shift-left, --shift-right and --auto may be specified";
         throw new CmdOptions.ParseException(message);
       }
       if (opCount > 0) {
         if (!options.getValue(optRX).isOn() && !options.getValue(optTX).isOn()) {
           final String message =
-            "if one of options -d, -q, -j and -u is specified, either " +
+            "if one of options -d, -q, -j, -u, --threshold, " +
+            "--shift-left, --shift-right or --auto is specified, either " +
             "option -r or -t must be specified to select a FIFO";
           throw new CmdOptions.ParseException(message);
         }
@@ -175,7 +210,8 @@ public class Fifo extends Command
         if (options.getValue(optRX).isOn() && options.getValue(optTX).isOn()) {
           final String message =
             "options -r or -t may be specified only if one of " +
-            "options -d, -q, -j and -u is specified";
+            "options -d, -q, -j, -u, --threshold, " +
+            "--shift-left, --shift-right and --auto is specified";
           throw new CmdOptions.ParseException(message);
         }
       }
@@ -200,6 +236,11 @@ public class Fifo extends Command
     return (fLevel >>> (smNum << 3)) & 0xff;
   }
 
+  private static String shiftDirectionAsString(final boolean isRight)
+  {
+    return isRight ? "right" : "left";
+  }
+
   private void displayFifo(final int pioNum, final int smNum)
     throws IOException
   {
@@ -218,6 +259,20 @@ public class Fifo extends Command
       (shiftCtrlValue & Constants.SM0_SHIFTCTRL_FJOIN_RX_BITS) != 0x0;
     final boolean fJoinTxValue =
       (shiftCtrlValue & Constants.SM0_SHIFTCTRL_FJOIN_TX_BITS) != 0x0;
+    final boolean autoPullValue =
+      (shiftCtrlValue & Constants.SM0_SHIFTCTRL_AUTOPULL_BITS) != 0x0;
+    final boolean autoPushValue =
+      (shiftCtrlValue & Constants.SM0_SHIFTCTRL_AUTOPUSH_BITS) != 0x0;
+    final boolean outShiftRight =
+      (shiftCtrlValue & Constants.SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS) != 0x0;
+    final boolean inShiftRight =
+      (shiftCtrlValue & Constants.SM0_SHIFTCTRL_IN_SHIFTDIR_BITS) != 0x0;
+    final int pullThreshold =
+      (shiftCtrlValue & Constants.SM0_SHIFTCTRL_PULL_THRESH_BITS) >>>
+      Constants.SM0_SHIFTCTRL_PULL_THRESH_LSB;
+    final int pushThreshold =
+      (shiftCtrlValue & Constants.SM0_SHIFTCTRL_PUSH_THRESH_BITS) >>>
+      Constants.SM0_SHIFTCTRL_PUSH_THRESH_LSB;
     final StringBuffer fifoHeader = new StringBuffer();
     Type type = fJoinRxValue ? (fJoinTxValue ? null : Type.RX) : Type.TX;
     int regCount = 0;
@@ -254,6 +309,73 @@ public class Fifo extends Command
     if (fifoLevels.length() > 0) {
       console.printf("           (%s)%n", fifoLevels);
     }
+    console.printf("(pio%d:sm%d) TX: threshold=%d, shift direction=%s, " +
+                   "auto-pull=%s%n", pioNum, smNum, pullThreshold,
+                   shiftDirectionAsString(outShiftRight), autoPullValue);
+    console.printf("(pio%d:sm%d) RX: threshold=%d, shift direction=%s, " +
+                   "auto-push=%s%n", pioNum, smNum, pushThreshold,
+                   shiftDirectionAsString(inShiftRight), autoPushValue);
+  }
+
+  private void setThreshold(final int pioNum, final int smNum, final Type type,
+                            final int threshold)
+    throws IOException
+  {
+    final int addressShiftCtrl =
+      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
+    final int mask;
+    final int lsb;
+    if (type == Type.TX) {
+      mask = Constants.SM0_SHIFTCTRL_PULL_THRESH_BITS;
+      lsb = Constants.SM0_SHIFTCTRL_PULL_THRESH_LSB;
+    } else {
+      mask = Constants.SM0_SHIFTCTRL_PUSH_THRESH_BITS;
+      lsb = Constants.SM0_SHIFTCTRL_PUSH_THRESH_LSB;
+    }
+    sdk.hwWriteMasked(addressShiftCtrl, threshold << lsb, mask);
+    console.printf("(pio%d:sm%d) set %s threshold to %d%n",
+                   pioNum, smNum, type == Type.TX ? "pull" : "push", threshold);
+  }
+
+  private void setShiftDir(final int pioNum, final int smNum, final Type type,
+                           final boolean right)
+    throws IOException
+  {
+    final int addressShiftCtrl =
+      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
+    final int mask;
+    final int lsb;
+    if (type == Type.TX) {
+      mask = Constants.SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS;
+      lsb = Constants.SM0_SHIFTCTRL_OUT_SHIFTDIR_LSB;
+    } else {
+      mask = Constants.SM0_SHIFTCTRL_IN_SHIFTDIR_BITS;
+      lsb = Constants.SM0_SHIFTCTRL_IN_SHIFTDIR_LSB;
+    }
+    sdk.hwWriteMasked(addressShiftCtrl, (right ? 0x1 : 0x0) << lsb, mask);
+    console.printf("(pio%d:sm%d) set shift direction for %s to %s%n",
+                   pioNum, smNum, type == Type.TX ? "OSR" : "ISR",
+                   shiftDirectionAsString(right));
+  }
+
+  private void setAuto(final int pioNum, final int smNum, final Type type,
+                       final boolean auto)
+    throws IOException
+  {
+    final int addressShiftCtrl =
+      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
+    final int mask;
+    final int lsb;
+    if (type == Type.TX) {
+      mask = Constants.SM0_SHIFTCTRL_AUTOPULL_BITS;
+      lsb = Constants.SM0_SHIFTCTRL_AUTOPULL_LSB;
+    } else {
+      mask = Constants.SM0_SHIFTCTRL_AUTOPUSH_BITS;
+      lsb = Constants.SM0_SHIFTCTRL_AUTOPUSH_LSB;
+    }
+    sdk.hwWriteMasked(addressShiftCtrl, (auto ? 0x1 : 0x0) << lsb, mask);
+    console.printf("(pio%d:sm%d) set auto-%s=%s%n",
+                   pioNum, smNum, type == Type.TX ? "pull" : "push", auto);
   }
 
   private void writeFifoAddress(final int pioNum, final int smNum,
@@ -324,8 +446,14 @@ public class Fifo extends Command
     final boolean optEnqueueValue = options.getValue(optEnqueue).isOn();
     final boolean optJoinValue = options.getValue(optJoin).isOn();
     final boolean optUnjoinValue = options.getValue(optUnjoin).isOn();
+    final Integer optThresholdValue = options.getValue(optThreshold);
+    final boolean optShiftLeftValue = options.getValue(optShiftLeft).isOn();
+    final boolean optShiftRightValue = options.getValue(optShiftRight).isOn();
+    final Boolean optAutoValue = options.getValue(optAuto);
     final boolean haveModOp =
-      optDequeueValue || optEnqueueValue || optJoinValue || optUnjoinValue;
+      optDequeueValue || optEnqueueValue || optJoinValue || optUnjoinValue ||
+      (optThresholdValue != null) ||
+      optShiftLeftValue || optShiftRightValue || (optAutoValue != null);
     if ((optAddressValue == null) && (optValueValue == null) && !haveModOp) {
       displayFifo(pioNum, smNum);
     }
@@ -341,6 +469,18 @@ public class Fifo extends Command
     }
     if (optUnjoinValue) {
       setFJoin(pioNum, smNum, type, false);
+    }
+    if (optThresholdValue != null) {
+      setThreshold(pioNum, smNum, type, optThresholdValue);
+    }
+    if (optShiftLeftValue) {
+      setShiftDir(pioNum, smNum, type, false);
+    }
+    if (optShiftRightValue) {
+      setShiftDir(pioNum, smNum, type, true);
+    }
+    if (optAutoValue != null) {
+      setAuto(pioNum, smNum, type, optAutoValue);
     }
     if ((optAddressValue != null) && (optValueValue != null)) {
       writeFifoAddress(pioNum, smNum, optAddressValue, optValueValue);
