@@ -185,14 +185,9 @@ public class Diagram extends GUIObserver
     modelChanged();
   }
 
-  public static void main(final String argv[])
+  public void setZoom(final int zoom)
   {
-    final PrintStream console = System.out;
-    try {
-      new Diagram(System.out, argv);
-    } catch (final IOException e) {
-      console.println(e.getMessage());
-    }
+    view.setZoom(zoom);
   }
 
   public void pullSignals(final List<Signal> signals)
@@ -205,6 +200,16 @@ public class Diagram extends GUIObserver
   {
     model.pushSignals(signals);
     modelChanged();
+  }
+
+  public static void main(final String argv[])
+  {
+    final PrintStream console = System.out;
+    try {
+      new Diagram(System.out, argv);
+    } catch (final IOException e) {
+      console.println(e.getMessage());
+    }
   }
 }
 

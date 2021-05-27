@@ -50,11 +50,14 @@ public class DiagramView extends JPanel
 {
   private static final long serialVersionUID = 6327282160532117231L;
 
+  public static final int ZOOM_MIN = 16;
+  public static final int ZOOM_MAX = 112;
+  public static final int ZOOM_DEFAULT = 32;
+
   private static final double TOP_MARGIN = 16.0;
   private static final double BOTTOM_MARGIN = 16.0;
   private static final double LEFT_MARGIN = 200.0;
   private static final double RIGHT_MARGIN = 16.0;
-  private static final double CLOCK_CYCLE_WIDTH = 32.0;
   private static final double BIT_SIGNAL_HEIGHT = 16.0;
   private static final double BIT_LANE_HEIGHT = BIT_SIGNAL_HEIGHT + 16.0;
   private static final double VALUED_SIGNAL_HEIGHT = 24.0;
@@ -113,6 +116,7 @@ public class DiagramView extends JPanel
   private final DiagramModel model;
   private final List<ToolTip> toolTips;
   private final Dimension preferredSize;
+  private double zoom;
 
   private DiagramView()
   {
@@ -128,6 +132,7 @@ public class DiagramView extends JPanel
     toolTips = new ArrayList<ToolTip>();
     setToolTipText("");
     preferredSize = new Dimension();
+    zoom = ZOOM_DEFAULT;
     updatePreferredSize();
   }
 
@@ -155,20 +160,31 @@ public class DiagramView extends JPanel
     return null;
   }
 
-  public void updatePreferredSize()
+  private void updatePreferredHeight()
   {
-    double y = TOP_MARGIN;
+    double preferredWidth = TOP_MARGIN + BOTTOM_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
-        y += signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        preferredWidth +=
+          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
       }
     }
-    final int preferredHeight = (int)(y + BOTTOM_MARGIN);
-    final int preferredWidth =
-      (int)Math.round(LEFT_MARGIN +
-                      CLOCK_CYCLE_WIDTH * model.getSignalSize() +
-                      RIGHT_MARGIN);
-    preferredSize.setSize(preferredWidth, preferredHeight);
+    preferredSize.setSize((int)preferredSize.getWidth(),
+                          (int)preferredWidth);
+  }
+
+  private void updatePreferredWidth()
+  {
+    final double preferredWidth =
+      Math.round(LEFT_MARGIN + zoom * model.getSignalSize() + RIGHT_MARGIN);
+    preferredSize.setSize((int)preferredWidth,
+                          (int)preferredSize.getHeight());
+  }
+
+  public void updatePreferredSize()
+  {
+    updatePreferredHeight();
+    updatePreferredWidth();
     revalidate();
   }
 
@@ -176,6 +192,19 @@ public class DiagramView extends JPanel
   public Dimension getPreferredSize()
   {
     return preferredSize;
+  }
+
+  public void setZoom(final int zoom)
+  {
+    this.zoom =
+      zoom < ZOOM_MIN ? ZOOM_MIN : (zoom > ZOOM_MAX ? ZOOM_MAX : zoom);
+    updatePreferredWidth();
+    revalidate();
+  }
+
+  public double getZoom()
+  {
+    return zoom;
   }
 
   private void paintGridLine(final Graphics2D g, final double x,
@@ -199,8 +228,8 @@ public class DiagramView extends JPanel
                                final SignalFactory.ClockSignal signal)
   {
     if (!signal.update()) return;
-    final double xFallingEdge = xStart + 0.5 * CLOCK_CYCLE_WIDTH;
-    final double xStop = xStart + CLOCK_CYCLE_WIDTH;
+    final double xFallingEdge = xStart + 0.5 * zoom;
+    final double xStop = xStart + zoom;
     final double yTop = yBottom - BIT_SIGNAL_HEIGHT;
     drawUpArrow(g, xStart, yTop);
     g.draw(new Line2D.Double(xStart, yBottom, xStart, yTop));
@@ -217,7 +246,7 @@ public class DiagramView extends JPanel
     final Boolean previousValue = signal.asBoolean();
     if (!signal.update()) return;
     final double xStable = xStart + SIGNAL_SETUP_X;
-    final double xStop = xStart + CLOCK_CYCLE_WIDTH;
+    final double xStop = xStart + zoom;
     final double yStable =
       yBottom - (signal.asBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
     final double yPrev =
@@ -236,14 +265,14 @@ public class DiagramView extends JPanel
       final FontMetrics fm = panel.getFontMetrics(panel.getFont());
       final int width = fm.stringWidth(label);
       final double xLabelStart =
-        xStart - 0.5 * (cycles * CLOCK_CYCLE_WIDTH - SIGNAL_SETUP_X + width);
+        xStart - 0.5 * (cycles * zoom - SIGNAL_SETUP_X + width);
 
       final double yTextBottom = yBottom - VALUE_LABEL_MARGIN_BOTTOM;
       g.setFont(VALUE_FONT);
       g.drawString(label, (float)xLabelStart, (float)yTextBottom);
     }
     if (toolTipText != null) {
-      addToolTip((int)(xStart - cycles * CLOCK_CYCLE_WIDTH),
+      addToolTip((int)(xStart - cycles * zoom),
                  (int)(yBottom - VALUED_SIGNAL_HEIGHT),
                  (int)xStart - 1, (int)yBottom,
                  toolTipText);
@@ -258,7 +287,7 @@ public class DiagramView extends JPanel
   {
     // safe previous values prior to signal update
     final int previousNotChangedSince = signal.notChangedSince();
-    final String previousLabel = signal.getRenderedValue();
+    final String previousRenderedValue = signal.getRenderedValue();
     final String previousToolTipText = signal.getToolTipText();
 
     // Draw previous value only if finished, since current value may
@@ -273,14 +302,14 @@ public class DiagramView extends JPanel
       // value; but exclude first cycle, as it will be handled on next
       // turn
       paintValuedLabel(panel, g, xStart, yBottom, signal,
-                       previousLabel, previousToolTipText,
+                       previousRenderedValue, previousToolTipText,
                        previousNotChangedSince + 1);
     }
 
     // draw lines for current value
     final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
     final double xStable = xStart + SIGNAL_SETUP_X;
-    final double xStop = xStart + CLOCK_CYCLE_WIDTH;
+    final double xStop = xStart + zoom;
     if (signal.changed() && !firstCycle) {
       g.draw(new Line2D.Double(xStart, yTop, xStable, yBottom));
       g.draw(new Line2D.Double(xStart, yBottom, xStable, yTop));
@@ -381,15 +410,15 @@ public class DiagramView extends JPanel
     g.setStroke(PLAIN_STROKE);
     paintLabels(panel, g);
     final int stopCycle =
-      (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / CLOCK_CYCLE_WIDTH + 1);
+      (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / zoom + 1);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
-      final double x = LEFT_MARGIN + cycle * CLOCK_CYCLE_WIDTH;
+      final double x = LEFT_MARGIN + cycle * zoom;
       final boolean firstCycle = cycle == 0;
       final boolean lastCycle = cycle == model.getSignalSize() - 1;
       paintGridLine(g, x, height);
       paintSignalsCycle(panel, g, x, firstCycle, lastCycle);
     }
-    paintGridLine(g, LEFT_MARGIN + stopCycle * CLOCK_CYCLE_WIDTH, height);
+    paintGridLine(g, LEFT_MARGIN + stopCycle * zoom, height);
   }
 
   private void paintError(final JPanel panel, final Graphics2D g,

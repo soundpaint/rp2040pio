@@ -33,6 +33,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JSlider;
 import javax.swing.JSpinner;
 
 public class ActionPanel
@@ -53,6 +54,7 @@ public class ActionPanel
     btScript.setMnemonic(KeyEvent.VK_L);
     btScript.addActionListener((event) -> { diagram.showScriptDialog(); });
     add(btScript);
+    add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
 
     final JLabel lbCycles = new JLabel("Cycles");
@@ -83,13 +85,32 @@ public class ActionPanel
         }
       });
     add(btEmulate);
+    add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
 
     final JButton btClear = new JButton("Clear View");
     btClear.setMnemonic(KeyEvent.VK_V);
     btClear.addActionListener((event) -> diagram.clear());
     add(btClear);
+    add(Box.createHorizontalStrut(15));
+    add(Box.createHorizontalGlue());
 
+    final JLabel lbZoom = new JLabel("Zoom");
+    lbZoom.setDisplayedMnemonic(KeyEvent.VK_Z);
+    add(lbZoom);
+    add(Box.createHorizontalStrut(5));
+    final JSlider slZoom =
+      new JSlider(DiagramView.ZOOM_MIN, DiagramView.ZOOM_MAX,
+                  DiagramView.ZOOM_DEFAULT);
+    lbZoom.setLabelFor(slZoom);
+    slZoom.setMajorTickSpacing(DiagramView.ZOOM_MIN);
+    slZoom.setPaintTicks(true);
+    slZoom.setLabelTable(slZoom.createStandardLabels(DiagramView.ZOOM_MIN));
+    slZoom.setPaintLabels(true);
+    slZoom.addChangeListener((event) -> diagram.setZoom(slZoom.getValue()));
+    add(slZoom);
+
+    add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
   }
 }
