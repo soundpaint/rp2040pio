@@ -108,6 +108,9 @@ public class SM implements Constants
     public boolean regEXECCTRL_SIDE_EN; // bit 30 of SMx_EXECCTRL
     public PIO.PinDir regEXECCTRL_SIDE_PINDIR; // bit 29 of SMx_EXECCTRL
     public int regEXECCTRL_JMP_PIN; // bits 24…28 of SMx_EXECCTRL
+    public int regEXECCTRL_OUT_EN_SEL; // bits 19…23 of SMx_EXECCTRL
+    public boolean regEXECCTRL_INLINE_OUT_EN; // bit 18 of SMx_EXECCTRL
+    public boolean regEXECCTRL_OUT_STICKY; // bit 17 of SMx_EXECCTRL
     public int regEXECCTRL_WRAP_TOP; // bits 12…16 of SMx_EXECCTRL
     public int regEXECCTRL_WRAP_BOTTOM; // bits 7…11 of SMx_EXECCTRL
     public boolean regEXECCTRL_STATUS_SEL; // bit 4 of SMx_EXECCTRL
@@ -161,6 +164,9 @@ public class SM implements Constants
       regEXECCTRL_SIDE_EN = false;
       regEXECCTRL_SIDE_PINDIR = PIO.PinDir.GPIO_LEVELS;
       regEXECCTRL_JMP_PIN = 0;
+      regEXECCTRL_OUT_EN_SEL = 0;
+      regEXECCTRL_INLINE_OUT_EN = false;
+      regEXECCTRL_OUT_STICKY = false;
       regEXECCTRL_WRAP_TOP = MEMORY_SIZE - 1;
       regEXECCTRL_WRAP_BOTTOM = 0x00;
       regSHIFTCTRL_PULL_THRESH = 0;
@@ -317,10 +323,20 @@ public class SM implements Constants
     pll.reset();
   }
 
-  /*
-   * TODO: In all of the following methods, use constants declared in
-   * class Constants for bit shifting & masking.
-   */
+  public int outEnSel()
+  {
+    return status.regEXECCTRL_OUT_EN_SEL;
+  }
+
+  public boolean inlineOutEn()
+  {
+    return status.regEXECCTRL_INLINE_OUT_EN;
+  }
+
+  public boolean outSticky()
+  {
+    return status.regEXECCTRL_OUT_STICKY;
+  }
 
   public void setEXECCTRL(final int execctrl, final int mask, final boolean xor)
   {
@@ -329,27 +345,50 @@ public class SM implements Constants
 
   private void setEXECCTRL(final int execctrl)
   {
-    status.regEXECCTRL_SIDE_EN = ((execctrl >>> 30) & 0x1) != 0x0;
+    status.regEXECCTRL_SIDE_EN =
+      ((execctrl & SM0_EXECCTRL_SIDE_EN_BITS) >>>
+       SM0_EXECCTRL_SIDE_EN_LSB) != 0x0;
     status.regEXECCTRL_SIDE_PINDIR =
-      PIO.PinDir.fromValue((execctrl >>> 29) & 0x1);
-    status.regEXECCTRL_JMP_PIN = (execctrl >>> 24) & (MEMORY_SIZE - 1);
-    status.regEXECCTRL_WRAP_TOP = (execctrl >>> 12) & (MEMORY_SIZE - 1);
-    status.regEXECCTRL_WRAP_BOTTOM = (execctrl >>> 7) & (MEMORY_SIZE - 1);
-    status.regEXECCTRL_STATUS_SEL = ((execctrl >>> 4) & 0x1) != 0x0;
-    status.regEXECCTRL_STATUS_N = execctrl & 0xf;
+      PIO.PinDir.fromValue((execctrl & SM0_EXECCTRL_SIDE_PINDIR_BITS) >>>
+                           SM0_EXECCTRL_SIDE_PINDIR_LSB);
+    status.regEXECCTRL_JMP_PIN =
+      (execctrl & SM0_EXECCTRL_JMP_PIN_BITS) >>> SM0_EXECCTRL_JMP_PIN_LSB;
+    status.regEXECCTRL_OUT_EN_SEL =
+      (execctrl & SM0_EXECCTRL_OUT_EN_SEL_BITS) >>> SM0_EXECCTRL_OUT_EN_SEL_LSB;
+    status.regEXECCTRL_INLINE_OUT_EN =
+      ((execctrl & SM0_EXECCTRL_INLINE_OUT_EN_BITS) >>>
+       SM0_EXECCTRL_INLINE_OUT_EN_LSB) != 0x0;
+    status.regEXECCTRL_OUT_STICKY =
+      ((execctrl & SM0_EXECCTRL_OUT_STICKY_BITS) >>>
+       SM0_EXECCTRL_OUT_STICKY_LSB) != 0x0;
+    status.regEXECCTRL_WRAP_TOP =
+      (execctrl & SM0_EXECCTRL_WRAP_TOP_BITS) >>> SM0_EXECCTRL_WRAP_TOP_LSB;
+    status.regEXECCTRL_WRAP_BOTTOM =
+      (execctrl & SM0_EXECCTRL_WRAP_BOTTOM_BITS) >>>
+      SM0_EXECCTRL_WRAP_BOTTOM_LSB;
+    status.regEXECCTRL_STATUS_SEL =
+      ((execctrl & SM0_EXECCTRL_STATUS_SEL_BITS) >>>
+       SM0_EXECCTRL_STATUS_SEL_LSB) != 0x0;
+    status.regEXECCTRL_STATUS_N =
+      (execctrl & SM0_EXECCTRL_STATUS_N_BITS) >>> SM0_EXECCTRL_STATUS_N_LSB;
   }
 
   public int getEXECCTRL()
   {
     return
-      (isExecStalled() ? 1 : 0) << 31 |
-      (status.regEXECCTRL_SIDE_EN ? 1 : 0) << 30 |
-      status.regEXECCTRL_SIDE_PINDIR.getValue() << 29 |
-      status.regEXECCTRL_JMP_PIN << 24 |
-      status.regEXECCTRL_WRAP_TOP << 12 |
-      status.regEXECCTRL_WRAP_BOTTOM << 7 |
-      (status.regEXECCTRL_STATUS_SEL ? 1 : 0) << 4 |
-      status.regEXECCTRL_STATUS_N;
+      (isExecStalled() ? 1 : 0) << SM0_EXECCTRL_EXEC_STALLED_LSB |
+      (status.regEXECCTRL_SIDE_EN ? 1 : 0) << SM0_EXECCTRL_SIDE_EN_LSB |
+      status.regEXECCTRL_SIDE_PINDIR.getValue() <<
+      SM0_EXECCTRL_SIDE_PINDIR_LSB |
+      status.regEXECCTRL_JMP_PIN << SM0_EXECCTRL_JMP_PIN_LSB |
+      status.regEXECCTRL_OUT_EN_SEL << SM0_EXECCTRL_OUT_EN_SEL_LSB |
+      (status.regEXECCTRL_INLINE_OUT_EN ? 1 : 0) <<
+      SM0_EXECCTRL_INLINE_OUT_EN_LSB |
+      (status.regEXECCTRL_OUT_STICKY ? 1 : 0) << SM0_EXECCTRL_OUT_STICKY_LSB |
+      status.regEXECCTRL_WRAP_TOP << SM0_EXECCTRL_WRAP_TOP_LSB |
+      status.regEXECCTRL_WRAP_BOTTOM << SM0_EXECCTRL_WRAP_BOTTOM_LSB |
+      (status.regEXECCTRL_STATUS_SEL ? 1 : 0) << SM0_EXECCTRL_STATUS_SEL_LSB |
+      status.regEXECCTRL_STATUS_N << SM0_EXECCTRL_STATUS_N_LSB;
   }
 
   public void setSHIFTCTRL(final int shiftctrl, final int mask,
@@ -360,23 +399,43 @@ public class SM implements Constants
 
   private void setSHIFTCTRL(final int shiftctrl)
   {
-    fifo.setJoinRX(((shiftctrl >>> 31) & 0x1) != 0x0);
-    fifo.setJoinTX(((shiftctrl >>> 30) & 0x1) != 0x0);
-    status.regSHIFTCTRL_PULL_THRESH = (shiftctrl >>> 25) & 0x1f;
-    status.regSHIFTCTRL_PUSH_THRESH = (shiftctrl >>> 20) & 0x1f;
-    status.regSHIFTCTRL_AUTOPULL = ((shiftctrl >>> 17) & 0x1) != 0x0;
-    status.regSHIFTCTRL_AUTOPUSH = ((shiftctrl >>> 16) & 0x1) != 0x0;
+    fifo.setJoinRX(((shiftctrl & SM0_SHIFTCTRL_FJOIN_RX_BITS) >>>
+                    SM0_SHIFTCTRL_FJOIN_RX_LSB) != 0x0);
+    fifo.setJoinTX(((shiftctrl & SM0_SHIFTCTRL_FJOIN_TX_BITS) >>>
+                    SM0_SHIFTCTRL_FJOIN_TX_LSB) != 0x0);
+    status.regSHIFTCTRL_PULL_THRESH =
+      (shiftctrl & SM0_SHIFTCTRL_PULL_THRESH_BITS) >>>
+      SM0_SHIFTCTRL_PULL_THRESH_LSB;
+    status.regSHIFTCTRL_PUSH_THRESH =
+      (shiftctrl & SM0_SHIFTCTRL_PUSH_THRESH_BITS) >>>
+      SM0_SHIFTCTRL_PUSH_THRESH_LSB;
+    status.regSHIFTCTRL_OUT_SHIFTDIR =
+      PIO.ShiftDir.fromValue((shiftctrl & SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS) >>>
+                             SM0_SHIFTCTRL_OUT_SHIFTDIR_LSB);
+    status.regSHIFTCTRL_IN_SHIFTDIR =
+      PIO.ShiftDir.fromValue((shiftctrl & SM0_SHIFTCTRL_IN_SHIFTDIR_BITS) >>>
+                             SM0_SHIFTCTRL_IN_SHIFTDIR_LSB);
+    status.regSHIFTCTRL_AUTOPULL =
+      ((shiftctrl & SM0_SHIFTCTRL_AUTOPULL_BITS) >>>
+       SM0_SHIFTCTRL_AUTOPULL_LSB) != 0x0;
+    status.regSHIFTCTRL_AUTOPUSH =
+      ((shiftctrl & SM0_SHIFTCTRL_AUTOPUSH_BITS) >>>
+       SM0_SHIFTCTRL_AUTOPUSH_LSB) != 0x0;
   }
 
   public int getSHIFTCTRL()
   {
     return
-      (fifo.getJoinRX() ? 1 : 0) << 31 |
-      (fifo.getJoinTX() ? 1 : 0) << 30 |
-      status.regSHIFTCTRL_PULL_THRESH << 25 |
-      status.regSHIFTCTRL_PUSH_THRESH << 20 |
-      (status.regSHIFTCTRL_AUTOPULL ? 1 : 0) << 17 |
-      (status.regSHIFTCTRL_AUTOPUSH ? 1 : 0) << 16;
+      (fifo.getJoinRX() ? 1 : 0) << SM0_SHIFTCTRL_FJOIN_RX_LSB |
+      (fifo.getJoinTX() ? 1 : 0) << SM0_SHIFTCTRL_FJOIN_TX_LSB |
+      status.regSHIFTCTRL_PULL_THRESH << SM0_SHIFTCTRL_PULL_THRESH_LSB |
+      status.regSHIFTCTRL_PUSH_THRESH << SM0_SHIFTCTRL_PUSH_THRESH_LSB |
+      status.regSHIFTCTRL_OUT_SHIFTDIR.getValue() <<
+      SM0_SHIFTCTRL_OUT_SHIFTDIR_LSB |
+      status.regSHIFTCTRL_IN_SHIFTDIR.getValue() <<
+      SM0_SHIFTCTRL_IN_SHIFTDIR_LSB |
+      (status.regSHIFTCTRL_AUTOPULL ? 1 : 0) << SM0_SHIFTCTRL_AUTOPULL_LSB |
+      (status.regSHIFTCTRL_AUTOPUSH ? 1 : 0) << SM0_SHIFTCTRL_AUTOPUSH_LSB;
   }
 
   public void setPINCTRL(final int pinctrl, final int mask, final boolean xor)
@@ -386,25 +445,34 @@ public class SM implements Constants
 
   private void setPINCTRL(final int pinctrl)
   {
-    status.regPINCTRL_SIDESET_COUNT = (pinctrl >>> 29) & 0x7;
-    status.regPINCTRL_SET_COUNT = (pinctrl >>> 26) & 0x7;
-    status.regPINCTRL_OUT_COUNT = (pinctrl >>> 20) & 0x3f;
-    status.regPINCTRL_IN_BASE = (pinctrl >>> 15) & 0x1f;
-    status.regPINCTRL_SIDESET_BASE = (pinctrl >>> 10) & 0x1f;
-    status.regPINCTRL_SET_BASE = (pinctrl >>> 5) & 0x1f;
-    status.regPINCTRL_OUT_BASE = pinctrl & 0x1f;
+    status.regPINCTRL_SIDESET_COUNT =
+      (pinctrl & SM0_PINCTRL_SIDESET_COUNT_BITS) >>>
+      SM0_PINCTRL_SIDESET_COUNT_LSB;
+    status.regPINCTRL_SET_COUNT =
+      (pinctrl & SM0_PINCTRL_SET_COUNT_BITS) >>> SM0_PINCTRL_SET_COUNT_LSB;
+    status.regPINCTRL_OUT_COUNT =
+      (pinctrl & SM0_PINCTRL_OUT_COUNT_BITS) >>> SM0_PINCTRL_OUT_COUNT_LSB;
+    status.regPINCTRL_IN_BASE =
+      (pinctrl & SM0_PINCTRL_IN_BASE_BITS) >>> SM0_PINCTRL_IN_BASE_LSB;
+    status.regPINCTRL_SIDESET_BASE =
+      (pinctrl & SM0_PINCTRL_SIDESET_BASE_BITS) >>>
+      SM0_PINCTRL_SIDESET_BASE_LSB;
+    status.regPINCTRL_SET_BASE =
+      (pinctrl & SM0_PINCTRL_SET_BASE_BITS) >>> SM0_PINCTRL_SET_BASE_LSB;
+    status.regPINCTRL_OUT_BASE =
+      (pinctrl & SM0_PINCTRL_OUT_BASE_BITS) >>> SM0_PINCTRL_OUT_BASE_LSB;
   }
 
   public int getPINCTRL()
   {
     return
-      status.regPINCTRL_SIDESET_COUNT << 29 |
-      status.regPINCTRL_SET_COUNT << 26 |
-      status.regPINCTRL_OUT_COUNT << 20 |
-      status.regPINCTRL_IN_BASE << 15 |
-      status.regPINCTRL_SIDESET_BASE << 10 |
-      status.regPINCTRL_SET_BASE << 5 |
-      status.regPINCTRL_OUT_BASE;
+      status.regPINCTRL_SIDESET_COUNT << SM0_PINCTRL_SIDESET_COUNT_LSB |
+      status.regPINCTRL_SET_COUNT << SM0_PINCTRL_SET_COUNT_LSB |
+      status.regPINCTRL_OUT_COUNT << SM0_PINCTRL_OUT_COUNT_LSB |
+      status.regPINCTRL_IN_BASE << SM0_PINCTRL_IN_BASE_LSB |
+      status.regPINCTRL_SIDESET_BASE << SM0_PINCTRL_SIDESET_BASE_LSB |
+      status.regPINCTRL_SET_BASE << SM0_PINCTRL_SET_BASE_LSB |
+      status.regPINCTRL_OUT_BASE << SM0_PINCTRL_OUT_BASE_LSB;
   }
 
   public void clockRisingEdge(final boolean smEnabled, final long wallClock)

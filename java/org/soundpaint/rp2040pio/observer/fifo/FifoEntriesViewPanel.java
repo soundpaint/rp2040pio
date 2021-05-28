@@ -31,16 +31,19 @@ import java.awt.Font;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.SwingUtils;
@@ -71,6 +74,8 @@ public class FifoEntriesViewPanel extends JPanel
   private static final String
     txtBottomJoined =
     "└──────────────────────────────────────────────────────────────────────────────┘";
+  private static final String ARROW_LEFT = "←";
+  private static final String ARROW_RIGHT = "→";
 
   private static enum ColorScheme
   {
@@ -116,8 +121,14 @@ public class FifoEntriesViewPanel extends JPanel
   private final JLabel[] lbEntries;
   private final JLabel[] lbSeparators;
   private final Integer[] buffer;
+  private final JLabel lbOsrLeftHandArrow;
+  private final JLabel lbOsrRightHandArrow;
+  private final JLabel lbIsrLeftHandArrow;
+  private final JLabel lbIsrRightHandArrow;
   private final JLabel[] lbOsrBits;
   private final JLabel[] lbIsrBits;
+  private final JCheckBox cbAutoPull;
+  private final JCheckBox cbAutoPush;
   private int pioNum;
   private int smNum;
   private int rxLevel;
@@ -176,44 +187,87 @@ public class FifoEntriesViewPanel extends JPanel
     bottomLine.add(lbBottomLine);
     bottomLine.add(Box.createHorizontalGlue());
 
-    lbOsrBits = new JLabel[32];
-    lbIsrBits = new JLabel[32];
-    final Box shiftRegsLine = new Box(BoxLayout.X_AXIS);
-    add(shiftRegsLine);
-    shiftRegsLine.add(createShiftRegisterPanel(shiftRegsLine, "OSR Register",
-                                               lbOsrBits));
-    shiftRegsLine.add(Box.createHorizontalGlue());
-    shiftRegsLine.add(createShiftRegisterPanel(shiftRegsLine, "ISR Register",
-                                               lbIsrBits));
-    shiftRegsLine.add(Box.createHorizontalGlue());
+    lbOsrLeftHandArrow = new JLabel();
+    lbOsrRightHandArrow = new JLabel();
+    lbIsrLeftHandArrow = new JLabel();
+    lbIsrRightHandArrow = new JLabel();
+    lbOsrBits = new JLabel[33];
+    lbIsrBits = new JLabel[33];
+    cbAutoPull = new JCheckBox();
+    cbAutoPush = new JCheckBox();
+    add(createShiftRegisters());
 
     autoScroll = initialAutoScroll;
     SwingUtils.setPreferredWidthAsMaximum(this);
     repaintLater();
   }
 
-  private JPanel createShiftRegisterPanel(final Box parent, final String title,
-                                          final JLabel[] lbBits)
+  private Box createShiftRegisters()
   {
-    final JPanel panel = new JPanel();
-    panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
-    panel.setBorder(BorderFactory.createTitledBorder(title));
-    parent.add(panel);
-    for (int bit = 0; bit < 32; bit++) {
-      final JLabel lbBit = new JLabel("?");
-      lbBit.setFont(codeFont);
-      lbBits[bit] = lbBit;
-      panel.add(lbBit);
-    }
-    return panel;
+    final Box hBox = new Box(BoxLayout.X_AXIS);
+    hBox.add(createShiftRegister("OSR Register",
+                                 lbOsrLeftHandArrow, lbOsrRightHandArrow,
+                                 lbOsrBits, "Pull",
+                                 cbAutoPull));
+    hBox.add(Box.createHorizontalGlue());
+    hBox.add(createShiftRegister("ISR Register",
+                                 lbIsrLeftHandArrow, lbIsrRightHandArrow,
+                                 lbIsrBits, "Push",
+                                 cbAutoPush));
+    hBox.add(Box.createHorizontalGlue());
+    return hBox;
   }
 
-  private int getSMJoin() throws IOException
+  private Box createShiftRegister(final String registerName,
+                                  final JLabel lbLeftHandArrow,
+                                  final JLabel lbRightHandArrow,
+                                  final JLabel[] lbBits,
+                                  final String actionName,
+                                  final JCheckBox cbAuto)
+  {
+    final Box vBox = new Box(BoxLayout.Y_AXIS);
+    vBox.setBorder(BorderFactory.createTitledBorder(registerName));
+    vBox.add(createShiftRegisterContents(lbLeftHandArrow, lbRightHandArrow,
+                                         lbBits));
+    vBox.add(createAutoInfo(actionName, cbAuto));
+    return vBox;
+  }
+
+  private Box createAutoInfo(final String actionName,
+                             final JCheckBox cbAuto)
+  {
+    final Box hBox = new Box(BoxLayout.X_AXIS);
+    final JLabel lbAuto = new JLabel("Auto " + actionName);
+    lbAuto.setLabelFor(cbAuto);
+    cbAuto.setEnabled(false);
+    hBox.add(cbAuto);
+    hBox.add(lbAuto);
+    hBox.add(Box.createHorizontalGlue());
+    return hBox;
+  }
+
+  private Box createShiftRegisterContents(final JLabel lbLeftHandArrow,
+                                          final JLabel lbRightHandArrow,
+                                          final JLabel[] lbBits)
+  {
+    final Box hBox = new Box(BoxLayout.X_AXIS);
+    hBox.add(lbLeftHandArrow);
+    for (int index = 0; index < lbBits.length; index++) {
+      final JLabel lbBit = new JLabel();
+      lbBit.setFont(codeFont);
+      lbBits[index] = lbBit;
+      hBox.add(lbBit);
+    }
+    hBox.add(lbRightHandArrow);
+    unsetShiftReg(lbLeftHandArrow, lbRightHandArrow, lbBits);
+    return hBox;
+  }
+
+  private int getShiftCtrl() throws IOException
   {
     final int addressShiftCtrl =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
-    final int shiftCtrl = sdk.readAddress(addressShiftCtrl);
-    return (shiftCtrl >>> 30) & 0x3;
+    return sdk.readAddress(addressShiftCtrl);
   }
 
   private int getSMFReadPtr() throws IOException
@@ -281,11 +335,12 @@ public class FifoEntriesViewPanel extends JPanel
     }
   }
 
-  private void updateEntries() throws IOException
+  private void updateEntries(final int shiftCtrl) throws IOException
   {
     final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
     updateFifoContents();
-    final int smJoin = getSMJoin();
+    final int smJoin =
+      (shiftCtrl >>> Constants.SM0_SHIFTCTRL_FJOIN_TX_LSB) & 0x3;
     final boolean fJoinTX = (smJoin & 0x1) != 0x0;
     final boolean fJoinRX = (smJoin & 0x2) != 0x0;
     final int smfReadPtr = getSMFReadPtr();
@@ -323,10 +378,14 @@ public class FifoEntriesViewPanel extends JPanel
     }
   }
 
-  private void unsetShiftReg(final JLabel[] lbBits)
+  private void unsetShiftReg(final JLabel lbLeftHandArrow,
+                             final JLabel lbRightHandArrow,
+                             final JLabel[] lbBits)
   {
-    for (int bit = 0; bit < lbBits.length; bit++) {
-      final JLabel lbBit = lbBits[bit];
+    lbLeftHandArrow.setText("?");
+    lbRightHandArrow.setText("?");
+    for (int index = 0; index < lbBits.length; index++) {
+      final JLabel lbBit = lbBits[index];
       lbBit.setText("?");
       lbBit.setForeground(Color.LIGHT_GRAY);
       lbBit.setBackground(Color.GRAY);
@@ -334,9 +393,16 @@ public class FifoEntriesViewPanel extends JPanel
     }
   }
 
-  private void updateShiftReg(final Color activeColor, final JLabel[] lbBits,
+  private void updateShiftReg(final BiFunction<Integer, Integer, Boolean>
+                              levelComparator,
+                              final Color activeColor,
+                              final JLabel lbLeftHandArrow,
+                              final JLabel lbRightHandArrow,
+                              final JLabel[] lbBits,
                               final PIOEmuRegisters.Regs regShiftReg,
-                              final PIOEmuRegisters.Regs levelReg)
+                              final PIOEmuRegisters.Regs levelReg,
+                              final int threshold,
+                              final PIO.ShiftDir shiftDir)
     throws IOException
   {
     final int addressShiftReg =
@@ -345,12 +411,24 @@ public class FifoEntriesViewPanel extends JPanel
     final int addressLevel =
       PIOEmuRegisters.getSMAddress(pioNum, smNum, levelReg);
     final int level = sdk.readAddress(addressLevel);
-    final int bitCount = lbBits.length;
-    for (int bit = 0; bit < bitCount; bit++) {
-      final int bitValue = (value >>> bit) & 0x1;
-      final JLabel lbBit = lbBits[bitCount - bit - 1];
+    final int labelNum = lbBits.length;
+    final int bitNum = labelNum - 1;
+    for (int bitIndex = 0; bitIndex < bitNum; bitIndex++) {
+      final int bitValue = (value >>> bitIndex) & 0x1;
+      final JLabel lbBit;
+      final int bitIndexAfterShiftDir;
+      switch (shiftDir) {
+      case SHIFT_LEFT:
+        lbBit = lbBits[bitNum - bitIndex - (bitIndex >= threshold ? 1 : 0)];
+        bitIndexAfterShiftDir = bitIndex;
+        break;
+      default:
+        lbBit = lbBits[bitIndex + (bitIndex >= threshold ? 1 : 0)];
+        bitIndexAfterShiftDir = bitNum - bitIndex - 1;
+        break;
+      }
       lbBit.setText(bitValue == 0x1 ? "1" : "0");
-      if (bit < level) {
+      if (levelComparator.apply(bitIndexAfterShiftDir, level)) {
         lbBit.setForeground(Color.BLACK);
         lbBit.setBackground(activeColor);
         lbBit.setOpaque(true);
@@ -360,29 +438,83 @@ public class FifoEntriesViewPanel extends JPanel
         lbBit.setOpaque(false);
       }
     }
+    final JLabel lbThreshold;
+    switch (shiftDir) {
+    case SHIFT_LEFT:
+      lbThreshold = lbBits[labelNum - threshold - 1];
+      break;
+    default:
+      lbThreshold = lbBits[threshold];
+      break;
+    }
+    lbThreshold.setText("|");
+    lbThreshold.setForeground(Color.BLACK);
+    lbThreshold.setBackground(Color.GRAY);
+    lbThreshold.setOpaque(false);
+    switch (shiftDir) {
+    case SHIFT_LEFT:
+      lbLeftHandArrow.setText(ARROW_LEFT);
+      lbRightHandArrow.setText(ARROW_LEFT);
+      break;
+    case SHIFT_RIGHT:
+      lbLeftHandArrow.setText(ARROW_RIGHT);
+      lbRightHandArrow.setText(ARROW_RIGHT);
+      break;
+    default:
+      lbLeftHandArrow.setText("?");
+      lbRightHandArrow.setText("?");
+      break;
+    }
   }
 
-  private void updateShiftRegs() throws IOException
+  private int getThreshold(final int shiftCtrl, final int bits, final int lsb)
   {
-    updateShiftReg(Color.RED, lbOsrBits,
-                   PIOEmuRegisters.Regs.SM0_OSR,
-                   PIOEmuRegisters.Regs.SM0_OSR_SHIFT_COUNT);
-    updateShiftReg(Color.GREEN, lbIsrBits,
-                   PIOEmuRegisters.Regs.SM0_ISR,
-                   PIOEmuRegisters.Regs.SM0_ISR_SHIFT_COUNT);
+    final int thresholdValue = (shiftCtrl & bits) >>> lsb;
+    return thresholdValue == 0 ? 32 : thresholdValue;
   }
 
-  private void checkedUpdateEntries()
+  private void updateShiftRegs(final int shiftCtrl) throws IOException
+  {
+    final int outShiftDir =
+      (shiftCtrl & Constants.SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS) >>>
+      Constants.SM0_SHIFTCTRL_OUT_SHIFTDIR_LSB;
+    updateShiftReg((bit, level) -> bit > level, Color.RED,
+                   lbOsrLeftHandArrow, lbOsrRightHandArrow, lbOsrBits,
+                   PIOEmuRegisters.Regs.SM0_OSR,
+                   PIOEmuRegisters.Regs.SM0_OSR_SHIFT_COUNT,
+                   getThreshold(shiftCtrl,
+                                Constants.SM0_SHIFTCTRL_PULL_THRESH_BITS,
+                                Constants.SM0_SHIFTCTRL_PULL_THRESH_LSB),
+                   PIO.ShiftDir.fromValue(outShiftDir));
+    cbAutoPull.setSelected((shiftCtrl &
+                            Constants.SM0_SHIFTCTRL_AUTOPULL_BITS) != 0x0);
+    final int inShiftDir =
+      (shiftCtrl & Constants.SM0_SHIFTCTRL_IN_SHIFTDIR_BITS) >>>
+      Constants.SM0_SHIFTCTRL_IN_SHIFTDIR_LSB;
+    updateShiftReg((bit, level) -> bit < level, Color.GREEN,
+                   lbIsrLeftHandArrow, lbIsrRightHandArrow, lbIsrBits,
+                   PIOEmuRegisters.Regs.SM0_ISR,
+                   PIOEmuRegisters.Regs.SM0_ISR_SHIFT_COUNT,
+                   getThreshold(shiftCtrl,
+                                Constants.SM0_SHIFTCTRL_PUSH_THRESH_BITS,
+                                Constants.SM0_SHIFTCTRL_PUSH_THRESH_LSB),
+                   PIO.ShiftDir.fromValue(inShiftDir));
+    cbAutoPush.setSelected((shiftCtrl &
+                            Constants.SM0_SHIFTCTRL_AUTOPUSH_BITS) != 0x0);
+  }
+
+  private void checkedUpdate()
   {
     try {
-      updateEntries();
-      updateShiftRegs();
+      final int shiftCtrl = getShiftCtrl();
+      updateEntries(shiftCtrl);
+      updateShiftRegs(shiftCtrl);
     } catch (final IOException e) {
       for (int entryNum = 0; entryNum < Constants.SM_COUNT; entryNum++) {
         buffer[entryNum] = null;
       }
-      unsetShiftReg(lbOsrBits);
-      unsetShiftReg(lbIsrBits);
+      unsetShiftReg(lbOsrLeftHandArrow, lbOsrRightHandArrow, lbOsrBits);
+      unsetShiftReg(lbIsrLeftHandArrow, lbIsrRightHandArrow, lbIsrBits);
     }
   }
 
@@ -390,13 +522,13 @@ public class FifoEntriesViewPanel extends JPanel
   {
     this.pioNum = pioNum;
     this.smNum = smNum;
-    checkedUpdateEntries();
+    checkedUpdate();
   }
 
   public void setAutoScroll(final boolean autoScroll)
   {
     this.autoScroll = autoScroll;
-    checkedUpdateEntries();
+    checkedUpdate();
   }
 
   public void repaintLater()

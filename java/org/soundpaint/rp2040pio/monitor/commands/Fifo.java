@@ -52,9 +52,10 @@ public class Fifo extends Command
     "of the FIFO of the selected is displayed.%n" +
     "Option '-a' together with option '-v' can be used for directly%n" +
     "low-level write a value into one of the 8 FIFO's data registers.%n" +
-    "Otherwise, for all specified modification options, the corresponding%n" +
-    "modifications will be performed for the selected state machine and%n" +
-    "the selected FIFO (either RX or TX).";
+    "Otherwise, for all specified modification options \"-d\", \"-e\",%n" +
+    "\"-j\", \"-u\", \"--threshold\", \"--shift-left\", \"--shift-right\"%n" +
+    "and \"--auto\", the corresponding modification will be performed for%n" +
+    "the selected state machine and the selected FIFO (either RX or TX).";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
@@ -90,11 +91,11 @@ public class Fifo extends Command
                                    "or push threshold (when RX selected)");
   private static final CmdOptions.FlagOptionDeclaration optShiftLeft =
     CmdOptions.createFlagOption(false, null, "shift-left", CmdOptions.Flag.OFF,
-                                "set shift direction left for OSR (when TX" +
+                                "set shift direction left for OSR (when TX " +
                                 "selected or for ISR (when RX selected)");
   private static final CmdOptions.FlagOptionDeclaration optShiftRight =
     CmdOptions.createFlagOption(false, null, "shift-right", CmdOptions.Flag.OFF,
-                                "set shift direction left for OSR (when TX" +
+                                "set shift direction left for OSR (when TX " +
                                 "selected or for ISR (when RX selected)");
   private static final CmdOptions.BooleanOptionDeclaration optAuto =
     CmdOptions.createBooleanOption(false, null, "auto", null,

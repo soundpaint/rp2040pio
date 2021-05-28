@@ -96,6 +96,7 @@ public class FifoViewPanel extends JPanel
     final Box scrollSelectionLine = new Box(BoxLayout.X_AXIS);
     add(scrollSelectionLine);
     cbAutoScroll = new JCheckBox("Auto-scroll to front entry");
+    cbAutoScroll.setMnemonic('a');
     cbAutoScroll.setToolTipText(autoScrollToolTipText);
     cbAutoScroll.setSelected(initialAutoScroll);
     cbAutoScroll.addActionListener((event) ->
