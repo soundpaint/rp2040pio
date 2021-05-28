@@ -931,18 +931,29 @@ public class SM implements Constants
                                          (MEMORY_SIZE - 1) + ": " +
                                          value);
     }
-    status.regADDR = value;
+    // sync: don't change regADDR while PC is updated
+    synchronized(memory.FETCH_LOCK) {
+      status.regADDR = value;
+    }
+  }
+
+  public void setPC(final int value, final int mask, final boolean xor)
+  {
+    final int pc = Constants.hwSetBits(status.regADDR, value, mask, xor);
+    setPC(pc & (MEMORY_SIZE - 1));
   }
 
   private void updatePC()
   {
-    if (status.regADDR == status.regEXECCTRL_WRAP_TOP) {
-      status.regADDR = status.regEXECCTRL_WRAP_BOTTOM;
-    } else {
-      status.regADDR = (status.regADDR + 1) & (MEMORY_SIZE - 1);
-    }
-    if (((status.regBREAKPOINTS >>> status.regADDR) & 0x1) != 0x0) {
-      masterClock.setMode(MasterClock.Mode.SINGLE_STEP);
+    synchronized(memory.FETCH_LOCK) {
+      if (status.regADDR == status.regEXECCTRL_WRAP_TOP) {
+        status.regADDR = status.regEXECCTRL_WRAP_BOTTOM;
+      } else {
+        status.regADDR = (status.regADDR + 1) & (MEMORY_SIZE - 1);
+      }
+      if (((status.regBREAKPOINTS >>> status.regADDR) & 0x1) != 0x0) {
+        masterClock.setMode(MasterClock.Mode.SINGLE_STEP);
+      }
     }
   }
 
@@ -1041,19 +1052,21 @@ public class SM implements Constants
 
   public void forceInstruction(final int instruction)
   {
+    if (instruction < 0) {
+      throw new IllegalArgumentException("instruction < 0: " + instruction);
+    }
+    if (instruction > 65535) {
+      throw new IllegalArgumentException("instruction > 65535: " +
+                                         instruction);
+    }
+    final boolean discarded;
     synchronized(memory.FETCH_LOCK) {
-      if (status.pendingForcedInstruction >= 0) {
-        console.println("WARNING: " +
-                        "discarding already pending forced instruction");
-      }
-      if (instruction < 0) {
-        throw new IllegalArgumentException("instruction < 0: " + instruction);
-      }
-      if (instruction > 65535) {
-        throw new IllegalArgumentException("instruction > 65535: " +
-                                           instruction);
-      }
+      discarded = status.pendingForcedInstruction >= 0;
       status.pendingForcedInstruction = instruction;
+    }
+    if (discarded) {
+      console.println("WARNING: " +
+                      "discarding already pending forced instruction");
     }
   }
 

@@ -107,7 +107,9 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM1_PC:
     case SM2_PC:
     case SM3_PC:
-      break; // (for now) read-only address
+      pio.getSM((regNum - Regs.SM0_PC.ordinal()) / SM_SIZE).
+        setPC(value, mask, xor);
+      break;
     case SM0_ISR:
     case SM1_ISR:
     case SM2_ISR:

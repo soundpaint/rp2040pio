@@ -59,6 +59,9 @@ public class Registers extends Command
   private static final CmdOptions.IntegerOptionDeclaration optRegY =
     CmdOptions.createIntegerOption("VALUE", false, 'y', "y", null,
                                    "set value of register Y");
+  private static final CmdOptions.IntegerOptionDeclaration optAddress =
+    CmdOptions.createIntegerOption("VALUE", false, 'a', "address", null,
+                                   "set value of PC to specified address");
   private static final CmdOptions.IntegerOptionDeclaration optIsr =
     CmdOptions.createIntegerOption("VALUE", false, 'i', "isr", null,
                                    "set value of ISR register");
@@ -78,7 +81,7 @@ public class Registers extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optRegX, optRegY,
+          { optPio, optSm, optRegX, optRegY, optAddress,
               optIsr, optIsrShiftCount, optOsr, optOsrShiftCount });
     if (sdk == null) {
       throw new NullPointerException("sdk");
@@ -144,13 +147,16 @@ public class Registers extends Command
   }
 
   private void setEmuRegister(final int pioNum, final int smNum,
-                              final int value,
+                              final int value, final int digits,
                               final PIOEmuRegisters.Regs register)
     throws IOException
   {
+    if (digits <= 0) {
+      throw new IllegalArgumentException("digits <= 0");
+    }
     final int address = PIOEmuRegisters.getSMAddress(pioNum, smNum, register);
     sdk.writeAddress(address, value);
-    console.printf("(pio%d:sm%d) set %s to value 0x%08x%n",
+    console.printf("(pio%d:sm%d) set %s to value 0x%0" + digits + "x%n",
                    pioNum, smNum, register, value);
   }
 
@@ -165,37 +171,44 @@ public class Registers extends Command
     final int smNum = options.getValue(optSm);
     final Integer optRegXValue = options.getValue(optRegX);
     final Integer optRegYValue = options.getValue(optRegY);
+    final Integer optAddressValue = options.getValue(optAddress);
     final Integer optIsrValue = options.getValue(optIsr);
     final Integer optIsrShiftCountValue = options.getValue(optIsrShiftCount);
     final Integer optOsrValue = options.getValue(optOsr);
     final Integer optOsrShiftCountValue = options.getValue(optOsrShiftCount);
     if ((optRegXValue == null) && (optRegYValue == null) &&
+        (optAddressValue == null) &&
         (optIsrValue == null) && (optIsrShiftCountValue == null) &&
         (optOsrValue == null) && (optOsrShiftCountValue == null)) {
       displayRegisters(pioNum, smNum);
     }
     if (optRegXValue != null) {
-      setEmuRegister(pioNum, smNum, optRegXValue,
+      setEmuRegister(pioNum, smNum, optRegXValue, 8,
                      PIOEmuRegisters.Regs.SM0_REGX);
     }
     if (optRegYValue != null) {
-      setEmuRegister(pioNum, smNum, optRegYValue,
+      setEmuRegister(pioNum, smNum, optRegYValue, 8,
                      PIOEmuRegisters.Regs.SM0_REGY);
     }
+    if (optAddressValue != null) {
+      setEmuRegister(pioNum, smNum,
+                     optAddressValue & (Constants.MEMORY_SIZE - 1), 2,
+                     PIOEmuRegisters.Regs.SM0_PC);
+    }
     if (optIsrValue != null) {
-      setEmuRegister(pioNum, smNum, optIsrValue,
+      setEmuRegister(pioNum, smNum, optIsrValue, 8,
                      PIOEmuRegisters.Regs.SM0_ISR);
     }
     if (optIsrShiftCountValue != null) {
-      setEmuRegister(pioNum, smNum, optIsrShiftCountValue,
+      setEmuRegister(pioNum, smNum, optIsrShiftCountValue, 8,
                      PIOEmuRegisters.Regs.SM0_ISR_SHIFT_COUNT);
     }
     if (optOsrValue != null) {
-      setEmuRegister(pioNum, smNum, optOsrValue,
+      setEmuRegister(pioNum, smNum, optOsrValue, 8,
                      PIOEmuRegisters.Regs.SM0_OSR);
     }
     if (optOsrShiftCountValue != null) {
-      setEmuRegister(pioNum, smNum, optOsrShiftCountValue,
+      setEmuRegister(pioNum, smNum, optOsrShiftCountValue, 8,
                      PIOEmuRegisters.Regs.SM0_OSR_SHIFT_COUNT);
     }
     return true;

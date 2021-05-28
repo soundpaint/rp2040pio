@@ -49,7 +49,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
              new BitsInfo[] {
                new BitsInfo(31, 0, null, null, BitsType.RW, 0)
              }),
-    SM0_PC("Direct read-only access to the SM's%n" +
+    SM0_PC("Direct read / write access to the SM's%n" +
            "instruction pointer / program counter.",
            new BitsInfo[] {
              new BitsInfo(31, 0, null, null, BitsType.RW, 0)

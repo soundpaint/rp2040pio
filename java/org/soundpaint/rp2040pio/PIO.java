@@ -100,16 +100,6 @@ public class PIO implements Constants, Clock.TransitionListener
         return SHIFT_RIGHT;
       throw new IllegalArgumentException("value neither 0 nor 1");
     }
-
-    public static ShiftDir fromValue(final int value,
-                                     final ShiftDir defaultValue)
-    {
-      if (value == 0)
-        return SHIFT_LEFT;
-      if (value == 1)
-        return SHIFT_RIGHT;
-      return defaultValue;
-    }
   };
 
   private PIO()
