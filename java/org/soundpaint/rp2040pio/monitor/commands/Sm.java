@@ -1,5 +1,5 @@
 /*
- * @(#)Enable.java 1.00 21/04/01
+ * @(#)Sm.java 1.00 21/04/01
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -34,12 +34,12 @@ import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor command "enable" enables or disables a PIO's state machine
+ * Monitor command "sm" enables or disables a PIO's state machine
  * or shows if it is enabled.
  */
-public class Enable extends Command
+public class Sm extends Command
 {
-  private static final String fullName = "enable";
+  private static final String fullName = "sm";
   private static final String singleLineDescription =
     "enable or disable state machine(s) or show if enabled";
 
@@ -65,7 +65,7 @@ public class Enable extends Command
 
   private final SDK sdk;
 
-  public Enable(final PrintStream console, final SDK sdk)
+  public Sm(final PrintStream console, final SDK sdk)
   {
     super(console, fullName, singleLineDescription,
           new CmdOptions.OptionDeclaration<?>[]
@@ -100,10 +100,10 @@ public class Enable extends Command
     }
   }
 
-  private void displayEnableStatus(final int pioNumFirst,
-                                   final int pioNumLast,
-                                   final int smNumFirst,
-                                   final int smNumLast)
+  private void displaySmStatus(final int pioNumFirst,
+                               final int pioNumLast,
+                               final int smNumFirst,
+                               final int smNumLast)
     throws IOException
   {
     for (int pioNum = pioNumFirst; pioNum <= pioNumLast; pioNum++) {
@@ -153,7 +153,7 @@ public class Enable extends Command
       setEnableStatus(pioNumFirst, pioNumLast, smNumFirst, smNumLast,
                       optEnableValue);
     } else {
-      displayEnableStatus(pioNumFirst, pioNumLast, smNumFirst, smNumLast);
+      displaySmStatus(pioNumFirst, pioNumLast, smNumFirst, smNumLast);
     }
     return true;
   }
