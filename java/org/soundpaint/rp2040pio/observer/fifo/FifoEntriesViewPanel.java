@@ -121,6 +121,10 @@ public class FifoEntriesViewPanel extends JPanel
   private final JLabel[] lbEntries;
   private final JLabel[] lbSeparators;
   private final Integer[] buffer;
+  private final JCheckBox cbFDebugTxStall;
+  private final JCheckBox cbFDebugTxOver;
+  private final JCheckBox cbFDebugRxUnder;
+  private final JCheckBox cbFDebugRxStall;
   private final JLabel lbOsrLeftHandArrow;
   private final JLabel lbOsrRightHandArrow;
   private final JLabel lbIsrLeftHandArrow;
@@ -150,17 +154,53 @@ public class FifoEntriesViewPanel extends JPanel
     this.console = console;
     this.sdk = sdk;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    final Box topLine = new Box(BoxLayout.X_AXIS);
-    add(topLine);
+
     lbTopLine = new JLabel();
-    lbTopLine.setFont(codeFont);
-    topLine.add(lbTopLine);
-    topLine.add(Box.createHorizontalGlue());
-    final Box entriesLine = new Box(BoxLayout.X_AXIS);
-    add(entriesLine);
+    add(createTopLine());
+
     buffer = new Integer[2 * Constants.FIFO_DEPTH];
     lbSeparators = new JLabel[2 * Constants.FIFO_DEPTH + 1];
     lbEntries = new JLabel[2 * Constants.FIFO_DEPTH];
+    add(createEntriesLine());
+
+    lbBottomLine = new JLabel();
+    add(createBottomLine());
+    add(Box.createVerticalStrut(10));
+
+    cbFDebugTxStall = new JCheckBox();
+    cbFDebugTxOver = new JCheckBox();
+    cbFDebugRxUnder = new JCheckBox();
+    cbFDebugRxStall = new JCheckBox();
+    add(createFDebugLine());
+    add(Box.createVerticalStrut(10));
+
+    lbOsrLeftHandArrow = new JLabel();
+    lbOsrRightHandArrow = new JLabel();
+    lbIsrLeftHandArrow = new JLabel();
+    lbIsrRightHandArrow = new JLabel();
+    lbOsrBits = new JLabel[33];
+    lbIsrBits = new JLabel[33];
+    cbAutoPull = new JCheckBox();
+    cbAutoPush = new JCheckBox();
+    add(createShiftRegisters());
+
+    autoScroll = initialAutoScroll;
+    SwingUtils.setPreferredWidthAsMaximum(this);
+    repaintLater();
+  }
+
+  private Box createTopLine()
+  {
+    final Box topLine = new Box(BoxLayout.X_AXIS);
+    lbTopLine.setFont(codeFont);
+    topLine.add(lbTopLine);
+    topLine.add(Box.createHorizontalGlue());
+    return topLine;
+  }
+
+  private Box createEntriesLine()
+  {
+    final Box entriesLine = new Box(BoxLayout.X_AXIS);
     for (int entryNum = 0; entryNum < 2 * Constants.FIFO_DEPTH; entryNum++) {
       final JLabel lbSeparator = new JLabel(entryNum == 0 ? "│" : "  ");
       lbSeparator.setOpaque(true);
@@ -180,26 +220,39 @@ public class FifoEntriesViewPanel extends JPanel
     entriesLine.add(lbSeparator);
     entriesLine.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(entriesLine);
+    return entriesLine;
+  }
+
+  private Box createBottomLine()
+  {
     final Box bottomLine = new Box(BoxLayout.X_AXIS);
-    add(bottomLine);
-    lbBottomLine = new JLabel();
     lbBottomLine.setFont(codeFont);
     bottomLine.add(lbBottomLine);
     bottomLine.add(Box.createHorizontalGlue());
+    return bottomLine;
+  }
 
-    lbOsrLeftHandArrow = new JLabel();
-    lbOsrRightHandArrow = new JLabel();
-    lbIsrLeftHandArrow = new JLabel();
-    lbIsrRightHandArrow = new JLabel();
-    lbOsrBits = new JLabel[33];
-    lbIsrBits = new JLabel[33];
-    cbAutoPull = new JCheckBox();
-    cbAutoPush = new JCheckBox();
-    add(createShiftRegisters());
+  private Box createFDebugLine()
+  {
+    final Box hBox = new Box(BoxLayout.X_AXIS);
+    hBox.add(new JLabel("FDEBUG:"));
+    hBox.add(Box.createHorizontalStrut(20));
+    createFDebugLineCheck(hBox, "TX Stall", cbFDebugTxStall);
+    createFDebugLineCheck(hBox, "TX Over", cbFDebugTxOver);
+    createFDebugLineCheck(hBox, "RX Under", cbFDebugRxUnder);
+    createFDebugLineCheck(hBox, "RX Stall", cbFDebugRxStall);
+    return hBox;
+  }
 
-    autoScroll = initialAutoScroll;
-    SwingUtils.setPreferredWidthAsMaximum(this);
-    repaintLater();
+  private void createFDebugLineCheck(final Box hBox, final String flagName,
+                                     final JCheckBox cbFDebugFlag)
+  {
+    final JLabel lbFDebugFlag = new JLabel(flagName);
+    lbFDebugFlag.setLabelFor(cbFDebugFlag);
+    cbFDebugFlag.setEnabled(false);
+    hBox.add(cbFDebugFlag);
+    hBox.add(lbFDebugFlag);
+    hBox.add(Box.createHorizontalGlue());
   }
 
   private Box createShiftRegisters()
@@ -378,6 +431,35 @@ public class FifoEntriesViewPanel extends JPanel
     }
   }
 
+  private boolean getFDebug(final int smNum, final int fDebugValue,
+                            final int lsb, final int bits)
+  {
+    return (((fDebugValue & bits) >>> (lsb + smNum)) & 0x01) != 0x0;
+  }
+
+  private void updateFDebugStatus() throws IOException
+  {
+    final int addressFDebug =
+      PIORegisters.getAddress(pioNum, PIORegisters.Regs.FDEBUG);
+    final int fDebugValue = sdk.readAddress(addressFDebug);
+    cbFDebugTxStall.
+      setSelected(getFDebug(smNum, fDebugValue,
+                            Constants.FDEBUG_TXSTALL_LSB,
+                            Constants.FDEBUG_TXSTALL_BITS));
+    cbFDebugTxOver.
+      setSelected(getFDebug(smNum, fDebugValue,
+                            Constants.FDEBUG_TXOVER_LSB,
+                            Constants.FDEBUG_TXOVER_BITS));
+    cbFDebugRxUnder.
+      setSelected(getFDebug(smNum, fDebugValue,
+                            Constants.FDEBUG_RXUNDER_LSB,
+                            Constants.FDEBUG_RXUNDER_BITS));
+    cbFDebugRxStall.
+      setSelected(getFDebug(smNum, fDebugValue,
+                            Constants.FDEBUG_RXSTALL_LSB,
+                            Constants.FDEBUG_RXSTALL_BITS));
+  }
+
   private void unsetShiftReg(final JLabel lbLeftHandArrow,
                              final JLabel lbRightHandArrow,
                              final JLabel[] lbBits)
@@ -508,6 +590,7 @@ public class FifoEntriesViewPanel extends JPanel
     try {
       final int shiftCtrl = getShiftCtrl();
       updateEntries(shiftCtrl);
+      updateFDebugStatus();
       updateShiftRegs(shiftCtrl);
     } catch (final IOException e) {
       for (int entryNum = 0; entryNum < Constants.SM_COUNT; entryNum++) {

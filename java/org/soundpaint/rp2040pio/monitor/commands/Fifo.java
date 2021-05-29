@@ -31,6 +31,7 @@ import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
+import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -55,7 +56,13 @@ public class Fifo extends Command
     "Otherwise, for all specified modification options \"-d\", \"-e\",%n" +
     "\"-j\", \"-u\", \"--threshold\", \"--shift-left\", \"--shift-right\"%n" +
     "and \"--auto\", the corresponding modification will be performed for%n" +
-    "the selected state machine and the selected FIFO (either RX or TX).";
+    "the selected state machine and the selected FIFO (either RX or TX).%n" +
+    "Modification option \"-c\" will clear both FIFOs and, if specified%n" +
+    "together with one of the other modification options, will be%n" +
+    "executed first.  Similarly, options \"--clear-tx-stall\",%n" +
+    "\"--clear-tx-over\", \"clear-rx-under\" and \"clear-rx-stall\"%n" +
+    "will clear the corresponding FDEBUG flag of the specified%n" +
+    "state machine.";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
@@ -71,6 +78,25 @@ public class Fifo extends Command
     CmdOptions.createIntegerOption("VALUE", false, 'v', "value", null,
                                    "value to enqueue or directly write " +
                                    "into FIFO memory");
+  private static final CmdOptions.FlagOptionDeclaration optClear =
+    CmdOptions.createFlagOption(false, 'c', "clear", CmdOptions.Flag.OFF,
+                                "clear both FIFOs, RX and TX");
+  private static final CmdOptions.FlagOptionDeclaration optClearTxStall =
+    CmdOptions.createFlagOption(false, null, "clear-tx-stall",
+                                CmdOptions.Flag.OFF,
+                                "clear FDEBUG flag 'TX Stall'");
+  private static final CmdOptions.FlagOptionDeclaration optClearTxOver =
+    CmdOptions.createFlagOption(false, null, "clear-tx-over",
+                                CmdOptions.Flag.OFF,
+                                "clear FDEBUG flag 'TX Over'");
+  private static final CmdOptions.FlagOptionDeclaration optClearRxUnder =
+    CmdOptions.createFlagOption(false, null, "clear-rx-under",
+                                CmdOptions.Flag.OFF,
+                                "clear FDEBUG flag 'RX Under'");
+  private static final CmdOptions.FlagOptionDeclaration optClearRxStall =
+    CmdOptions.createFlagOption(false, null, "clear-rx-stall",
+                                CmdOptions.Flag.OFF,
+                                "clear FDEBUG flag 'RX Stall'");
   private static final CmdOptions.FlagOptionDeclaration optDequeue =
     CmdOptions.createFlagOption(false, 'd', "dequeue", CmdOptions.Flag.OFF,
                                 "dequeue value from either RX or TX FIFO");
@@ -119,7 +145,8 @@ public class Fifo extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optAddress, optValue,
+          { optPio, optSm, optAddress, optValue, optClear,
+              optClearTxStall, optClearTxOver, optClearRxUnder, optClearRxStall,
               optDequeue, optEnqueue, optJoin, optUnjoin,
               optThreshold, optShiftLeft, optShiftRight, optAuto,
               optTX, optRX });
@@ -242,6 +269,40 @@ public class Fifo extends Command
     return isRight ? "right" : "left";
   }
 
+  private boolean getFDebug(final int smNum, final int fDebugValue,
+                            final int lsb, final int bits)
+  {
+    return (((fDebugValue & bits) >>> (lsb + smNum)) & 0x01) != 0x0;
+  }
+
+  private boolean getFTxStall(final int smNum, final int fDebugValue)
+  {
+    return
+      getFDebug(smNum, fDebugValue,
+                Constants.FDEBUG_TXSTALL_LSB, Constants.FDEBUG_TXSTALL_BITS);
+  }
+
+  private boolean getFTxOver(final int smNum, final int fDebugValue)
+  {
+    return
+      getFDebug(smNum, fDebugValue,
+                Constants.FDEBUG_TXOVER_LSB, Constants.FDEBUG_TXOVER_BITS);
+  }
+
+  private boolean getFRxUnder(final int smNum, final int fDebugValue)
+  {
+    return
+      getFDebug(smNum, fDebugValue,
+                Constants.FDEBUG_RXUNDER_LSB, Constants.FDEBUG_RXUNDER_BITS);
+  }
+
+  private boolean getFRxStall(final int smNum, final int fDebugValue)
+  {
+    return
+      getFDebug(smNum, fDebugValue,
+                Constants.FDEBUG_RXSTALL_LSB, Constants.FDEBUG_RXSTALL_BITS);
+  }
+
   private void displayFifo(final int pioNum, final int smNum)
     throws IOException
   {
@@ -253,6 +314,13 @@ public class Fifo extends Command
     final int smfLevel = getSMFLevel(pioNum, smNum);
     final int txLevel = smfLevel & 0xf;
     final int rxLevel = (smfLevel >>> 4) & 0xf;
+    final int addressFDebug =
+      PIORegisters.getAddress(pioNum, PIORegisters.Regs.FDEBUG);
+    final int fDebugValue = sdk.readAddress(addressFDebug);
+    final boolean fTxStall = getFTxStall(smNum, fDebugValue);
+    final boolean fTxOver = getFTxOver(smNum, fDebugValue);
+    final boolean fRxUnder = getFRxUnder(smNum, fDebugValue);
+    final boolean fRxStall = getFRxStall(smNum, fDebugValue);
     final int addressShiftCtrl =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
     final int shiftCtrlValue = sdk.readAddress(addressShiftCtrl);
@@ -316,6 +384,9 @@ public class Fifo extends Command
     console.printf("(pio%d:sm%d) RX: threshold=%d, shift direction=%s, " +
                    "auto-push=%s%n", pioNum, smNum, pushThreshold,
                    shiftDirectionAsString(inShiftRight), autoPushValue);
+    console.printf("(pio%d:sm%d) FDEBUG: TX Stall: %s, TX Over: %s, " +
+                   "RX Under: %s, RX Stall: %s%n",
+                   pioNum, smNum, fTxStall, fTxOver, fRxUnder, fRxStall);
   }
 
   private void setThreshold(final int pioNum, final int smNum, final Type type,
@@ -390,6 +461,24 @@ public class Fifo extends Command
                    pioNum, smNum, value, fifoMemAddress);
   }
 
+  private void clear(final int pioNum, final int smNum) throws IOException
+  {
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    pioSdk.smClearFIFOs(smNum);
+    console.printf("(pio%d:sm%d) cleared FIFOs%n", pioNum, smNum);
+  }
+
+  private void clearFDebug(final int pioNum, final int smNum,
+                           final int lsb, final String flagName)
+    throws IOException
+  {
+    final int addressFDebug =
+      PIORegisters.getAddress(pioNum, PIORegisters.Regs.FDEBUG);
+    sdk.writeAddress(addressFDebug, 0x1 << (lsb + smNum));
+    console.printf("(pio%d:sm%d) cleared FDEBUG flag %s%n",
+                   pioNum, smNum, flagName);
+  }
+
   private void dequeue(final int pioNum, final int smNum, final Type type)
     throws IOException
   {
@@ -442,6 +531,15 @@ public class Fifo extends Command
     final int pioNum = options.getValue(optPio);
     final int smNum = options.getValue(optSm);
     final Integer optAddressValue = options.getValue(optAddress);
+    final boolean optClearValue = options.getValue(optClear).isOn();
+    final boolean optClearTxStallValue =
+      options.getValue(optClearTxStall).isOn();
+    final boolean optClearTxOverValue =
+      options.getValue(optClearTxOver).isOn();
+    final boolean optClearRxUnderValue =
+      options.getValue(optClearRxUnder).isOn();
+    final boolean optClearRxStallValue =
+      options.getValue(optClearRxStall).isOn();
     final Integer optValueValue = options.getValue(optValue);
     final boolean optDequeueValue = options.getValue(optDequeue).isOn();
     final boolean optEnqueueValue = options.getValue(optEnqueue).isOn();
@@ -452,11 +550,29 @@ public class Fifo extends Command
     final boolean optShiftRightValue = options.getValue(optShiftRight).isOn();
     final Boolean optAutoValue = options.getValue(optAuto);
     final boolean haveModOp =
-      optDequeueValue || optEnqueueValue || optJoinValue || optUnjoinValue ||
-      (optThresholdValue != null) ||
-      optShiftLeftValue || optShiftRightValue || (optAutoValue != null);
-    if ((optAddressValue == null) && (optValueValue == null) && !haveModOp) {
+      optClearValue || optClearTxStallValue || optClearTxOverValue ||
+      optClearRxUnderValue || optClearRxStallValue ||
+      optDequeueValue || optEnqueueValue ||
+      optJoinValue || optUnjoinValue || (optThresholdValue != null) ||
+      optShiftLeftValue || optShiftRightValue || (optAutoValue != null) ||
+      (optAddressValue != null) || (optValueValue != null);
+    if (!haveModOp) {
       displayFifo(pioNum, smNum);
+    }
+    if (optClearValue) {
+      clear(pioNum, smNum);
+    }
+    if (optClearTxStallValue) {
+      clearFDebug(pioNum, smNum, Constants.FDEBUG_TXSTALL_LSB, "TX Stall");
+    }
+    if (optClearTxOverValue) {
+      clearFDebug(pioNum, smNum, Constants.FDEBUG_TXOVER_LSB, "TX Over");
+    }
+    if (optClearRxUnderValue) {
+      clearFDebug(pioNum, smNum, Constants.FDEBUG_RXUNDER_LSB, "RX Under");
+    }
+    if (optClearRxStallValue) {
+      clearFDebug(pioNum, smNum, Constants.FDEBUG_RXSTALL_LSB, "RX Stall");
     }
     final Type type = options.getValue(optRX).isOn() ? Type.RX : Type.TX;
     if (optDequeueValue) {
