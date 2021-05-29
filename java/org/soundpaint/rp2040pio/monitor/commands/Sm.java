@@ -41,35 +41,36 @@ public class Sm extends Command
 {
   private static final String fullName = "sm";
   private static final String singleLineDescription =
-    "enable or disable state machine(s) or show if enabled";
+    "enable or disable or restart state machine(s) or show if enabled";
+  private static final String notes =
+    "Use options \"-p\" and \"-s\" to select a state machine.%n" +
+    "Enable or disable the selected state machine with option%n" +
+    "\"+e\" or \"-e\", respectively.  Restart the selected%n" +
+    "state machine with option \"+r\".%n" +
+    "If none of options \"+e\", \"-e\", \"-r\" is specified,%n" +
+    "show if the state machine is currently enabled.";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
-    CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", null,
-                                   "PIO number, either 0 or 1 or both, " +
-                                   "if undefined");
+    CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
+                                   "PIO number, either 0 or 1");
   private static final CmdOptions.IntegerOptionDeclaration optSm =
-    CmdOptions.createIntegerOption("NUMBER", false, 's', "sm", null,
-                                   "SM number, one of 0, 1, 2 or 3, or all, " +
-                                   "if undefined");
+    CmdOptions.createIntegerOption("NUMBER", false, 's', "sm", 0,
+                                   "SM number, one of 0, 1, 2 or 3");
   private static final CmdOptions.BooleanOptionDeclaration optEnable =
     CmdOptions.createBooleanOption(false, 'e', "enable", null,
-                                   "enable or disable or show, if undefined");
-
-  /*
-   * TODO: With the given set of options, one can enable / disable
-   * either a single or all state machines at once, but not two or
-   * three out them.  Still, this is not really a restriction, since
-   * in single step mode, when this command is called multiple times,
-   * it behaves as being executed simultaneously.
-   */
+                                   "enable or disable the selected " +
+                                   "state machine");
+  private static final CmdOptions.FlagOptionDeclaration optRestart =
+    CmdOptions.createFlagOption(false, 'r', "restart", CmdOptions.Flag.OFF,
+                                "restart the selected state machine");
 
   private final SDK sdk;
 
   public Sm(final PrintStream console, final SDK sdk)
   {
-    super(console, fullName, singleLineDescription,
+    super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optEnable });
+          { optPio, optSm, optEnable, optRestart });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -81,56 +82,43 @@ public class Sm extends Command
     throws CmdOptions.ParseException
   {
     if (options.getValue(optHelp) != CmdOptions.Flag.ON) {
-      final Integer optPioValue = options.getValue(optPio);
-      if (optPioValue != null) {
-        final int pioNum = optPioValue;
-        if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
-          throw new CmdOptions.
-            ParseException("PIO number must be either 0 or 1, if defined");
-        }
+      final int pioNum = options.getValue(optPio);
+      if ((pioNum < 0) || (pioNum > Constants.PIO_NUM - 1)) {
+        throw new CmdOptions.
+          ParseException("PIO number must be either 0 or 1");
       }
-      final Integer optSmValue = options.getValue(optSm);
-      if (optSmValue != null) {
-        final int smNum = optSmValue;
-        if ((smNum < 0) || (smNum > Constants.SM_COUNT - 1)) {
-          throw new CmdOptions.
-            ParseException("SM number must be one of 0, 1, 2 or 3, if defined");
-        }
+      final int smNum = options.getValue(optSm);
+      if ((smNum < 0) || (smNum > Constants.SM_COUNT - 1)) {
+        throw new CmdOptions.
+          ParseException("SM number must be one of 0, 1, 2 or 3");
       }
     }
   }
 
-  private void displaySmStatus(final int pioNumFirst,
-                               final int pioNumLast,
-                               final int smNumFirst,
-                               final int smNumLast)
+  private void displaySmStatus(final int pioNum, final int smNum)
     throws IOException
   {
-    for (int pioNum = pioNumFirst; pioNum <= pioNumLast; pioNum++) {
-      final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-      for (int smNum = smNumFirst; smNum <= smNumLast; smNum++) {
-        final boolean enabled = pioSdk.smGetEnabled(smNum);
-        console.printf("(pio%d:sm%d) %s%n", pioNum, smNum,
-                       enabled ? "enabled" : "disabled");
-      }
-    }
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    final boolean enabled = pioSdk.smGetEnabled(smNum);
+    console.printf("(pio%d:sm%d) %s%n", pioNum, smNum,
+                   enabled ? "enabled" : "disabled");
   }
 
-  private void setEnableStatus(final int pioNumFirst,
-                               final int pioNumLast,
-                               final int smNumFirst,
-                               final int smNumLast,
+  private void setEnableStatus(final int pioNum, final int smNum,
                                final boolean enable)
     throws IOException
   {
-    for (int pioNum = pioNumFirst; pioNum <= pioNumLast; pioNum++) {
-      final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
-      for (int smNum = smNumFirst; smNum <= smNumLast; smNum++) {
-        pioSdk.smSetEnabled(smNum, enable);
-        console.printf("(pio%d:sm%d) %s%n", pioNum, smNum,
-                       enable ? "enabled" : "disabled");
-      }
-    }
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    pioSdk.smSetEnabled(smNum, enable);
+    console.printf("(pio%d:sm%d) set %s%n", pioNum, smNum,
+                   enable ? "enabled" : "disabled");
+  }
+
+  private void restart(final int pioNum, final int smNum) throws IOException
+  {
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    pioSdk.smRestart(smNum);
+    console.printf("(pio%d:sm%d) restarted%n", pioNum, smNum);
   }
 
   /**
@@ -140,20 +128,19 @@ public class Sm extends Command
   @Override
   protected boolean execute(final CmdOptions options) throws IOException
   {
-    final Integer optPioValue = options.getValue(optPio);
-    final Integer optSmValue = options.getValue(optSm);
+    final int pioNum = options.getValue(optPio);
+    final int smNum = options.getValue(optSm);
     final Boolean optEnableValue = options.getValue(optEnable);
-    final int pioNumFirst = optPioValue != null ? optPioValue : 0;
-    final int pioNumLast =
-      optPioValue != null ? optPioValue : Constants.PIO_NUM - 1;
-    final int smNumFirst = optSmValue != null ? optSmValue : 0;
-    final int smNumLast =
-      optSmValue != null ? optSmValue : Constants.SM_COUNT - 1;
+    final boolean optRestartValue = options.getValue(optRestart).isOn();
+    final boolean haveModOp = (optEnableValue != null) || optRestartValue;
+    if (!haveModOp) {
+      displaySmStatus(pioNum, smNum);
+    }
     if (optEnableValue != null) {
-      setEnableStatus(pioNumFirst, pioNumLast, smNumFirst, smNumLast,
-                      optEnableValue);
-    } else {
-      displaySmStatus(pioNumFirst, pioNumLast, smNumFirst, smNumLast);
+      setEnableStatus(pioNum, smNum, optEnableValue);
+    }
+    if (optRestartValue) {
+      restart(pioNum, smNum);
     }
     return true;
   }
