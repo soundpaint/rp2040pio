@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
@@ -179,7 +180,16 @@ public class Clock extends Command
       Constants.SM0_CLKDIV_FRAC_LSB;
   }
 
-  private void displayDivider(final int pioNum, final int smNum)
+  private boolean getEnabled(final int pioNum, final int smNum)
+    throws IOException
+  {
+    final int addressClkEnable =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_CLK_ENABLE);
+    return sdk.readAddress(addressClkEnable) != 0x0;
+  }
+
+  private void displayStatus(final int pioNum, final int smNum)
     throws IOException
   {
     final int clkDivValue = getClkDivValue(pioNum, smNum);
@@ -187,9 +197,11 @@ public class Clock extends Command
     final int displayIntDivider = intDivider == 0 ? 0x10000 : intDivider;
     final int fracDivider = getFracDivider(clkDivValue);
     final float divider = displayIntDivider + FRAC_MUL * fracDivider;
-    console.printf("(pio%d:sm%d) int-divider=0x%05x, frac-divider=0x%02x%n",
-                   pioNum, smNum, displayIntDivider, fracDivider);
-    console.printf("           divider=%f%n", divider);
+    final boolean enabled = getEnabled(pioNum, smNum);
+    console.printf("(pio%d:sm%d) int-divider=0x%05x, frac-divider=0x%02x " +
+                   "(divider=%f)%n", pioNum, smNum,
+                   displayIntDivider, fracDivider, divider);
+    console.printf("           enabled=%s%n", enabled);
   }
 
   private void setIntDivider(final int pioNum, final int smNum,
@@ -261,7 +273,7 @@ public class Clock extends Command
       (optIntDividerValue != null) || (optFracDividerValue != null) ||
       (optDividerValue != null) || optRestartValue;
     if (!haveModOp) {
-      displayDivider(pioNum, smNum);
+      displayStatus(pioNum, smNum);
     }
     if (optIntDividerValue != null) {
       setIntDivider(pioNum, smNum, optIntDividerValue);
