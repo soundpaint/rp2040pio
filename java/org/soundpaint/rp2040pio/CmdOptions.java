@@ -262,6 +262,41 @@ public class CmdOptions
                                         longName, defaultValue, description);
   }
 
+  public static class FloatOptionDeclaration
+    extends OptionDeclaration<Float>
+  {
+    public FloatOptionDeclaration(final String typeName,
+                                  final boolean mandatory,
+                                  final Character shortName,
+                                  final String longName,
+                                  final Float defaultValue,
+                                  final String description)
+    {
+      super(typeName, mandatory, shortName, longName,
+            defaultValue != null ? String.valueOf(defaultValue) : null,
+            description);
+    }
+
+    String getDefaultTypeName() { return "FLOAT"; }
+
+    OptionDefinition<Float> define() throws ParseException
+    {
+      return new FloatOptionDefinition(this);
+    }
+  }
+
+  public static FloatOptionDeclaration
+    createFloatOption(final String typeName,
+                      final boolean mandatory,
+                      final Character shortName,
+                      final String longName,
+                      final Float defaultValue,
+                      final String description)
+  {
+    return new FloatOptionDeclaration(typeName, mandatory, shortName,
+                                      longName, defaultValue, description);
+  }
+
   public static class StringOptionDeclaration
     extends OptionDeclaration<String>
   {
@@ -510,6 +545,27 @@ public class CmdOptions
         }
       } catch (final NumberFormatException e) {
         throw new ParseException("integer value expected: " + e.getMessage(),
+                                 getDeclaration());
+      }
+    }
+  }
+
+  public static class FloatOptionDefinition extends OptionDefinition<Float>
+  {
+    public FloatOptionDefinition(final FloatOptionDeclaration declaration)
+      throws ParseException
+    {
+      super(declaration);
+    }
+
+    @Override
+    Float parse(final String strValue) throws ParseException
+    {
+      final String normalizedStrValue = strValue.toLowerCase().trim();
+      try {
+        return Float.parseFloat(normalizedStrValue);
+      } catch (final NumberFormatException e) {
+        throw new ParseException("float value expected: " + e.getMessage(),
                                  getDeclaration());
       }
     }
@@ -935,6 +991,14 @@ public class CmdOptions
     checkForDeclaration(declaration);
     final IntegerOptionDefinition definition =
       (IntegerOptionDefinition)findDefinitionForDeclaration(declaration);
+    return definition != null ? definition.getValue() : null;
+  }
+
+  public Float getValue(final FloatOptionDeclaration declaration)
+  {
+    checkForDeclaration(declaration);
+    final FloatOptionDefinition definition =
+      (FloatOptionDefinition)findDefinitionForDeclaration(declaration);
     return definition != null ? definition.getValue() : null;
   }
 

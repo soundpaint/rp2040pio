@@ -940,15 +940,20 @@ public class PIOSDK implements Constants
 
   public void smSetClkDiv(final int smNum, final float div) throws IOException
   {
-    if (div < 0.0f) {
-      throw new IllegalArgumentException("div < 0: " + div);
+    if (div < 1.0f) {
+      throw new IllegalArgumentException("div < 1: " + div);
     }
-    if (div >= 65536.0f) {
-      throw new IllegalArgumentException("div >= 65536: " + div);
+    if (div > 65536.0f) {
+      throw new IllegalArgumentException("div > 65536: " + div);
     }
     final int divInt = (int)div;
-    final int divFrac = (int)((div - divInt) * 256.0);
-    smSetClkDivIntFrac(smNum, divInt, divFrac);
+    final int divFrac;
+    if (divInt == 0) {
+      divFrac = 0;
+    } else {
+      divFrac = (int)((div - divInt) * 256.0);
+    }
+    smSetClkDivIntFrac(smNum, divInt & 0xffff, divFrac);
   }
 
   public void smSetClkDivIntFrac(final int smNum,

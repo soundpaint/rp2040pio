@@ -30,6 +30,7 @@ import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.monitor.Command;
+import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -39,6 +40,8 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 public class Clock extends Command
 {
   private static final float FRAC_MUL = 1.0f / 256;
+  private static final float MIN_DIVIDER = 1.0f;
+  private static final float MAX_DIVIDER = 65536.0f;
   private static final String fullName = "clock";
   private static final String singleLineDescription =
     "display or change internal state machine's clock configuration";
@@ -47,7 +50,8 @@ public class Clock extends Command
     "of the clock of the selected is displayed.%n" +
     "Otherwise, for all specified options \"-i\", \"-f\" and%n" +
     "\"-r\", the corresponding modification will be performed for%n" +
-    "the selected state machine.";
+    "the selected state machine.  Option \"-d\" can be used%n" +
+    "alternatively to options \"-i\" and \"-f\".";
 
   private static final CmdOptions.IntegerOptionDeclaration optPio =
     CmdOptions.createIntegerOption("NUMBER", false, 'p', "pio", 0,
@@ -63,6 +67,10 @@ public class Clock extends Command
     CmdOptions.createIntegerOption("NUMBER", false, 'f', "frac-divider", null,
                                    "set clock divider fractional part for " +
                                    "selected PIO and SM");
+  private static final CmdOptions.FloatOptionDeclaration optDivider =
+    CmdOptions.createFloatOption("NUMBER", false, 'd', "divider", null,
+                                 "set nearby clock divider from float " +
+                                 "value for selected PIO and SM");
   private static final CmdOptions.FlagOptionDeclaration optRestart =
     CmdOptions.createFlagOption(false, 'r', "restart", CmdOptions.Flag.OFF,
                                 "restart clock for selected PIO and SM");
@@ -73,7 +81,8 @@ public class Clock extends Command
   {
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
-          { optPio, optSm, optIntDivider, optFracDivider, optRestart });
+          { optPio, optSm,
+              optIntDivider, optFracDivider, optDivider, optRestart });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -97,6 +106,26 @@ public class Clock extends Command
       }
       final Integer optIntDividerValue = options.getValue(optIntDivider);
       final Integer optFracDividerValue = options.getValue(optFracDivider);
+      final Float optDividerValue = options.getValue(optDivider);
+      if (optDividerValue != null) {
+        if ((optIntDividerValue != null) || (optFracDividerValue != null)) {
+          final String message =
+            "when option \"-d\" is defined, none of competing options " +
+            "\"-i\" or \"-f\" may be defined";
+          throw new CmdOptions.ParseException(message);
+        }
+        final float divider = optDividerValue;
+        if (divider < MIN_DIVIDER) {
+          final String message =
+            String.format("divider < %f: %f", MIN_DIVIDER, divider);
+          throw new CmdOptions.ParseException(message);
+        }
+        if (divider > MAX_DIVIDER) {
+          final String message =
+            String.format("divider > %f: %f", MAX_DIVIDER, divider);
+          throw new CmdOptions.ParseException(message);
+        }
+      }
       if (optIntDividerValue != null) {
         final int intDivider = optIntDividerValue;
         if ((intDivider < 0) || (intDivider > 0x10000)) {
@@ -128,19 +157,35 @@ public class Clock extends Command
     }
   }
 
-  private void displayDivider(final int pioNum, final int smNum)
+  private int getClkDivValue(final int pioNum, final int smNum)
     throws IOException
   {
     final int addressClkDiv =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_CLKDIV);
-    final int clkDivValue = sdk.readAddress(addressClkDiv);
-    final int intDivider =
+    return sdk.readAddress(addressClkDiv);
+  }
+
+  private int getIntDivider(final int clkDivValue)
+  {
+    return
       (clkDivValue & Constants.SM0_CLKDIV_INT_BITS) >>>
       Constants.SM0_CLKDIV_INT_LSB;
-    final int displayIntDivider = intDivider == 0 ? 0x10000 : intDivider;
-    final int fracDivider =
+  }
+
+  private int getFracDivider(final int clkDivValue)
+  {
+    return
       (clkDivValue & Constants.SM0_CLKDIV_FRAC_BITS) >>>
       Constants.SM0_CLKDIV_FRAC_LSB;
+  }
+
+  private void displayDivider(final int pioNum, final int smNum)
+    throws IOException
+  {
+    final int clkDivValue = getClkDivValue(pioNum, smNum);
+    final int intDivider = getIntDivider(clkDivValue);
+    final int displayIntDivider = intDivider == 0 ? 0x10000 : intDivider;
+    final int fracDivider = getFracDivider(clkDivValue);
     final float divider = displayIntDivider + FRAC_MUL * fracDivider;
     console.printf("(pio%d:sm%d) int-divider=0x%05x, frac-divider=0x%02x%n",
                    pioNum, smNum, displayIntDivider, fracDivider);
@@ -151,11 +196,11 @@ public class Clock extends Command
                              final int intDivider)
     throws IOException
   {
-    final int address =
+    final int addressClkDiv =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_CLKDIV);
     final int clkDiv = intDivider << Constants.SM0_CLKDIV_INT_LSB;
     final int mask = Constants.SM0_CLKDIV_INT_BITS;
-    sdk.hwWriteMasked(address, clkDiv, mask);
+    sdk.hwWriteMasked(addressClkDiv, clkDiv, mask);
     final int displayIntDivider = intDivider == 0 ? 0x10000 : intDivider;
     console.printf("(pio%d:sm%d) set int-divider=0x%05x%n",
                    pioNum, smNum, displayIntDivider);
@@ -165,22 +210,37 @@ public class Clock extends Command
                               final int fracDivider)
     throws IOException
   {
-    final int address =
+    final int addressClkDiv =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_CLKDIV);
     final int clkDiv = fracDivider << Constants.SM0_CLKDIV_FRAC_LSB;
     final int mask = Constants.SM0_CLKDIV_FRAC_BITS;
-    sdk.hwWriteMasked(address, clkDiv, mask);
+    sdk.hwWriteMasked(addressClkDiv, clkDiv, mask);
     console.printf("(pio%d:sm%d) set frac-divider=0x%02x%n",
                    pioNum, smNum, fracDivider);
   }
 
+  private void setDivider(final int pioNum, final int smNum,
+                          final float divider)
+    throws IOException
+  {
+    final PIOSDK pioSdk = pioNum == 0 ? sdk.getPIO0SDK() : sdk.getPIO1SDK();
+    pioSdk.smSetClkDiv(smNum, divider);
+    final int clkDivValue = getClkDivValue(pioNum, smNum);
+    final int intDivider = getIntDivider(clkDivValue);
+    final int fracDivider = getFracDivider(clkDivValue);
+    final float setDivider =
+      (intDivider == 0 ? 0x10000 : intDivider) + FRAC_MUL * fracDivider;
+    console.printf("(pio%d:sm%d) set divider=%f%n", pioNum, smNum, setDivider);
+  }
+
   private void restart(final int pioNum, final int smNum) throws IOException
   {
-    final int address = PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
+    final int addressCtrl =
+      PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
     final int mask =
       (0x1 << (Constants.CTRL_SM_RESTART_LSB + smNum)) &
       Constants.CTRL_SM_RESTART_BITS;
-    sdk.hwSetBits(address, mask);
+    sdk.hwSetBits(addressCtrl, mask);
     console.printf("(pio%d:sm%d) restarted clock%n", pioNum, smNum);
   }
 
@@ -195,10 +255,11 @@ public class Clock extends Command
     final int smNum = options.getValue(optSm);
     final Integer optIntDividerValue = options.getValue(optIntDivider);
     final Integer optFracDividerValue = options.getValue(optFracDivider);
+    final Float optDividerValue = options.getValue(optDivider);
     final boolean optRestartValue = options.getValue(optRestart).isOn();
     final boolean haveModOp =
       (optIntDividerValue != null) || (optFracDividerValue != null) ||
-      optRestartValue;
+      (optDividerValue != null) || optRestartValue;
     if (!haveModOp) {
       displayDivider(pioNum, smNum);
     }
@@ -207,6 +268,9 @@ public class Clock extends Command
     }
     if (optFracDividerValue != null) {
       setFracDivider(pioNum, smNum, optFracDividerValue);
+    }
+    if (optDividerValue != null) {
+      setDivider(pioNum, smNum, optDividerValue);
     }
     if (optRestartValue) {
       restart(pioNum, smNum);
