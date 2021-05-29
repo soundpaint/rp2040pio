@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,14 +33,24 @@ import java.util.List;
  */
 public class PLL implements Clock.TransitionListener
 {
+  private final PrintStream console;
   private int regCLKDIV_INT; // bits 16…31 of SMx_CLKDIV
   private int regCLKDIV_FRAC; // bits 8…15 of SMx_CLKDIV
   private int countIntegerBits;
   private int countFractionalBits;
   private boolean clockEnable;
 
-  public PLL()
+  private PLL()
   {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public PLL(final PrintStream console)
+  {
+    if (console == null) {
+      throw new NullPointerException("console");
+    }
+    this.console = console;
     reset();
   }
 
@@ -67,6 +78,19 @@ public class PLL implements Clock.TransitionListener
       throw new IllegalArgumentException("div integer bits > 65535: " +
                                          divIntegerBits);
     }
+    if (divIntegerBits == 0) {
+      if (regCLKDIV_FRAC != 0) {
+        // RP2040 datasheet, Table 391: "If INT is 0, FRAC must also
+        // be 0."
+        final String message =
+          String.format("warning: ignoring request for setting CLK int bits " +
+                        "to 0, since CLK frac bits are non-zero");
+        console.printf("%s%n", message);
+        return;
+      }
+      // TODO: Clarify: Should we ignore the change (as implemented),
+      // or should we silently set also FRAC to 0?
+    }
     this.regCLKDIV_INT = divIntegerBits;
   }
 
@@ -85,13 +109,36 @@ public class PLL implements Clock.TransitionListener
       throw new IllegalArgumentException("div fractional bits > 255: " +
                                          divFractionalBits);
     }
+    if (regCLKDIV_INT == 0) {
+      if (divFractionalBits != 0) {
+        // RP2040 datasheet, Table 391: "If INT is 0, FRAC must also
+        // be 0."
+        final String message =
+          String.format("warning: ignoring request for setting CLK frac bits " +
+                        "to non-zero value, since CLK int bits are zero");
+        console.printf("%s%n", message);
+        return;
+      }
+    }
     this.regCLKDIV_FRAC = divFractionalBits;
+  }
+
+  private void setCLKDIV(final int divIntegerBits, final int divFractionalBits)
+  {
+    if ((divIntegerBits == 0) && (divFractionalBits == 0)) {
+      // Special case: RP2040 datasheet, Table 391: "If INT is 0, FRAC
+      // must also be 0."
+      regCLKDIV_INT = 0;
+      regCLKDIV_FRAC = 0;
+    } else {
+      setDivIntegerBits(divIntegerBits);
+      setDivFractionalBits(divFractionalBits);
+    }
   }
 
   public void setCLKDIV(final int clkdiv)
   {
-    setDivIntegerBits(clkdiv >>> 16);
-    setDivFractionalBits((clkdiv >>> 8) & 0xff);
+    setCLKDIV(clkdiv >>> 16, (clkdiv >>> 8) & 0xff);
   }
 
   public int getCLKDIV()

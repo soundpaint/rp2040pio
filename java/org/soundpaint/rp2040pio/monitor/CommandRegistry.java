@@ -37,6 +37,7 @@ import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.ParseException;
 import org.soundpaint.rp2040pio.monitor.commands.BreakPoints;
 import org.soundpaint.rp2040pio.monitor.commands.Clear;
+import org.soundpaint.rp2040pio.monitor.commands.Clock;
 import org.soundpaint.rp2040pio.monitor.commands.Enable;
 import org.soundpaint.rp2040pio.monitor.commands.Enter;
 import org.soundpaint.rp2040pio.monitor.commands.Execute;
@@ -98,6 +99,7 @@ public class CommandRegistry implements Iterable<Command>
     final Quit quit;
     add(new BreakPoints(console, sdk));
     add(new Clear(console));
+    add(new Clock(console, sdk));
     add(new Enable(console, sdk));
     add(new Enter(console, sdk, in));
     add(new Execute(console, sdk));

@@ -285,7 +285,7 @@ public class SM implements Constants
     status = new Status();
     decoder = new Decoder();
     fifo = new FIFO();
-    pll = new PLL();
+    pll = new PLL(console);
   }
 
   public int getNum() { return num; }
