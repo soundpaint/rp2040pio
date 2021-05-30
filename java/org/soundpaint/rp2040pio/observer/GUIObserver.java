@@ -25,20 +25,22 @@
 package org.soundpaint.rp2040pio.observer;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
+import java.awt.Color;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.UIManager;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.RegisterClient;
-import org.soundpaint.rp2040pio.Registers;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -80,8 +82,12 @@ public abstract class GUIObserver extends JFrame
   private final String appTitle;
   private final String appFullName;
   private final PrintStream console;
+  private final ConnectDialog connectDialog;
+  private final JLabel lbStatus;
   private final CmdOptions options;
   private final SDK sdk;
+  private final RegisterClient sdkClient;
+  private final RegisterClient updateLoopClient;
 
   private GUIObserver()
   {
@@ -106,12 +112,37 @@ public abstract class GUIObserver extends JFrame
     this.appFullName =
       appFullName != null ? appFullName : DEFAULT_APP_FULL_NAME;
     this.console = console;
-    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    add(createActionPanel(console), BorderLayout.SOUTH);
-    setJMenuBar(createMenuBar(console));
     options = parseArgs(argv);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    connectDialog = new ConnectDialog(this, getPort());
+    lbStatus = new JLabel();
+    add(createActionPanel(console), BorderLayout.NORTH);
+    add(createStatusLine(console), BorderLayout.SOUTH);
+    setJMenuBar(createMenuBar(console));
     printAbout();
-    sdk = new SDK(console, createRegisters("GUI event thread"));
+    sdkClient = createRegisters("GUI event thread");
+    sdk = new SDK(console, sdkClient);
+    updateLoopClient = createRegisters("update loop thread");
+    connect(null, getPort());
+  }
+
+  private Box createStatusLine(final PrintStream console)
+  {
+    final Box hBox = new Box(BoxLayout.X_AXIS);
+    hBox.add(lbStatus);
+    hBox.add(Box.createHorizontalGlue());
+    return hBox;
+  }
+
+  protected void setStatus(final String status)
+  {
+    setStatus(status, false);
+  }
+
+  protected void setStatus(final String status, final boolean alert)
+  {
+    lbStatus.setText(status);
+    lbStatus.setForeground(alert ? Color.RED : Color.BLACK);
   }
 
   /**
@@ -223,7 +254,7 @@ public abstract class GUIObserver extends JFrame
     throws CmdOptions.ParseException
   {
     final int port = options.getValue(optPort);
-    if ((port < 0) || (port > 65535)) {
+    if ((port <= 0) || (port > 65535)) {
       throw new CmdOptions.
         ParseException("PORT must be in the range 0…65535", optPort);
     }
@@ -243,13 +274,14 @@ public abstract class GUIObserver extends JFrame
                    Constants.getGuiCopyrightNotice());
   }
 
-  private Registers createRegisters(final String threadName)
+  private RegisterClient createRegisters(final String threadName)
   {
     final int port = getPort();
     try {
       console.printf("%s: connecting to emulation server at port %d…%n",
                      threadName, port);
-      return new RegisterClient(console, null, port);
+      final RegisterClient registerClient = new RegisterClient(console);
+      return registerClient;
     } catch (final IOException e) {
       console.println("failed to connect to emulation server: " +
                       e.getMessage());
@@ -258,6 +290,30 @@ public abstract class GUIObserver extends JFrame
       System.exit(-1);
       throw new InternalError();
     }
+  }
+
+  public void openConnectDialog()
+  {
+    connectDialog.makeVisible();
+  }
+
+  public void connect() throws IOException
+  {
+    connect(sdkClient.getPort());
+  }
+
+  public void connect(final int port) throws IOException
+  {
+    connect(sdkClient.getHost(), port);
+  }
+
+  public void connect(final String host, final int port) throws IOException
+  {
+    sdkClient.connect(host, port);
+    updateLoopClient.connect(host, port);
+    final String status =
+      String.format("Connected to emulation server at port %d.", port);
+    setStatus(status);
   }
 
   /**
@@ -285,7 +341,6 @@ public abstract class GUIObserver extends JFrame
 
   private void updateLoop()
   {
-    final Registers registers = createRegisters("update loop thread");
     final int addressPhase0 =
       PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.
                                   MASTERCLK_TRIGGER_PHASE0);
@@ -301,19 +356,30 @@ public abstract class GUIObserver extends JFrame
     while (true) {
       try {
         while (true) {
-          registers.wait(addressPhase1, expectedValue, mask,
-                         cyclesTimeout, millisTimeout1);
+          updateLoopClient.wait(addressPhase1, expectedValue, mask,
+                                cyclesTimeout, millisTimeout1);
           updateView();
-          registers.wait(addressPhase0, expectedValue, mask,
-                         cyclesTimeout, millisTimeout2);
+          updateLoopClient.wait(addressPhase0, expectedValue, mask,
+                                cyclesTimeout, millisTimeout2);
         }
       } catch (final IOException e) {
-        console.printf("update loop: %s%n", e.getMessage());
-        try {
-          Thread.sleep(1000); // limit CPU load in case of persisting
-                              // error
-        } catch (final InterruptedException e2) {
-          // ignore
+        final String message = String.format("Error: %s", e.getMessage());
+        setStatus(message, true);
+        console.println(message);
+        boolean recovered = false;
+        while (!recovered) {
+          try {
+            Thread.sleep(1000); // limit CPU load in case of
+                                // persisting error
+          } catch (final InterruptedException e2) {
+            // ignore
+          }
+          try {
+            connect();
+            recovered = true;
+          } catch (final IOException e3) {
+            // inherited error; ignore
+          }
         }
       }
     }

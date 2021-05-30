@@ -94,12 +94,21 @@ public class MenuBar<T extends GUIObserver> extends JMenuBar
 
     addAdditionalFileMenuItems(fileMenu, observer);
 
+    final JMenuItem connect = new JMenuItem("Connect…");
+    connect.setMnemonic(KeyEvent.VK_S);
+    connect.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
+                                                  ActionEvent.ALT_MASK));
+    connect.getAccessibleContext().
+      setAccessibleDescription("Connect to Emulation Server");
+    connect.addActionListener((event) -> observer.openConnectDialog());
+    fileMenu.add(connect);
+
     final JMenuItem quit =
       SwingUtils.createIconMenuItem("quit16x16.png", "Quit");
     quit.setMnemonic(KeyEvent.VK_Q);
     quit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,
                                                ActionEvent.ALT_MASK));
-    quit.getAccessibleContext().setAccessibleDescription("Quit");
+    quit.getAccessibleContext().setAccessibleDescription("Exit Application");
     quit.addActionListener((event) -> observer.close());
     fileMenu.add(quit);
     return fileMenu;

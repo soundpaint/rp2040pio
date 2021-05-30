@@ -73,7 +73,7 @@ public abstract class Instruction
     return delay;
   }
 
-  private static String getDelayDisplayValue(final int delay)
+  private String getDelayDisplayValue()
   {
     return delay > 0 ? "[" + delay + "]" : "";
   }
@@ -83,9 +83,10 @@ public abstract class Instruction
     return opCode;
   }
 
-  private static String getSideSetDisplayValue(final int sideSet)
+  private String getSideSetDisplayValue()
   {
-    return sideSet >= 0 ? "side " + Integer.toString(sideSet) : "";
+    final boolean printSideSet = sideSetEnabled && sideSetCount > 0;
+    return printSideSet ? "side " + Integer.toString(sideSet) : "";
   }
 
   public void reset()
@@ -196,8 +197,8 @@ public abstract class Instruction
   {
     final String mnemonic = getMnemonic();
     final String paramsDisplay = getParamsDisplay();
-    final String sideSetDisplayValue = getSideSetDisplayValue(sideSet);
-    final String delayDisplayValue = getDelayDisplayValue(delay);
+    final String sideSetDisplayValue = getSideSetDisplayValue();
+    final String delayDisplayValue = getDelayDisplayValue();
     return
       String.format("%-16s%s",
                     mnemonic +

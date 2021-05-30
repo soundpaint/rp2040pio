@@ -107,7 +107,9 @@ public class RegisterClient extends AbstractRegisters
   }
 
   private final PrintStream console;
-  private final Socket socket;
+  private int port;
+  private String host;
+  private Socket socket;
 
   /**
    * Creates a register client, but does not yet connect to any
@@ -122,7 +124,6 @@ public class RegisterClient extends AbstractRegisters
       throw new NullPointerException("console");
     }
     this.console = console;
-    socket = new Socket();
   }
 
   /**
@@ -149,6 +150,21 @@ public class RegisterClient extends AbstractRegisters
   }
 
   /**
+   * Return host of most recently successfully established connection.
+   * Return value is undefined if no connection has been successfully
+   * established so far.  To check if this is the case, use method
+   * getPort() and check for return value of -1.
+   */
+  public String getHost() { return host; }
+
+  /**
+   * Return port number of most recently successfully established
+   * connection or -1, if no connection has been successfully
+   * established so far.
+   */
+  public int getPort() { return port; }
+
+  /**
    * Connects this register client to the default port of the
    * specified host.  If host is null, connects to localhost.
    */
@@ -159,15 +175,35 @@ public class RegisterClient extends AbstractRegisters
   }
 
   /**
+   * Connects this register client to the specified port of
+   * localhost.
+   */
+  public void connect(final int port)
+    throws IOException
+  {
+    connect(null, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
+  }
+
+  /**
    * Connects this register client to the specified port of the
    * specified host.  If host is null, connects to localhost.
    */
   public void connect(final String host, final int port)
     throws IOException
   {
+    if (socket != null) {
+      try {
+        socket.close();
+      } catch (final IOException e) {
+        // ignore, we are throwing this connection away anyway
+      }
+    }
+    socket = new Socket();
     socket.connect(host != null ?
                    new InetSocketAddress(host, port) :
                    new InetSocketAddress(InetAddress.getByName(null), port));
+    this.host = host;
+    this.port = port;
   }
 
   private synchronized Response getResponse(final String request)

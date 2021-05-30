@@ -86,7 +86,7 @@ public class MenuBar
     clear.setMnemonic(KeyEvent.VK_C);
     clear.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C,
                                                 ActionEvent.ALT_MASK));
-    clear.getAccessibleContext().setAccessibleDescription("Clear View");
+    clear.getAccessibleContext().setAccessibleDescription("Clear Diagram View");
     clear.addActionListener((event) -> diagram.clear());
     view.add(clear);
 
