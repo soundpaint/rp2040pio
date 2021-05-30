@@ -33,15 +33,6 @@ import java.util.function.IntConsumer;
  */
 public class SM implements Constants
 {
-  private static final int[] SHIFT_MASK = new int[32];
-  static {
-    int maskValue = 0;
-    for (int i = 0; i < SHIFT_MASK.length; i++) {
-      maskValue = (maskValue << 1) | 0x1;
-      SHIFT_MASK[i] = maskValue;
-    }
-  };
-
   private final int num;
   private final PrintStream console;
   private final MasterClock masterClock;
@@ -186,6 +177,30 @@ public class SM implements Constants
       // PIOEmuRegisters Status
       regBREAKPOINTS = 0;
       regTRACEPOINTS = 0;
+    }
+
+    public void restart()
+    {
+      /*
+       * See RP2040 datasheet, Table 378: CTRL Register, SM_RESTART:
+       *
+       * Specifically, the following are cleared: input and output
+       * shift counters; the contents of the input shift register; the
+       * delay counter; the waiting-on-IRQ state; any stalled
+       * instruction written to SMx_INSTR or run by OUT/MOV EXEC; any
+       * pin write left asserted due to OUT_STICKY.
+       */
+      isrShiftCount = 0;
+      osrShiftCount = 32;
+      isrValue = 0;
+      isDelayCycle = false;
+      totalDelay = 0;
+      pendingDelay = 0;
+      irq.reset();
+      pendingForcedInstruction = -1;
+      isForcedInstruction = false;
+      pendingExecdInstruction = -1;
+      regEXECCTRL_OUT_STICKY = false;
     }
 
     public Bit jmpPin()
@@ -524,9 +539,7 @@ public class SM implements Constants
 
   public void restart()
   {
-    // TODO: What about the program counter?  Always reset to 0x00?
-    // Or is the .origin value of a compiled program somewhere stored?
-    status.reset();
+    status.restart();
   }
 
   public Bit getGPIO(final int index)
@@ -623,7 +636,7 @@ public class SM implements Constants
     // TODO: Clarify: Shift ISR always or only if not (isrFull &&
     // status.regSHIFTCTRL_AUTOPUSH)?
     status.isrValue <<= bitCount;
-    status.isrValue |= data & SHIFT_MASK[bitCount];
+    status.isrValue |= data & ((0x1 << bitCount) - 1);
     status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
     return rxPush(true, true);
   }
@@ -633,7 +646,8 @@ public class SM implements Constants
     // TODO: Clarify: Shift ISR always or only if not (isrFull &&
     // status.regSHIFTCTRL_AUTOPUSH)?
     status.isrValue >>>= bitCount;
-    status.isrValue |= (data & SHIFT_MASK[bitCount]) << (32 - bitCount);
+    status.isrValue |=
+      (data & ((0x1 << bitCount) - 1)) << (32 - bitCount);
     status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
     return rxPush(true, true);
   }
@@ -664,8 +678,9 @@ public class SM implements Constants
   {
     // TODO: Clarify: Shift OSR always or only if not (isrEmpty &&
     // status.regSHIFTCTRL_AUTOPUSH)?
+
     final int data =
-      (status.osrValue & ~SHIFT_MASK[32 - bitCount]) >>> (32 - bitCount);
+      (status.osrValue >>> (32 - bitCount)) & ((0x1 << bitCount) - 1);
     status.osrValue <<= bitCount;
     status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
     destination.accept(data);
@@ -677,7 +692,7 @@ public class SM implements Constants
   {
     // TODO: Clarify: Shift OSR always or only if not (osrEmpty &&
     // status.regSHIFTCTRL_AUTOPUSH)?
-    final int data = status.osrValue & SHIFT_MASK[bitCount];
+    final int data = status.osrValue & ((0x1 << bitCount) - 1);
     status.osrValue >>>= bitCount;
     status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
     destination.accept(data);
