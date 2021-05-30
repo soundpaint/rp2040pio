@@ -13,7 +13,7 @@ reset
 wrap --pio=0 --sm=0 --wrap=3 --target=0
 
 # Configure Side Set Count.
-sideset --pio=0 --sm=0 --count=1
+side-set --pio=0 --sm=0 --count=1
 
 # Note: We could just do something like
 #   load --file=/examples/ws2812.hex
@@ -42,7 +42,7 @@ gpio --pio=0 --gpio=0 --init   # tell GPIO to connect to PIO0
 gpio --pio=0 --gpio=0 --enable # set direction out
 
 # Configure side set base.
-sideset --pio=0 --sm=0 --base=0
+side-set --pio=0 --sm=0 --base=0
 
 # Configure out shift.
 fifo --pio=0 --sm=0 --tx --shift-left

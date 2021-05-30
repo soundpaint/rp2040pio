@@ -33,12 +33,12 @@ import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Monitor command "sideset" provides the same functionality like the
+ * Monitor command "side-set" provides the same functionality like the
  * PIOASM directive ".side_set".
  */
 public class SideSet extends Command
 {
-  private static final String fullName = "sideset";
+  private static final String fullName = "side-set";
   private static final String singleLineDescription =
     "display or control a state machine's side-set configuration";
   private static final String notes =
@@ -67,11 +67,11 @@ public class SideSet extends Command
                                    "of side-set");
   protected static final CmdOptions.BooleanOptionDeclaration optOpt =
     CmdOptions.createBooleanOption(false, 'o', "opt", null,
-                                   "make side <value> optional for " +
+                                   "make side-set values optional for " +
                                    "instructions");
   protected static final CmdOptions.BooleanOptionDeclaration optPinDirs =
     CmdOptions.createBooleanOption(false, 'd', "pindirs", null,
-                                   "apply side set values to the PINDIRs and " +
+                                   "apply side-set values to the PINDIRs and " +
                                    "not the PINs");
 
   private final SDK sdk;
@@ -143,35 +143,48 @@ public class SideSet extends Command
     final boolean pinDirs =
       ((execCtrl & Constants.SM0_EXECCTRL_SIDE_PINDIR_BITS) >>>
        Constants.SM0_EXECCTRL_SIDE_PINDIR_LSB) != 0x0;
+    final int nettoCount = opt ? count - 1 : count;
     console.printf("(pio%d:sm%d) count=%d, base=%d, opt=%s, pindirs=%s%n",
-                   pioNum, smNum, count, base, opt, pinDirs);
+                   pioNum, smNum, nettoCount, base, opt, pinDirs);
   }
 
   private void setSideSetCount(final int pioNum, final int smNum,
-                               final SDK sdk, final int count)
+                               final SDK sdk, final int nettoCount)
     throws IOException
   {
-    final int address =
-      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    final int writeMask = Constants.SM0_PINCTRL_SIDESET_COUNT_BITS;
-    final int values =
-      count << Constants.SM0_PINCTRL_SIDESET_COUNT_LSB;
-    sdk.hwWriteMasked(address, values, writeMask);
-    console.printf("(pio%d:sm%d) set side set count to %d%n",
-                   pioNum, smNum, count);
+    final int execCtrlAddress =
+      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
+    final int execCtrl = sdk.readAddress(execCtrlAddress);
+    final boolean opt =
+      ((execCtrl & Constants.SM0_EXECCTRL_SIDE_EN_BITS) >>>
+       Constants.SM0_EXECCTRL_SIDE_EN_LSB) != 0x0;
+    if (opt && (nettoCount == 5)) {
+      console.printf("(pio%d:sm%d) ERROR: can not set count to 5, " +
+                     "since set side-set opt is set%n",
+                     pioNum, smNum);
+    } else {
+      final int count = nettoCount + (opt ? 1 : 0);
+      final int pinCtrlAddress =
+        PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
+      final int writeMask = Constants.SM0_PINCTRL_SIDESET_COUNT_BITS;
+      final int values = count << Constants.SM0_PINCTRL_SIDESET_COUNT_LSB;
+      sdk.hwWriteMasked(pinCtrlAddress, values, writeMask);
+      console.printf("(pio%d:sm%d) set side-set count to %d%n",
+                     pioNum, smNum, nettoCount);
+    }
   }
 
   private void setSideSetBase(final int pioNum, final int smNum,
                               final SDK sdk, final int base)
     throws IOException
   {
-    final int address =
+    final int pinCtrlAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
     final int writeMask = Constants.SM0_PINCTRL_SIDESET_BASE_BITS;
     final int values =
       base << Constants.SM0_PINCTRL_SIDESET_BASE_LSB;
-    sdk.hwWriteMasked(address, values, writeMask);
-    console.printf("(pio%d:sm%d) set side set base GPIO pin to %d%n",
+    sdk.hwWriteMasked(pinCtrlAddress, values, writeMask);
+    console.printf("(pio%d:sm%d) set side-set base GPIO pin to %d%n",
                    pioNum, smNum, base);
   }
 
@@ -179,24 +192,68 @@ public class SideSet extends Command
                              final SDK sdk, final boolean opt)
     throws IOException
   {
-    final int address =
+    final int execCtrlAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
-    final int writeMask = Constants.SM0_EXECCTRL_SIDE_EN_BITS;
-    final int values =
-      opt ? 0x1 << Constants.SM0_EXECCTRL_SIDE_EN_LSB : 0x0;
-    sdk.hwWriteMasked(address, values, writeMask);
+    final int execCtrl = sdk.readAddress(execCtrlAddress);
+    if (opt !=
+        (((execCtrl & Constants.SM0_EXECCTRL_SIDE_EN_BITS) >>>
+          Constants.SM0_EXECCTRL_SIDE_EN_LSB) != 0x0)) {
+      /*
+       * Note: From this command's perspective, it is a RP2040's
+       * design flaw that the SMx_PINCTRL_SIDESET_COUNT is inclusive
+       * of the enable bit.  When the user changes side-set opt only,
+       * they do not expect to change the available pin bits.  For
+       * example, pioasm will allocate *three* side-set bits when
+       * declaring ".side_set 2 opt", but only two, when the "opt" is
+       * dropped.  Consequently, when changing side-set opt *only*, we
+       * have also have to update the number of side-set bits.
+       *
+       * TODO: Need to lock this block (and any other writer to
+       * side-set configuration) as critical section to avoid
+       * corruption, if there are concurrent writers, such as another
+       * Monitor instance.
+       */
+      final int pinCtrlAddress =
+        PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
+      final int pinCtrl = sdk.readAddress(pinCtrlAddress);
+      final int count =
+        (pinCtrl & Constants.SM0_PINCTRL_SIDESET_COUNT_BITS) >>>
+        Constants.SM0_PINCTRL_SIDESET_COUNT_LSB;
+      if (opt && (count == 5)) {
+        console.printf("(pio%d:sm%d) ERROR: can not set opt, since side-set " +
+                       "count is set to 5.%n",
+                       pioNum, smNum);
+      } else {
+        final int optBits =
+          opt ? 0x1 << Constants.SM0_EXECCTRL_SIDE_EN_LSB : 0x0;
+        sdk.hwWriteMasked(execCtrlAddress, optBits,
+                          Constants.SM0_EXECCTRL_SIDE_EN_BITS);
+        final int newCount = count + (opt ? 1 : (count > 0 ? - 1 : 0));
+        final int countBits =
+          newCount << Constants.SM0_PINCTRL_SIDESET_COUNT_LSB;
+        sdk.hwWriteMasked(pinCtrlAddress, countBits,
+                          Constants.SM0_PINCTRL_SIDESET_COUNT_BITS);
+        console.printf("(pio%d:sm%d) set side-set opt=%s%n",
+                       pioNum, smNum, opt);
+      }
+    } else {
+      console.printf("(pio%d:sm%d) set side-set opt=%s%n",
+                     pioNum, smNum, opt);
+    }
   }
 
   private void setSideSetPinDirs(final int pioNum, final int smNum,
                                  final SDK sdk, final boolean pinDirs)
     throws IOException
   {
-    final int address =
+    final int execCtrlAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
     final int writeMask = Constants.SM0_EXECCTRL_SIDE_PINDIR_BITS;
     final int values =
       pinDirs ? 0x1 << Constants.SM0_EXECCTRL_SIDE_PINDIR_LSB : 0x0;
-    sdk.hwWriteMasked(address, values, writeMask);
+    sdk.hwWriteMasked(execCtrlAddress, values, writeMask);
+    console.printf("(pio%d:sm%d) set side-set pindirs=%s%n",
+                   pioNum, smNum, pinDirs);
   }
 
   /**

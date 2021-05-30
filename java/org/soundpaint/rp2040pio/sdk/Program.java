@@ -184,7 +184,8 @@ public class Program implements Constants
     final SMConfig smConfig = SMConfig.getDefault();
     smConfig.setWrap(wrapTarget, wrap);
     if (sideSetCount > 0) {
-      smConfig.setSideSet(sideSetCount, sideSetOpt, sideSetPinDirs);
+      final int nettoSideSetCount = sideSetCount - (sideSetOpt ? 1 : 0);
+      smConfig.setSideSet(nettoSideSetCount, sideSetOpt, sideSetPinDirs);
     }
     return smConfig;
   }

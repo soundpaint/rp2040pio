@@ -19,7 +19,7 @@ enter -a 2 -v 0xe000 # set pins, 00    side 0
 enter -a 3 -v 0x0001 # jmp 01          side 0
 
 # Set up the program for execution on PIO 0, SM 0 with side-set 0.
-sideset --pio=0 --sm=0 --count=0
+side-set --pio=0 --sm=0 --count=0
 sm --pio=0 --sm=0 --enable=true
 
 # Just for convience and verification, list the program that
