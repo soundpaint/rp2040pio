@@ -121,7 +121,8 @@ public class PIOGPIO implements Constants
   public void collatePins(final int pins, final int base, final int count)
   {
     for (int pin = 0; pin < count; pin++) {
-      collateLevel((base + pin) & 0x1f, Bit.fromValue((pins >>> pin) & 0x1));
+      collateLevel((base + pin) & (GPIO_NUM - 1),
+                   Bit.fromValue((pins >>> pin) & 0x1));
     }
   }
 

@@ -49,8 +49,9 @@ public class Fifo extends Command
   private static final String singleLineDescription =
     "display or change internal state machine's FIFO status";
   private static final String notes =
+    "Use options \"-p\" and \"-s\" to select a state machine.%n" +
     "If none of the FIFO modification options is specified, the status%n"+
-    "of the FIFO of the selected is displayed.%n" +
+    "of the FIFO of the selected state machine is displayed.%n" +
     "Option '-a' together with option '-v' can be used for directly%n" +
     "low-level write a value into one of the 8 FIFO's data registers.%n" +
     "Otherwise, for all specified modification options \"-d\", \"-e\",%n" +

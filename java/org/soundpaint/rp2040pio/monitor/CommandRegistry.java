@@ -46,6 +46,7 @@ import org.soundpaint.rp2040pio.monitor.commands.Help;
 import org.soundpaint.rp2040pio.monitor.commands.Label;
 import org.soundpaint.rp2040pio.monitor.commands.Load;
 import org.soundpaint.rp2040pio.monitor.commands.Quit;
+import org.soundpaint.rp2040pio.monitor.commands.PinCtrl;
 import org.soundpaint.rp2040pio.monitor.commands.Read;
 import org.soundpaint.rp2040pio.monitor.commands.Registers;
 import org.soundpaint.rp2040pio.monitor.commands.Reset;
@@ -108,6 +109,7 @@ public class CommandRegistry implements Iterable<Command>
     add(new Label(console, sdk));
     add(new Load(console, sdk));
     add(quit = new Quit(console));
+    add(new PinCtrl(console, sdk));
     add(new Read(console, sdk));
     add(new Registers(console, sdk));
     add(new Reset(console, sdk));
