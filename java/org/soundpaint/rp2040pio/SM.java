@@ -49,9 +49,7 @@ public class SM implements Constants
     SET((sm) -> sm.status.regPINCTRL_SET_BASE,
         (sm) -> sm.status.regPINCTRL_SET_COUNT),
     OUT((sm) -> sm.status.regPINCTRL_OUT_BASE,
-        (sm) -> sm.status.regPINCTRL_OUT_COUNT),
-    SIDE_SET((sm) -> sm.status.regPINCTRL_SIDESET_BASE,
-             (sm) -> sm.status.regPINCTRL_SIDESET_COUNT);
+        (sm) -> sm.status.regPINCTRL_OUT_COUNT);
 
     private final Function<SM, Integer> baseGetter;
     private final Function<SM, Integer> countGetter;

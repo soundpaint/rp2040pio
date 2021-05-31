@@ -560,7 +560,7 @@ public class FifoEntriesViewPanel extends JPanel
     final int outShiftDir =
       (shiftCtrl & Constants.SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS) >>>
       Constants.SM0_SHIFTCTRL_OUT_SHIFTDIR_LSB;
-    updateShiftReg((bit, level) -> bit > level, Color.RED,
+    updateShiftReg((bit, level) -> bit >= level, Color.RED,
                    lbOsrLeftHandArrow, lbOsrRightHandArrow, lbOsrBits,
                    PIOEmuRegisters.Regs.SM0_OSR,
                    PIOEmuRegisters.Regs.SM0_OSR_SHIFT_COUNT,

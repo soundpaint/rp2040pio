@@ -218,9 +218,9 @@ public abstract class Instruction
     {
       ALWAYS(0b000, "", (smStatus) -> true),
       NOT_X(0b001, "!x", (smStatus) -> smStatus.regX == 0),
-      DEC_X(0b010, "x--", (smStatus) -> smStatus.regX-- == 0),
+      DEC_X(0b010, "x--", (smStatus) -> smStatus.regX-- != 0),
       NOT_Y(0b011, "!y", (smStatus) -> smStatus.regY == 0),
-      DEC_Y(0b100, "y--", (smStatus) -> smStatus.regY-- == 0),
+      DEC_Y(0b100, "y--", (smStatus) -> smStatus.regY-- != 0),
       X_NEQ_Y(0b101, "x!=y", (smStatus) -> smStatus.regX != smStatus.regX),
       PIN(0b110, "pin", (smStatus) -> smStatus.jmpPin() == Bit.HIGH),
       NOT_OSRE(0b111, "!osre", (smStatus) -> !smStatus.osrEmpty());
