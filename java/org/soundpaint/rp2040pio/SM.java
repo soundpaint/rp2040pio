@@ -566,8 +566,9 @@ public class SM implements Constants
    */
   public boolean rxPush(final boolean ifFull, final boolean block)
   {
-    final boolean isrFull = status.isrShiftCount >= status.regSHIFTCTRL_PUSH_THRESH;
-    if (!ifFull || (isrFull && status.regSHIFTCTRL_AUTOPUSH)) {
+    final boolean isrFull =
+      status.isrShiftCount >= status.regSHIFTCTRL_PUSH_THRESH;
+    if (!ifFull || isrFull) {
       final boolean succeeded = fifo.rxPush(status.isrValue, block);
       if (succeeded) {
         status.isrValue = 0;
@@ -590,8 +591,9 @@ public class SM implements Constants
      * following code, as 3.5.4.2 ("Autopull Details") of RP2040
      * datasheet suggests?  Also, stall behaviour may be wrong?
      */
-    final boolean osrEmpty = status.osrShiftCount >= status.regSHIFTCTRL_PULL_THRESH;
-    if (!ifEmpty || (osrEmpty && status.regSHIFTCTRL_AUTOPULL)) {
+    final boolean osrEmpty =
+      status.osrShiftCount >= status.regSHIFTCTRL_PULL_THRESH;
+    if (!ifEmpty || osrEmpty) {
       synchronized(fifo) {
         final boolean fifoEmpty = fifo.fstatTxEmpty();
         if (fifoEmpty) {
@@ -636,7 +638,7 @@ public class SM implements Constants
     status.isrValue <<= bitCount;
     status.isrValue |= data & ((0x1 << bitCount) - 1);
     status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
-    return rxPush(true, true);
+    return status.regSHIFTCTRL_AUTOPUSH ? rxPush(true, true) : false;
   }
 
   public boolean shiftISRRight(final int bitCount, final int data)
@@ -647,7 +649,7 @@ public class SM implements Constants
     status.isrValue |=
       (data & ((0x1 << bitCount) - 1)) << (32 - bitCount);
     status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
-    return rxPush(true, true);
+    return status.regSHIFTCTRL_AUTOPUSH ? rxPush(true, true) : false;
   }
 
   public int getISRShiftCount() { return status.isrShiftCount; }
@@ -682,7 +684,7 @@ public class SM implements Constants
     status.osrValue <<= bitCount;
     status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
     destination.accept(data);
-    return txPull(true, true);
+    return status.regSHIFTCTRL_AUTOPULL ? txPull(true, true) : false;
   }
 
   public boolean shiftOSRRight(final int bitCount,
@@ -694,7 +696,7 @@ public class SM implements Constants
     status.osrValue >>>= bitCount;
     status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
     destination.accept(data);
-    return txPull(true, true);
+    return status.regSHIFTCTRL_AUTOPULL ? txPull(true, true) : false;
   }
 
   public int getOSRShiftCount() { return status.osrShiftCount; }

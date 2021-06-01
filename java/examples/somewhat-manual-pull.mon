@@ -1,0 +1,102 @@
+# Monitor script for partial auto pull example (see RP2040
+# datasheet, Sect. 3.5.4 "Autopush and Autopull").
+# To be executed on PIO 0, SM 0.
+# Clock (side-set) output is mapped to GPIO 0.
+# Data (OUT) ouput is mapped to GPIO 1.
+
+# Make a full reset of the emulator.
+reset
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=1 --target=0
+
+# Configure Side Set
+side-set --pio=0 --sm=0 --count=1 --opt=false   # .side_set 1
+
+# The code.
+#                  .wrap_target
+enter -a 0 -v 0x6101 # out pins, 1     side 0 [1] ; Shift out data bit and toggle clock low
+enter -a 1 -v 0x91e0 # pull ifempty    side 1 [1] ; Stall here if no TX data
+#                  .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=2
+
+########
+# Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
+# created by pioasm).
+########
+
+# Connect GPIO pins 0 and 1 with PIO 0.
+gpio --pio=0 --gpio=0 --init   # tell GPIO to connect to PIO0
+gpio --pio=0 --gpio=1 --init   # tell GPIO to connect to PIO0
+
+# Set direction out for these two pins.
+gpio --pio=0 --gpio=0 --enable # set direction out
+gpio --pio=0 --gpio=1 --enable # set direction out
+
+# Configure out shift.
+fifo --pio=0 --sm=0 --tx --shift-left    # OSR shift left
+fifo --pio=0 --sm=0 --tx --auto=false    # auto pull off
+fifo --pio=0 --sm=0 --tx --threshold=4  # auto pull threshold
+
+# Configure FIFO join: Join TX.
+fifo --pio=0 --sm=0 --join --tx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+# Configure clock (side-set) for GPIO 0.
+side-set --pio=0 --sm=0 --base=0
+
+# Configure data (OUT) to output a single bit to GPIO 1.
+pinctrl --pio=0 --sm=0 --out-count=1 --out-base=1
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 -c
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.
+fifo --enqueue --tx --value 0xffff0000 # bit pattern 11111111...00000000
+fifo --enqueue --tx --value 0x0000ffff # bit pattern 00000000...11111111
+fifo --enqueue --tx --value 0xaaaaaaaa # bit pattern 10101010...10101010
+
+# Done.
+quit
