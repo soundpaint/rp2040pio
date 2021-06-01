@@ -150,7 +150,6 @@ public class FifoViewPanel extends JPanel
   public void updateView()
   {
     fifoEntriesViewPanel.smChanged(pioNum, smNum);
-    fifoEntriesViewPanel.repaintLater();
   }
 }
 

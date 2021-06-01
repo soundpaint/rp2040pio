@@ -34,7 +34,6 @@ import javax.swing.ButtonGroup;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
@@ -126,11 +125,6 @@ public class GPIOArrayPanel extends JPanel
   {
     this.override = override;
     checkedUpdate();
-  }
-
-  public void repaintLater()
-  {
-    SwingUtilities.invokeLater(() -> repaint());
   }
 }
 

@@ -92,9 +92,7 @@ public class GPIOViewPanel extends JPanel
   public void updateView()
   {
     pioGpioArrayPanel.checkedUpdate();
-    pioGpioArrayPanel.repaintLater();
     gpioArrayPanel.checkedUpdate();
-    gpioArrayPanel.repaintLater();
   }
 }
 

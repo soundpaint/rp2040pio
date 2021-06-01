@@ -29,7 +29,6 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
@@ -95,7 +94,6 @@ public class Diagram extends GUIObserver
   private void modelChanged()
   {
     view.updatePreferredSize();
-    SwingUtilities.invokeLater(() -> view.repaint());
   }
 
   @Override
@@ -135,29 +133,22 @@ public class Diagram extends GUIObserver
     model.addSignal(SignalFactory.createClockSignal("clock")).setVisible(true);
 
     model.addSignal(PIOEmuRegisters.
-                    getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0).
-      setVisible(true);
+                    getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);
     final GPIOIOBank0Registers.Regs regGpio0Status =
       GPIOIOBank0Registers.Regs.GPIO0_STATUS;
     for (int gpioNum = 0; gpioNum < 32; gpioNum++) {
       final String label = "GPIO " + gpioNum;
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
-      model.addSignal(label + " Value", address, 8, 8).setVisible(gpioNum == 0);
+      model.addSignal(label + " Value", address, 8, 8).setVisible(gpioNum < 2);
       model.addSignal(label + " Level", address, 8);
     }
     final SDK sdk = getSDK();
     final int addrSm0Pc =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
     model.addSignal("SM0_PC", addrSm0Pc);
-    final int addrSm0RegX =
-      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGX);
-    model.addSignal("SM0_REGX", addrSm0RegX);
-    final int addrSm0RegY =
-      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGY);
-    model.addSignal("SM0_REGY", addrSm0RegY);
     model.addSignal("SM0_PC (hidden delay)",
-                    addrSm0Pc, createDelayFilter(sdk, 0, 0)).setVisible(true);
+                    addrSm0Pc, createDelayFilter(sdk, 0, 0));
     final int instrAddr =
       PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     final Signal instr1 =
@@ -169,8 +160,13 @@ public class Diagram extends GUIObserver
       SignalFactory.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR (hidden delay)",
                                             true, createDelayFilter(sdk, 0, 0));
-    instr2.setVisible(true);
-    model.addSignal(instr2);
+    model.addSignal(instr2).setVisible(true);
+    final int addrSm0RegX =
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGX);
+    model.addSignal("SM0_REGX", addrSm0RegX).setVisible(true);
+    final int addrSm0RegY =
+      PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGY);
+    model.addSignal("SM0_REGY", addrSm0RegY);
   }
 
   public void clear()

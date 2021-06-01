@@ -144,7 +144,6 @@ public class CodeViewPanel extends JPanel
   public void updateView()
   {
     codeSmViewPanel.smChanged(pioNum, smNum);
-    codeSmViewPanel.repaintLater();
   }
 }
 

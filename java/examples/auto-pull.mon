@@ -1,4 +1,4 @@
-# Monitor script for manual pull example (see RP2040
+# Monitor script for auto pull example (see RP2040
 # datasheet, Sect. 3.5.4 "Autopush and Autopull").
 # To be executed on PIO 0, SM 0.
 # Clock (side-set) output is mapped to GPIO 0.
@@ -8,24 +8,20 @@
 reset
 
 # Configure Wrap.
-wrap --pio=0 --sm=0 --wrap=4 --target=0
+wrap --pio=0 --sm=0 --wrap=1 --target=0
 
 # Configure Side Set
-side-set --pio=0 --sm=0 --count=1 --opt=true   # .side_set 1 opt
+side-set --pio=0 --sm=0 --count=1 --opt=false   # .side_set 1
 
 # The code.
 #                  .wrap_target
-enter -a 0 -v 0xe022 # set x, 2                   ; X = bit count - 2
-enter -a 1 -v 0x99a0 # pull            side 1 [1] ; Stall here if no TX data
-#                  bitloop:
-enter -a 2 -v 0x7101 # out pins, 1     side 0 [1] ; Shift out data bit and toggle clock low
-enter -a 3 -v 0x1942 # jmp x-- bitloop side 1 [1] ; Loop runs 3 times
-enter -a 4 -v 0x7001 # out pins, 1     side 0     ; Shift out last bit before reloading X
+enter -a 0 -v 0x6101 # out pins, 1     side 0 [1] ; Shift out data bit and toggle clock low
+enter -a 1 -v 0xb142 # nop             side 1 [1] ; toggle clock high
 #                  .wrap
 
 # Just for convience and verification, list the program that
 # we just entered, as viewed by PIO 0, SM 0.
-unassemble --pio=0 --sm=0 --address=0 --count=5
+unassemble --pio=0 --sm=0 --address=0 --count=2
 
 ########
 # Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
@@ -42,7 +38,8 @@ gpio --pio=0 --gpio=1 --enable # set direction out
 
 # Configure out shift.
 fifo --pio=0 --sm=0 --tx --shift-left    # OSR shift left
-fifo --pio=0 --sm=0 --tx --auto=false    # no auto pull
+fifo --pio=0 --sm=0 --tx --auto=true     # auto pull on
+fifo --pio=0 --sm=0 --tx --threshold=4  # auto pull threshold
 
 # Configure FIFO join: Join TX.
 fifo --pio=0 --sm=0 --join --tx
@@ -97,8 +94,9 @@ sm --pio=0 --sm=0 --enable=true
 ########
 
 # Put example values into FIFO.
-fifo --enqueue --tx --value 0xaaaaaaaa # bit pattern 10101010...
-fifo --enqueue --tx --value 0xffffffff # bit pattern 11111111...
+fifo --enqueue --tx --value 0xffff0000 # bit pattern 11111111...00000000
+fifo --enqueue --tx --value 0x0000ffff # bit pattern 00000000...11111111
+fifo --enqueue --tx --value 0xaaaaaaaa # bit pattern 10101010...10101010
 
 # Done.
 quit

@@ -687,7 +687,10 @@ public abstract class Instruction
     @Override
     public String getParamsDisplay()
     {
-      return (ifFull ? "iffull " : "") + (block ? "block" : "noblock");
+      return
+        (ifFull ? "iffull" : "") +
+        (ifFull && !block ? " " : "") +
+        (block ? "" : "noblock");
     }
   }
 
@@ -751,7 +754,10 @@ public abstract class Instruction
     @Override
     public String getParamsDisplay()
     {
-      return (ifEmpty ? "ifempty " : "") + (block ? "block" : "noblock");
+      return
+        (ifEmpty ? "ifempty" : "") +
+        (ifEmpty && !block ? " " : "") +
+        (block ? "" : "noblock");
     }
   }
 

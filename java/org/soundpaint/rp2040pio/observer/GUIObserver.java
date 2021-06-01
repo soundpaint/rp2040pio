@@ -36,6 +36,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
@@ -335,7 +336,8 @@ public abstract class GUIObserver extends JFrame
 
   /**
    * This method is regularly called.  The observer implementation
-   * should update its view.
+   * should check if the RP2040 Emulator's data, that it displays,
+   * has changed, and if so, properly update its view.
    */
   protected abstract void updateView();
 
@@ -359,6 +361,7 @@ public abstract class GUIObserver extends JFrame
           updateLoopClient.wait(addressPhase1, expectedValue, mask,
                                 cyclesTimeout, millisTimeout1);
           updateView();
+          SwingUtilities.invokeLater(() -> repaint());
           updateLoopClient.wait(addressPhase0, expectedValue, mask,
                                 cyclesTimeout, millisTimeout2);
         }

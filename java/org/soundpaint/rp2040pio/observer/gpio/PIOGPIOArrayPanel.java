@@ -34,7 +34,6 @@ import javax.swing.ButtonGroup;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.SwingUtils;
@@ -129,11 +128,6 @@ public class PIOGPIOArrayPanel extends JPanel
   {
     this.pioNum = pioNum;
     checkedUpdate();
-  }
-
-  public void repaintLater()
-  {
-    SwingUtilities.invokeLater(() -> repaint());
   }
 }
 

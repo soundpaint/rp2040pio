@@ -41,7 +41,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
@@ -186,7 +185,6 @@ public class FifoEntriesViewPanel extends JPanel
 
     autoScroll = initialAutoScroll;
     SwingUtils.setPreferredWidthAsMaximum(this);
-    repaintLater();
   }
 
   private Box createTopLine()
@@ -612,15 +610,6 @@ public class FifoEntriesViewPanel extends JPanel
   {
     this.autoScroll = autoScroll;
     checkedUpdate();
-  }
-
-  public void repaintLater()
-  {
-    SwingUtilities.invokeLater(() -> {
-        final String toolTipText =
-          String.format("FIFO registers view for PIO%d, SM%d", pioNum, smNum);
-        setToolTipText(toolTipText);
-      });
   }
 }
 

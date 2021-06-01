@@ -40,7 +40,6 @@ import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
@@ -152,7 +151,6 @@ public class CodeSmViewPanel extends JPanel
     lsInstructions.setCellRenderer(new InstructionRenderer());
     add(new JScrollPane(lsInstructions));
     setPreferredSize(new Dimension(300, 200));
-    repaintLater();
   }
 
   private int getPC() throws IOException
@@ -331,21 +329,6 @@ public class CodeSmViewPanel extends JPanel
     this.pioNum = pioNum;
     this.smNum = smNum;
     checkedUpdateInstructions();
-  }
-
-  public void repaintLater()
-  {
-    SwingUtilities.invokeLater(() -> {
-        pbDelay.setString(progressText);
-        pbDelay.setValue(progressValue);
-        final String toolTipText =
-          String.format("code view for PIO%d, SM%d", pioNum, smNum);
-        lsInstructions.setToolTipText(toolTipText);
-        for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
-          final Instruction instruction = instructions.getElementAt(address);
-          instructions.setElementAt(instruction, address); // trigger repaint
-        }
-      });
   }
 }
 
