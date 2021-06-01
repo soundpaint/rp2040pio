@@ -477,7 +477,6 @@ public abstract class Instruction
         throw new Decoder.DecodeException(this, getOpCode());
       }
       bitCount = lsb & 0x1f;
-      if (bitCount == 0) bitCount = 32;
     }
 
     @Override
@@ -501,7 +500,7 @@ public abstract class Instruction
     @Override
     public String getParamsDisplay()
     {
-      return src + ", " + String.format("%02x", bitCount);
+      return src + ", " + String.format("%02x", bitCount != 0 ? bitCount : 32);
     }
   }
 
@@ -594,8 +593,8 @@ public abstract class Instruction
       if (bitCount < 0) {
         throw new IllegalArgumentException("bit count < 0: " + bitCount);
       }
-      if (bitCount > 32) {
-        throw new IllegalArgumentException("bit count > 32: " + bitCount);
+      if (bitCount > 31) {
+        throw new IllegalArgumentException("bit count > 31: " + bitCount);
       }
       this.bitCount = bitCount;
     }
@@ -607,7 +606,7 @@ public abstract class Instruction
         0x6000 |
         getDelayAndSideSetBits(pinCtrlSidesetCount, execCtrlSideEn) |
         (dst.ordinal() << 5) |
-        (bitCount & 0x1f);
+        bitCount;
     }
 
     @Override
@@ -615,7 +614,6 @@ public abstract class Instruction
     {
       dst = code2dst.get((lsb & 0xe0) >>> 5);
       bitCount = lsb & 0x1f;
-      if (bitCount == 0) bitCount = 32;
     }
 
     @Override
@@ -643,7 +641,7 @@ public abstract class Instruction
     @Override
     public String getParamsDisplay()
     {
-      return dst + ", " + String.format("%02x", bitCount);
+      return dst + ", " + String.format("%02x", bitCount != 0 ? bitCount : 32);
     }
   }
 

@@ -613,6 +613,19 @@ public class SM implements Constants
     }
   }
 
+  private int checkBitCount(final int bitCount, final String label)
+  {
+    if (bitCount < 0) {
+      throw new IllegalArgumentException("shift " + label +
+                                         " bitCount < 0: " + bitCount);
+    }
+    if (bitCount > 31) {
+      throw new IllegalArgumentException("shift " + label +
+                                         " bitCount > 31: " + bitCount);
+    }
+    return bitCount == 0 ? 32 : bitCount;
+  }
+
   private int saturate(final int base, final int increment, final int limit)
   {
     final int sum = base + increment;
@@ -635,9 +648,14 @@ public class SM implements Constants
   {
     // TODO: Clarify: Shift ISR always or only if not (isrFull &&
     // status.regSHIFTCTRL_AUTOPUSH)?
-    status.isrValue <<= bitCount;
-    status.isrValue |= data & ((0x1 << bitCount) - 1);
-    status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
+    final int bitsToShift = checkBitCount(bitCount, "ISR");
+    if (bitsToShift < 32) {
+      status.isrValue <<= bitsToShift;
+      status.isrValue |= data & ((0x1 << bitsToShift) - 1);
+    } else {
+      status.isrValue = data;
+    }
+    status.isrShiftCount = saturate(status.isrShiftCount, bitsToShift, 32);
     return status.regSHIFTCTRL_AUTOPUSH ? rxPush(true, true) : false;
   }
 
@@ -645,10 +663,15 @@ public class SM implements Constants
   {
     // TODO: Clarify: Shift ISR always or only if not (isrFull &&
     // status.regSHIFTCTRL_AUTOPUSH)?
-    status.isrValue >>>= bitCount;
-    status.isrValue |=
-      (data & ((0x1 << bitCount) - 1)) << (32 - bitCount);
-    status.isrShiftCount = saturate(status.isrShiftCount, bitCount, 32);
+    final int bitsToShift = checkBitCount(bitCount, "ISR");
+    if (bitsToShift < 32) {
+      status.isrValue >>>= bitsToShift;
+      status.isrValue |=
+        (data & ((0x1 << bitsToShift) - 1)) << (32 - bitsToShift);
+    } else {
+      status.isrValue = data;
+    }
+    status.isrShiftCount = saturate(status.isrShiftCount, bitsToShift, 32);
     return status.regSHIFTCTRL_AUTOPUSH ? rxPush(true, true) : false;
   }
 
@@ -678,11 +701,17 @@ public class SM implements Constants
   {
     // TODO: Clarify: Shift OSR always or only if not (isrEmpty &&
     // status.regSHIFTCTRL_AUTOPUSH)?
-
-    final int data =
-      (status.osrValue >>> (32 - bitCount)) & ((0x1 << bitCount) - 1);
-    status.osrValue <<= bitCount;
-    status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
+    final int bitsToShift = checkBitCount(bitCount, "OSR");
+    final int data;
+    if (bitsToShift < 32) {
+      data =
+        (status.osrValue >>> (32 - bitsToShift)) & ((0x1 << bitsToShift) - 1);
+      status.osrValue <<= bitsToShift;
+    } else {
+      data = status.osrValue;
+      status.osrValue = 0;
+    }
+    status.osrShiftCount = saturate(status.osrShiftCount, bitsToShift, 32);
     destination.accept(data);
     return status.regSHIFTCTRL_AUTOPULL ? txPull(true, true) : false;
   }
@@ -692,9 +721,16 @@ public class SM implements Constants
   {
     // TODO: Clarify: Shift OSR always or only if not (osrEmpty &&
     // status.regSHIFTCTRL_AUTOPUSH)?
-    final int data = status.osrValue & ((0x1 << bitCount) - 1);
-    status.osrValue >>>= bitCount;
-    status.osrShiftCount = saturate(status.osrShiftCount, bitCount, 32);
+    final int bitsToShift = checkBitCount(bitCount, "OSR");
+    final int data;
+    if (bitsToShift < 32) {
+      data = status.osrValue & ((0x1 << bitsToShift) - 1);
+      status.osrValue >>>= bitsToShift;
+    } else {
+      data = status.osrValue;
+      status.osrValue = 0;
+    }
+    status.osrShiftCount = saturate(status.osrShiftCount, bitsToShift, 32);
     destination.accept(data);
     return status.regSHIFTCTRL_AUTOPULL ? txPull(true, true) : false;
   }
@@ -881,52 +917,6 @@ public class SM implements Constants
     final Instruction.Jmp instruction = new Instruction.Jmp();
     instruction.setCondition(condition);
     instruction.setAddress(address);
-    return instruction.encode(status.regPINCTRL_SIDESET_COUNT,
-                              status.regEXECCTRL_SIDE_EN);
-  }
-
-  private int encodeOut(final Instruction.Out.Destination dst,
-                        final int bitCount)
-  {
-    if (dst == null) {
-      throw new NullPointerException("dst");
-    }
-    if (bitCount < 0) {
-      throw new IllegalArgumentException("bitCount < 0: " + bitCount);
-    }
-    if (bitCount > 32) {
-      throw new IllegalArgumentException("bitCount > 32: " + bitCount);
-    }
-    final Instruction.Out instruction = new Instruction.Out();
-    instruction.setDestination(dst);
-    instruction.setBitCount(bitCount);
-    return instruction.encode(status.regPINCTRL_SIDESET_COUNT,
-                              status.regEXECCTRL_SIDE_EN);
-  }
-
-  private int encodePull(final boolean ifEmpty, final boolean block)
-  {
-    final Instruction.Pull instruction = new Instruction.Pull();
-    instruction.setIfEmpty(ifEmpty);
-    instruction.setBlock(block);
-    return instruction.encode(status.regPINCTRL_SIDESET_COUNT,
-                              status.regEXECCTRL_SIDE_EN);
-  }
-
-  private int encodeSet(final Instruction.Set.Destination dst, final int data)
-  {
-    if (dst == null) {
-      throw new NullPointerException("dst");
-    }
-    if (data < 0) {
-      throw new IllegalArgumentException("data < 0: " + data);
-    }
-    if (data > 31) {
-      throw new IllegalArgumentException("data > 31: " + data);
-    }
-    final Instruction.Set instruction = new Instruction.Set();
-    instruction.setDestination(dst);
-    instruction.setData(data);
     return instruction.encode(status.regPINCTRL_SIDESET_COUNT,
                               status.regEXECCTRL_SIDE_EN);
   }
