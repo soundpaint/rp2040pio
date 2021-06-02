@@ -603,6 +603,9 @@ public class FifoEntriesViewPanel extends JPanel
   {
     this.pioNum = pioNum;
     this.smNum = smNum;
+    final String toolTipText =
+      String.format("FIFO registers view for PIO%d, SM%d", pioNum, smNum);
+    setToolTipText(toolTipText);
     checkedUpdate();
   }
 

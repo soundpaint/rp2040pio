@@ -1,0 +1,91 @@
+# Monitor script for auto-push-pull example (see RP2040
+# datasheet, Sect. 3.5.4 "Autopush and Autopull").
+# To be executed on PIO 0, SM 0.
+
+# Make a full reset of the emulator.
+reset
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=1 --target=0
+
+# Configure Side Set
+side-set --pio=0 --sm=0 --count=0 --opt=false   # no side-set
+
+# The code.
+#                  .wrap_target
+enter -a 0 -v 0x6020 # out x, 32
+enter -a 1 -v 0x4020 # in x,32
+#                  .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=2
+
+########
+# Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
+# created by pioasm).
+########
+
+# Configure IN / OUT shift.
+fifo --pio=0 --sm=0 --rx --shift-left    # ISR shift left
+fifo --pio=0 --sm=0 --rx --auto=true     # auto push on
+fifo --pio=0 --sm=0 --rx --threshold=32  # auto push threshold
+fifo --pio=0 --sm=0 --tx --shift-left    # OSR shift left
+fifo --pio=0 --sm=0 --tx --auto=true     # auto pull on
+fifo --pio=0 --sm=0 --tx --threshold=32  # auto pull threshold
+
+# Configure FIFO join: No join.
+fifo --pio=0 --sm=0 --unjoin --tx
+fifo --pio=0 --sm=0 --unjoin --rx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 -c
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.
+fifo --enqueue --tx --value 0x0
+fifo --enqueue --tx --value 0x1
+fifo --enqueue --tx --value 0x2
+fifo --enqueue --tx --value 0x3
+
+# Done.
+quit

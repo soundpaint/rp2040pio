@@ -122,8 +122,6 @@ public class CodeSmViewPanel extends JPanel
   private final JList<Instruction> lsInstructions;
   private int pioNum;
   private int smNum;
-  private String progressText;
-  private int progressValue;
 
   private CodeSmViewPanel()
   {
@@ -309,8 +307,8 @@ public class CodeSmViewPanel extends JPanel
                       totalDelay == 1 ? "cycle" : "cycles");
     }
     final int progressValue = Math.round(progress * 1000.0f);
-    this.progressText = progressText;
-    this.progressValue = progressValue;
+    pbDelay.setString(progressText);
+    pbDelay.setValue(progressValue);
   }
 
   private void checkedUpdateInstructions()
@@ -328,6 +326,9 @@ public class CodeSmViewPanel extends JPanel
   {
     this.pioNum = pioNum;
     this.smNum = smNum;
+    final String toolTipText =
+      String.format("code view for PIO%d, SM%d", pioNum, smNum);
+    lsInstructions.setToolTipText(toolTipText);
     checkedUpdateInstructions();
   }
 }
