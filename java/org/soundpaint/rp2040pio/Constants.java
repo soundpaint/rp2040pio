@@ -403,6 +403,17 @@ public interface Constants
     }
   }
 
+  public static int checkBitCount(final int bitCount, final String label)
+  {
+    if (bitCount < 0) {
+      throw new IllegalArgumentException(label + " < 0: " + bitCount);
+    }
+    if (bitCount > 31) {
+      throw new IllegalArgumentException(label + " > 31: " + bitCount);
+    }
+    return bitCount > 0 ? bitCount : 32;
+  }
+
   /**
    * Functionally equivalent replacement for GNU GCC's built-in
    * function __builtin_ctz().

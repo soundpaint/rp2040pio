@@ -479,14 +479,53 @@ public abstract class Instruction
       bitCount = lsb & 0x1f;
     }
 
+    private void shiftIn(final SM sm, final SM.Status smStatus, final int data,
+                         final int bitsToShift)
+    {
+      if (bitsToShift < 32) {
+        if (sm.getInShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
+          smStatus.isrValue <<= bitsToShift;
+          smStatus.isrValue |= data & ((0x1 << bitsToShift) - 1);
+        } else /* SHIFT RIGHT */ {
+          smStatus.isrValue >>>= bitsToShift;
+          smStatus.isrValue |=
+            (data & ((0x1 << bitsToShift) - 1)) << (32 - bitsToShift);
+        }
+      } else {
+        smStatus.isrValue = data;
+      }
+    }
+
+    private void saturate(final SM sm, final SM.Status smStatus,
+                          final int bitsToShift)
+    {
+      smStatus.isrShiftCount =
+        SM.saturate(smStatus.isrShiftCount, bitsToShift, 32);
+    }
+
     @Override
     public ResultState executeOperation(final SM sm)
     {
+      final int bitsToShift =
+        Constants.checkBitCount(bitCount, "shift ISR bitCount");
+      final SM.Status smStatus = sm.getStatus();
+      shiftIn(sm, smStatus, src.getData(sm), bitsToShift);
+      saturate(sm, smStatus, bitsToShift);
       final boolean stall;
-      if (sm.getInShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
-        stall = sm.shiftISRLeft(bitCount, src.getData(sm));
+      if (smStatus.regSHIFTCTRL_AUTOPUSH) {
+        // Cp. pseudocode sequence for "IN" cycle in RP2040 datasheet,
+        // Sect. 3.5.4.1. "Autopush Details".
+        if (smStatus.isIsrCountBeyondThreshold()) {
+          if (sm.isRXFIFOFull()) {
+            stall = true;
+          } else {
+            stall = sm.rxPush(false, true);
+          }
+        } else {
+          stall = false;
+        }
       } else {
-        stall = sm.shiftISRRight(bitCount, src.getData(sm));
+        stall = false;
       }
       return stall ? ResultState.STALL : ResultState.COMPLETE;
     }
@@ -616,14 +655,74 @@ public abstract class Instruction
       bitCount = lsb & 0x1f;
     }
 
+    private void outputOsr(final SM sm, final SM.Status smStatus,
+                           final int bitsToShift)
+    {
+      final int shiftOutBits;
+      if (bitsToShift < 32) {
+        if (sm.getOutShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
+          shiftOutBits =
+            (smStatus.osrValue >>> (32 - bitsToShift)) &
+            ((0x1 << bitsToShift) - 1);
+        } else /* SHIFT_RIGHT */ {
+          shiftOutBits = smStatus.osrValue & ((0x1 << bitsToShift) - 1);
+        }
+      } else {
+        shiftOutBits = smStatus.osrValue;
+      }
+      dst.getConsumer(sm).accept(shiftOutBits);
+    }
+
+    private void shiftOsr(final SM sm, final SM.Status smStatus,
+                          final int bitsToShift)
+    {
+      if (bitsToShift < 32) {
+        if (sm.getOutShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
+          smStatus.osrValue <<= bitsToShift;
+        } else /* SHIFT_RIGHT */ {
+          smStatus.osrValue >>>= bitsToShift;
+        }
+      } else {
+        smStatus.osrValue = 0;
+      }
+    }
+
+    private void saturate(final SM sm, final SM.Status smStatus,
+                          final int bitsToShift)
+    {
+      smStatus.osrShiftCount =
+        SM.saturate(smStatus.osrShiftCount, bitsToShift, 32);
+    }
+
     @Override
     public ResultState executeOperation(final SM sm)
     {
+      // Cp. pseudocode sequence for "OUT" cycles in RP2040 datasheet,
+      // Sect. 3.5.4.2. "Autopull Details".
+      final SM.Status smStatus = sm.getStatus();
       final boolean stall;
-      if (sm.getOutShiftDir() == PIO.ShiftDir.SHIFT_LEFT) {
-        stall = sm.shiftOSRLeft(bitCount, dst.getConsumer(sm));
+      if (smStatus.regSHIFTCTRL_AUTOPULL &&
+          smStatus.isOsrCountBeyondThreshold()) {
+        // block=true to avoid loading regX
+        sm.txPull(false, true); // also sets osr count = 0
+
+        // RP2040 cannot fill empty OSR and "OUT" in same cycle =>
+        // always stall regardless of TX state
+        stall = true;
       } else {
-        stall = sm.shiftOSRRight(bitCount, dst.getConsumer(sm));
+        final int bitsToShift =
+          Constants.checkBitCount(bitCount, "shift OSR bitCount");
+        outputOsr(sm, smStatus, bitsToShift);
+        shiftOsr(sm, smStatus, bitsToShift);
+        saturate(sm, smStatus, bitsToShift);
+        if (smStatus.regSHIFTCTRL_AUTOPULL) {
+          if (smStatus.isOsrCountBeyondThreshold()) {
+            // block=true to avoid loading regX
+            sm.txPull(false, true); // also sets osr count = 0
+          }
+        }
+        // stall always false, since we *did* output from OSR
+        stall = false;
       }
       return (stall || dst == Destination.EXEC) ?
         ResultState.STALL :

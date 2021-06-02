@@ -337,10 +337,10 @@ public class Fifo extends Command
       (shiftCtrlValue & Constants.SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS) != 0x0;
     final boolean inShiftRight =
       (shiftCtrlValue & Constants.SM0_SHIFTCTRL_IN_SHIFTDIR_BITS) != 0x0;
-    final int pullThreshold =
+    final int pullThresholdBits =
       (shiftCtrlValue & Constants.SM0_SHIFTCTRL_PULL_THRESH_BITS) >>>
       Constants.SM0_SHIFTCTRL_PULL_THRESH_LSB;
-    final int pushThreshold =
+    final int pushThresholdBits =
       (shiftCtrlValue & Constants.SM0_SHIFTCTRL_PUSH_THRESH_BITS) >>>
       Constants.SM0_SHIFTCTRL_PUSH_THRESH_LSB;
     final StringBuffer fifoHeader = new StringBuffer();
@@ -374,6 +374,10 @@ public class Fifo extends Command
       if (fifoLevels.length() > 0) fifoLevels.append(", ");
       fifoLevels.append(String.format("RX_LEVEL=%01x", rxLevel));
     }
+    final int pullThreshold =
+      Constants.checkBitCount(pullThresholdBits, "TX: OSR threshold");
+    final int pushThreshold =
+      Constants.checkBitCount(pushThresholdBits, "RX: ISR threshold");
     console.printf("(pio%d:sm%d) %s%n", pioNum, smNum, fifoHeader);
     console.printf("           %s%n", fifoContents);
     if (fifoLevels.length() > 0) {

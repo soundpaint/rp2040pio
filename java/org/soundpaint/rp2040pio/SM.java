@@ -232,6 +232,18 @@ public class SM implements Constants
       return fulfilled ? ~0 : 0;
     }
 
+    public boolean isIsrCountBeyondThreshold()
+    {
+      return isrShiftCount >=
+        (regSHIFTCTRL_PUSH_THRESH != 0 ? regSHIFTCTRL_PUSH_THRESH : 32);
+    }
+
+    public boolean isOsrCountBeyondThreshold()
+    {
+      return osrShiftCount >=
+        (regSHIFTCTRL_PULL_THRESH != 0 ? regSHIFTCTRL_PULL_THRESH : 32);
+    }
+
     private boolean consumePendingDelay()
     {
       if (pendingDelay == 0)
@@ -566,9 +578,8 @@ public class SM implements Constants
    */
   public boolean rxPush(final boolean ifFull, final boolean block)
   {
-    final boolean isrFull =
-      status.isrShiftCount >= status.regSHIFTCTRL_PUSH_THRESH;
-    if (!ifFull || isrFull) {
+    final boolean isrCountBeyondThreshold = status.isIsrCountBeyondThreshold();
+    if (!ifFull || isrCountBeyondThreshold) {
       final boolean succeeded = fifo.rxPush(status.isrValue, block);
       if (succeeded) {
         status.isrValue = 0;
@@ -586,14 +597,8 @@ public class SM implements Constants
    */
   public boolean txPull(final boolean ifEmpty, final boolean block)
   {
-    /*
-     * TODO: Clarify: Need "status.osrShiftCount = 0" prior to the
-     * following code, as 3.5.4.2 ("Autopull Details") of RP2040
-     * datasheet suggests?  Also, stall behaviour may be wrong?
-     */
-    final boolean osrEmpty =
-      status.osrShiftCount >= status.regSHIFTCTRL_PULL_THRESH;
-    if (!ifEmpty || osrEmpty) {
+    final boolean osrCountBeyondThreshold = status.isOsrCountBeyondThreshold();
+    if (!ifEmpty || osrCountBeyondThreshold) {
       synchronized(fifo) {
         final boolean fifoEmpty = fifo.fstatTxEmpty();
         if (fifoEmpty) {
@@ -613,20 +618,8 @@ public class SM implements Constants
     }
   }
 
-  private int checkBitCount(final int bitCount, final String label)
-  {
-    if (bitCount < 0) {
-      throw new IllegalArgumentException("shift " + label +
-                                         " bitCount < 0: " + bitCount);
-    }
-    if (bitCount > 31) {
-      throw new IllegalArgumentException("shift " + label +
-                                         " bitCount > 31: " + bitCount);
-    }
-    return bitCount == 0 ? 32 : bitCount;
-  }
-
-  private int saturate(final int base, final int increment, final int limit)
+  public static int saturate(final int base, final int increment,
+                             final int limit)
   {
     final int sum = base + increment;
     return sum < limit ? sum : limit;
@@ -642,37 +635,6 @@ public class SM implements Constants
   public void setISRValue(final int value, final int mask, final boolean xor)
   {
     status.isrValue = Constants.hwSetBits(status.isrValue, value, mask, xor);
-  }
-
-  public boolean shiftISRLeft(final int bitCount, final int data)
-  {
-    // TODO: Clarify: Shift ISR always or only if not (isrFull &&
-    // status.regSHIFTCTRL_AUTOPUSH)?
-    final int bitsToShift = checkBitCount(bitCount, "ISR");
-    if (bitsToShift < 32) {
-      status.isrValue <<= bitsToShift;
-      status.isrValue |= data & ((0x1 << bitsToShift) - 1);
-    } else {
-      status.isrValue = data;
-    }
-    status.isrShiftCount = saturate(status.isrShiftCount, bitsToShift, 32);
-    return status.regSHIFTCTRL_AUTOPUSH ? rxPush(true, true) : false;
-  }
-
-  public boolean shiftISRRight(final int bitCount, final int data)
-  {
-    // TODO: Clarify: Shift ISR always or only if not (isrFull &&
-    // status.regSHIFTCTRL_AUTOPUSH)?
-    final int bitsToShift = checkBitCount(bitCount, "ISR");
-    if (bitsToShift < 32) {
-      status.isrValue >>>= bitsToShift;
-      status.isrValue |=
-        (data & ((0x1 << bitsToShift) - 1)) << (32 - bitsToShift);
-    } else {
-      status.isrValue = data;
-    }
-    status.isrShiftCount = saturate(status.isrShiftCount, bitsToShift, 32);
-    return status.regSHIFTCTRL_AUTOPUSH ? rxPush(true, true) : false;
   }
 
   public int getISRShiftCount() { return status.isrShiftCount; }
@@ -694,45 +656,6 @@ public class SM implements Constants
   public void setOSRValue(final int value, final int mask, final boolean xor)
   {
     status.osrValue = Constants.hwSetBits(status.osrValue, value, mask, xor);
-  }
-
-  public boolean shiftOSRLeft(final int bitCount,
-                              final IntConsumer destination)
-  {
-    // TODO: Clarify: Shift OSR always or only if not (isrEmpty &&
-    // status.regSHIFTCTRL_AUTOPUSH)?
-    final int bitsToShift = checkBitCount(bitCount, "OSR");
-    final int data;
-    if (bitsToShift < 32) {
-      data =
-        (status.osrValue >>> (32 - bitsToShift)) & ((0x1 << bitsToShift) - 1);
-      status.osrValue <<= bitsToShift;
-    } else {
-      data = status.osrValue;
-      status.osrValue = 0;
-    }
-    status.osrShiftCount = saturate(status.osrShiftCount, bitsToShift, 32);
-    destination.accept(data);
-    return status.regSHIFTCTRL_AUTOPULL ? txPull(true, true) : false;
-  }
-
-  public boolean shiftOSRRight(final int bitCount,
-                               final IntConsumer destination)
-  {
-    // TODO: Clarify: Shift OSR always or only if not (osrEmpty &&
-    // status.regSHIFTCTRL_AUTOPUSH)?
-    final int bitsToShift = checkBitCount(bitCount, "OSR");
-    final int data;
-    if (bitsToShift < 32) {
-      data = status.osrValue & ((0x1 << bitsToShift) - 1);
-      status.osrValue >>>= bitsToShift;
-    } else {
-      data = status.osrValue;
-      status.osrValue = 0;
-    }
-    status.osrShiftCount = saturate(status.osrShiftCount, bitsToShift, 32);
-    destination.accept(data);
-    return status.regSHIFTCTRL_AUTOPULL ? txPull(true, true) : false;
   }
 
   public int getOSRShiftCount() { return status.osrShiftCount; }
@@ -1139,7 +1062,7 @@ public class SM implements Constants
     }
   }
 
-  private void execute()
+  private void executeInstruction()
   {
     if (status.isDelayCycle && !status.isForcedInstruction) {
       return;
@@ -1166,6 +1089,32 @@ public class SM implements Constants
       }
     } else {
       status.isForcedInstruction = false;
+    }
+  }
+
+  private void executeAsyncAutoPull()
+  {
+    // Cp. pseudocode sequence for non-"OUT" cycles in RP2040
+    // datasheet, Sect. 3.5.4.2. "Autopull Details".
+    final boolean osrCountBeyondThreshold = status.isOsrCountBeyondThreshold();
+    if (osrCountBeyondThreshold) {
+      final boolean txFifoEmpty = fifo.fstatTxEmpty();
+      // TODO: Check: Possible race condition between above
+      // fifo.fstatTxEmpty() and below fifo.txPull()?
+      if (!txFifoEmpty) {
+        status.osrValue = fifo.txPull(false);
+        status.osrShiftCount = 0;
+      }
+    }
+  }
+
+  private void execute()
+  {
+    executeInstruction();
+    if (status.regSHIFTCTRL_AUTOPULL) {
+      if (!(status.instruction instanceof Instruction.Out)) {
+        executeAsyncAutoPull();
+      }
     }
   }
 
