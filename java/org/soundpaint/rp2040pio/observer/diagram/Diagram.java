@@ -99,7 +99,6 @@ public class Diagram extends GUIObserver
   @Override
   protected void updateView()
   {
-    model.checkForUpdate();
     modelChanged();
   }
 

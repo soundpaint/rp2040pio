@@ -37,7 +37,6 @@ public class DiagramModel implements Iterable<Signal>
   private final PrintStream console;
   private final SDK sdk;
   private final List<Signal> signals;
-  private final Object wallClockLock;
   private long wallClock;
   private int signalSize;
 
@@ -58,10 +57,7 @@ public class DiagramModel implements Iterable<Signal>
     this.console = console;
     this.sdk = sdk;
     signals = new ArrayList<Signal>();
-    wallClockLock = new Object();
-    synchronized(wallClockLock) {
-      wallClock = sdk.getWallClock();
-    }
+    wallClock = sdk.getWallClock();
     signalSize = 0;
   }
 
@@ -153,21 +149,20 @@ public class DiagramModel implements Iterable<Signal>
     signalSize++;
   }
 
-  public void checkForUpdate()
+  private void checkForUpdate()
   {
     try {
-      synchronized(wallClockLock) {
-        final long wallClock = sdk.getWallClock();
-        if (wallClock == this.wallClock) {
-          // nothing to update
-        } else if (wallClock == this.wallClock + 1) {
-          appendRecordToSignals();
-        } else {
+      final long wallClock = sdk.getWallClock();
+      if (wallClock == this.wallClock) {
+        // nothing to update
+      } else {
+        if (wallClock != this.wallClock + 1) {
           // discontinuity in time => restart view
           resetSignals();
         }
-        this.wallClock = wallClock;
+        appendRecordToSignals();
       }
+      this.wallClock = wallClock;
     } catch (final IOException e) {
       console.println("error: failed reading wall clock: " + e.getMessage());
     }
@@ -179,9 +174,9 @@ public class DiagramModel implements Iterable<Signal>
       throw new IllegalArgumentException("count < 0: " + count);
     }
     for (int cycle = 0; cycle < count; cycle++) {
-      sdk.triggerCyclePhase1(true);
-      checkForUpdate();
       sdk.triggerCyclePhase0(true);
+      checkForUpdate();
+      sdk.triggerCyclePhase1(true);
     }
   }
 

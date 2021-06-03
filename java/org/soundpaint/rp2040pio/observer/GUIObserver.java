@@ -353,17 +353,17 @@ public abstract class GUIObserver extends JFrame
     final int mask = 0xffffffff;
     final int cyclesTimeout = 0;
     final int refresh = options.getValue(optRefresh);
-    final int millisTimeout1 = refresh / 2;
-    final int millisTimeout2 = refresh - millisTimeout1;
+    final int millisTimeoutPhase0 = refresh / 2;
+    final int millisTimeoutPhase1 = refresh - millisTimeoutPhase0;
     while (true) {
       try {
         while (true) {
           updateLoopClient.wait(addressPhase1, expectedValue, mask,
-                                cyclesTimeout, millisTimeout1);
+                                cyclesTimeout, millisTimeoutPhase1);
           updateView();
           SwingUtilities.invokeLater(() -> repaint());
           updateLoopClient.wait(addressPhase0, expectedValue, mask,
-                                cyclesTimeout, millisTimeout2);
+                                cyclesTimeout, millisTimeoutPhase0);
         }
       } catch (final IOException e) {
         final String message = String.format("Error: %s", e.getMessage());
