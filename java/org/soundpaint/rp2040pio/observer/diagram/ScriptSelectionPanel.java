@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.File;
@@ -44,6 +45,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -58,6 +60,8 @@ import org.soundpaint.rp2040pio.monitor.Monitor;
 public class ScriptSelectionPanel extends Box
 {
   private static final long serialVersionUID = 3945227462166267605L;
+  private static final Dimension PREFERRED_SHOW_EXAMPLE_SIZE =
+    new Dimension(480, 320);
 
   private final PrintStream console;
   private final JFileChooser scriptFileChooser;
@@ -135,6 +139,7 @@ public class ScriptSelectionPanel extends Box
     final BufferedReader reader = new BufferedReader(new InputStreamReader(in));
     final String title = String.format("Script %s", scriptName);
     final JTextArea taScript = new JTextArea(10, 10);
+    taScript.setEditable(false);
     try {
       taScript.read(reader, scriptName);
     } catch (final IOException e) {
@@ -144,7 +149,9 @@ public class ScriptSelectionPanel extends Box
       JOptionPane.showMessageDialog(this, message, title,
                                     JOptionPane.ERROR_MESSAGE);
     }
-    JOptionPane.showMessageDialog(this, taScript, title,
+    final JScrollPane spScript = new JScrollPane(taScript);
+    spScript.setPreferredSize(PREFERRED_SHOW_EXAMPLE_SIZE);
+    JOptionPane.showMessageDialog(this, spScript, title,
                                   JOptionPane.INFORMATION_MESSAGE);
   }
 

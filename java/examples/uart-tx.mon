@@ -1,0 +1,103 @@
+# Monitor script for UART TX example.
+# To be executed on PIO 0, SM 0.
+# Output is fed to GPIO 0.
+
+# Make a full reset of the emulator.
+reset
+
+# We loosely follow the initialization sequence as shown in:
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/ws2812/generated/ws2812.pio.h
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=3 --target=0
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=0 --count=1 --opt=true
+
+# The code.
+enter -a 0 -v 0x9fa0 # pull            side 1 [7]
+enter -a 1 -v 0xf727 # set x, 7        side 0 [7]
+enter -a 2 -v 0x6001 # out pins, 1
+#                bitloop:
+enter -a 3 -v 0x0642 # jmp x-- bitloop        [6]
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=4
+
+########
+# Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
+# created by pioasm).
+########
+
+# Tell PIO to initially drive output-high on GPIO 0.
+gpio --pio=0 --gpio=0 --enable # output
+gpio --pio=0 --gpio=1 --set    # high
+
+# Then map PIO onto that pin with the IO muxes.
+gpio --pio=0 --gpio=0 --init
+
+# OUT shifts to right, no autopull.
+fifo --pio=0 --sm=0 --tx --shift-right
+fifo --pio=0 --sm=0 --tx --auto=false
+
+# We are mapping both OUT and side-set to the same pin, because
+# sometimes we need to assert user data onto the pin (with OUT) and
+# sometimes assert constant values (start/stop bit).
+pinctrl --pio=0 --sm=0 --out-count=1 --out-base=0
+side-set --pio=0 --sm=0 --base=0
+
+# We only need TX, so get an 8-deep FIFO!
+fifo --pio=0 --sm=0 --join --tx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 -c
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.  Only the lowest 8 bits are used (8
+# data bits, 1 stop bit).
+fifo --enqueue --tx --value 0x000000a5
+fifo --enqueue --tx --value 0x000000f0
+
+# Done.
+quit
