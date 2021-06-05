@@ -43,7 +43,7 @@ public class PinCtrl extends Command
     "display or change state machine's pin control";
   private static final String notes =
     "Use options \"-p\" and \"-s\" to select a state machine.%n" +
-    "If none of the pin control modification options is specified, the %n" +
+    "If none of the pin control modification options is specified, the%n" +
     "status of the pin control of the selected state machine is displayed.%n" +
     "For setting pin count or pin base for SET / OUT / IN instructions,%n" +
     "use the corresponding \"--set-count\", \"--set-base\",%n" +

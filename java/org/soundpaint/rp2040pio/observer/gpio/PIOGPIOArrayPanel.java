@@ -34,6 +34,7 @@ import javax.swing.ButtonGroup;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.border.EtchedBorder;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.SwingUtils;
@@ -62,7 +63,7 @@ public class PIOGPIOArrayPanel extends JPanel
     this.console = console;
     this.sdk = sdk;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    setBorder(BorderFactory.createTitledBorder("PIO View of GPIO Pins"));
+    setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
 
     final Box pioSelection = new Box(BoxLayout.X_AXIS);
     add(pioSelection);
@@ -85,6 +86,7 @@ public class PIOGPIOArrayPanel extends JPanel
     }
     box.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(box);
+    add(Box.createVerticalStrut(5));
     add(Box.createVerticalGlue());
   }
 

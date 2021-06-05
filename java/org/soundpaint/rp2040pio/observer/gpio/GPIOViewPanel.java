@@ -31,6 +31,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
+import org.soundpaint.rp2040pio.CollapsiblePanel;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -80,11 +81,11 @@ public class GPIOViewPanel extends JPanel
 
     pioGpioArrayPanel = new PIOGPIOArrayPanel(console, sdk);
     SwingUtils.setPreferredHeightAsMaximum(pioGpioArrayPanel);
-    add(pioGpioArrayPanel);
+    add(new CollapsiblePanel(pioGpioArrayPanel, "PIO View of GPIO Pins", true));
 
     gpioArrayPanel = new GPIOArrayPanel(console, sdk);
     SwingUtils.setPreferredHeightAsMaximum(gpioArrayPanel);
-    add(gpioArrayPanel);
+    add(new CollapsiblePanel(gpioArrayPanel, "GPIO View of GPIO Pins", true));
 
     add(Box.createVerticalGlue());
   }

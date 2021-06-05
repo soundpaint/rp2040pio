@@ -95,8 +95,8 @@ public class MenuBar<T extends GUIObserver> extends JMenuBar
     addAdditionalFileMenuItems(fileMenu, observer);
 
     final JMenuItem connect = new JMenuItem("Connect…");
-    connect.setMnemonic(KeyEvent.VK_S);
-    connect.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
+    connect.setMnemonic(KeyEvent.VK_N);
+    connect.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N,
                                                   ActionEvent.ALT_MASK));
     connect.getAccessibleContext().
       setAccessibleDescription("Connect to Emulation Server");
@@ -142,7 +142,8 @@ public class MenuBar<T extends GUIObserver> extends JMenuBar
     license.setMnemonic(KeyEvent.VK_L);
     license.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,
                                                   ActionEvent.ALT_MASK));
-    license.getAccessibleContext().setAccessibleDescription("Copying License");
+    license.getAccessibleContext().
+      setAccessibleDescription("Show Copying License");
     license.addActionListener((event) -> licenseDialog.setVisible(true));
     helpMenu.add(license);
 

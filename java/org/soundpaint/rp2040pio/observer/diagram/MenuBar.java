@@ -30,6 +30,7 @@ import java.io.PrintStream;
 import javax.swing.KeyStroke;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import org.soundpaint.rp2040pio.SwingUtils;
 
 public class MenuBar
   extends org.soundpaint.rp2040pio.observer.MenuBar<Diagram>
@@ -53,11 +54,13 @@ public class MenuBar
   protected void addAdditionalFileMenuItems(final JMenu fileMenu,
                                             final Diagram diagram)
   {
-    final JMenuItem script = new JMenuItem("Load…");
-    script.setMnemonic(KeyEvent.VK_L);
-    script.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,
+    final JMenuItem script =
+      SwingUtils.createIconMenuItem("floppy-blue16x16.png", "Open…");
+    script.setMnemonic(KeyEvent.VK_O);
+    script.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O,
                                                  ActionEvent.ALT_MASK));
-    script.getAccessibleContext().setAccessibleDescription("Run load script");
+    script.getAccessibleContext().
+      setAccessibleDescription("Open Script for Execution");
     script.addActionListener((event) -> diagram.showScriptDialog());
     fileMenu.add(script);
   }
@@ -78,11 +81,12 @@ public class MenuBar
     properties.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,
                                                      ActionEvent.ALT_MASK));
     properties.getAccessibleContext().
-      setAccessibleDescription("View properties");
+      setAccessibleDescription("Open Properties Dialog");
     properties.addActionListener((event) -> viewPropertiesDialog.open());
     view.add(properties);
 
-    final JMenuItem clear = new JMenuItem("Clear View");
+    final JMenuItem clear =
+      SwingUtils.createIconMenuItem("trash16x16.png", "Clear View");
     clear.setMnemonic(KeyEvent.VK_C);
     clear.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C,
                                                 ActionEvent.ALT_MASK));

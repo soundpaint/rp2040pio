@@ -25,25 +25,37 @@
 package org.soundpaint.rp2040pio.observer;
 
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.util.Objects;
-import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JToolBar;
+import org.soundpaint.rp2040pio.SwingUtils;
 
-public class ActionPanel<T extends GUIObserver> extends Box
+public class ActionPanel<T extends GUIObserver> extends JToolBar
 {
   private static final long serialVersionUID = -3674776627922144842L;
+  private static final ImageIcon iconClose;
+
+  static {
+    try {
+      iconClose = SwingUtils.createImageIcon("quit16x16.png", "Quit");
+    } catch (final IOException e) {
+      final String message =
+        String.format("failed loading icon: %s", e.getMessage());
+      System.out.println(message);
+      throw new InternalError(message, e);
+    }
+  }
 
   public ActionPanel(final T observer)
   {
-    super(BoxLayout.X_AXIS);
     Objects.requireNonNull(observer);
-    setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
     addAdditionalButtons(observer);
     add(Box.createHorizontalGlue());
-    final JButton btClose = new JButton("Close");
-    btClose.setMnemonic(KeyEvent.VK_C);
+    final JButton btClose = new JButton(iconClose);
+    btClose.setToolTipText("Quit Application");
     btClose.addActionListener((event) -> { observer.close(); });
     add(btClose);
   }

@@ -24,12 +24,12 @@
  */
 package org.soundpaint.rp2040pio;
 
+import java.awt.Component;
 import java.awt.Dimension;
 import java.io.IOException;
 import java.net.URL;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 
 public class SwingUtils
@@ -72,7 +72,7 @@ public class SwingUtils
     }
   }
 
-  public static void setPreferredWidthAsMaximum(final JComponent component)
+  public static void setPreferredWidthAsMaximum(final Component component)
   {
     final Dimension preferredSize = component.getPreferredSize();
     final Dimension maximumSize =
@@ -80,7 +80,7 @@ public class SwingUtils
     component.setMaximumSize(maximumSize);
   }
 
-  public static void setPreferredHeightAsMaximum(final JComponent component)
+  public static void setPreferredHeightAsMaximum(final Component component)
   {
     final Dimension preferredSize = component.getPreferredSize();
     final Dimension maximumSize =

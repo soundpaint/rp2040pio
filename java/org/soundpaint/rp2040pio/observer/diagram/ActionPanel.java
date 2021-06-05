@@ -28,19 +28,37 @@ import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import javax.swing.Box;
-import javax.swing.SpinnerModel;
-import javax.swing.SpinnerNumberModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JSlider;
 import javax.swing.JSpinner;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import org.soundpaint.rp2040pio.SwingUtils;
 
 public class ActionPanel
   extends org.soundpaint.rp2040pio.observer.ActionPanel<Diagram>
 {
   private static final long serialVersionUID = -4136799373128393432L;
   private static final int defaultCycles = 1;
+  private static final ImageIcon iconEmulate;
+  private static final ImageIcon iconClear;
+  private static final ImageIcon iconScript;
+
+  static {
+    try {
+      iconEmulate = SwingUtils.createImageIcon("cycle16x16.png", "Emulate");
+      iconClear = SwingUtils.createImageIcon("trash16x16.png", "Clear View");
+      iconScript = SwingUtils.createImageIcon("floppy-blue16x16.png", "Load…");
+    } catch (final IOException e) {
+      final String message =
+        String.format("failed loading icon: %s", e.getMessage());
+      System.out.println(message);
+      throw new InternalError(message, e);
+    }
+  }
 
   public ActionPanel(final Diagram diagram)
   {
@@ -50,8 +68,8 @@ public class ActionPanel
   @Override
   protected void addAdditionalButtons(final Diagram diagram)
   {
-    final JButton btScript = new JButton("Load…");
-    btScript.setMnemonic(KeyEvent.VK_L);
+    final JButton btScript = new JButton(iconScript);
+    btScript.setToolTipText("Load…");
     btScript.addActionListener((event) -> { diagram.showScriptDialog(); });
     add(btScript);
     add(Box.createHorizontalStrut(15));
@@ -70,8 +88,8 @@ public class ActionPanel
     add(spCycles);
     add(Box.createHorizontalStrut(5));
 
-    final JButton btEmulate = new JButton("Emulate");
-    btEmulate.setMnemonic(KeyEvent.VK_E);
+    final JButton btEmulate = new JButton(iconEmulate);
+    btEmulate.setToolTipText("Emulate");
     btEmulate.addActionListener((event) -> {
         final int cycles = (Integer)spCycles.getValue();
         try {
@@ -88,8 +106,8 @@ public class ActionPanel
     add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
 
-    final JButton btClear = new JButton("Clear View");
-    btClear.setMnemonic(KeyEvent.VK_V);
+    final JButton btClear = new JButton(iconClear);
+    btClear.setToolTipText("Clear View");
     btClear.addActionListener((event) -> diagram.clear());
     add(btClear);
     add(Box.createHorizontalStrut(15));
