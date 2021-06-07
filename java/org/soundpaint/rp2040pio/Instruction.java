@@ -293,7 +293,7 @@ public abstract class Instruction
     public void decodeLSB(final int lsb)
     {
       address = lsb & 0x1f;
-      condition = code2cond.get((lsb >>> 5) & 0x3);
+      condition = code2cond.get((lsb >>> 5) & 0x7);
     }
 
     @Override
@@ -383,7 +383,7 @@ public abstract class Instruction
       throws Decoder.DecodeException
     {
       polarity = (lsb & 0x80) != 0 ? Bit.HIGH : Bit.LOW;
-      src = code2src.get((lsb & 0x7f) >>> 5);
+      src = code2src.get((lsb & 0x60) >>> 5);
       if (src == Source.RESERVED_3) {
         throw new Decoder.DecodeException(this, getOpCode());
       }

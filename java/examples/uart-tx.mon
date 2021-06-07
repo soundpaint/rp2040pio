@@ -33,7 +33,7 @@ unassemble --pio=0 --sm=0 --address=0 --count=4
 
 # Tell PIO to initially drive output-high on GPIO 0.
 gpio --pio=0 --gpio=0 --enable # output
-gpio --pio=0 --gpio=1 --set    # high
+gpio --pio=0 --gpio=0 --set    # high
 
 # Then map PIO onto that pin with the IO muxes.
 gpio --pio=0 --gpio=0 --init

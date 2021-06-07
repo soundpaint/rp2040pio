@@ -80,14 +80,17 @@ public class ActionPanel
     add(lbCycles);
     add(Box.createHorizontalStrut(5));
     final SpinnerModel cyclesModel =
-      new SpinnerNumberModel(defaultCycles, 1, 1000, 1);
+      new SpinnerNumberModel(defaultCycles, 1, 999, 1);
     final JSpinner spCycles = new JSpinner(cyclesModel);
+
+    final JSpinner.DefaultEditor editor =
+      (JSpinner.DefaultEditor)spCycles.getEditor();
+    editor.getTextField().setColumns(3);
     final int spCyclesHeight = spCycles.getPreferredSize().height;
     spCycles.setMaximumSize(new Dimension(100, spCyclesHeight));
     lbCycles.setLabelFor(spCycles);
     add(spCycles);
     add(Box.createHorizontalStrut(5));
-
     final JButton btEmulate = new JButton(iconEmulate);
     btEmulate.setToolTipText("Emulate");
     btEmulate.addActionListener((event) -> {

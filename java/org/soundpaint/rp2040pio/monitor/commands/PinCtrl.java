@@ -45,9 +45,11 @@ public class PinCtrl extends Command
     "Use options \"-p\" and \"-s\" to select a state machine.%n" +
     "If none of the pin control modification options is specified, the%n" +
     "status of the pin control of the selected state machine is displayed.%n" +
-    "For setting pin count or pin base for SET / OUT / IN instructions,%n" +
+    "For setting pin count or pin base for SET / OUT / IN instructions or%n" +
+    "the GPIO pin number to check when executing the JMP PIN instruction,%n" +
     "use the corresponding \"--set-count\", \"--set-base\",%n" +
-    "\"--out-count\", \"--out-base\" or \"--in-base\" option." +
+    "\"--out-count\", \"--out-base\", \"--in-base\" or \"--jmp-pin\"%n" +
+    "option.%n" +
     "This command does not support setting the side-set count or%n" +
     "side-set base.  For modifying side-set configuration, use the%n" +
     "monitor command \"side-set\" instead.";
@@ -60,24 +62,28 @@ public class PinCtrl extends Command
                                    "SM number, one of 0, 1, 2 or 3");
   private static final CmdOptions.IntegerOptionDeclaration optSetCount =
     CmdOptions.createIntegerOption("COUNT", false, null, "set-count", null,
-                                   "number of pins asserted by SET "+
+                                   "number of GPIO pins asserted by SET "+
                                    "instruction (0…5)");
   private static final CmdOptions.IntegerOptionDeclaration optSetBase =
-    CmdOptions.createIntegerOption("COUNT", false, null, "set-base", null,
-                                   "lowest-numbered pin affected by "+
+    CmdOptions.createIntegerOption("NUMBER", false, null, "set-base", null,
+                                   "lowest-numbered GPIO pin affected by "+
                                    "SET PINS / PINDIRS instruction (0…31)");
   private static final CmdOptions.IntegerOptionDeclaration optOutCount =
     CmdOptions.createIntegerOption("COUNT", false, null, "out-count", null,
-                                   "number of pins asserted by OUT PINS / "+
-                                   "PINDIRS or MOV PINS instruction (0…5)");
+                                   "number of GPIO pins asserted by OUT PINS "+
+                                   "/ PINDIRS or MOV PINS instruction (0…5)");
   private static final CmdOptions.IntegerOptionDeclaration optOutBase =
-    CmdOptions.createIntegerOption("COUNT", false, null, "out-base", null,
-                                   "lowest-numbered pin affected by OUT / "+
-                                   "MOV PINS / PINDIRS instruction (0…31)");
+    CmdOptions.createIntegerOption("NUMBER", false, null, "out-base", null,
+                                   "lowest-numbered GPIO pin affected by OUT "+
+                                   "/ MOV PINS / PINDIRS instruction (0…31)");
   private static final CmdOptions.IntegerOptionDeclaration optInBase =
-    CmdOptions.createIntegerOption("COUNT", false, null, "in-base", null,
-                                   "pin mapped to LSB for IN " +
+    CmdOptions.createIntegerOption("NUMBER", false, null, "in-base", null,
+                                   "GPIO pin mapped to LSB for IN " +
                                    "instruction (0…31)");
+  private static final CmdOptions.IntegerOptionDeclaration optJmpPin =
+    CmdOptions.createIntegerOption("NUMBER", false, null, "jmp-pin", null,
+                                   "GPIO pin to check when executing " +
+                                   "JMP PIN instruction (0…31)");
 
   private final SDK sdk;
 
@@ -86,7 +92,8 @@ public class PinCtrl extends Command
     super(console, fullName, singleLineDescription, notes,
           new CmdOptions.OptionDeclaration<?>[]
           { optPio, optSm,
-              optSetCount, optSetBase, optOutCount, optOutBase, optInBase });
+              optSetCount, optSetBase, optOutCount, optOutBase,
+              optInBase, optJmpPin });
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -148,6 +155,14 @@ public class PinCtrl extends Command
             ParseException("in-base must be in the range 0…31");
         }
       }
+      final Integer optJmpPinValue = options.getValue(optJmpPin);
+      if (optJmpPinValue != null) {
+        final int jmpPin = optJmpPinValue;
+        if ((jmpPin < 0) || (jmpPin > 31)) {
+          throw new CmdOptions.
+            ParseException("jmp-pin must be in the range 0…31");
+        }
+      }
     }
   }
 
@@ -158,6 +173,9 @@ public class PinCtrl extends Command
     final int pinCtrlAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
     final int pinCtrl = sdk.readAddress(pinCtrlAddress);
+    final int execCtrlAddress =
+      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
+    final int execCtrl = sdk.readAddress(execCtrlAddress);
     final int setCount =
       (pinCtrl & Constants.SM0_PINCTRL_SET_COUNT_BITS) >>>
       Constants.SM0_PINCTRL_SET_COUNT_LSB;
@@ -173,23 +191,29 @@ public class PinCtrl extends Command
     final int inBase =
       (pinCtrl & Constants.SM0_PINCTRL_IN_BASE_BITS) >>>
       Constants.SM0_PINCTRL_IN_BASE_LSB;
+    final int jmpPin =
+      (execCtrl & Constants.SM0_EXECCTRL_JMP_PIN_BITS) >>>
+      Constants.SM0_EXECCTRL_JMP_PIN_LSB;
     console.printf("(pio%d:sm%d) set-count=%d, set-base=%d%n",
                    pioNum, smNum, setCount, setBase);
     console.printf("(pio%d:sm%d) out-count=%d, out-base=%d%n",
                    pioNum, smNum, outCount, outBase);
-    console.printf("(pio%d:sm%d) in-base=%d%n",
-                   pioNum, smNum, inBase);
+    console.printf("(pio%d:sm%d) jmp-pin=%d, in-base=%d%n",
+                   pioNum, smNum, jmpPin, inBase);
   }
 
   private void setAny(final int pioNum, final int smNum,
                       final SDK sdk, final String name,
-                      final int value, final int mask, final int lsb)
+                      final int value, final int mask, final int lsb,
+                      final boolean execCtrl)
     throws IOException
   {
-    final int pinCtrlAddress =
+    final int address =
+      execCtrl ?
+      PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL) :
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
     final int bits = value << lsb;
-    sdk.hwWriteMasked(pinCtrlAddress, bits, mask);
+    sdk.hwWriteMasked(address, bits, mask);
     console.printf("(pio%d:sm%d) set %s to %d%n", pioNum, smNum, name, value);
   }
 
@@ -199,7 +223,7 @@ public class PinCtrl extends Command
   {
     setAny(pioNum, smNum, sdk, "SET count", count,
            Constants.SM0_PINCTRL_SET_COUNT_BITS,
-           Constants.SM0_PINCTRL_SET_COUNT_LSB);
+           Constants.SM0_PINCTRL_SET_COUNT_LSB, false);
   }
 
   private void setSetBase(final int pioNum, final int smNum,
@@ -208,7 +232,7 @@ public class PinCtrl extends Command
   {
     setAny(pioNum, smNum, sdk, "SET base", base,
            Constants.SM0_PINCTRL_SET_BASE_BITS,
-           Constants.SM0_PINCTRL_SET_BASE_LSB);
+           Constants.SM0_PINCTRL_SET_BASE_LSB, false);
   }
 
   private void setOutCount(final int pioNum, final int smNum,
@@ -217,7 +241,7 @@ public class PinCtrl extends Command
   {
     setAny(pioNum, smNum, sdk, "OUT count", count,
            Constants.SM0_PINCTRL_OUT_COUNT_BITS,
-           Constants.SM0_PINCTRL_OUT_COUNT_LSB);
+           Constants.SM0_PINCTRL_OUT_COUNT_LSB, false);
   }
 
   private void setOutBase(final int pioNum, final int smNum,
@@ -226,7 +250,7 @@ public class PinCtrl extends Command
   {
     setAny(pioNum, smNum, sdk, "OUT base", base,
            Constants.SM0_PINCTRL_OUT_BASE_BITS,
-           Constants.SM0_PINCTRL_OUT_BASE_LSB);
+           Constants.SM0_PINCTRL_OUT_BASE_LSB, false);
   }
 
   private void setInBase(final int pioNum, final int smNum,
@@ -235,7 +259,16 @@ public class PinCtrl extends Command
   {
     setAny(pioNum, smNum, sdk, "IN base", base,
            Constants.SM0_PINCTRL_IN_BASE_BITS,
-           Constants.SM0_PINCTRL_IN_BASE_LSB);
+           Constants.SM0_PINCTRL_IN_BASE_LSB, false);
+  }
+
+  private void setJmpPin(final int pioNum, final int smNum,
+                         final SDK sdk, final int gpioNum)
+    throws IOException
+  {
+    setAny(pioNum, smNum, sdk, "JMP PIN", gpioNum,
+           Constants.SM0_EXECCTRL_JMP_PIN_BITS,
+           Constants.SM0_EXECCTRL_JMP_PIN_LSB, true);
   }
 
   /**
@@ -252,9 +285,10 @@ public class PinCtrl extends Command
     final Integer optOutCountValue = options.getValue(optOutCount);
     final Integer optOutBaseValue = options.getValue(optOutBase);
     final Integer optInBaseValue = options.getValue(optInBase);
+    final Integer optJmpPinValue = options.getValue(optJmpPin);
     if ((optSetCountValue == null) && (optSetBaseValue == null) &&
         (optOutCountValue == null) && (optOutBaseValue == null) &&
-        (optInBaseValue == null)) {
+        (optInBaseValue == null) && (optJmpPinValue == null)) {
       displayPinCtrl(pioNum, smNum, sdk);
     } else {
       if (optSetCountValue != null) {
@@ -271,6 +305,9 @@ public class PinCtrl extends Command
       }
       if (optInBaseValue != null) {
         setInBase(pioNum, smNum, sdk, optInBaseValue);
+      }
+      if (optJmpPinValue != null) {
+        setJmpPin(pioNum, smNum, sdk, optJmpPinValue);
       }
     }
     return true;
