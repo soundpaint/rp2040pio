@@ -361,9 +361,12 @@ public class Interrupt extends Command
   {
     final int bitValue = value ? 1 : 0;
     final int addressIrq =
-      PIORegisters.getAddress(pioNum, PIORegisters.Regs.IRQ);
-    sdk.hwWriteMasked(addressIrq, bitValue << irqNum, bitValue << irqNum);
-    console.printf("(pio%d:sm*) set IRQ bit %d to %d%n", irqNum, bitValue);
+      PIORegisters.getAddress(pioNum, value ?
+                              PIORegisters.Regs.IRQ_FORCE :
+                              PIORegisters.Regs.IRQ);
+    sdk.hwWriteMasked(addressIrq, 1 << irqNum, 1 << irqNum);
+    console.printf("(pio%d:sm*) set IRQ bit %d to %d%n",
+                   pioNum, irqNum, bitValue);
   }
 
   /**
