@@ -56,19 +56,19 @@ public class FIFO implements Constants
       this.rxSize = rxSize;
     }
 
-    public boolean isJoinTX() { return joinTX; }
-    public boolean isJoinRX() { return joinRX; }
-    public int getTXSize() { return txSize; }
-    public int getRXSize() { return rxSize; }
+    private boolean isJoinTX() { return joinTX; }
+    private boolean isJoinRX() { return joinRX; }
+    private int getTXSize() { return txSize; }
+    private int getRXSize() { return rxSize; }
 
-    public int incPtrTX(final int ptr)
+    private int incPtrTX(final int ptr)
     {
       return
         txSize == 0 ? 0 :
         (ptr + 1) & (txSize - 1);
     }
 
-    public int incPtrRX(final int ptr)
+    private int incPtrRX(final int ptr)
     {
       final int rxOffset = JOINED_FIFO_DEPTH - rxSize;
       return
@@ -76,13 +76,15 @@ public class FIFO implements Constants
         ((ptr + 1) & (rxSize - 1)) + rxOffset;
     }
 
-    public static Mode fromJoins(final boolean joinTX, final boolean joinRX)
+    private static Mode fromJoins(final boolean joinTX, final boolean joinRX)
     {
       return
         joinTX ? (joinRX ? JoinBoth : JoinTX) : (joinRX ? JoinRX : JoinNone);
     }
   }
 
+  private final int smNum;
+  private final IRQ irq;
   private int[] memory;
   private Mode mode;
   private int txReadPtr;
@@ -96,8 +98,14 @@ public class FIFO implements Constants
   private boolean regFDEBUG_RXUNDER; // one of bits 11:8 of FDEBUG
   private boolean regFDEBUG_RXSTALL; // one of bits 3:0 of FDEBUG
 
-  public FIFO()
+  public FIFO(final int smNum, final IRQ irq)
   {
+    Constants.checkSmNum(smNum);
+    if (irq == null) {
+      throw new NullPointerException("irq");
+    }
+    this.smNum = smNum;
+    this.irq = irq;
     memory = new int[JOINED_FIFO_DEPTH];
     reset();
   }
@@ -123,6 +131,8 @@ public class FIFO implements Constants
     rxReadPtr = joinTX && joinRX ? -1 : (joinRX ? 0 : FIFO_DEPTH);
     rxWritePtr = rxReadPtr;
     rxFull = joinTX;
+    irq.setRxNEmpty(smNum, !fstatRxEmpty());
+    irq.setTxNFull(smNum, !fstatTxFull());
     notifyAll();
   }
 
@@ -183,6 +193,7 @@ public class FIFO implements Constants
       }
       modified = false;
     }
+    irq.setRxNEmpty(smNum, !fstatRxEmpty());
     notifyAll();
     return modified;
   }
@@ -198,6 +209,7 @@ public class FIFO implements Constants
       regFDEBUG_RXUNDER = true;
       value = 0;
     }
+    irq.setRxNEmpty(smNum, !fstatRxEmpty());
     notifyAll();
     return value;
   }
@@ -270,6 +282,7 @@ public class FIFO implements Constants
         regFDEBUG_TXSTALL = true;
       }
     }
+    irq.setTxNFull(smNum, !fstatTxFull());
     notifyAll();
     return value;
   }
@@ -287,6 +300,7 @@ public class FIFO implements Constants
       }
       regFDEBUG_TXOVER = true;
     }
+    irq.setTxNFull(smNum, !fstatTxFull());
     notifyAll();
   }
 

@@ -126,8 +126,8 @@ public class Fifo extends Command
                                 "selected or for ISR (when RX selected)");
   private static final CmdOptions.BooleanOptionDeclaration optAuto =
     CmdOptions.createBooleanOption(false, null, "auto", null,
-                                "turn on or off auto-pull (when TX " +
-                                "selected) or auto-push (when RX selected)");
+                                   "turn on or off auto-pull (when TX " +
+                                   "selected) or auto-push (when RX selected)");
   private static final CmdOptions.FlagOptionDeclaration optTX =
     CmdOptions.createFlagOption(false, 't', "tx", CmdOptions.Flag.OFF,
                                 "apply modification on TX FIFO");

@@ -384,7 +384,13 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                         "0x1 for pin direction out or%n" +
                                         "0x0 for pin direction in",
                                         BitsType.RW, 0))
-                 .collect(Collectors.toList()));
+                 .collect(Collectors.toList())),
+    IRQ("Direct read access of all PIO IRQ.",
+        IntStream.rangeClosed(0, 7).boxed()
+        .map(n -> new BitsInfo(7 - n, 7 - n, "IRQ" + (7 - n),
+                               "0x1 for HIGH or 0x0 for LOW",
+                               BitsType.RO, 0))
+        .collect(Collectors.toList()));
 
     public static String getRegisterSetLabel()
     {

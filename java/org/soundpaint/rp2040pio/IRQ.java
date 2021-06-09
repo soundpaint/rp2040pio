@@ -30,12 +30,11 @@ package org.soundpaint.rp2040pio;
 public class IRQ implements Constants
 {
   private int regIRQ; // bits 0…7 of IRQ
-  private int regIRQ_FORCE; // bits 0…7 of IRQ_FORCE
-  private int regINTR; // bits 0…11 of INTR
   private int regIRQ0_INTE; // bits 0…11 of IRQ0_INTE
   private int regIRQ0_INTF; // bits 0…11 of IRQ0_INTF
   private int regIRQ1_INTE; // bits 0…11 of IRQ1_INTE
   private int regIRQ1_INTF; // bits 0…11 of IRQ1_INTF
+  private int fifoStatus;
 
   public IRQ()
   {
@@ -45,38 +44,41 @@ public class IRQ implements Constants
   public void reset()
   {
     regIRQ = 0;
-    regIRQ_FORCE = 0;
-    regINTR = 0;
     regIRQ0_INTE = 0;
     regIRQ0_INTF = 0;
     regIRQ1_INTE = 0;
     regIRQ1_INTF = 0;
+    fifoStatus = 0;
   }
 
-  public int readRegIRQ()
+  public void setTxNFull(final int smNum, final boolean nFull)
   {
-    /*
-     * TODO: Check: Since readRegIRQ() and writeRegIRQ address
-     * physically different bits, will XOR access mode "hw_xor_bits()"
-     * still work for this address as expected?
-     */
-    return regIRQ | regIRQ_FORCE;
+    Constants.checkSmNum(smNum);
+    if (nFull) {
+      fifoStatus |= 0x10 << smNum;
+    } else {
+      fifoStatus &= ~(0x10 << smNum);
+    }
+  }
+
+  public void setRxNEmpty(final int smNum, final boolean nEmpty)
+  {
+    Constants.checkSmNum(smNum);
+    if (nEmpty) {
+      fifoStatus |= 0x1 << smNum;
+    } else {
+      fifoStatus &= ~(0x1 << smNum);
+    }
   }
 
   public void writeRegIRQ(final int value)
   {
-    regIRQ &= ~(value & 0xff); // ignore reserved bits 31:8
-    regINTR &= ~((value & 0xf) << 8);
-  }
-
-  public int readRegIRQ_FORCE()
-  {
-    return regIRQ_FORCE;
+    regIRQ &= (~value) & 0xff; // ignore reserved bits 31:8
   }
 
   public void writeRegIRQ_FORCE(final int value)
   {
-    regIRQ_FORCE &= ~(value & 0xff); // ignore reserved bits 31:8
+    regIRQ |= value & 0xff; // ignore reserved bits 31:8
   }
 
   public Bit get(final int index)
@@ -87,7 +89,7 @@ public class IRQ implements Constants
     if (index > 7) {
       throw new IllegalArgumentException("IRQ index > 7: " + index);
     }
-    return ((readRegIRQ() >> index) & 0x1) == 0x0 ? Bit.LOW : Bit.HIGH;
+    return ((regIRQ >> index) & 0x1) == 0x0 ? Bit.LOW : Bit.HIGH;
   }
 
   public void clear(final int index)
@@ -99,7 +101,6 @@ public class IRQ implements Constants
       throw new IllegalArgumentException("IRQ index > 7: " + index);
     }
     regIRQ &= ~(0x1 << index);
-    regINTR &= ~(0x1 << (index + 8));
   }
 
   public void set(final int index)
@@ -110,60 +111,12 @@ public class IRQ implements Constants
     if (index > 7) {
       throw new IllegalArgumentException("IRQ index > 7: " + index);
     }
-    regIRQ |= (0x1 << index);
-    regINTR |= (0x1 << (index + 8));
+    regIRQ |= 0x1 << index;
   }
 
-  public void clearINTR_SMX_TXNFULL(final int smNum)
+  public int getIRQ()
   {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("SM number < 0: " + smNum);
-    }
-    if (smNum >= SM_COUNT) {
-      final String message =
-        String.format("SM number >= %d: %d", SM_COUNT, smNum);
-      throw new IllegalArgumentException(message);
-    }
-    regINTR &= ~(0x1 << (smNum + 4));
-  }
-
-  public void setINTR_SMX_TXNFULL(final int smNum)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("SM number < 0: " + smNum);
-    }
-    if (smNum >= SM_COUNT) {
-      final String message =
-        String.format("SM number >= %d: %d", SM_COUNT, smNum);
-      throw new IllegalArgumentException(message);
-    }
-    regINTR |= 0x1 << (smNum + 4);
-  }
-
-  public void clearINTR_SMX_RXNEMPTY(final int smNum)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("SM number < 0: " + smNum);
-    }
-    if (smNum >= SM_COUNT) {
-      final String message =
-        String.format("SM number >= %d: %d", SM_COUNT, smNum);
-      throw new IllegalArgumentException(message);
-    }
-    regINTR &= ~(0x1 << smNum);
-  }
-
-  public void setINTR_SMX_RXNEMPTY(final int smNum)
-  {
-    if (smNum < 0) {
-      throw new IllegalArgumentException("SM number < 0: " + smNum);
-    }
-    if (smNum >= SM_COUNT) {
-      final String message =
-        String.format("SM number >= %d: %d", SM_COUNT, smNum);
-      throw new IllegalArgumentException(message);
-    }
-    regINTR |= 0x1 << smNum;
+    return regIRQ;
   }
 
   public int getIRQ0_INTE()
@@ -228,7 +181,7 @@ public class IRQ implements Constants
 
   public int readINTR()
   {
-    return regINTR;
+    return ((regIRQ & 0x7) << 8) | fifoStatus;
   }
 
   public int readIRQ0_INTS()

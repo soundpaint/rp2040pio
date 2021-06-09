@@ -290,6 +290,8 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case GPIO_PINDIRS:
       pio.getPIOGPIO().setPinDirsMask(value, mask, xor);
       break;
+    case IRQ:
+      break; // read-only address
     default:
       throw new InternalError("unexpected case fall-through");
     }
@@ -525,6 +527,8 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
       return pio.getPIOGPIO().getPins(0, GPIO_NUM);
     case GPIO_PINDIRS:
       return pio.getPIOGPIO().getPinDirs(0, GPIO_NUM);
+    case IRQ:
+      return pio.getIRQ().getIRQ();
     default:
       throw new InternalError("unexpected case fall-through");
     }

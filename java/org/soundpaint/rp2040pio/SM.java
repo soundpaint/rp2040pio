@@ -194,7 +194,6 @@ public class SM implements Constants
       isDelayCycle = false;
       totalDelay = 0;
       pendingDelay = 0;
-      irq.reset();
       pendingForcedInstruction = -1;
       isForcedInstruction = false;
       pendingExecdInstruction = -1;
@@ -309,7 +308,7 @@ public class SM implements Constants
     this.irq = irq;
     status = new Status();
     decoder = new Decoder();
-    fifo = new FIFO();
+    fifo = new FIFO(num, irq);
     pll = new PLL(console);
   }
 
@@ -731,9 +730,6 @@ public class SM implements Constants
   {
     synchronized(fifo) {
       fifo.txDMAWrite(data);
-      if (isTXFIFOFull()) {
-        irq.setINTR_SMX_TXNFULL(num);
-      }
     }
   }
 
@@ -741,9 +737,6 @@ public class SM implements Constants
   {
     synchronized(fifo) {
       fifo.rxPush(data, false);
-      if (isRXFIFOFull()) {
-        // irq.setINTR_SMX_RXNFULL(num); // TODO: Do we need this?
-      }
     }
   }
 
@@ -751,9 +744,6 @@ public class SM implements Constants
   {
     synchronized(fifo) {
       final int value = fifo.rxDMARead();
-      if (isRXFIFOEmpty()) {
-        irq.setINTR_SMX_RXNEMPTY(num);
-      }
       return value;
     }
   }
@@ -762,9 +752,6 @@ public class SM implements Constants
   {
     synchronized(fifo) {
       final int value = fifo.txPull(false);
-      if (isTXFIFOEmpty()) {
-        // irq.setINTR_SMX_TXNEMPTY(num); // TODO: Do we need this?
-      }
       return value;
     }
   }

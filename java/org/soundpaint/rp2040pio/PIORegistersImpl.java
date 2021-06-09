@@ -331,9 +331,9 @@ public class PIORegistersImpl extends PIORegisters
     case RXF3:
       return pio.getSM(regNum - Regs.RXF0.ordinal()).get();
     case IRQ:
-      return pio.getIRQ().readRegIRQ();
+      return 0; // write-only address
     case IRQ_FORCE:
-      return pio.getIRQ().readRegIRQ_FORCE();
+      return 0; // write-only address
     case INPUT_SYNC_BYPASS:
       return pio.getPIOGPIO().getGPIO().getInputSyncByPass();
     case DBG_PADOUT:
