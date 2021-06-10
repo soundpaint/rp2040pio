@@ -63,12 +63,13 @@ public class SM implements Constants
 
     public void collatePins(final SM sm, final int data)
     {
-      sm.pioGpio.collatePins(data, baseGetter.apply(sm), countGetter.apply(sm));
+      sm.status.
+        collatePins(data, baseGetter.apply(sm), countGetter.apply(sm), true);
     }
 
     public void collatePinDirs(final SM sm, final int data)
     {
-      sm.pioGpio.
+      sm.status.
         collatePinDirs(data, baseGetter.apply(sm), countGetter.apply(sm));
     }
   };
@@ -82,6 +83,13 @@ public class SM implements Constants
     public boolean smEnabled;
     public boolean clockEnabled;
     public boolean isDelayCycle;
+    public int collateSideSetPins;
+    public int collateSideSetBase;
+    public int collateSideSetCount;
+    public int outStickyPins;
+    public int outStickyBase;
+    public int outStickyCount;
+    public boolean havePendingOutOrSetPins;
     public int regX;
     public int regY;
     public int isrValue;
@@ -136,6 +144,13 @@ public class SM implements Constants
       smEnabled = false;
       clockEnabled = false;
       isDelayCycle = false;
+      collateSideSetPins = 0;
+      collateSideSetBase = 0;
+      collateSideSetCount = 0;
+      outStickyPins = 0;
+      outStickyBase = 0;
+      outStickyCount = 0;
+      havePendingOutOrSetPins = false;
       regX = 0;
       regY = 0;
       isrValue = 0;
@@ -192,6 +207,10 @@ public class SM implements Constants
       osrShiftCount = 32;
       isrValue = 0;
       isDelayCycle = false;
+      outStickyPins = 0;
+      outStickyBase = 0;
+      outStickyCount = 0;
+      havePendingOutOrSetPins = false;
       totalDelay = 0;
       pendingDelay = 0;
       pendingForcedInstruction = -1;
@@ -205,9 +224,42 @@ public class SM implements Constants
       return pioGpio.getLevel(regEXECCTRL_JMP_PIN);
     }
 
-    public void collatePins(final int pins, final int base, final int count)
+    public void collatePins(final int pins, final int base, final int count,
+                            final boolean isSideSetOperation)
     {
-      pioGpio.collatePins(pins, base, count);
+      if (isSideSetOperation) {
+        collateSideSetPins = pins;
+        collateSideSetBase = base;
+        collateSideSetCount = count;
+      } else {
+        outStickyPins = pins;
+        outStickyBase = base;
+        outStickyCount = count;
+        havePendingOutOrSetPins = true;
+      }
+    }
+
+    private void flushCollatePins()
+    {
+      final boolean outEn =
+        regEXECCTRL_INLINE_OUT_EN &&
+        (((outStickyPins >>> regEXECCTRL_OUT_EN_SEL) & 0x1) == 0x1);
+      if (havePendingOutOrSetPins || status.regEXECCTRL_OUT_STICKY) {
+        if (outEn) {
+          pioGpio.collatePins(outStickyPins, outStickyBase, outStickyCount);
+        }
+        havePendingOutOrSetPins = false;
+      }
+      /*
+       * RP2040 datasheet, Sect. 3.5.6. "GPIO Mapping": If side-set
+       * overlaps with OUT/SET, side-set takes precedence.  => Perform
+       * collatePins() for side-set as last step.
+       */
+      if (collateSideSetCount > 0) {
+        pioGpio.collatePins(collateSideSetPins, collateSideSetBase,
+                            collateSideSetCount);
+        collateSideSetCount = 0;
+      }
     }
 
     public void collatePinDirs(final int pins, final int base, final int count)
@@ -508,9 +560,11 @@ public class SM implements Constants
     } else {
       status.clockEnabled = false;
     }
-    // Sect. 3.5.7: ... instructions written to the INSTR register
-    // ... execute immediately, ignoring the state machine clock
-    // divider.
+    /*
+     * Sect. 3.5.7.: ... instructions written to the INSTR register
+     * ... execute immediately, ignoring the state machine clock
+     * divider.
+     */
     status.processing =
       status.clockEnabled || (status.pendingForcedInstruction >= 0);
     if (status.processing) {
@@ -1062,14 +1116,18 @@ public class SM implements Constants
     }
     status.resultState = instruction.execute(this);
     if (status.resultState == Instruction.ResultState.COMPLETE) {
-      // Sect. 3.4.2.2: "Delay cycles … take place after … the program
-      // counter is updated" (though this specifically refers to JMP
-      // instruction). => Update PC immediately, before executing
-      // delay.
+      /*
+       * Sect. 3.4.2.2.: "Delay cycles … take place after … the program
+       * counter is updated" (though this specifically refers to JMP
+       * instruction). => Update PC immediately, before executing
+       * delay.
+       */
       updatePC();
     }
-    // Sect. 3.5.7: "Delay cycles are ignored on instructions
-    // written to the INSTR register."
+    /*
+     * Sect. 3.5.7.: "Delay cycles are ignored on instructions written
+     * to the INSTR register."
+     */
     if (!status.isForcedInstruction) {
       if (status.resultState != Instruction.ResultState.STALL) {
         status.setPendingDelay(instruction.getDelay());
@@ -1081,13 +1139,17 @@ public class SM implements Constants
 
   private void executeAsyncAutoPull()
   {
-    // Cp. pseudocode sequence for non-"OUT" cycles in RP2040
-    // datasheet, Sect. 3.5.4.2. "Autopull Details".
+    /*
+     * Cp. pseudocode sequence for non-"OUT" cycles in RP2040
+     * datasheet, Sect. 3.5.4.2. "Autopull Details".
+     */
     final boolean osrCountBeyondThreshold = status.isOsrCountBeyondThreshold();
     if (osrCountBeyondThreshold) {
       final boolean txFifoEmpty = fifo.fstatTxEmpty();
-      // TODO: Check: Possible race condition between above
-      // fifo.fstatTxEmpty() and below fifo.txPull()?
+      /*
+       * TODO: Check: Possible race condition between above
+       * fifo.fstatTxEmpty() and below fifo.txPull()?
+       */
       if (!txFifoEmpty) {
         status.osrValue = fifo.txPull(false);
         status.osrShiftCount = 0;
@@ -1103,6 +1165,7 @@ public class SM implements Constants
         executeAsyncAutoPull();
       }
     }
+    status.flushCollatePins();
   }
 
   public boolean isStalled()

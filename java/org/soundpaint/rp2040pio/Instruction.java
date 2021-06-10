@@ -146,7 +146,7 @@ public abstract class Instruction
     final PIO.PinDir execCtrlSidePinDir = smStatus.regEXECCTRL_SIDE_PINDIR;
     if (sideSetCount > 0) {
       if (execCtrlSidePinDir == PIO.PinDir.GPIO_LEVELS) {
-        smStatus.collatePins(sideSet, pinCtrlSidesetBase, sideSetCount);
+        smStatus.collatePins(sideSet, pinCtrlSidesetBase, sideSetCount, false);
       } else {
         smStatus.collatePinDirs(sideSet, pinCtrlSidesetBase, sideSetCount);
       }
