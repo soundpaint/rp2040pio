@@ -1,5 +1,5 @@
 # Monitor script for auto-push-pull example (see RP2040
-# datasheet, Sect. 3.5.4 "Autopush and Autopull").
+# datasheet, Sect. 3.5.4. "Autopush and Autopull").
 # To be executed on PIO 0, SM 0.
 
 # Make a full reset of the emulator.

@@ -1,5 +1,5 @@
 # Monitor script for auto pull example (see RP2040
-# datasheet, Sect. 3.5.4 "Autopush and Autopull").
+# datasheet, Sect. 3.5.4. "Autopush and Autopull").
 # To be executed on PIO 0, SM 0.
 # Clock (side-set) output is mapped to GPIO 0.
 # Data (OUT) ouput is mapped to GPIO 1.

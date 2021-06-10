@@ -112,6 +112,8 @@ public class DocsBuilder
     MonitorCommandsDocsBuilder.main(argv);
     System.out.println("building registers documentation...");
     RegistersDocsBuilder.main(argv);
+    System.out.println("building example scripts documentation...");
+    ExampleScriptsDocsBuilder.main(argv);
     System.out.println("documentation successfully built");
   }
 }

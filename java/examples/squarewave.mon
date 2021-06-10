@@ -1,5 +1,5 @@
-# Monitor script for loading & configuring squarewave.hex
-# to be executed on PIO 0, SM 0
+# Monitor script for loading & configuring squarewave.hex.
+# To be executed on PIO 0, SM 0.
 
 # Make a full reset of the emulator.
 reset
