@@ -1,0 +1,196 @@
+# Monitor script for I²C example.
+# To be executed on PIO 0, SM 0.
+# pin_sda is fed to GPIO 0.
+# pin_scl is fed to GPIO 1.
+
+# Make a full reset of the emulator.
+reset
+
+# We loosely follow the initialization sequence as shown in:
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/i2c/i2c.pio
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=17 --target=12
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=0 --count=1 --opt=true
+
+# The code.
+#                do_nack:
+enter -a 00 -v 0x008c #jmp y-- entry_point        # Continue if NAK was expected
+enter -a 01 -v 0xc030 #irq wait 0 rel             # Otherwise stop, ask for help
+#                do_byte:
+enter -a 02 -v 0xe027 #set x, 7                   # Loop 8 times
+#                bitloop:
+enter -a 03 -v 0x6781 #out pindirs, 1         [7] # Serialise write data
+enter -a 04 -v 0xba42 #nop             side 1 [2] # SCL rising edge
+enter -a 05 -v 0x24a1 #wait 1 pin, 1          [4] # Allow clock to be stretched
+enter -a 06 -v 0x4701 #in pins, 1             [7] # Sample read data in middle
+enter -a 07 -v 0x1743 #jmp x-- bitloop side 0 [7] ; SCL falling edge
+#                     ; Handle ACK pulse
+enter -a 08 -v 0x6781 #out pindirs, 1         [7] # On reads, we provide the ACK
+enter -a 09 -v 0xbf42 #nop             side 1 [7] # SCL rising edge
+enter -a 10 -v 0x27a1 #wait 1 pin, 1          [7] # Allow clock to be stretched
+enter -a 11 -v 0x12c0 #jmp pin do_nack side 0 [2] # Test SDA for ACK/NAK
+#                public entry_point:
+#                .wrap_target
+enter -a 12 -v 0x6026 #out x, 6                   # Unpack Instr count
+enter -a 13 -v 0x6041 #out y, 1                   # Unpack the NAK ignore bit
+enter -a 14 -v 0x0022 #jmp !x do_byte             # Instr == 0, data record.
+enter -a 15 -v 0x6060 #out null, 32               # Instr > 0, OSR rem. invalid
+#                do_exec:
+enter -a 16 -v 0x60f0 #out exec, 16               # Exec one instr / FIFO word
+enter -a 17 -v 0x0050 #jmp x-- do_exec            # Repeat n + 1 times
+#                .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=18
+
+########
+# Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
+# created by pioasm).
+########
+
+# I/O Mapping.  Assume pin_sda=0 and pin_scl=1.
+
+# SM Config Set Out Pins(base=pin_sda, count=1).
+pinctrl --pio=0 --sm=0 --out-base=0 --out-count=1
+
+# SM Config Set Set Pins(base=pin_sda, count=1).
+pinctrl --pio=0 --sm=0 --set-base=0 --set-count=1
+
+# SM Config Set In Pins(base=pin_sda).
+pinctrl --pio=0 --sm=0 --in-base=0
+
+# SM Config Set Side-Set Pins(pin_scl).
+side-set --pio=0 --sm=0 --base=1
+
+# SM Config Set JMP PIN (jmp_pin=pin_sda).
+pinctrl --pio=0 --sm=0 --jmp-pin=0
+
+# SM Config Set Out Shift(left, autopull, threshold 16)
+fifo --pio=0 --sm=0 --tx --shift-left
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=16
+
+# SM Config Set In Shift(left, autopush, threshold 8)
+fifo --pio=0 --sm=0 --rx --shift-left
+fifo --pio=0 --sm=0 --rx --auto=true
+fifo --pio=0 --sm=0 --rx --threshold=8
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+# TODO: Try to avoid glitch:
+#   gpio_pull_up(pin_scl)
+#   gpio_pull_up(pin_sda)
+
+# Set pins for pin_sda, pin_scl
+gpio --pio=0 --gpio=0 --set    # pin_sda: high
+gpio --pio=0 --gpio=1 --set    # pin_scl: high
+
+# Set pindirs for pin_sda, pin_scl
+gpio --pio=0 --gpio=0 --enable # pin_sda: output
+gpio --pio=0 --gpio=1 --enable # pin_scl: output
+
+# GPIO init pin_sda.
+gpio --pio=0 --gpio=0 --init
+
+# Set GPIO Override Invert for pin_sda.
+gpio --gpio=0 --override-oe --invert
+
+# GPIO init pin_scl.
+gpio --pio=0 --gpio=1 --init
+
+# Set GPIO Override Invert for pin_scl.
+gpio --gpio=1 --override-oe --invert
+
+# Set pins for pin_sda, pin_scl
+gpio --pio=0 --gpio=0 --clear    # pin_sda: low
+gpio --pio=0 --gpio=1 --clear    # pin_scl: low
+
+interrupt --pio=0 --sm=0 --disable --irq0
+interrupt --pio=0 --sm=0 --disable --irq1
+interrupt --pio=0 --sm=0 --value=false
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 -c
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0c.
+registers --address=0x0c
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.  Only the lowest 8 bits are used (8
+# data bits, 1 stop bit).
+
+# Instructions to put into FIFO for executing START/STOP/REPSTART:
+#
+# f780 set pindirs, 0 side 0 [7] ; SCL = 0, SDA = 0
+# f781 set pindirs, 1 side 0 [7] ; SCL = 0, SDA = 1
+# ff80 set pindirs, 0 side 1 [7] ; SCL = 1, SDA = 0
+# ff81 set pindirs, 1 side 1 [7] ; SCL = 1, SDA = 1
+
+# Instruction format to put into FIFO:
+#
+# | 15:10 | 9     | 8:1  | 0   |
+# | Instr | Final | Data | NAK |
+#
+# Instr = 0 for data payload.  For more details on this format, see:
+# https://github.com/raspberrypi/pico-examples/tree/master/pio/i2c/i2c.pio.
+
+# 0x0400: Instr = 1 => announce n + 1 = 2 instructions
+# 0x0000: Instructions always align with FIFO word => add padding
+fifo --enqueue --tx --value 0x04000000
+
+# Now, the n + 1 = 2 instructions, one instruction per FIFO word
+# 0xf780: Instruction "SCL = 0, SDA = 0"
+# 0xa042: Instruction "nop"
+fifo --enqueue --tx --value 0xf7800000
+fifo --enqueue --tx --value 0xa0420000
+
+# 0x014a: data byte 0xa5
+# 0x0201: data byte 0x00, marked as final byte, but NAK => stop
+fifo --enqueue --tx --value 0x014a0201
+
+# Do *not* pull SCL input to 0 (no clock stretching).
+# Otherwise, the program would get stuck at the
+# "wait 1 pin, 1" instruction.
+gpio --gpio=1 --set
+
+# Done.
+quit
