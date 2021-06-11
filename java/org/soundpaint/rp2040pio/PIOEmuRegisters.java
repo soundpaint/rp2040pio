@@ -370,14 +370,15 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                      "the next FIFO read operation",
                                      BitsType.RO, 0))
               .collect(Collectors.toList())),
-    GPIO_PINS("Direct read / write access to all of the 32 GPIO pins.",
+    GPIO_PINS("Direct read / write access to all of the 32 GPIO pins%n" +
+              "that PIO is currently driving to the GPIOs.",
               IntStream.rangeClosed(0, 31).boxed()
               .map(n -> new BitsInfo(31 - n, 31 - n, "GPIO_PIN" + (31 - n),
                                      "0x1 for HIGH or 0x0 for LOW",
                                      BitsType.RW, 0))
               .collect(Collectors.toList())),
     GPIO_PINDIRS("Direct read / write access to all of the 32 GPIO pin%n" +
-                 "directions.",
+                 "directions that PIO is currently driving to the GPIOs.",
                  IntStream.rangeClosed(0, 31).boxed()
                  .map(n -> new BitsInfo(31 - n, 31 - n,
                                         "GPIO_PINDIR" + (31 - n),

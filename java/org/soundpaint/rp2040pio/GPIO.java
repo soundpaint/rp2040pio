@@ -111,6 +111,26 @@ public class GPIO implements Constants
       outputOverride = Override.BYPASS;
       externalInput = Bit.LOW;
     }
+
+    private Bit getInputAfterOverride()
+    {
+      return inputOverride.apply(externalInput);
+    }
+
+    private Bit getIrqAfterOverride()
+    {
+      return irqOverride.apply(externalInput);
+    }
+
+    private Direction getOeAfterOverride(final Direction oeBeforeOverride)
+    {
+      return oeOverride.apply(oeBeforeOverride);
+    }
+
+    private Bit getOutAfterOverride(final Bit outBeforeOverride)
+    {
+      return outputOverride.apply(outBeforeOverride);
+    }
   }
 
   private final PrintStream console;
@@ -240,6 +260,7 @@ public class GPIO implements Constants
 
   public int getSTATUS(final int gpio)
   {
+    Constants.checkGpioPin(gpio, "GPIO port");
     return
       (getIrqToProc(gpio).getValue() << IO_BANK0_GPIO0_STATUS_IRQTOPROC_LSB) |
       (getIrqFromPad(gpio).getValue() <<
@@ -257,35 +278,52 @@ public class GPIO implements Constants
   private Bit getIrqToProc(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    final Terminal terminal = terminals[gpio];
-    return terminal.irqOverride.apply(getIrqFromPad(gpio));
+    return terminals[gpio].getIrqAfterOverride();
   }
 
   private Bit getIrqFromPad(final int gpio)
   {
-    // not implemented by this emulator
-    return Bit.LOW;
+    /*
+     * TODO: Clarify: How does / should this method differ from method
+     * getInFromPad()?  It seems the RP2040 datasheet does not explain
+     * the difference between interrupt from pad
+     * (IO_BANK0_GPIOx_STATUS_IRQFROMPAD) and input signal from pad
+     * (IO_BANK0_GPIOx_STATUS_INFROMPAD).  Maybe, interrupt from pad
+     * is the value of an edge-triggered flip-flop (but how is the
+     * flip-flop reset again?), while input signal from pad is the
+     * pad's current logical value in terms of voltage level?
+     */
+    Constants.checkGpioPin(gpio, "GPIO port");
+    return terminals[gpio].externalInput;
+   }
+
+  public int getPinsToPeri(final int base, final int count)
+  {
+    Constants.checkGpioPin(base, "GPIO pin base");
+    Constants.checkGpioPinsCount(count, "GPIO pin count");
+    int pins = 0;
+    for (int pin = 0; pin < count; pin++) {
+      pins = (pins << 0x1) | getInToPeri((base - pin - 1) & 0x1f).getValue();
+    }
+    return pins;
   }
 
-  private Bit getInToPeri(final int gpio)
+  public Bit getInToPeri(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    final Terminal terminal = terminals[gpio];
-    return terminal.inputOverride.apply(terminal.externalInput);
+    return terminals[gpio].getInputAfterOverride();
   }
 
   private Bit getInFromPad(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    final Terminal terminal = terminals[gpio];
-    return terminal.externalInput;
+    return terminals[gpio].externalInput;
   }
 
   private Direction getOeToPad(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    final Terminal terminal = terminals[gpio];
-    return terminal.oeOverride.apply(getOeFromPeripheral(gpio));
+    return terminals[gpio].getOeAfterOverride(getOeFromPeripheral(gpio));
   }
 
   private Direction getOeFromPeripheral(final int gpio)
@@ -317,8 +355,7 @@ public class GPIO implements Constants
   private Bit getOutToPad(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    final Terminal terminal = terminals[gpio];
-    return terminal.outputOverride.apply(getOutFromPeripheral(gpio));
+    return terminals[gpio].getOutAfterOverride(getOutFromPeripheral(gpio));
   }
 
   private Bit getOutFromPeripheral(final int gpio)

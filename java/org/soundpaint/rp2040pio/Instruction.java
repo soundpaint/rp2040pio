@@ -328,9 +328,13 @@ public abstract class Instruction
 
     private enum Source
     {
-      GPIO_(0b00, "gpio", (wait, sm) -> sm.getGPIO(wait.index)),
+      GPIO_(0b00, "gpio", (wait, sm) ->
+            sm.getPIOGPIO().getGPIO().getInToPeri(wait.index)),
       PIN(0b01, "pin", (wait, sm) -> {
-          return sm.getGPIO(sm.getStatus().regPINCTRL_IN_BASE);
+          final int gpioNum =
+            (wait.index + sm.getStatus().regPINCTRL_IN_BASE) &
+            (Constants.GPIO_NUM - 1);
+          return sm.getPIOGPIO().getGPIO().getInToPeri(gpioNum);
         }),
       IRQ(0b10, "irq", (wait, sm) -> {
           final int irqNum = getIRQNum(sm.getNum(), wait.index);
@@ -423,7 +427,11 @@ public abstract class Instruction
 
     private enum Source
     {
-      PINS(0b000, "pins", (sm) -> sm.getPins()),
+      PINS(0b000, "pins", (sm) -> {
+          final int base = sm.getStatus().regPINCTRL_IN_BASE;
+          return
+            sm.getPIOGPIO().getGPIO().getPinsToPeri(base, Constants.GPIO_NUM);
+        }),
       X(0b001, "x", (sm) -> sm.getX()),
       Y(0b010, "y", (sm) -> sm.getX()),
       NULL(0b011, "null", (sm) -> 0),
@@ -869,7 +877,11 @@ public abstract class Instruction
 
     private enum Source
     {
-      PINS(0b000, "pins", (sm) -> sm.getPins()),
+      PINS(0b000, "pins", (sm) -> {
+          final int base = sm.getStatus().regPINCTRL_IN_BASE;
+          return
+            sm.getPIOGPIO().getGPIO().getPinsToPeri(base, Constants.GPIO_NUM);
+        }),
       X(0b001, "x", (sm) -> sm.getX()),
       Y(0b010, "y", (sm) -> sm.getY()),
       NULL(0b011, "null", (sm) -> 0),

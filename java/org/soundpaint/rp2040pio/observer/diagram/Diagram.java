@@ -136,7 +136,7 @@ public class Diagram extends GUIObserver
     final GPIOIOBank0Registers.Regs regGpio0Status =
       GPIOIOBank0Registers.Regs.GPIO0_STATUS;
     for (int gpioNum = 0; gpioNum < 32; gpioNum++) {
-      final String label = "GPIO " + gpioNum;
+      final String label = "GPIO" + gpioNum + " (out from peri)";
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
       model.addSignal(label + " Value", address, 8, 8).setVisible(gpioNum < 2);

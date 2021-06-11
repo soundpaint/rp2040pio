@@ -75,8 +75,6 @@ public class PIOGPIO implements Constants
 
   public Bit getLevel(final int gpioNum)
   {
-    // TODO: Clarify what happens when reading from a GPIO with pin
-    // direction set to OUT.
     Constants.checkGpioPin(gpioNum, "GPIO pin number");
     return appliedStates[gpioNum].getLevel();
   }

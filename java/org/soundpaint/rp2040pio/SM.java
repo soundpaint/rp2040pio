@@ -221,7 +221,13 @@ public class SM implements Constants
 
     public Bit jmpPin()
     {
-      return pioGpio.getLevel(regEXECCTRL_JMP_PIN);
+      /*
+       * RP2040 datasheet 3.4.2. "JMP": "JMP PIN branches on the GPIO
+       * … independently of the state machine's other input mapping."
+       * => Return global GPIO's input to peripherals rather than the
+       * local GPIO pin state of this state machine's PIO.
+       */
+      return pioGpio.getGPIO().getInToPeri(regEXECCTRL_JMP_PIN);
     }
 
     public void collatePins(final int pins, final int base, final int count,
@@ -605,11 +611,6 @@ public class SM implements Constants
     status.restart();
   }
 
-  public Bit getGPIO(final int index)
-  {
-    return pioGpio.getLevel(index);
-  }
-
   public Bit getIRQ(final int index)
   {
     return irq.get(index);
@@ -729,11 +730,6 @@ public class SM implements Constants
       throw new IllegalArgumentException("side set count > 5: " + count);
     }
     status.regPINCTRL_SIDESET_COUNT = count;
-  }
-
-  public int getPins()
-  {
-    return pioGpio.getPins(status.regPINCTRL_IN_BASE, GPIO_NUM);
   }
 
   public PIO.ShiftDir getInShiftDir()
