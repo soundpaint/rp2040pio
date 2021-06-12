@@ -298,7 +298,7 @@ public class Gpio extends Command
                      pioNum, gpioNum, pioNum);
     } else {
       final int address =
-        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.GPIO_PINS);
+        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.GPIO_PADIN);
       final int mask = 0x1 << gpioNum;
       sdk.hwSetBits(address, mask);
       console.printf("(pio*:sm*) set GPIO external input %02x to 1%n",
@@ -318,7 +318,7 @@ public class Gpio extends Command
                      pioNum, gpioNum, pioNum);
     } else {
       final int address =
-        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.GPIO_PINS);
+        PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.GPIO_PADIN);
       final int mask = 0x1 << gpioNum;
       sdk.hwClearBits(address, mask);
       console.printf("(pio*:sm*) set GPIO external input %02x to 0%n",

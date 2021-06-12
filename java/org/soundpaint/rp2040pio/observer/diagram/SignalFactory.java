@@ -238,7 +238,11 @@ public class SignalFactory
         return null;
       }
     };
-    return new ValuedSignal<Integer>(signalLabel, supplier);
+    final ValuedSignal<Integer> intSignal =
+      new ValuedSignal<Integer>(signalLabel, supplier);
+    intSignal.setRenderer((instructionInfo) ->
+                          String.format("%x", instructionInfo));
+    return intSignal;
   }
 }
 

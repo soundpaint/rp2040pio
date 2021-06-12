@@ -122,6 +122,7 @@ public class CodeSmViewPanel extends JPanel
   private final JList<Instruction> lsInstructions;
   private int pioNum;
   private int smNum;
+  private int lastPC;
 
   private CodeSmViewPanel()
   {
@@ -149,6 +150,7 @@ public class CodeSmViewPanel extends JPanel
     lsInstructions.setCellRenderer(new InstructionRenderer());
     add(new JScrollPane(lsInstructions));
     setPreferredSize(new Dimension(300, 200));
+    lastPC = -1;
   }
 
   private int getPC() throws IOException
@@ -241,7 +243,10 @@ public class CodeSmViewPanel extends JPanel
     updateForcedOrExecdInstructionDisplay(pioSdk, isForced, forcedOpCode,
                                           isExecd, execdOpCode, smEnabled);
     lsInstructions.setEnabled(smEnabled);
-    lsInstructions.ensureIndexIsVisible(pc);
+    if (pc != lastPC) {
+      lsInstructions.ensureIndexIsVisible(pc);
+      lastPC = pc;
+    }
   }
 
   private void updateForcedOrExecdInstructionDisplay(final PIOSDK pioSdk,

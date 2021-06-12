@@ -1,0 +1,41 @@
+# Monitor script for addition example (see RP2040
+# datasheet, Sect. 3.6.9. "Addition").
+# To be executed on PIO 0, SM 0.
+
+# Make a full reset of the emulator.
+reset
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=8 --target=0
+
+# The code.
+# ; This program uses the two's complement identity x + y == ~(~x - y)
+enter -a 0 -v 0x80a0 # pull
+enter -a 1 -v 0xa02f # mov x, ~osr
+enter -a 2 -v 0x80a0 # pull
+enter -a 3 -v 0xa047 # mov y, osr
+enter -a 4 -v 0x0006 # jmp test
+#                         ; this loop is equivalent to the following C code:
+#  incr:                            ; while (y--)
+enter -a 5 -v 0x0046 # jmp x-- test ; x--;
+#  test:                  ; This has the effect of subtracting y from x, eventually.
+enter -a 6 -v 0x0085 # jmp y-- incr
+enter -a 7 -v 0xa0c9 # mov isr, ~x
+enter -a 8 -v 0x8020 # push
+
+# Set up the program for execution on PIO 0, SM 0 with side-set 0.
+side-set --pio=0 --sm=0 --count=0
+sm --pio=0 --sm=0 --enable=true
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=8
+
+# Set up FIFO with 2 example operands
+fifo --tx --enqueue --value 0x0003
+fifo --tx --enqueue --value 0x0005
+
+# Result 0x3 + 0x5 = 0x8 should eventually appear in RX FIFO.
+
+# Done.
+quit

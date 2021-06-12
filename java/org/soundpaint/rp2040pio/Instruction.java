@@ -976,7 +976,7 @@ public abstract class Instruction
     private enum Operation
     {
       NONE(0b00, "", (data) -> data),
-      INVERT(0b01, "!", (data) -> ~data),
+      INVERT(0b01, "~", (data) -> ~data),
       BIT_REVERSE(0b10, "::", (data) -> Integer.reverse(data)),
       RESERVED_3(0b11, "???", null);
 
@@ -1029,7 +1029,7 @@ public abstract class Instruction
     public void decodeLSB(final int lsb)
       throws Decoder.DecodeException
     {
-      src = code2src.get(lsb & 03);
+      src = code2src.get(lsb & 0x7);
       if (src == Source.RESERVED_4) {
         throw new Decoder.DecodeException(this, getOpCode());
       }
