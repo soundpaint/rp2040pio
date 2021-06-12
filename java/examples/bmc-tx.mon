@@ -1,0 +1,119 @@
+# Monitor script for BMC TX example (see RP2040 datasheet,
+# Sect. 3.6.6. "Differential Manchester (BMC) TX and RX").  To be
+# executed on PIO 0, SM 0.
+
+# Make a full reset of the emulator.
+reset
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=7 --target=0
+
+# Configure Side Set
+side-set --pio=0 --sm=0 --count=1 --opt=true
+
+# The code.
+# public start:
+# initial_high:
+enter -a 0 -v 0x7821 # out x, 1          side 1
+enter -a 1 -v 0x0623 # jmp !x high_0            [6]
+# high_1:
+enter -a 2 -v 0x1700 # jmp initial_high  side 0 [7]
+# high_0:
+enter -a 3 -v 0x0704 # jmp initial_low          [7]
+
+# initial_low:
+enter -a 4 -v 0x7021 # out x, 1          side 0
+enter -a 5 -v 0x0627 # jmp !x low_0             [6]
+# low_1:
+enter -a 6 -v 0x1f04 # jmp initial_low   side 1 [7]
+# low_0:
+enter -a 7 -v 0x0700 # jmp initial_high         [7]
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=7
+
+########
+# Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
+# created by pioasm).
+########
+
+# Set GPIO output value to 0.
+gpio --pio=0 --gpio=0 --clear
+
+# Set consecutive pindirs, here just a single one.
+gpio --pio=0 --gpio=0 --enable # set direction out
+
+# Connect GPIO 0 with PIO 0
+gpio --pio=0 --gpio=0 --init
+
+# Configure side set base.
+side-set --pio=0 --sm=0 --base=0
+
+# Configure out shift.
+fifo --pio=0 --sm=0 --tx --shift-right
+fifo --pio=0 --sm=0 --tx --auto=true    # auto pull
+fifo --pio=0 --sm=0 --tx --threshold=32
+
+# Join FIFO TX
+fifo --join --tx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0
+
+########
+# End of SM initialization.
+########
+
+# Unlike the initialization in differential_manchester.pio, we do
+# *not* execute a blocking pull here since we feed in data for
+# immediate consumption a few lines down from here.
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.
+fifo --enqueue --tx --value 0x115a88a5
+fifo --enqueue --tx --value 0xf0f0f0f0
+
+# Done.
+quit
+
+# Hint: In the Diagram Creator, you can select 16 as "Cycles" value,
+# and start the "emulate" button with one of the two "OUT x, 01"
+# instructions being the next instruction to be executed.  Then, you
+# can watch bit by bit producing the corresponding output level at
+# GPIO0, with the bits shifted one by one out of OSR.

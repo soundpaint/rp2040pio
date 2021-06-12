@@ -495,18 +495,21 @@ public class FifoEntriesViewPanel extends JPanel
     final int bitNum = labelNum - 1;
     for (int bitIndex = 0; bitIndex < bitNum; bitIndex++) {
       final int bitValue = (value >>> bitIndex) & 0x1;
-      final JLabel lbBit;
       final int bitIndexAfterShiftDir;
+      final int thresholdAfterShiftDir;
       switch (shiftDir) {
       case SHIFT_LEFT:
-        lbBit = lbBits[bitNum - bitIndex - (bitIndex >= threshold ? 1 : 0)];
+        thresholdAfterShiftDir = threshold;
         bitIndexAfterShiftDir = bitIndex;
         break;
       default:
-        lbBit = lbBits[bitIndex + (bitIndex >= threshold ? 1 : 0)];
+        thresholdAfterShiftDir = bitNum -threshold;
         bitIndexAfterShiftDir = bitNum - bitIndex - 1;
         break;
       }
+      final JLabel lbBit =
+        lbBits[bitNum - bitIndex -
+               (bitIndex >= thresholdAfterShiftDir ? 1 : 0)];
       lbBit.setText(bitValue == 0x1 ? "1" : "0");
       if (levelComparator.apply(bitIndexAfterShiftDir, level)) {
         lbBit.setForeground(Color.BLACK);
