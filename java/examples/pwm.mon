@@ -1,0 +1,95 @@
+# Monitor script for PWM example (see RP2040 datasheet,
+# Sect. 3.6.8. "PWM").  To be executed on PIO 0, SM 0.
+
+# Make a full reset of the emulator.
+reset
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=6 --target=0
+
+# Configure Side Set
+side-set --pio=0 --sm=0 --count=1 --opt=true
+
+# The code.
+enter -a 0 -v 0x9080 # pull noblock side 0
+enter -a 1 -v 0xa027 # mov x, osr
+enter -a 2 -v 0xa046 # mov y, isr
+#         countloop:
+enter -a 3 -v 0x00a5 # jmp x!=y noset
+enter -a 4 -v 0x1806 # jmp skip side 1
+#         noset:
+enter -a 5 -v 0xa042 # nop
+#         skip:
+enter -a 6 -v 0x0083 # jmp y-- countloop
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=6
+
+########
+# Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
+# created by pioasm).
+########
+
+# Connect GPIO 0 with PIO 0
+gpio --pio=0 --gpio=0 --init
+
+# Set consecutive pindirs, here just a single one.
+gpio --pio=0 --gpio=0 --enable # set direction out
+
+# Configure side set base.
+side-set --pio=0 --sm=0 --base=0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Set PWM period.  The RP foundation's pwm.c sample program puts the
+# value into TX FIFO ("pio_sm_put_blocking"), then moves it to OSR by
+# executing a "PULL" command, and finally moves it from OSR to ISR by
+# executing an "OUT" command with target ISR.  Thanks to our monitor
+# application, we can achieve the same effect with just a single
+# command, by directly assigning the value to the ISR register.
+registers --isr=5
+
+# Put example values into FIFO.  Maximum valid value is the PWM period.
+fifo --enqueue --tx --value 0x3
+fifo --enqueue --tx --value 0x5
+fifo --enqueue --tx --value 0x2
+
+# Done.
+quit

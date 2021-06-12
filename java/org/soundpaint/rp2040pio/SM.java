@@ -64,7 +64,7 @@ public class SM implements Constants
     public void collatePins(final SM sm, final int data)
     {
       sm.status.
-        collatePins(data, baseGetter.apply(sm), countGetter.apply(sm), true);
+        collatePins(data, baseGetter.apply(sm), countGetter.apply(sm), false);
     }
 
     public void collatePinDirs(final SM sm, final int data)
@@ -247,10 +247,10 @@ public class SM implements Constants
 
     private void flushCollatePins()
     {
-      final boolean outEn =
-        regEXECCTRL_INLINE_OUT_EN &&
-        (((outStickyPins >>> regEXECCTRL_OUT_EN_SEL) & 0x1) == 0x1);
-      if (havePendingOutOrSetPins || status.regEXECCTRL_OUT_STICKY) {
+      if (havePendingOutOrSetPins || regEXECCTRL_OUT_STICKY) {
+        final boolean outEn =
+          !regEXECCTRL_INLINE_OUT_EN ||
+          (((outStickyPins >>> regEXECCTRL_OUT_EN_SEL) & 0x1) == 0x1);
         if (outEn) {
           pioGpio.collatePins(outStickyPins, outStickyBase, outStickyCount);
         }

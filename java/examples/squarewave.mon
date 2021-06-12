@@ -7,6 +7,9 @@ reset
 # Connect GPIO 0 with PIO 0
 gpio --pio=0 --gpio=0 --init
 
+# Set consecutive pindirs, here just a single one.
+gpio --pio=0 --gpio=0 --enable # set direction out
+
 # Note: We could just do
 #   load --file=/examples/squarewave.hex
 # assuming that the built-in file squarewave.hex exists.

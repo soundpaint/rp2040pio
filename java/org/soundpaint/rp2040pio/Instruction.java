@@ -146,7 +146,7 @@ public abstract class Instruction
     final PIO.PinDir execCtrlSidePinDir = smStatus.regEXECCTRL_SIDE_PINDIR;
     if (sideSetCount > 0) {
       if (execCtrlSidePinDir == PIO.PinDir.GPIO_LEVELS) {
-        smStatus.collatePins(sideSet, pinCtrlSidesetBase, sideSetCount, false);
+        smStatus.collatePins(sideSet, pinCtrlSidesetBase, sideSetCount, true);
       } else {
         smStatus.collatePinDirs(sideSet, pinCtrlSidesetBase, sideSetCount);
       }
@@ -221,7 +221,7 @@ public abstract class Instruction
       DEC_X(0b010, "x--", (smStatus) -> smStatus.regX-- != 0),
       NOT_Y(0b011, "!y", (smStatus) -> smStatus.regY == 0),
       DEC_Y(0b100, "y--", (smStatus) -> smStatus.regY-- != 0),
-      X_NEQ_Y(0b101, "x!=y", (smStatus) -> smStatus.regX != smStatus.regX),
+      X_NEQ_Y(0b101, "x!=y", (smStatus) -> smStatus.regX != smStatus.regY),
       PIN(0b110, "pin", (smStatus) -> smStatus.jmpPin() == Bit.HIGH),
       NOT_OSRE(0b111, "!osre", (smStatus) -> !smStatus.osrEmpty());
 

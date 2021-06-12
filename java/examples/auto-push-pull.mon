@@ -52,7 +52,7 @@ clock --pio=0 --sm=0 --divider=1.0
 sm --pio=0 --sm=0 --enable=false
 
 # Clear FIFOs.
-fifo --pio=0 --sm=0 -c
+fifo --pio=0 --sm=0 --clear
 
 # Clear FIFO debug flags.
 fifo --pio=0 --sm=0 --clear-tx-stall
