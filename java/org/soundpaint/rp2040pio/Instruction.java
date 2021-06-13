@@ -433,7 +433,7 @@ public abstract class Instruction
             sm.getPIOGPIO().getGPIO().getPinsToPeri(base, Constants.GPIO_NUM);
         }),
       X(0b001, "x", (sm) -> sm.getX()),
-      Y(0b010, "y", (sm) -> sm.getX()),
+      Y(0b010, "y", (sm) -> sm.getY()),
       NULL(0b011, "null", (sm) -> 0),
       RESERVED_4(0b100, "???", null),
       RESERVED_5(0b101, "???", null),

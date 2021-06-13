@@ -1,0 +1,125 @@
+# Monitor script for BMC RX example (see RP2040 datasheet,
+# Sect. 3.6.6. "Differential Manchester (BMC) TX and RX").  To be
+# executed on PIO 0, SM 0.
+
+# Make a full reset of the emulator.
+reset
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=9 --target=5
+
+# Configure Side Set
+side-set --pio=0 --sm=0 --count=0 --opt=false
+
+# The code.
+# public start:
+# initial_high:
+enter -a 0 -v 0x2ba0 # wait 1 pin, 0  [11]
+enter -a 1 -v 0x00c4 # jmp pin high_0
+# high_1:
+enter -a 2 -v 0x4021 # in x, 1
+enter -a 3 -v 0x0000 # jmp initial_high
+# high_0:
+enter -a 4 -v 0x4141 # in y, 1 [1]
+# .wrap_target
+# initial_low:
+enter -a 5 -v 0x2b20 # wait 0 pin, 0 [11]
+enter -a 6 -v 0x00c9 # jmp pin low_1
+# low_0:
+enter -a 7 -v 0x4041 # in y, 1
+enter -a 8 -v 0x0000 # jmp initial_high
+# low_1:
+enter -a 9 -v 0x4121 # in x, 1 [1]
+# .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=9
+
+########
+# Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
+# created by pioasm).
+########
+
+# Set consecutive pindirs, here just a single one.
+gpio --pio=0 --gpio=0 --disable # set direction in
+
+# Connect GPIO 0 with PIO 0
+gpio --pio=0 --gpio=0 --init
+
+# Configure side set base (for WAIT).
+side-set --pio=0 --sm=0 --base=0
+
+# SM Config Set JMP PIN (for JMP).
+pinctrl --pio=0 --sm=0 --jmp-pin=0
+
+# Configure in shift.
+fifo --pio=0 --sm=0 --rx --shift-right
+fifo --pio=0 --sm=0 --rx --auto=true    # auto push
+fifo --pio=0 --sm=0 --rx --threshold=32
+
+# Join FIFO RX
+fifo --join --rx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0
+
+########
+# End of SM initialization.
+########
+
+# Set X and Y to 1 and 0, to conveniently emit these to ISR/FIFO
+registers --x=1
+registers --y=0
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# While running the PIO program by triggering cycles, insert now and
+# then either:
+
+gpio --gpio=0 --set
+
+# or:
+
+gpio --gpio=0 --clear
+
+# after an appropriate amount of cycles to change GPIO 0 input, as
+# appropriate for testing / emulating external data input to the BMC
+# RX PIO program.
+
+# Done.
+quit
