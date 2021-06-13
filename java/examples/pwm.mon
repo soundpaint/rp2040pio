@@ -24,7 +24,7 @@ enter -a 6 -v 0x0083 # jmp y-- countloop
 
 # Just for convience and verification, list the program that
 # we just entered, as viewed by PIO 0, SM 0.
-unassemble --pio=0 --sm=0 --address=0 --count=6
+unassemble --pio=0 --sm=0 --address=0 --count=7
 
 ########
 # Init program (analoguous to ws2812_program_init() in ws2812.pio.h as

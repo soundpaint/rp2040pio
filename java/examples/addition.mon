@@ -29,7 +29,7 @@ sm --pio=0 --sm=0 --enable=true
 
 # Just for convience and verification, list the program that
 # we just entered, as viewed by PIO 0, SM 0.
-unassemble --pio=0 --sm=0 --address=0 --count=8
+unassemble --pio=0 --sm=0 --address=0 --count=9
 
 # Set up FIFO with 2 example operands
 fifo --tx --enqueue --value 0x0003

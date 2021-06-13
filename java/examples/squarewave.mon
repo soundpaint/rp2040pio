@@ -27,7 +27,7 @@ sm --pio=0 --sm=0 --enable=true
 
 # Just for convience and verification, list the program that
 # we just entered, as viewed by PIO 0, SM 0.
-unassemble --pio=0 --sm=0 --address=0 --count=5
+unassemble --pio=0 --sm=0 --address=0 --count=4
 
 # Done.
 quit

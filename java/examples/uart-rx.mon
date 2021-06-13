@@ -1,58 +1,66 @@
-# Monitor script for Manchester Serial TX example (see RP2040
-# datasheet, Sect. 3.6.5. "Manchester Serial TX and RX").  To be
-# executed on PIO 0, SM 0.
+# Monitor script for UART RX example (see RP2040 datasheet,
+# Sect. 3.6.4. "UART RX").  To be executed on PIO 0, SM 0.
 
 # Make a full reset of the emulator.
 reset
 
 # Configure Wrap.
-wrap --pio=0 --sm=0 --wrap=5 --target=0
+wrap --pio=0 --sm=0 --wrap=8 --target=0
 
 # Configure Side Set
-side-set --pio=0 --sm=0 --count=1 --opt=true
+side-set --pio=0 --sm=0 --count=0 --opt=false
 
 # The code.
+
+
 # .wrap_target
-# do_1:
-enter -a 0 -v 0xb542 # nop         side 0 [5]
-enter -a 1 -v 0x1b04 # jmp get_bit side 1 [3]
-# do_0:
-enter -a 2 -v 0xbd42 # nop         side 1 [5]
-enter -a 3 -v 0xb342 # nop         side 0 [3]
-# public start:
-# get_bit:
-enter -a 4 -v 0x6021 # out x, 1
-enter -a 5 -v 0x0022 # jmp !x do_0
+# start:
+enter -a 0 -v 0x2020 # wait 0 pin 0
+enter -a 1 -v 0xea27 # set x, 7    [10]
+# bitloop:
+enter -a 2 -v 0x4001 # in pins, 1
+enter -a 3 -v 0x0642 # jmp x-- bitloop [6]
+enter -a 4 -v 0x00c8 # jmp pin good_stop
+
+enter -a 5 -v 0xc010 # irq 0 rel
+enter -a 6 -v 0x20a0 # wait 1 pin 0
+enter -a 7 -v 0x0000 # jmp start
+
+# good_stop:
+enter -a 8 -v 0x8020 # push
 # .wrap
 
 # Just for convience and verification, list the program that
 # we just entered, as viewed by PIO 0, SM 0.
-unassemble --pio=0 --sm=0 --address=0 --count=6
+unassemble --pio=0 --sm=0 --address=0 --count=8
 
 ########
 # Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
 # created by pioasm).
 ########
 
-# Set GPIO output value to 0.
-gpio --pio=0 --gpio=0 --clear
-
 # Set consecutive pindirs, here just a single one.
-gpio --pio=0 --gpio=0 --enable # set direction out
+gpio --pio=0 --gpio=0 --disable # set direction in
 
 # Connect GPIO 0 with PIO 0
 gpio --pio=0 --gpio=0 --init
 
-# Configure side set base.
+# TODO: Try to avoid glitch:
+#   gpio_pull_up(0)
+
+# Configure side set base (for WAIT and IN).
 side-set --pio=0 --sm=0 --base=0
 
-# Configure out shift.
-fifo --pio=0 --sm=0 --tx --shift-right
-fifo --pio=0 --sm=0 --tx --auto=true    # auto pull
-fifo --pio=0 --sm=0 --tx --threshold=32
+# SM Config Set JMP PIN.
+pinctrl --pio=0 --sm=0 --jmp-pin=0
 
-# Join FIFO TX
-fifo --join --tx
+# Configure in shift.
+fifo --pio=0 --sm=0 --rx --shift-right
+fifo --pio=0 --sm=0 --rx --auto=false    # no auto push
+fifo --pio=0 --sm=0 --rx --threshold=32
+
+# Join FIFO RX
+fifo --join --rx
 
 # Configure Clock Divider, here as 1.0 (maximum speed).
 # We choose maximum speed since we do not want to see gaps when
@@ -97,16 +105,18 @@ sm --pio=0 --sm=0 --enable=true
 # Next, we feed in example data.
 ########
 
-# Put example values into FIFO.
-fifo --enqueue --tx --value 0x00000000
-fifo --enqueue --tx --value 0x0ff0a55a
-fifo --enqueue --tx --value 0x12345678
+# While running the PIO program by triggering cycles, insert now and
+# then either:
+
+gpio --gpio=0 --set
+
+# or:
+
+gpio --gpio=0 --clear
+
+# after an appropriate amount of cycles to change GPIO 0 input, as
+# appropriate for testing / emulating external data input to the
+# UART RX Mini PIO program.
 
 # Done.
 quit
-
-# Hint: In the Diagram Creator, you can select 12 as "Cycles" value,
-# and start the "emulate" button with the "OUT x, 1" instruction
-# being the next instruction to be executed.  Then, you can watch bit
-# by bit producing the corresponding output level at GPIO0, with the
-# bits shifted one by one out of OSR.
