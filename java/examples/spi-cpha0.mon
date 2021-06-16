@@ -1,0 +1,126 @@
+# Monitor script for SPI CPHA0 example.
+# To be executed on PIO 0, SM 0.
+# SCK is side-set pin 1.
+# MOSI is OUT pin 0.
+# MISO is IN pin 0.
+# MOSI and MISO mapped to same pin, so we get loopback.
+# n_bits = 8 in this example.
+
+# Make a full reset of the emulator.
+reset
+
+# We loosely follow the initialization sequence as shown in:
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/spi/spi.pio
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=1 --target=0
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=0 --count=1 --opt=false
+
+# The code.
+# .wrap_target
+enter -a 00 -v 0x6101 # out pins, 1 side 0 [1]
+enter -a 01 -v 0x5101 # in pins, 1  side 1 [1]
+# .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=2
+
+########
+# Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
+# created by pioasm).
+########
+
+# SM Config Set Out Pins(base=pin_mosi, count=1).
+pinctrl --pio=0 --sm=0 --out-base=0 --out-count=1
+
+# SM Config Set In Pins(base=pin_miso).
+pinctrl --pio=0 --sm=0 --in-base=0
+
+# SM Config Set Side-Set Pins(pin_sck).
+side-set --pio=0 --sm=0 --base=1
+
+# SM Config Set Out Shift(left, autopull, threshold n_bits)
+fifo --pio=0 --sm=0 --tx --shift-left
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=8
+
+# SM Config Set In Shift(left, autopush, threshold n_bits)
+fifo --pio=0 --sm=0 --rx --shift-left
+fifo --pio=0 --sm=0 --rx --auto=true
+fifo --pio=0 --sm=0 --rx --threshold=8
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+# MOSI, SCK output are low, MISO is input
+gpio --pio=0 --gpio=0 --disable # MISO output
+gpio --pio=0 --gpio=0 --init    # MISO init
+gpio --pio=0 --gpio=0 --enable  # MOSI output
+gpio --pio=0 --gpio=0 --clear   # MOSI low
+gpio --pio=0 --gpio=0 --init    # MOSI init
+gpio --pio=0 --gpio=1 --enable  # SCK output
+gpio --pio=0 --gpio=1 --clear   # SCK low
+gpio --pio=0 --gpio=1 --init    # SCK init
+
+# Optionally (for CPOL=1), set pin_sck Override Invert.
+#gpio --gpio=0 --override-out --invert
+
+# TODO / NOT IMPLEMENTED:
+# SPI is synchronous, so bypass input synchroniser to reduce input delay.
+# hw_set_bits(&pio->input_sync_bypass, 1u << pin_miso);
+
+# GPIO init GPIO 0.
+gpio --pio=0 --gpio=0 --init
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0x00
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.  Since we chose n_bits = 8 in this
+# example, only the most upper bits per FIFO word are significant.
+
+fifo --enqueue --tx --value 0xff000000
+fifo --enqueue --tx --value 0x55000000
+
+# Done.
+quit

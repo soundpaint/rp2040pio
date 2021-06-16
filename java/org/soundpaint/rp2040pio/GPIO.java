@@ -112,14 +112,28 @@ public class GPIO implements Constants
       externalInput = Bit.LOW;
     }
 
-    private Bit getInputAfterOverride()
+    private Bit getPadIn(final Bit outBeforeOverride,
+                         final Direction oeBeforeOverride)
     {
-      return inputOverride.apply(externalInput);
+      final Direction oeAfterOverride = getOeAfterOverride(oeBeforeOverride);
+      return
+        oeAfterOverride == Direction.OUT ?
+        getOutAfterOverride(outBeforeOverride) :
+        externalInput;
     }
 
-    private Bit getIrqAfterOverride()
+    private Bit getInputAfterOverride(final Bit outBeforeOverride,
+                                      final Direction oeBeforeOverride)
     {
-      return irqOverride.apply(externalInput);
+      final Bit padIn = getPadIn(outBeforeOverride, oeBeforeOverride);
+      return inputOverride.apply(padIn);
+    }
+
+    private Bit getIrqAfterOverride(final Bit outBeforeOverride,
+                                    final Direction oeBeforeOverride)
+    {
+      final Bit padIn = getPadIn(outBeforeOverride, oeBeforeOverride);
+      return irqOverride.apply(padIn);
     }
 
     private Direction getOeAfterOverride(final Direction oeBeforeOverride)
@@ -174,7 +188,7 @@ public class GPIO implements Constants
 
   public PIO getPIO1() { return pio1; }
 
-  public synchronized int getGPIO_STATUS()
+  public synchronized int getGPIO_PADIN()
   {
     int status = 0x0;
     for (int port = 0; port < terminals.length; port++) {
@@ -184,10 +198,10 @@ public class GPIO implements Constants
     return status;
   }
 
-  public synchronized void setGPIO_STATUS(final int bits, final int mask,
-                                          final boolean xor)
+  public synchronized void setGPIO_PADIN(final int bits, final int mask,
+                                         final boolean xor)
   {
-    final int status = Constants.hwSetBits(getGPIO_STATUS(), bits, mask, xor);
+    final int status = Constants.hwSetBits(getGPIO_PADIN(), bits, mask, xor);
     for (int port = 0; port < terminals.length; port++) {
       terminals[port].externalInput =
         Bit.fromValue((status >>> port) & 0x1);
@@ -278,7 +292,10 @@ public class GPIO implements Constants
   private Bit getIrqToProc(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    return terminals[gpio].getIrqAfterOverride();
+    final Bit outBeforeOverride = getOutFromPeripheral(gpio);
+    final Direction oeBeforeOverride = getOeFromPeripheral(gpio);
+    return terminals[gpio].getIrqAfterOverride(outBeforeOverride,
+                                               oeBeforeOverride);
   }
 
   private Bit getIrqFromPad(final int gpio)
@@ -294,7 +311,9 @@ public class GPIO implements Constants
      * pad's current logical value in terms of voltage level?
      */
     Constants.checkGpioPin(gpio, "GPIO port");
-    return terminals[gpio].externalInput;
+    final Bit outBeforeOverride = getOutFromPeripheral(gpio);
+    final Direction oeBeforeOverride = getOeFromPeripheral(gpio);
+    return terminals[gpio].getPadIn(outBeforeOverride, oeBeforeOverride);
    }
 
   public int getPinsToPeri(final int base, final int count)
@@ -311,19 +330,25 @@ public class GPIO implements Constants
   public Bit getInToPeri(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    return terminals[gpio].getInputAfterOverride();
+    final Bit outBeforeOverride = getOutFromPeripheral(gpio);
+    final Direction oeBeforeOverride = getOeFromPeripheral(gpio);
+    return terminals[gpio].getInputAfterOverride(outBeforeOverride,
+                                                 oeBeforeOverride);
   }
 
   private Bit getInFromPad(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    return terminals[gpio].externalInput;
+    final Bit outBeforeOverride = getOutFromPeripheral(gpio);
+    final Direction oeBeforeOverride = getOeFromPeripheral(gpio);
+    return terminals[gpio].getPadIn(outBeforeOverride, oeBeforeOverride);
   }
 
   private Direction getOeToPad(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    return terminals[gpio].getOeAfterOverride(getOeFromPeripheral(gpio));
+    final Direction oeBeforeOverride = getOeFromPeripheral(gpio);
+    return terminals[gpio].getOeAfterOverride(oeBeforeOverride);
   }
 
   private Direction getOeFromPeripheral(final int gpio)
@@ -355,7 +380,8 @@ public class GPIO implements Constants
   private Bit getOutToPad(final int gpio)
   {
     Constants.checkGpioPin(gpio, "GPIO port");
-    return terminals[gpio].getOutAfterOverride(getOutFromPeripheral(gpio));
+    final Bit outBeforeOverride = getOutFromPeripheral(gpio);
+    return terminals[gpio].getOutAfterOverride(outBeforeOverride);
   }
 
   private Bit getOutFromPeripheral(final int gpio)

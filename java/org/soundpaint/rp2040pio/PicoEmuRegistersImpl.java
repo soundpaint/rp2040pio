@@ -69,7 +69,7 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
     case WALLCLOCK_MSB:
       break; // read-only address
     case GPIO_PADIN:
-      emulator.getGPIO().setGPIO_STATUS(value, mask, xor);
+      emulator.getGPIO().setGPIO_PADIN(value, mask, xor);
       break;
     default:
       throw new InternalError("unexpected case fall-through");
@@ -101,7 +101,7 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
     case WALLCLOCK_MSB:
       return (int)(emulator.getMasterClock().getWallClock() >>> 32);
     case GPIO_PADIN:
-      return emulator.getGPIO().getGPIO_STATUS();
+      return emulator.getGPIO().getGPIO_PADIN();
     default:
       throw new InternalError("unexpected case fall-through");
     }
