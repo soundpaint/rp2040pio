@@ -273,11 +273,6 @@ public class SM implements Constants
       pioGpio.collatePinDirs(pins, base, count);
     }
 
-    public boolean osrEmpty()
-    {
-      return osrShiftCount == 0;
-    }
-
     public int getFIFOStatus()
     {
       final boolean fulfilled;

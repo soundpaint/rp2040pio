@@ -1,4 +1,4 @@
-# Monitor script for SPI CPHA0 example.
+# Monitor script for SPI CPHA1 example.
 # To be executed on PIO 0, SM 0.
 # SCK is side-set pin.
 # MOSI is OUT pin.
@@ -14,20 +14,21 @@ reset
 # /blob/master/pio/spi/spi.pio
 
 # Configure Wrap.
-wrap --pio=0 --sm=0 --wrap=1 --target=0
+wrap --pio=0 --sm=0 --wrap=2 --target=0
 
 # Configure Side Set Count.
 side-set --pio=0 --sm=0 --count=1 --opt=false
 
 # The code.
 # .wrap_target
-enter -a 00 -v 0x6101 # out pins, 1 side 0 [1]
-enter -a 01 -v 0x5101 # in pins, 1  side 1 [1]
+enter -a 00 -v 0x6021 # out x, 1    side 0
+enter -a 01 -v 0xb101 # mov pins, x side 1 [1]
+enter -a 02 -v 0x4001 # in pins, 1  side 0
 # .wrap
 
 # Just for convience and verification, list the program that
 # we just entered, as viewed by PIO 0, SM 0.
-unassemble --pio=0 --sm=0 --address=0 --count=2
+unassemble --pio=0 --sm=0 --address=0 --count=3
 
 ########
 # Init program (analoguous to ws2812_program_init() in ws2812.pio.h as

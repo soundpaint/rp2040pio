@@ -223,7 +223,8 @@ public abstract class Instruction
       DEC_Y(0b100, "y--", (smStatus) -> smStatus.regY-- != 0),
       X_NEQ_Y(0b101, "x!=y", (smStatus) -> smStatus.regX != smStatus.regY),
       PIN(0b110, "pin", (smStatus) -> smStatus.jmpPin() == Bit.HIGH),
-      NOT_OSRE(0b111, "!osre", (smStatus) -> !smStatus.osrEmpty());
+      NOT_OSRE(0b111, "!osre",
+               (smStatus) -> !smStatus.isOsrCountBeyondThreshold());
 
       private final int code;
       private final String mnemonic;

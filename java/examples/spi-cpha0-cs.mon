@@ -1,8 +1,9 @@
-# Monitor script for SPI CPHA0 example.
+# Monitor script for SPI CPHA0 with Chip Select example.
 # To be executed on PIO 0, SM 0.
-# SCK is side-set pin.
-# MOSI is OUT pin.
-# MISO is IN pin.
+# SCK is side-set pin 0.
+# CSn is side-set pin 1 (n=1).
+# MOSI is OUT pin (host-to-device).
+# MISO is IN pin (device-to-host).
 # MOSI and MISO mapped to same pin, so we get loopback.
 # n_bits = 8 in this example.
 
@@ -14,20 +15,31 @@ reset
 # /blob/master/pio/spi/spi.pio
 
 # Configure Wrap.
-wrap --pio=0 --sm=0 --wrap=1 --target=0
+wrap --pio=0 --sm=0 --wrap=8 --target=0
 
 # Configure Side Set Count.
-side-set --pio=0 --sm=0 --count=1 --opt=false
+side-set --pio=0 --sm=0 --count=2 --opt=false
 
 # The code.
 # .wrap_target
-enter -a 00 -v 0x6101 # out pins, 1 side 0 [1]
-enter -a 01 -v 0x5101 # in pins, 1  side 1 [1]
+# bitloop:
+enter -a 00 -v 0x6101 # out pins, 1        side 0x0 [1]
+enter -a 01 -v 0x4801 # in pins, 1         side 0x1
+enter -a 02 -v 0x0840 # jmp x-- bitloop    side 0x1
+
+enter -a 03 -v 0x6001 # out pins, 1        side 0x0
+enter -a 04 -v 0xa022 # mov x, y           side 0x0
+enter -a 05 -v 0x4801 # in pins, 1         side 0x1
+enter -a 06 -v 0x08e0 # jmp !osre bitloop  side 0x1
+
+enter -a 07 -v 0xa142 # nop                side 0x0 [1]
+# public entry_point:
+enter -a 08 -v 0x91e0 # pull ifempty       side 0x2 [1]
 # .wrap
 
 # Just for convience and verification, list the program that
 # we just entered, as viewed by PIO 0, SM 0.
-unassemble --pio=0 --sm=0 --address=0 --count=2
+unassemble --pio=0 --sm=0 --address=0 --count=9
 
 ########
 # Init program (analoguous to ws2812_program_init() in ws2812.pio.h as
@@ -40,7 +52,7 @@ pinctrl --pio=0 --sm=0 --out-base=0 --out-count=1
 # SM Config Set In Pins(base=pin_miso).
 pinctrl --pio=0 --sm=0 --in-base=0
 
-# SM Config Set Side-Set Pins(pin_sck).
+# SM Config Set Side-Set Pins(pin_sck): pin_sck=GPIO1, pin_csn=GPIO2.
 side-set --pio=0 --sm=0 --base=1
 
 # SM Config Set Out Shift(left, autopull, threshold n_bits)
@@ -58,15 +70,22 @@ fifo --pio=0 --sm=0 --rx --threshold=8
 # tracing the code.
 clock --pio=0 --sm=0 --divider=1.0
 
-# MOSI, SCK output are low, MISO is input
-gpio --pio=0 --gpio=0 --disable # MISO output
-gpio --pio=0 --gpio=0 --init    # MISO init
-gpio --pio=0 --gpio=0 --enable  # MOSI output
-gpio --pio=0 --gpio=0 --clear   # MOSI low
-gpio --pio=0 --gpio=0 --init    # MOSI init
-gpio --pio=0 --gpio=1 --enable  # SCK output
-gpio --pio=0 --gpio=1 --clear   # SCK low
-gpio --pio=0 --gpio=1 --init    # SCK init
+# Set Pins: pin_csn=1, pin_sck=0, pin_mosi=0.
+gpio --pio=0 --gpio=0 --clear # pin_mosi=0
+gpio --pio=0 --gpio=1 --clear # pin_sck=0
+gpio --pio=0 --gpio=2 --set   # pin_csn=1
+
+# Set PinDirs: pin_csn=out, pin_sck=out, pin_mosi=out, pin_miso=in
+gpio --pio=0 --gpio=0 --disable # pin_miso=in
+gpio --pio=0 --gpio=0 --enable  # pin_mosi=out
+gpio --pio=0 --gpio=1 --enable  # pin_sck=out
+gpio --pio=0 --gpio=2 --enable  # pin_csn=out
+
+# GPIO Init
+gpio --pio=0 --gpio=0 --init    # pin_miso
+gpio --pio=0 --gpio=0 --init    # pin_mosi
+gpio --pio=0 --gpio=1 --init    # pin_sck
+gpio --pio=0 --gpio=2 --init    # pin_csn
 
 # Optionally (for CPOL=1), set pin_sck Override Invert.
 gpio --gpio=1 --override-out --invert
@@ -98,12 +117,15 @@ sm --pio=0 --sm=0 --restart
 # Restart clock.
 clock --pio=0 --sm=0 --restart
 
-# Set instruction pointer (PC) to address 0.
-registers --address=0x00
+# Set instruction pointer (PC) to program entry point.
+registers --address=0x08
 
 ########
 # End of SM initialization.
 ########
+
+registers --x=6
+registers --y=6
 
 # Enable state machine 0 of PIO 0 to execute the program.
 sm --pio=0 --sm=0 --enable=true
