@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -126,6 +127,17 @@ public class SignalFactory
     return new ClockSignal(label);
   }
 
+  private static boolean isClkEnabled(final SDK sdk,
+                                      final int pioNum, final int smNum)
+    throws IOException
+  {
+    final int clkEnableAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_CLK_ENABLE);
+    final int clkEnable = sdk.readAddress(clkEnableAddress) & 0x1;
+    return clkEnable != 0x0;
+  }
+
   public static ValuedSignal<PIOSDK.InstructionInfo>
     createInstructionSignal(final SDK sdk,
                             final PIOSDK pioSdk,
@@ -144,8 +156,9 @@ public class SignalFactory
     Constants.checkSmNum(smNum);
     final String signalLabel = createSignalLabel(sdk, label, address, 31, 0);
     final Supplier<PIOSDK.InstructionInfo> valueGetter = () -> {
-      if ((displayFilter != null) && (!displayFilter.get())) return null;
       try {
+        if (!isClkEnabled(sdk, pioSdk.getIndex(), smNum)) return null;
+        if ((displayFilter != null) && (!displayFilter.get())) return null;
         return pioSdk.getCurrentInstruction(smNum, showAddress, false);
       } catch (final IOException e) {
         return new PIOSDK.InstructionInfo(e);

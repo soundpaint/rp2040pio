@@ -223,6 +223,11 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM2_CLK_ENABLE:
     case SM3_CLK_ENABLE:
       break; // (for now) read-only address
+    case SM0_NEXT_CLK_ENABLE:
+    case SM1_NEXT_CLK_ENABLE:
+    case SM2_NEXT_CLK_ENABLE:
+    case SM3_NEXT_CLK_ENABLE:
+      break; // (for now) read-only address
     case SM0_BREAKPOINTS:
     case SM1_BREAKPOINTS:
     case SM2_BREAKPOINTS:
@@ -302,6 +307,14 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     Constants.checkSmNum(smNum);
     final boolean clockEnable = pio.getSM(smNum).getPLL().getClockEnable();
     return clockEnable ? 0x1 : 0x0;
+  }
+
+  private int getNextClockEnable(final int smNum)
+  {
+    Constants.checkSmNum(smNum);
+    final boolean nextClockEnable =
+      pio.getSM(smNum).getPLL().getNextClockEnable();
+    return nextClockEnable ? 0x1 : 0x0;
   }
 
   private int getFIFOMemValue(final int regsOffset)
@@ -464,6 +477,11 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
     case SM2_CLK_ENABLE:
     case SM3_CLK_ENABLE:
       return getClockEnable((regNum - Regs.SM0_CLK_ENABLE.ordinal()) / SM_SIZE);
+    case SM0_NEXT_CLK_ENABLE:
+    case SM1_NEXT_CLK_ENABLE:
+    case SM2_NEXT_CLK_ENABLE:
+    case SM3_NEXT_CLK_ENABLE:
+      return getNextClockEnable((regNum - Regs.SM0_CLK_ENABLE.ordinal()) / SM_SIZE);
     case SM0_BREAKPOINTS:
     case SM1_BREAKPOINTS:
     case SM2_BREAKPOINTS:

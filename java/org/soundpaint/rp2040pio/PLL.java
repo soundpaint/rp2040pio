@@ -39,6 +39,7 @@ public class PLL implements Clock.TransitionListener
   private int countIntegerBits;
   private int countFractionalBits;
   private boolean clockEnable;
+  private boolean nextClockEnable;
 
   private PLL()
   {
@@ -58,9 +59,10 @@ public class PLL implements Clock.TransitionListener
   {
     regCLKDIV_INT = 0x0001;
     regCLKDIV_FRAC = 0x00;
-    countIntegerBits = 0x0;
+    countIntegerBits = 0x1;
     countFractionalBits = 0x0;
     clockEnable = false;
+    nextClockEnable = false;
   }
 
   public int getDivIntegerBits()
@@ -153,8 +155,12 @@ public class PLL implements Clock.TransitionListener
     return clockEnable;
   }
 
-  @Override
-  public void risingEdge(final long wallClock)
+  public boolean getNextClockEnable()
+  {
+    return nextClockEnable;
+  }
+
+  private void prepareClockEnable()
   {
     /*
      * TODO: Clarify: Sect. 3.5.5. "Clock Dividers", Fig. 46: "clock
@@ -165,19 +171,27 @@ public class PLL implements Clock.TransitionListener
     if (countIntegerBits <= 1) {
       countIntegerBits += regCLKDIV_INT;
       countFractionalBits += regCLKDIV_FRAC;
-      if (countFractionalBits >= 0x10000) {
-        countFractionalBits -= 0x10000;
+      if (countFractionalBits >= 0x100) {
+        countFractionalBits -= 0x100;
         countIntegerBits++;
       }
-      clockEnable = true;
+      nextClockEnable = true;
     } else {
-      clockEnable = false;
+      nextClockEnable = false;
     }
     countIntegerBits--;
   }
 
   @Override
-  public void fallingEdge(final long wallClock) {}
+  public void risingEdge(final long wallClock)
+  {
+    clockEnable = nextClockEnable;
+  }
+
+  @Override
+  public void fallingEdge(final long wallClock) {
+    prepareClockEnable();
+  }
 }
 
 /*

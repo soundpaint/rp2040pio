@@ -153,6 +153,15 @@ public class CodeSmViewPanel extends JPanel
     lastPC = -1;
   }
 
+  private boolean isClkEnabled() throws IOException
+  {
+    final int clkEnableAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_NEXT_CLK_ENABLE);
+    final int clkEnable = sdk.readAddress(clkEnableAddress) & 0x1;
+    return clkEnable != 0x0;
+  }
+
   private int getPC() throws IOException
   {
     final int addressAddr =
@@ -239,10 +248,10 @@ public class CodeSmViewPanel extends JPanel
     final PIOSDK.InstructionInfo currentInstructionInfo =
       pioSdk.getCurrentInstruction(smNum, true, true);
     updateDelayDisplay(currentInstructionInfo, pendingDelay);
-    final boolean smEnabled = pioSdk.smGetEnabled(smNum);
+    final boolean isActive = pioSdk.smGetEnabled(smNum) && isClkEnabled();
     updateForcedOrExecdInstructionDisplay(pioSdk, isForced, forcedOpCode,
-                                          isExecd, execdOpCode, smEnabled);
-    lsInstructions.setEnabled(smEnabled);
+                                          isExecd, execdOpCode, isActive);
+    lsInstructions.setEnabled(isActive);
     if (pc != lastPC) {
       lsInstructions.ensureIndexIsVisible(pc);
       lastPC = pc;
@@ -254,7 +263,7 @@ public class CodeSmViewPanel extends JPanel
                                                      final int forcedOpCode,
                                                      final boolean isExecd,
                                                      final int execdOpCode,
-                                                     final boolean smEnabled)
+                                                     final boolean isActive)
     throws IOException
   {
     if (isForced) {
@@ -274,7 +283,7 @@ public class CodeSmViewPanel extends JPanel
         pioSdk.getInstructionFromOpCode(smNum,
                                         Constants.INSTR_ORIGIN_EXECD,
                                         "", execdOpCode, true, false, 0);
-      if (smEnabled) {
+      if (isActive) {
         taForcedOrExecdInstruction.setForeground(fgCurrent);
         taForcedOrExecdInstruction.setBackground(bgCurrent);
       } else {

@@ -184,12 +184,24 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
                                    "otherwise, 0x0000.",
                                    BitsType.RW, 0)
                     }),
-    SM0_CLK_ENABLE("Read-only access to the SM's delay status.",
+    SM0_CLK_ENABLE("Read-only access to the SM's current clock enable status.",
                    new BitsInfo[] {
                      new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
-                     new BitsInfo(0, 0, "DELAY_CYCLE",
+                     new BitsInfo(0, 0, "CLK_ENABLE",
                                   "0x1, if in the current cycle the clock%n" +
                                   "enable signal evaluates to 0x1.",
+                                  BitsType.RO, 0)
+                   }),
+    SM0_NEXT_CLK_ENABLE("Read-only access to the SM's next clock enable%n" +
+                        "status.  May differ from current clock enable%n" +
+                        "when master clock phase 1 has been completed,%n" +
+                        "otherwise identical with current clock enable.",
+                   new BitsInfo[] {
+                     new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
+                     new BitsInfo(0, 0, "CLK_ENABLE",
+                                  "0x1, if in the pre-computed clock%n" +
+                                  "enable signal for the upcoming master%n" +
+                                  "clock cycle evaluates to 0x1.",
                                   BitsType.RO, 0)
                    }),
     SM0_BREAKPOINTS("Each bit of this value corresponds to each of the%n" +
@@ -249,6 +261,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM1_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
     SM1_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
     SM1_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
+    SM1_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE),
     SM1_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
     SM1_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
     SM2_REGX(Regs.SM0_REGX),
@@ -275,6 +288,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM2_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
     SM2_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
     SM2_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
+    SM2_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE),
     SM2_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
     SM2_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
     SM3_REGX(Regs.SM0_REGX),
@@ -301,6 +315,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     SM3_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
     SM3_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
     SM3_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
+    SM3_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE),
     SM3_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
     SM3_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
     INSTR_MEM0("Read / write access to instruction memory word.",
@@ -514,6 +529,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
     case SM0_FORCED_INSTR:
     case SM0_EXECD_INSTR:
     case SM0_CLK_ENABLE:
+    case SM0_NEXT_CLK_ENABLE:
     case SM0_BREAKPOINTS:
     case SM0_TRACEPOINTS:
       break; // ok
