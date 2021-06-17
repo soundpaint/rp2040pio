@@ -1,4 +1,4 @@
-# Monitor script for Squarewave example (base version).
+# Monitor script for Squarewave example ("fast" version).
 # To be executed on PIO 0, SM 0.
 
 # Make a full reset of the emulator.
@@ -8,24 +8,33 @@ reset
 # https://github.com/raspberrypi/pico-examples
 # /blob/master/pio/squarewave/squarewave.c
 
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=2 --target=1
+
 # Configure Side Set Count.
 side-set --pio=0 --sm=0 --count=0 --opt=false
 
 # The code.
 enter -a 0 -v 0xe081 # set pindirs, 1   ; Set pin to output
-# again:
-enter -a 1 -v 0xe101 # set pins, 1 [1]  ; Drive pin high & delay for one cycle
+# .wrap_target
+enter -a 1 -v 0xe001 # set pins, 1      ; Drive pin high
 enter -a 2 -v 0xe000 # set pins, 0      ; Drive pin low
-enter -a 3 -v 0x0001 # jmp again        ; Set PC to label `again`
+# .wrap
 
 # Just for convience and verification, list the program that
 # we just entered, as viewed by PIO 0, SM 0.
-unassemble --pio=0 --sm=0 --address=0 --count=4
+unassemble --pio=0 --sm=0 --address=0 --count=3
 
 # Configure Clock Divider, here, for demonstration purposes,
 # with average divisor 2.5.  See RP2040 datasheet, Sect. 3.5.5.,
 # Fig. 47, for the effect of a clock divider of value 2.5 onto
 # the CLK_ENABLE signal.
+#
+# Note that the fast version in combination with divisor 2.5
+# will result in an assymmetrical output signal (2+3 cycles), since
+# there are no fractional clock cycles, but the divisor specifies
+# the _average_ time division.  To get a symmetrical signal, use
+# instead a non-fractional divisor such as 1, 2 or 3.
 clock --pio=0 --sm=0 --divider=2.5
 
 # Set consecutive pindirs, here just a single one.
