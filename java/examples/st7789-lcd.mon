@@ -8,7 +8,7 @@ reset
 
 # We loosely follow the initialization sequence as shown in:
 # https://github.com/raspberrypi/pico-examples
-# /blob/master/pio/spi/st7789_lcd.pio
+# /blob/master/pio/st7789_lcd/st7789_lcd.pio
 
 # Configure Wrap.
 wrap --pio=0 --sm=0 --wrap=1 --target=0

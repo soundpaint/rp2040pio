@@ -7,7 +7,7 @@ reset
 
 # We loosely follow the initialization sequence as shown in:
 # https://github.com/raspberrypi/pico-examples
-# /blob/master/pio/ws2812/generated/ws2812.pio.h
+# /blob/master/pio/uart_tx/uart_tx.pio
 
 # Configure Wrap.
 wrap --pio=0 --sm=0 --wrap=3 --target=0
