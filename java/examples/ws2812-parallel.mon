@@ -1,4 +1,4 @@
-# Monitor script for ws2812 example.
+# Monitor script for ws2812_parallel example.
 # To be executed on PIO 0, SM 0.
 # Output is fed to GPIO 0.
 
@@ -18,17 +18,14 @@ reset
 wrap --pio=0 --sm=0 --wrap=3 --target=0
 
 # Configure Side Set Count.
-side-set --pio=0 --sm=0 --count=1 --opt=false
+side-set --pio=0 --sm=0 --count=0 --opt=false
 
 # The code.
 # .wrap_target
-# bitloop:
-enter -a 0 -v 0x6221 # out x, 01       side 0 [2]
-enter -a 1 -v 0x1123 # jmp !x, 03      side 1 [1]
-# do_one:
-enter -a 2 -v 0x1400 # jmp 00          side 1 [4]
-# do_zero:
-enter -a 3 -v 0xa442 # nop             side 0 [4]
+enter -a 0 -v 0x6020 # out x, 32
+enter -a 1 -v 0xa10b # mov pins, !null [1]
+enter -a 2 -v 0xa401 # mov pins, x     [4]
+enter -a 3 -v 0xa103 # mov pins, null  [1]
 # .wrap
 
 # Just for convience and verification, list the program that
@@ -40,19 +37,29 @@ unassemble --pio=0 --sm=0 --address=0 --count=4
 # created by pioasm).
 ########
 
-# Connect GPIO 0 with PIO 0.
-gpio --pio=0 --gpio=0 --init   # tell GPIO to connect to PIO0
+# Connect any of the GPIOs with PIO 0.  In this example,
+# we choose GPIO 0-3.
+gpio --pio=0 --gpio=0 --init   # tell GPIO0 to connect to PIO0
+gpio --pio=0 --gpio=1 --init   # tell GPIO1 to connect to PIO0
+gpio --pio=0 --gpio=2 --init   # tell GPIO2 to connect to PIO0
+gpio --pio=0 --gpio=3 --init   # tell GPIO3 to connect to PIO0
 
-# Set consecutive pindirs, here just a single one.
+# Set consecutive pindirs, again 4 GPIOs, base=0.
 gpio --pio=0 --gpio=0 --enable # set direction out
+gpio --pio=0 --gpio=1 --enable # set direction out
+gpio --pio=0 --gpio=2 --enable # set direction out
+gpio --pio=0 --gpio=3 --enable # set direction out
 
-# Configure side set base.
-side-set --pio=0 --sm=0 --base=0
+# SM Config Set Out Shift(right, autopull, threshold=32)
+fifo --pio=0 --sm=0 --tx --shift-right
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=32
 
-# Configure out shift.
-fifo --pio=0 --sm=0 --tx --shift-left
-fifo --pio=0 --sm=0 --tx --auto=true    # auto pull
-fifo --pio=0 --sm=0 --tx --threshold=24 # or 32 for rgbw
+# SM Config Set Out Pins(base=0, count=4).
+pinctrl --pio=0 --sm=0 --out-base=0 --out-count=4
+
+# SM Config Set Set Pins(base=0, count=4).
+pinctrl --pio=0 --sm=0 --set-base=0 --set-count=4
 
 # Configure FIFO join: Join TX.
 fifo --pio=0 --sm=0 --join --tx
@@ -100,9 +107,15 @@ sm --pio=0 --sm=0 --enable=true
 # Next, we feed in example data.
 ########
 
-# Put example values into FIFO.
-fifo --enqueue --tx --value 0xaa118800 # RGB mode: end with byte 0x00
-fifo --enqueue --tx --value 0x55881100 # RGB mode: end with byte 0x00
+# Put example values into FIFO.  Since we have configured only
+# GPIOs 0…3, only the lowest 4 bits per FIFO word (=last hex digit)
+# are relevant.
+fifo --enqueue --tx --value 0x0000000a
+fifo --enqueue --tx --value 0x00000005
+fifo --enqueue --tx --value 0x00000001
+fifo --enqueue --tx --value 0x0000000f
+fifo --enqueue --tx --value 0x00000002
+fifo --enqueue --tx --value 0x0000000e
 
 # Done.
 quit
