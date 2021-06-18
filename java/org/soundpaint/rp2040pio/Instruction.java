@@ -518,6 +518,21 @@ public abstract class Instruction
       final int bitsToShift =
         Constants.checkBitCount(bitCount, "shift ISR bitCount");
       final SM.Status smStatus = sm.getStatus();
+      /*
+       * TODO: Clarify: Do we need to stall if ISR and RX FIFO are
+       * both full, prior to call shiftIn() (see built-in example
+       * "logic-analyser" as test case)?  The spec does not say so
+       * (see Sect. 3.5.4.1.), but I would expect it.  In the latter
+       * case, we need the following additional code te be executed
+       * first, prior to the call to shiftIn():
+       */
+      /*
+      if (smStatus.isIsrCountBeyondThreshold()) {
+        if (sm.isRXFIFOFull()) {
+          return ResultState.STALL;
+        }
+      }
+      */
       shiftIn(sm, smStatus, src.getData(sm), bitsToShift);
       saturate(sm, smStatus, bitsToShift);
       final boolean stall;
