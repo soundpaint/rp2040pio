@@ -1,0 +1,111 @@
+# Monitor script for ST7789 LCD example.
+# To be executed on PIO 0, SM 0.
+# Data on OUT pin, mapped to GPIO0.
+# Clock on side-set pin, mapped to GPIO1.
+
+# Make a full reset of the emulator.
+reset
+
+# We loosely follow the initialization sequence as shown in:
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/spi/st7789_lcd.pio
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=1 --target=0
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=0 --count=1 --opt=false
+
+# The code.
+# .wrap_target
+enter -a 00 -v 0x6001 # out pins, 1  side 0 ; stall here if no data (clock low)
+enter -a 01 -v 0xb042 # nop          side 1
+# .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=2
+
+########
+# Init program (analoguous to st7789_lcd_program_init() in st7789_lcd.pio).
+########
+
+# GPIO init data_pin
+gpio --pio=0 --gpio=0 --init    # data_pin on GPIO0
+
+# GPIO init clk_pin
+gpio --pio=0 --gpio=1 --init    # clk_pin on GPIO1
+
+# Set consecutive pindirs, here just a single one for data_pin.
+gpio --pio=0 --gpio=0 --enable # set direction out
+
+# Set consecutive pindirs, here just a single one for clk_pin.
+gpio --pio=0 --gpio=1 --enable # set direction out
+
+# SM Config Set Side-Set Pins(base=clk_pin).
+side-set --pio=0 --sm=0 --base=1
+
+# SM Config Set Out Pins(base=data_pin, count=1).
+pinctrl --pio=0 --sm=0 --out-base=0 --out-count=1
+
+# Set FIFO Join TX
+fifo --pio=0 --sm=0 --join --tx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+# SM Config Set Out Shift(left, autopull, threshold 8)
+fifo --pio=0 --sm=0 --tx --shift-left
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=8
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0x00
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.  Since we chose n_bits = 8 in this
+# example, only the most upper bits per FIFO word are significant.
+
+fifo --enqueue --tx --value 0xa5000000
+fifo --enqueue --tx --value 0x0f000000
+fifo --enqueue --tx --value 0x01000000
+fifo --enqueue --tx --value 0x0e000000
+
+# Done.
+quit
