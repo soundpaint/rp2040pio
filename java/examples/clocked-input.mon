@@ -1,0 +1,102 @@
+# Monitor script for Clocked Input example.
+# To be executed on PIO 0, SM 0.
+# Data input pin is mapped to GPIO0.
+# Clock input pin is mapped to GPIO1.
+
+# Make a full reset of the emulator.
+reset
+
+# We loosely follow the initialization sequence as shown in:
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/clocked_input/clocked_input.pio
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=2 --target=0
+
+# The code.
+# .wrap_target
+enter -a 00 -v 0x2021 # wait 0 pin 1
+enter -a 01 -v 0x20a1 # wait 1 pin 1
+enter -a 02 -v 0x4001 # in pins, 1
+# .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=3
+
+########
+# Init program (analoguous to clocked_input_program_init() in
+# clocked_input.pio).
+########
+
+# SM Config Set In Pins(base=pin).
+pinctrl --pio=0 --sm=0 --in-base=0
+
+# Set consecutive pindirs, here two pins 0 and 1 for data and clock.
+gpio --pio=0 --gpio=0 --disable # set direction in
+gpio --pio=0 --gpio=1 --disable # set direction in
+
+# GPIO init pins.
+gpio --pio=0 --gpio=0 --init
+gpio --pio=0 --gpio=1 --init
+
+# SM Config Set In Shift(left, autopush, threshold 8)
+fifo --pio=0 --sm=0 --rx --shift-left
+fifo --pio=0 --sm=0 --rx --auto=true
+fifo --pio=0 --sm=0 --rx --threshold=8
+
+# Join FIFO RX
+fifo --join --rx
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0x00
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+########
+
+# To see the clocked input in action, you currently have to manually
+# provide some input at GPIO0 (data input) and GPIO1 (clock input).
+# For that purpose, in the Monitor client application, use commands
+# like "gpio --gpio=0 --clear" or "gpio --gpio=0 --set" to select
+# value 0 or 1 as data value for GPIO0, and "gpio --gpio=1 --clear"
+# or "gpio --gpio=1 --set" to control the clock signal on GPIO1.
+#
+# Whenever on GPIO1 (the clock input) a change from input value 0 to
+# input value 1 is detected, on the next PIO clock cycle, the value
+# that is then found as input on GPIO0 will be recorded as a bit.  Bits
+# are collected and packaged as bytes (=8 bits), and each byte, as soon
+# as complete, will be pushed onto the RX FIFO.
+
+# Done.
+quit
