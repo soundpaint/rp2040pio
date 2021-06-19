@@ -1,0 +1,81 @@
+# Monitor script for Hello PIO example.
+# To be executed on PIO 0, SM 0.
+# pin is mapped to GPIO0 in this example.
+
+# Make a full reset of the emulator.
+reset
+
+# We loosely follow the initialization sequence as shown in:
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/hello_pio/hello.pio
+
+# The code.
+# loop:
+enter -a 00 -v 0x80a0 # pull
+enter -a 01 -v 0x6001 # out pins, 1
+enter -a 02 -v 0x0000 # jmp loop
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=3
+
+########
+# Init program (analoguous to hello_program_init() in hello.pio).
+########
+
+# SM Config Set Out Pins(base=pin, count=1).
+pinctrl --pio=0 --sm=0 --out-base=0 --out-count=1
+
+# GPIO init pin.
+gpio --pio=0 --gpio=0 --init
+
+# Set consecutive pindirs, here just a single one.
+gpio --pio=0 --gpio=0 --enable # set direction out
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0x00
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+########
+
+# Put example values into FIFO.  Only the most significant bit of
+# each FIFO word is output to the GPIO output pin.  The value of
+# all other bits is irrelevant.
+fifo --enqueue --tx --value 0x80000000
+fifo --enqueue --tx --value 0x00000000
+fifo --enqueue --tx --value 0x80000000
+fifo --enqueue --tx --value 0x80000000
+
+# Done.
+quit
