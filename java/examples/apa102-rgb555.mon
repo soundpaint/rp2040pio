@@ -1,0 +1,137 @@
+# Monitor script for AP102 RGB555 example.
+# To be executed on PIO 0, SM 0.
+# output pin is mapped to GPIO0.
+
+# Make a full reset of the emulator.
+reset
+
+# Since there is no initialization in
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/apa102/apa102.pio, we just do it
+# on our own, extracting all relevant info from
+# the PIO program itself.
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=14 --target=0
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=0 --count=0 --opt=false
+
+# The code.
+# .wrap_target
+# public pixel_out:
+enter -a 00 -v 0x80e0 # pull ifempty
+enter -a 01 -v 0xe022 # set x, 2
+# colour_loop:
+enter -a 02 -v 0x40e5 # in osr, 5
+enter -a 03 -v 0x6065 # out null, 5
+enter -a 04 -v 0x4063 # in null, 3
+enter -a 05 -v 0x0042 # jmp x-- colour_loop
+enter -a 06 -v 0x4048 # in y, 8
+enter -a 07 -v 0xa0d6 # mov isr, ::isr
+enter -a 08 -v 0x6061 # out null, 1
+# public bit_run:
+enter -a 09 -v 0xe03f # set x, 31
+# bit_out:
+enter -a 10 -v 0xe000 # set pins, 0
+enter -a 11 -v 0xa606 # mov pins, isr [6]
+enter -a 12 -v 0xe001 # set pins, 1
+enter -a 13 -v 0x46c1 # in isr, 1 [6]
+enter -a 14 -v 0x004a # jmp x-- bit_out
+# .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=15
+
+########
+# Init program (based on comments and PIO code).
+########
+
+# SM Config Set Out Pins(base=pin, count=1).
+pinctrl --pio=0 --sm=0 --out-base=0 --out-count=1
+
+# SM Config Set Out Shift(right, no autopull)
+fifo --pio=0 --sm=0 --tx --shift-right
+fifo --pio=0 --sm=0 --tx --auto=false
+
+# SM Config Set In Shift(right, no autopush)
+fifo --pio=0 --sm=0 --rx --shift-right
+fifo --pio=0 --sm=0 --rx --auto=false
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+# Set consecutive pins, here just a single one.
+gpio --pio=0 --gpio=0 --clear # initialize out with 0
+
+# Set consecutive pindirs, here just a single one.
+gpio --pio=0 --gpio=0 --enable # set direction out
+
+# GPIO Init
+gpio --pio=0 --gpio=0 --init
+
+# We only need TX, so get an 8-deep FIFO!
+fifo --pio=0 --sm=0 --join --tx
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to program entry point.
+registers --address=0x00
+
+########
+# End of SM initialization.
+########
+
+# Set brightness value.  Only lowest most 5 bits can be freely chosen,
+# i.e.  valid brightness values are in the range 0…31.  The upper 3 bits must be
+# 1.  That is, valid values for setting Y are values in the range 224…255.
+# In this example program, we choose 245 (=0xf5).
+registers --y=0xf5 # brightness bit pattern 10101, with three leading "1"s
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# See https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/apa102/apa102.pio ("APA102 command structure") for
+# details on the encoding of the resulting 32 bit frames that are
+# output to the GPIO pin.
+
+# FIFO entries: Each entry contains 2 pixels, each consisting of 5+5+5
+# bits for colors red, green, and blue, respectively.  The first pixel
+# is coded in the lower 16 bits, the next one in the upper 16 bits.
+# Hence, the overall binary bit representation of a FIFO entry is:
+# 0b0bbbbbgggggrrrrr0bbbbbgggggrrrrr.
+fifo --enqueue --tx --value 0x03e0001f # red, then green
+fifo --enqueue --tx --value 0x7fff7c00 # blue, then white
+
+# Done.
+quit

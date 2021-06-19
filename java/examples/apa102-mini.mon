@@ -1,0 +1,105 @@
+# Monitor script for APA102 Mini example.
+# To be executed on PIO 0, SM 0.
+# pin_din is mapped to GPIO0 in this example.
+# pin_clk is mapped to GPIO1 in this example.
+
+# Make a full reset of the emulator.
+reset
+
+# We loosely follow the initialization sequence as shown in:
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/apa102/apa102.pio
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=1 --target=0
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=0 --count=1 --opt=false
+
+# The code.
+# loop:
+# .wrap_target
+enter -a 00 -v 0x6001 # out pins, 1   side 0
+enter -a 01 -v 0xb042 # nop           side 1
+# .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=2
+
+########
+# Init program (analoguous to apa102_mini_program_init() in apa102.pio).
+########
+
+# Set pin_din and pin_clk to 0, direction out.
+gpio --pio=0 --gpio=0 --clear
+gpio --pio=0 --gpio=0 --enable
+gpio --pio=0 --gpio=1 --clear
+gpio --pio=0 --gpio=1 --enable
+
+# GPIO init pin_din and pin_clk.
+gpio --pio=0 --gpio=0 --init
+gpio --pio=0 --gpio=1 --init
+
+# SM Config Set Out Pins(base=pin_din, count=1).
+pinctrl --pio=0 --sm=0 --out-base=0 --out-count=1
+
+# SM Config Set Side-Set Pins(pin_clk).
+side-set --pio=0 --sm=0 --base=1
+
+# SM Config Set Out Shift(left, autopull, threshold 32)
+fifo --pio=0 --sm=0 --tx --shift-left
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=32
+
+# We only need TX, so get an 8-deep FIFO!
+fifo --pio=0 --sm=0 --join --tx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0x00
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+########
+
+# Put example values into FIFO.
+fifo --enqueue --tx --value 0xa55a0ff0
+fifo --enqueue --tx --value 0x1e3c78f0
+
+# Done.
+quit
