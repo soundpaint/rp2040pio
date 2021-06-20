@@ -234,8 +234,7 @@ public class PIO implements Constants, Clock.TransitionListener
   public void setCtrl(final int ctrl, final int mask)
   {
     synchronized(sms) {
-      final int smEnabled = ctrl & 0xf;
-      this.smEnabled = smEnabled;
+      smEnabled = Constants.hwSetBits(smEnabled, ctrl, mask, false) & 0xf;
       for (int smNum = 0; smNum < SM_COUNT; smNum++) {
         final boolean clkDivRestart =
           ((ctrl >> (8 + smNum)) & 0x1) != 0x0 &&

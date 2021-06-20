@@ -1,0 +1,294 @@
+# Monitor script for HUB75 example.
+# To be executed on PIO0, SM0 and SM1.
+#
+# This example consists of *two* PIO programs
+# that are executed in parallel on two
+# different state machines.  The first PIO program
+# is to be executed on SM0 and cares for output pins
+# GPIO6…GPIO10, GPIO12 and GPIO13.  The second PIO
+# program is to be executed on SM1 and cares for
+# GPIO0…GPIO5 and GPIO11.  In particular:
+#
+# * SM1 RGB (rrggbb) out data pins, mapped to GPIO0…GPIO5.
+# * SM0 Row Select out pins are A-E, mapped to GPIO6…GPIO10.
+# * SM1 side-set pin 0 is clock_pin, mapped to GPIO11.
+# * SM0 side-set pin 0 is Latch (aka Strobe), mapped to GPIO12.
+# * SM0 side-set pin 1 is OEn, mapped to GPIO13.
+
+# Make a full reset of the emulator.
+reset
+
+# We loosely follow the initialization sequence as shown in:
+# https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/hub75/hub75.pio
+
+#################################################
+####
+#### First of the two PIO programs ("hub75_row"):
+####
+#################################################
+
+# Configure Wrap.
+wrap --pio=0 --sm=0 --wrap=2 --target=0
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=0 --count=2 --opt=false
+
+# The code.
+# .wrap_target
+enter -a 00 -v 0x7705 # out pins, 5 [7]    side 0x2
+enter -a 01 -v 0x7f3b # out x, 27   [7]    side 0x3
+# pulse_loop:
+enter -a 02 -v 0x0042 # jmp x-- pulse_loop side 0x0
+# .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=2
+
+########
+# Init program (analoguous to hub75_row_program_init() in hub75.pio).
+########
+
+# Set consecutive pindirs (row_base_pin=6, count=5).
+gpio --pio=0 --gpio=6  --enable # row "A": set direction out
+gpio --pio=0 --gpio=7  --enable # row "B": set direction out
+gpio --pio=0 --gpio=8  --enable # row "C": set direction out
+gpio --pio=0 --gpio=9  --enable # row "D": set direction out
+gpio --pio=0 --gpio=10 --enable # row "E": set direction out
+
+# Set consecutive pindirs (base=latch_base_pin=12, count=2).
+gpio --pio=0 --gpio=12 --enable # "STB": set direction out
+gpio --pio=0 --gpio=13 --enable # "OEn": set direction out
+
+# GPIO init row "A" pin.
+gpio --pio=0 --gpio=6 --init   # row "A" pin on GPIO6
+
+# GPIO init row "B" pin.
+gpio --pio=0 --gpio=7 --init   # row "B" pin on GPIO7
+
+# GPIO init row "C" pin.
+gpio --pio=0 --gpio=8 --init   # row "C" pin on GPIO8
+
+# GPIO init row "D" pin.
+gpio --pio=0 --gpio=9 --init   # row "D" pin on GPIO9
+
+# GPIO init row "E" pin.
+gpio --pio=0 --gpio=10 --init  # row "E" pin on GPIO10
+
+# GPIO init Latch pin.
+gpio --pio=0 --gpio=12 --init  # Latch pin on GPIO12
+
+# GPIO init Oen pin.
+gpio --pio=0 --gpio=13 --init  # Oen pin on GPIO13
+
+# SM Config Set Out Pins(base=row_base_pin=6, count=5).
+pinctrl --pio=0 --sm=0 --out-base=6 --out-count=5
+
+# SM Config Set Side-Set Pins(base=latch_base_pin=12).
+side-set --pio=0 --sm=0 --base=12
+
+# SM Config Set Out Shift(right, autopull, threshold 32)
+fifo --pio=0 --sm=0 --tx --shift-right
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=32
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --pio=0 --sm=0 --address=0x00
+
+########
+# End of SM initialization.
+########
+
+# DO NOT YET ENABLE STATE MACHINE 0 OF PIO 0.  Because, while
+# initializing state machine 1, we execute a forced instruction,
+# resulting in also executing the first cycle on SM0, if it were
+# enabled already now.  Instead, we enable SM0 together with SM1 after
+# initialization of SM1.
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.  Lowest 5 bits define ouputs A, B, C,
+# D, E.  Upper 27 bits define number of cycles to set Latch and Oen
+# both to 0, before continuing with next row.
+fifo --pio=0 --sm=0 --enqueue --tx --value 0x00000070 # row 16, wait 3 cycles
+fifo --pio=0 --sm=0 --enqueue --tx --value 0x00000071 # row 17, wait 3 cycles
+fifo --pio=0 --sm=0 --enqueue --tx --value 0x00000072 # row 18, wait 3 cycles
+
+##########################################################
+####
+#### Second of the two PIO programs ("hub75_data_rgb888"):
+####
+##########################################################
+
+# Configure Wrap.
+wrap --pio=0 --sm=1 --wrap=18 --target=3
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=1 --count=1 --opt=false
+
+# The code.
+# public entry_point:
+# .wrap_target
+# public shift0:
+enter -a 03 -v 0x80a0 # pull             side 0
+enter -a 04 -v 0x40e1 # in osr, 1        side 0
+enter -a 05 -v 0x6068 # out null, 8      side 0
+enter -a 06 -v 0x40e1 # in osr, 1        side 0
+enter -a 07 -v 0x6068 # out null, 8      side 0
+enter -a 08 -v 0x40e1 # in osr, 1        side 0
+enter -a 09 -v 0x6060 # out null, 32     side 0
+# public shift1:
+enter -a 10 -v 0x80a0 # pull             side 0
+enter -a 11 -v 0x50e1 # in osr, 1        side 1
+enter -a 12 -v 0x7068 # out null, 8      side 1
+enter -a 13 -v 0x50e1 # in osr, 1        side 1
+enter -a 14 -v 0x7068 # out null, 8      side 1
+enter -a 15 -v 0x50e1 # in osr, 1        side 1
+enter -a 16 -v 0x7060 # out null, 32     side 1
+enter -a 17 -v 0x507a # in null, 26      side 1
+enter -a 18 -v 0xb016 # mov pins, ::isr  side 1
+# .wrap
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=1 --address=3 --count=16
+
+########
+# Init program (analoguous to hub75_data_rgb888_program_init()
+# in hub75.pio).
+########
+
+# Set consecutive pindirs (rgb_base_pin=7, count=6).
+gpio --pio=0 --gpio=0 --enable # "R0": set direction out
+gpio --pio=0 --gpio=1 --enable # "G0": set direction out
+gpio --pio=0 --gpio=2 --enable # "B0": set direction out
+gpio --pio=0 --gpio=3 --enable # "R1": set direction out
+gpio --pio=0 --gpio=4 --enable # "G1": set direction out
+gpio --pio=0 --gpio=5 --enable # "B1": set direction out
+
+# Set consecutive pindirs (clock_pin=11, count=1).
+gpio --pio=0 --gpio=11 --enable # set direction out
+
+# GPIO init RGB pins.
+gpio --pio=0 --gpio=0 --init # R0
+gpio --pio=0 --gpio=1 --init # G0
+gpio --pio=0 --gpio=2 --init # B0
+gpio --pio=0 --gpio=3 --init # R1
+gpio --pio=0 --gpio=4 --init # G1
+gpio --pio=0 --gpio=5 --init # B1
+
+# GPIO init clock pins.
+gpio --pio=0 --gpio=11 --init
+
+# SM Config Set Out Pins(base=rgb_base_pin=0, count=6).
+pinctrl --pio=0 --sm=1 --out-base=0 --out-count=6
+
+# SM Config Set Side-Set Pins(base=clock_pin).
+side-set --pio=0 --sm=1 --base=11
+
+# SM Config Set Out Shift(right, autopull, threshold 24)
+fifo --pio=0 --sm=1 --tx --shift-right
+fifo --pio=0 --sm=1 --tx --auto=true
+fifo --pio=0 --sm=1 --tx --threshold=24
+
+# SM Config Set In Shift(left, no autopush, threshold 32)
+fifo --pio=0 --sm=1 --rx --shift-left
+fifo --pio=0 --sm=1 --rx --auto=false
+fifo --pio=0 --sm=1 --rx --threshold=32
+
+# We only need TX, so get an 8-deep FIFO!
+fifo --pio=0 --sm=1 --join --tx
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=1 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=1 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=1 --clear-tx-stall
+fifo --pio=0 --sm=1 --clear-tx-over
+fifo --pio=0 --sm=1 --clear-rx-under
+fifo --pio=0 --sm=1 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=1 --restart
+
+# Restart clock.
+clock --pio=0 --sm=1 --restart
+
+# Set instruction pointer (PC) to address 3.
+registers --pio=0 --sm=1 --address=0x03
+
+########
+# End of SM initialization.
+########
+
+execute --pio=0 --sm=1 --force=0x80a0
+trace --cycles=1
+
+# In file https://github.com/raspberrypi/pico-examples
+# /blob/master/pio/hub75/hub75.c, the PULL instructions
+# of the second PIO programs are periodically overwritten
+# by different op-codes, while the PIO program is running.
+# For demonstration purposes, do this here only once and
+# *before* enabling the state machines, such that they do
+# not start running before the program is patched, since
+# we currently do all control from this script.  We use n=3
+# in this example.
+
+enter -a 03 -v 0x6063 # out null, 3      side 0
+enter -a 10 -v 0x6063 # out null, 3      side 0
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=1 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.  Upper byte is unused.  Lower 3 bytes
+# contain RGB pixels.
+fifo --pio=0 --sm=1 --enqueue --tx --value 0x005a0ff0
+fifo --pio=0 --sm=1 --enqueue --tx --value 0x00f05aa5
+fifo --pio=0 --sm=1 --enqueue --tx --value 0x00a0ff05
+fifo --pio=0 --sm=1 --enqueue --tx --value 0x0005aa5f
+
+# Done.
+quit

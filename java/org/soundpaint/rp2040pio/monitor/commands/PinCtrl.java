@@ -71,7 +71,7 @@ public class PinCtrl extends Command
   private static final CmdOptions.IntegerOptionDeclaration optOutCount =
     CmdOptions.createIntegerOption("COUNT", false, null, "out-count", null,
                                    "number of GPIO pins asserted by OUT PINS "+
-                                   "/ PINDIRS or MOV PINS instruction (0…5)");
+                                   "/ PINDIRS or MOV PINS instruction (0…32)");
   private static final CmdOptions.IntegerOptionDeclaration optOutBase =
     CmdOptions.createIntegerOption("NUMBER", false, null, "out-base", null,
                                    "lowest-numbered GPIO pin affected by OUT "+
@@ -134,9 +134,9 @@ public class PinCtrl extends Command
       final Integer optOutCountValue = options.getValue(optOutCount);
       if (optOutCountValue != null) {
         final int outCount = optOutCountValue;
-        if ((outCount < 0) || (outCount > 5)) {
+        if ((outCount < 0) || (outCount > 32)) {
           throw new CmdOptions.
-            ParseException("out-count must be in the range 0…5");
+            ParseException("out-count must be in the range 0…32");
         }
       }
       final Integer optOutBaseValue = options.getValue(optOutBase);

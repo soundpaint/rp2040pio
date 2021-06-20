@@ -708,11 +708,7 @@ public class PIOSDK implements Constants
     throws IOException
   {
     final int address = PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
-    synchronized(registers) {
-      int ctrl = registers.readAddress(address);
-      ctrl = (ctrl & ~mask) | (enabled ? mask : 0x0);
-      registers.writeAddress(address, ctrl);
-    }
+    registers.hwWriteMasked(address, enabled ? mask : 0, mask);
   }
 
   public void smRestart(final int smNum) throws IOException
