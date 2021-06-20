@@ -1,3 +1,5 @@
+# Script: I²C
+#
 # Monitor script for I²C example.
 # To be executed on PIO 0, SM 0.
 # pin_sda is fed to GPIO 0.

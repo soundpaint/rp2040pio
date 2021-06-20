@@ -1,3 +1,5 @@
+# Script: ST7789 LCD
+#
 # Monitor script for ST7789 LCD example.
 # To be executed on PIO 0, SM 0.
 # Data on OUT pin, mapped to GPIO0.

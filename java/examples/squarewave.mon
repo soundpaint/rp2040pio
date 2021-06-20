@@ -1,3 +1,6 @@
+# Script: Squarewave
+# Group: Squarewave
+#
 # Monitor script for Squarewave example (base version).
 # To be executed on PIO 0, SM 0.
 

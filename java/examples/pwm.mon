@@ -1,3 +1,5 @@
+# Script: PWM
+#
 # Monitor script for PWM example (see RP2040 datasheet,
 # Sect. 3.6.8. "PWM").  To be executed on PIO 0, SM 0.
 

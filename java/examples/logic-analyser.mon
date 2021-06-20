@@ -1,3 +1,5 @@
+# Script: Logic Analyser
+#
 # Monitor script for Logic Analyser example.
 # To be executed on PIO 0, SM 0.
 

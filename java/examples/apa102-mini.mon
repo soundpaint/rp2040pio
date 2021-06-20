@@ -1,3 +1,6 @@
+# Script: APA102 Mini
+# Group: APA102
+#
 # Monitor script for APA102 Mini example.
 # To be executed on PIO 0, SM 0.
 # pin_din is mapped to GPIO0 in this example.

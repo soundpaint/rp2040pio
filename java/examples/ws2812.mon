@@ -1,3 +1,6 @@
+# Script: WS2812
+# Group: WS2812
+#
 # Monitor script for ws2812 example.
 # To be executed on PIO 0, SM 0.
 # Output is fed to GPIO 0.

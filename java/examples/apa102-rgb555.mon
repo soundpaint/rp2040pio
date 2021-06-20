@@ -1,3 +1,6 @@
+# Script: APA102 RGB555
+# Group: APA102
+#
 # Monitor script for AP102 RGB555 example.
 # To be executed on PIO 0, SM 0.
 # output pin is mapped to GPIO0.

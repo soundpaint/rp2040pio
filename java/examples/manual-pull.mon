@@ -1,3 +1,6 @@
+# Script: Manual Pull
+# Group: Autopush and Autopull
+#
 # Monitor script for manual pull example (see RP2040
 # datasheet, Sect. 3.5.4. "Autopush and Autopull").
 # To be executed on PIO 0, SM 0.

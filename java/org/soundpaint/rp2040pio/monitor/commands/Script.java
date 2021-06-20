@@ -29,12 +29,12 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintStream;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.monitor.Command;
 import org.soundpaint.rp2040pio.monitor.CommandRegistry;
+import org.soundpaint.rp2040pio.monitor.ScriptInfo;
 import org.soundpaint.rp2040pio.sdk.Panic;
 
 /**
@@ -128,16 +128,41 @@ public class Script extends Command
     }
   }
 
+
+
+
+  private void listExampleScriptGroup(final Map<String, ScriptInfo>
+                                      scriptsGroupInfo,
+                                      final String groupName)
+  {
+    final String groupTitle = String.format("%s:", groupName);
+    console.printf("(pio*:sm*) %s%n", groupTitle);
+    for (final String scriptId : scriptsGroupInfo.keySet()) {
+      final ScriptInfo scriptInfo = scriptsGroupInfo.get(scriptId);
+      console.printf("(pio*:sm*)     %s%n", scriptInfo.getScriptId());
+    }
+  }
+
   private void listExampleScripts() throws IOException
   {
-    final String suffix = ".mon";
-    final List<String> examples =
-      IOUtils.list("examples").stream().
-      filter(s -> s.endsWith(suffix)).
-      map(s -> { return s.substring(0, s.length() - suffix.length()); }).
-      collect(Collectors.toList());
-    for (final String example : examples) {
-      console.printf("(pio*:sm*) %s%n", example);
+    final Map<String, Map<String, ScriptInfo>> scriptsInfo =
+      ScriptInfo.createScriptsInfo();
+    Map<String, ScriptInfo> defaultScriptsGroupInfo = null;
+    for (final String groupName : scriptsInfo.keySet()) {
+      final Map<String, ScriptInfo> scriptsGroupInfo =
+        scriptsInfo.get(groupName);
+      if (groupName != ScriptInfo.DEFAULT_GROUP_NAME) {
+        listExampleScriptGroup(scriptsGroupInfo, groupName);
+      } else {
+        // defer default group to end
+        defaultScriptsGroupInfo = scriptsGroupInfo;
+      }
+    }
+    if (defaultScriptsGroupInfo != null) {
+      listExampleScriptGroup(defaultScriptsGroupInfo,
+                             ScriptInfo.DEFAULT_GROUP_NAME);
+    } else {
+      throw new IOException("default script group not found");
     }
   }
 

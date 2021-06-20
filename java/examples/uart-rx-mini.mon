@@ -1,3 +1,6 @@
+# Script: UART RX Mini
+# Group: UART
+#
 # Monitor script for UART RX Mini example (see RP2040 datasheet,
 # Sect. 3.6.4. "UART RX").  To be executed on PIO 0, SM 0.
 

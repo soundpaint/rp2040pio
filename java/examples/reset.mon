@@ -1,6 +1,0 @@
-# Monitor script for fully resetting the emulator.
-#
-# Warning: Executing this script will also erase any
-# PIO programs currently stored in any of the PIO's
-# instruction memory.
-reset

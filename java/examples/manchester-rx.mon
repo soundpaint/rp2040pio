@@ -1,3 +1,6 @@
+# Script: Manchester Serial RX
+# Group: Manchester Serial TX and RX
+#
 # Monitor script for Manchester Serial RX example (see RP2040
 # datasheet, Sect. 3.6.5. "Manchester Serial TX and RX").  To be
 # executed on PIO 0, SM 0.

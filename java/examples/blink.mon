@@ -1,3 +1,5 @@
+# Script: PIO Blink
+#
 # Monitor script for PIO Blink example.
 # To be executed on PIO 0, SM 0.
 # For LED on OUT pin, mapped to GPIO0.

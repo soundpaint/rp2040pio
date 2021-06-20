@@ -1,3 +1,6 @@
+# Script: Differential Manchester TX
+# Group: Differential Manchester (BMC) TX and RX
+#
 # Monitor script for BMC TX example (see RP2040 datasheet,
 # Sect. 3.6.6. "Differential Manchester (BMC) TX and RX").  To be
 # executed on PIO 0, SM 0.

@@ -1,3 +1,5 @@
+# Script: Clocked Input
+#
 # Monitor script for Clocked Input example.
 # To be executed on PIO 0, SM 0.
 # Data input pin is mapped to GPIO0.

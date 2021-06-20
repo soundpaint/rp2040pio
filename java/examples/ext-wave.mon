@@ -1,5 +1,13 @@
-# Monitor script for providing a square wave signal on GPIO pin 23,
-# that changes the pin's status each 3rd clock cycle.
+# Script: External Wave
+# Group: Squarewave
+#
+# Monitor script for providing an external square wave signal put
+# onto GPIO pad 23, that changes the pin's status each 3rd clock
+# cycle.
+# This script serves as an example how to automatically set GPIO
+# pads in sync with another script that is executed in parallel.
+# See chapter "Interfacing With External Data" in the RP2040 PIO
+# Emulator documentation for details.
 
 # We do *not* reset the emulator, but assume that this script is run
 # with the emulator already properly set up.  Furthermore, we assume

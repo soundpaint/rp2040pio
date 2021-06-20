@@ -1,3 +1,5 @@
+# Script: HUB75
+#
 # Monitor script for HUB75 example.
 # To be executed on PIO0, SM0 and SM1.
 #
@@ -136,10 +138,12 @@ registers --pio=0 --sm=0 --address=0x00
 
 # Put example values into FIFO.  Lowest 5 bits define ouputs A, B, C,
 # D, E.  Upper 27 bits define number of cycles to set Latch and Oen
-# both to 0, before continuing with next row.
-fifo --pio=0 --sm=0 --enqueue --tx --value 0x00000070 # row 16, wait 3 cycles
-fifo --pio=0 --sm=0 --enqueue --tx --value 0x00000071 # row 17, wait 3 cycles
-fifo --pio=0 --sm=0 --enqueue --tx --value 0x00000072 # row 18, wait 3 cycles
+# both to 0, before continuing with next row.  In this example, we
+# choose 7 cycles to keep synchronized with the other PIO program that
+# is executed on SM1.
+fifo --pio=0 --sm=0 --enqueue --tx --value 0x000000f0 # row 16, wait 7 cycles
+fifo --pio=0 --sm=0 --enqueue --tx --value 0x000000f1 # row 17, wait 7 cycles
+fifo --pio=0 --sm=0 --enqueue --tx --value 0x000000f2 # row 18, wait 7 cycles
 
 ##########################################################
 ####

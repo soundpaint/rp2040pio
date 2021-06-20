@@ -24,27 +24,10 @@
  */
 package org.soundpaint.rp2040pio.doctool;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.IOException;
-import java.io.LineNumberReader;
-import java.io.PrintStream;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import org.soundpaint.rp2040pio.Emulator;
-import org.soundpaint.rp2040pio.IOUtils;
-import org.soundpaint.rp2040pio.PicoEmuRegisters;
-import org.soundpaint.rp2040pio.PIOEmuRegisters;
-import org.soundpaint.rp2040pio.Registers;
-import org.soundpaint.rp2040pio.monitor.Command;
-import org.soundpaint.rp2040pio.monitor.CommandRegistry;
-import org.soundpaint.rp2040pio.sdk.LocalRegisters;
-import org.soundpaint.rp2040pio.sdk.SDK;
+import org.soundpaint.rp2040pio.monitor.ScriptInfo;
 
 /**
  * Automatically create Sphinx documentation for all example scripts,
@@ -59,47 +42,68 @@ public class ExampleScriptsDocsBuilder
   }
 
   private void listExampleScript(final StringBuilder s,
-                                 final LineNumberReader reader,
-                                 final String scriptId)
-    throws IOException
+                                 final ScriptInfo scriptInfo)
   {
+    final String scriptId = scriptInfo.getScriptId();
+    final String scriptName = scriptInfo.getScriptName();
+    final String description = scriptInfo.getDescription();
     s.append(String.format(".. index::%n"));
     s.append(String.format("   single: script; %s%n", scriptId));
     s.append(String.format("   single: %s script%n", scriptId));
     s.append(String.format("%n"));
     s.append(String.format(".. _%s-example-script:%n", scriptId));
     s.append(String.format("%n"));
-    s.append(String.format(scriptId + "%n"));
-    s.append(String.format("%s%n", "-".repeat(scriptId.length())));
+    final String scriptTitle =
+      String.format("%s (``%s``)", scriptName, scriptId);
+    s.append(String.format(scriptTitle + "%n"));
+    s.append(String.format("%s%n", "^".repeat(scriptTitle.length())));
     s.append(String.format("%n"));
-    while (true) {
-      final String line = reader.readLine();
-      if (line == null) break;
-      if (!(line.startsWith("#"))) break;
-      s.append(String.format("%s%n", line.substring(1).trim()));
-    }
+    s.append(description);
     s.append(String.format("%n"));
   }
 
-  private void listExampleScript(final StringBuilder s, final String scriptId)
+  private void listExampleScriptGroup(final StringBuilder s,
+                                      final Map<String, ScriptInfo>
+                                      scriptsGroupInfo,
+                                      final String groupName)
+  {
+    s.append(String.format(".. index::%n"));
+    s.append(String.format("   single: script group; %s%n", groupName));
+    s.append(String.format("   single: %s script group%n", groupName));
+    s.append(String.format("%n"));
+    s.append(String.format(".. _%s-example-script-group:%n", groupName));
+    s.append(String.format("%n"));
+    final String groupTitle = String.format("Script Group: %s", groupName);
+    s.append(String.format(groupTitle + "%n"));
+    s.append(String.format("%s%n", "-".repeat(groupTitle.length())));
+    s.append(String.format("%n"));
+    for (final String scriptId : scriptsGroupInfo.keySet()) {
+      final ScriptInfo scriptInfo = scriptsGroupInfo.get(scriptId);
+      listExampleScript(s, scriptInfo);
+    }
+  }
+
+  private void listExampleScripts(final Map<String, Map<String, ScriptInfo>>
+                                  scriptsInfo,
+                                  final StringBuilder s)
     throws IOException
   {
-    final String resourcePath = String.format("/examples/%s.mon", scriptId);
-    final LineNumberReader reader =
-      IOUtils.getReaderForResourcePath(resourcePath);
-    listExampleScript(s, reader, scriptId);
-  }
-
-  private void listExampleScripts(final StringBuilder s) throws IOException
-  {
-    final String suffix = ".mon";
-    final List<String> examples =
-      IOUtils.list("examples").stream().
-      filter(t -> t.endsWith(suffix)).
-      map(t -> { return t.substring(0, t.length() - suffix.length()); }).
-      collect(Collectors.toList());
-    for (final String example : examples) {
-      listExampleScript(s, example);
+    Map<String, ScriptInfo> defaultScriptsGroupInfo = null;
+    for (final String groupName : scriptsInfo.keySet()) {
+      final Map<String, ScriptInfo> scriptsGroupInfo =
+        scriptsInfo.get(groupName);
+      if (groupName != ScriptInfo.DEFAULT_GROUP_NAME) {
+        listExampleScriptGroup(s, scriptsGroupInfo, groupName);
+      } else {
+        // defer default group to end
+        defaultScriptsGroupInfo = scriptsGroupInfo;
+      }
+    }
+    if (defaultScriptsGroupInfo != null) {
+      listExampleScriptGroup(s, defaultScriptsGroupInfo,
+                             ScriptInfo.DEFAULT_GROUP_NAME);
+    } else {
+      throw new IOException("default script group not found");
     }
   }
 
@@ -129,7 +133,9 @@ public class ExampleScriptsDocsBuilder
     s.append(String.format("built-in example scripts can be listed with%n"));
     s.append(String.format("the Monitor command ``script --list``.%n"));
     s.append(String.format("%n"));
-    listExampleScripts(s);
+    final Map<String, Map<String, ScriptInfo>> scriptsInfo =
+      ScriptInfo.createScriptsInfo();
+    listExampleScripts(scriptsInfo, s);
     return s.toString();
   }
 

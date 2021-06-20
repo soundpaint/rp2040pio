@@ -1,3 +1,6 @@
+# Script: Squarewave Wrap
+# Group: Squarewave
+#
 # Monitor script for Squarewave example ("wrap" version).
 # To be executed on PIO 0, SM 0.
 

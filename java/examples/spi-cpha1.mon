@@ -1,3 +1,6 @@
+# Script: SPI CPHA1
+# Group: SPI
+#
 # Monitor script for SPI CPHA1 example.
 # To be executed on PIO 0, SM 0.
 # SCK is side-set pin.
