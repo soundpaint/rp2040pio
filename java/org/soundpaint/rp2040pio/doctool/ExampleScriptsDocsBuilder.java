@@ -73,7 +73,7 @@ public class ExampleScriptsDocsBuilder
     s.append(String.format("%n"));
     s.append(String.format(".. _%s-example-script-group:%n", groupName));
     s.append(String.format("%n"));
-    final String groupTitle = String.format("Script Group: %s", groupName);
+    final String groupTitle = String.format("%s", groupName);
     s.append(String.format(groupTitle + "%n"));
     s.append(String.format("%s%n", "-".repeat(groupTitle.length())));
     s.append(String.format("%n"));

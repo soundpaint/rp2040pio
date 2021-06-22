@@ -1151,6 +1151,13 @@ public class SM implements Constants
   private void execute()
   {
     executeInstruction();
+    /*
+     * TODO: Clarify when the asynchronous fill mechanism is enabled.
+     * On each master clock cycle?  Or only when the state machine is
+     * enabled?  Or even only if clock enabled is true
+     * (i.e. considering clock divider)?  Currently, we check for
+     * clock enable.
+     */
     if (status.clockEnabled && status.regSHIFTCTRL_AUTOPULL) {
       if (!(status.instruction instanceof Instruction.Out)) {
         executeAsyncAutoPull();
