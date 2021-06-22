@@ -1,0 +1,103 @@
+# Script: WS2812 LED
+# Group: WS2812
+#
+# Monitor script for ws2812_led example,
+# as described in RP2040 datasheet,
+# Sect. 3.2.3.4. "Scratch Registers".
+#
+# To be executed on PIO 0, SM 0.
+# Output is fed to GPIO 0.
+
+# Make a full reset of the emulator.
+reset
+
+# This example uses timing T1=7, T2=8, T3=6.
+
+# The code.
+# public entry_point:
+enter -a 0 -v 0x80a0 # pull
+enter -a 1 -v 0xe037 # set x, 23     ; Loop over 24 bits
+# bitloop:
+enter -a 2 -v 0xe001 # set pins, 1   ; Drive pin high
+enter -a 3 -v 0x6541 # out y, 1 [5]  ; Shift 1 bit out, and write it to y
+enter -a 4 -v 0x0066 # jmp !y skip   ; Skip the extra delay if the bit was 0
+enter -a 5 -v 0xa542 # nop [5]
+# skip:
+enter -a 6 -v 0xe500 # set pins, 0 [5]
+enter -a 7 -v 0x0042 # jmp x-- bitloop ; Jump if x nonzero, and decrement x
+enter -a 8 -v 0x0000 # jmp entry_point
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=9
+
+################
+# Init program.
+################
+
+# Connect GPIO 0 with PIO 0.
+gpio --pio=0 --gpio=0 --init   # tell GPIO to connect to PIO0
+
+# Set consecutive pindirs, here just a single one.
+gpio --pio=0 --gpio=0 --enable # set direction out
+
+# SM Config Set Set Pins(base=GPIO0, count=1).
+pinctrl --pio=0 --sm=0 --set-base=0 --set-count=1
+
+# Configure out shift.
+fifo --pio=0 --sm=0 --tx --shift-left
+fifo --pio=0 --sm=0 --tx --auto=false    # no auto pull
+
+# Configure FIFO join: Join TX.
+fifo --pio=0 --sm=0 --join --tx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.
+# Format of FIFO entry is: RRRRRRRRGGGGGGGGBBBBBBBB00000000.
+fifo --enqueue --tx --value 0xaa118800 # RGB mode: end with byte 0x00
+fifo --enqueue --tx --value 0x55881100 # RGB mode: end with byte 0x00
+
+# Done.
+quit
