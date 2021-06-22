@@ -1,0 +1,116 @@
+# Script: Pull Example 2
+# Group: Autopush and Autopull
+#
+# Monitor script for pull_example2 (see RP2040
+# datasheet, Sect. 3.2.3.1. "Output Shift
+# Register (OSR)").
+# To be executed on PIO 0, SM 0.
+#
+# Each FIFO entries holds 4 bytes of output data.
+# Each 2nd cycle, the next byte is output on pins
+# GPIO0…GPIO7.
+
+# Make a full reset of the emulator.
+reset
+
+# The code.
+# loop:
+enter -a 0 -v 0x6008 # out pins, 8
+# public entry_point:
+enter -a 1 -v 0x0000 # jmp loop
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=2
+
+################
+# Init program.
+################
+
+# Connect GPIO pins 0…7 with PIO 0.
+gpio --pio=0 --gpio=0 --init   # tell GPIO to connect to PIO0
+gpio --pio=0 --gpio=1 --init   # tell GPIO to connect to PIO0
+gpio --pio=0 --gpio=2 --init   # tell GPIO to connect to PIO0
+gpio --pio=0 --gpio=3 --init   # tell GPIO to connect to PIO0
+gpio --pio=0 --gpio=4 --init   # tell GPIO to connect to PIO0
+gpio --pio=0 --gpio=5 --init   # tell GPIO to connect to PIO0
+gpio --pio=0 --gpio=6 --init   # tell GPIO to connect to PIO0
+gpio --pio=0 --gpio=7 --init   # tell GPIO to connect to PIO0
+
+# Set direction out for these two pins.
+gpio --pio=0 --gpio=0 --enable # set direction out
+gpio --pio=0 --gpio=1 --enable # set direction out
+gpio --pio=0 --gpio=2 --enable # set direction out
+gpio --pio=0 --gpio=3 --enable # set direction out
+gpio --pio=0 --gpio=4 --enable # set direction out
+gpio --pio=0 --gpio=5 --enable # set direction out
+gpio --pio=0 --gpio=6 --enable # set direction out
+gpio --pio=0 --gpio=7 --enable # set direction out
+
+# SM Config Set Out Pins(base=0, count=8).
+pinctrl --pio=0 --sm=0 --out-base=0 --out-count=8
+
+# SM Config Set Out Shift(left, autopull, threshold 32)
+fifo --pio=0 --sm=0 --tx --shift-left
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=32
+
+# Configure FIFO join: Join TX.
+fifo --pio=0 --sm=0 --join --tx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 1.
+registers --address=1
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.
+
+# bit patterns 10101010, 11111111, 01010101, 00000000
+fifo --enqueue --tx --value 0xaaff5500
+
+# bit patterns 00010001, 11101110, 00110011, 11001100
+fifo --enqueue --tx --value 0x11ee33cc
+
+# bit patterns 01110111, 10001000, 11111111, 00000000
+fifo --enqueue --tx --value 0x7788ff00
+
+# Done.
+quit
