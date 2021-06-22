@@ -1,0 +1,101 @@
+# Script: SPI TX Fast
+# Group: SPI
+#
+# Monitor script for SPI TX Fast example,
+# as described in RP2040 datasheet,
+# Sect. 3.5.1. "Side-set".
+#
+# To be executed on PIO 0, SM 0.
+# Data output is fed to GPIO 0.
+# Clock output is fed to GPIO 1.
+
+# Make a full reset of the emulator.
+reset
+
+# Configure Side Set Count.
+side-set --pio=0 --sm=0 --count=1 --opt=false
+
+# The code.
+# loop:
+enter -a 0 -v 0x6001 # out pins, 1  side 0
+enter -a 1 -v 0x1000 # jmp loop     side 1
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=2
+
+################
+# Init program.
+################
+
+# Outputs GPIO0=data, GPIO1=clock.
+# Initially drive output-high on clock output.
+gpio --pio=0 --gpio=0 --enable # output
+gpio --pio=0 --gpio=0 --init
+gpio --pio=0 --gpio=1 --enable # output
+gpio --pio=0 --gpio=1 --set    # high
+gpio --pio=0 --gpio=1 --init
+
+# OUT shifts to right, autopull, threshold 32 (use all bits).
+fifo --pio=0 --sm=0 --tx --shift-right
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=32
+
+# data on GPIO0
+pinctrl --pio=0 --sm=0 --out-count=1 --out-base=0
+
+# clock on GPIO1
+side-set --pio=0 --sm=0 --base=1
+
+# We only need TX, so get an 8-deep FIFO!
+fifo --pio=0 --sm=0 --join --tx
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Put example values into FIFO.  Bits are serialized in LSB to MSB order.
+fifo --enqueue --tx --value 0x00ff55aa
+fifo --enqueue --tx --value 0xcc33ee11
+
+# Done.
+quit
