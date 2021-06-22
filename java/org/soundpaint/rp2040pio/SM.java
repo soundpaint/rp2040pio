@@ -1151,7 +1151,7 @@ public class SM implements Constants
   private void execute()
   {
     executeInstruction();
-    if (status.regSHIFTCTRL_AUTOPULL) {
+    if (status.clockEnabled && status.regSHIFTCTRL_AUTOPULL) {
       if (!(status.instruction instanceof Instruction.Out)) {
         executeAsyncAutoPull();
       }

@@ -1,0 +1,81 @@
+# Script: Exec Example
+#
+# Monitor script for EXEC'd instructions
+# example.
+#
+# To be executed on PIO 0, SM 0.
+
+# Make a full reset of the emulator.
+reset
+
+# The code.
+# hang:
+enter -a 0 -v 0x0000 # jmp hang
+# execute:
+enter -a 1 -v 0x60e0 # out exec, 32
+enter -a 2 -v 0x0001 # jmp execute
+
+# Just for convience and verification, list the program that
+# we just entered, as viewed by PIO 0, SM 0.
+unassemble --pio=0 --sm=0 --address=0 --count=3
+
+# Configure Clock Divider, here as 1.0 (maximum speed).
+# We choose maximum speed since we do not want to see gaps when
+# tracing the code.
+clock --pio=0 --sm=0 --divider=1.0
+
+# SM Config Set Out Shift(left, autopull, threshold 32)
+fifo --pio=0 --sm=0 --tx --shift-left
+fifo --pio=0 --sm=0 --tx --auto=true
+fifo --pio=0 --sm=0 --tx --threshold=32
+
+########
+# Initialize SM (analoguous to function pio_sm_init() in Pico C SDK).
+########
+
+# Disable state machine 0 of PIO 0 while executing the following
+# commands.
+sm --pio=0 --sm=0 --enable=false
+
+# Clear FIFOs.
+fifo --pio=0 --sm=0 --clear
+
+# Clear FIFO debug flags.
+fifo --pio=0 --sm=0 --clear-tx-stall
+fifo --pio=0 --sm=0 --clear-tx-over
+fifo --pio=0 --sm=0 --clear-rx-under
+fifo --pio=0 --sm=0 --clear-rx-stall
+
+# Restart SM.
+sm --pio=0 --sm=0 --restart
+
+# Restart clock.
+clock --pio=0 --sm=0 --restart
+
+# Set instruction pointer (PC) to address 0.
+registers --address=0x00
+
+########
+# End of SM initialization.
+########
+
+# Enable state machine 0 of PIO 0 to execute the program.
+sm --pio=0 --sm=0 --enable=true
+
+########
+# End of program initialization.
+# Next, we feed in example data.
+########
+
+# Force jump to program location 1.
+execute --pio=0 --sm=0 --force=0x0001 # jmp 01
+
+# Put PIO instruction opcodes into FIFO.
+
+fifo --enqueue --tx --value 0x00006020 # out x, 32
+fifo --enqueue --tx --value 0x12345678 # data to be OUTed
+fifo --enqueue --tx --value 0x00004020 # in x, 32
+fifo --enqueue --tx --value 0x00008020 # push
+
+# Done.
+quit

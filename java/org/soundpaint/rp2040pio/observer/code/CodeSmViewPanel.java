@@ -72,8 +72,7 @@ public class CodeSmViewPanel extends JPanel
   private static class Instruction
   {
     public boolean isCurrentAddress;
-    public boolean isForced;
-    public int pendingDelay;
+    public boolean isActive;
     public String text;
   }
 
@@ -99,9 +98,7 @@ public class CodeSmViewPanel extends JPanel
                                          isSelected, cellHasFocus);
       setText(instruction.text);
       if (instruction.isCurrentAddress) {
-        final boolean isActive =
-          (instruction.pendingDelay == 0) && !instruction.isForced;
-        if (isActive && list.isEnabled()) {
+        if (instruction.isActive && list.isEnabled()) {
           setForeground(fgCurrent);
           setBackground(bgCurrent);
         } else {
@@ -211,15 +208,15 @@ public class CodeSmViewPanel extends JPanel
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_FORCED_INSTR);
     final int forcedInstr = sdk.readAddress(forcedInstrAddress);
-    final boolean isForced = (forcedInstr & 0x00010000) != 0x0;
-    final int forcedOpCode = isForced ? forcedInstr & 0xffff : 0x0;
+    final boolean haveForced = (forcedInstr & 0x00010000) != 0x0;
+    final int forcedOpCode = haveForced ? forcedInstr & 0xffff : 0x0;
 
     final int execdInstrAddress =
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_EXECD_INSTR);
     final int execdInstr = sdk.readAddress(execdInstrAddress);
-    final boolean isExecd = (execdInstr & 0x00010000) != 0x0;
-    final int execdOpCode = isExecd ? execdInstr & 0xffff : 0x0;
+    final boolean haveExecd = (execdInstr & 0x00010000) != 0x0;
+    final int execdOpCode = haveExecd ? execdInstr & 0xffff : 0x0;
 
     for (int address = 0; address < Constants.MEMORY_SIZE; address++) {
       final boolean isCurrentAddress = address == pc;
@@ -242,15 +239,14 @@ public class CodeSmViewPanel extends JPanel
       final Instruction instruction = instructions.getElementAt(address);
       instruction.text = instructionText;
       instruction.isCurrentAddress = isCurrentAddress;
-      instruction.isForced = isForced;
-      instruction.pendingDelay = pendingDelay;
+      instruction.isActive = (pendingDelay == 0) && !haveForced && !haveExecd;
     }
     final PIOSDK.InstructionInfo currentInstructionInfo =
       pioSdk.getCurrentInstruction(smNum, true, true);
     updateDelayDisplay(currentInstructionInfo, pendingDelay);
     final boolean isActive = pioSdk.smGetEnabled(smNum) && isClkEnabled();
-    updateForcedOrExecdInstructionDisplay(pioSdk, isForced, forcedOpCode,
-                                          isExecd, execdOpCode, isActive);
+    updateForcedOrExecdInstructionDisplay(pioSdk, haveForced, forcedOpCode,
+                                          haveExecd, execdOpCode, isActive);
     lsInstructions.setEnabled(isActive);
     if (pc != lastPC) {
       lsInstructions.ensureIndexIsVisible(pc);
@@ -259,14 +255,14 @@ public class CodeSmViewPanel extends JPanel
   }
 
   private void updateForcedOrExecdInstructionDisplay(final PIOSDK pioSdk,
-                                                     final boolean isForced,
+                                                     final boolean haveForced,
                                                      final int forcedOpCode,
-                                                     final boolean isExecd,
+                                                     final boolean haveExecd,
                                                      final int execdOpCode,
                                                      final boolean isActive)
     throws IOException
   {
-    if (isForced) {
+    if (haveForced) {
       final PIOSDK.InstructionInfo forcedInstrInfo =
         pioSdk.getInstructionFromOpCode(smNum,
                                         Constants.INSTR_ORIGIN_FORCED,
@@ -278,7 +274,7 @@ public class CodeSmViewPanel extends JPanel
         String.format("  [f] %04x %s",
                       forcedOpCode, forcedInstrInfo.getFullStatement());
       taForcedOrExecdInstruction.setText(displayText);
-    } else if (isExecd) {
+    } else if (haveExecd) {
       final PIOSDK.InstructionInfo execdInstrInfo =
         pioSdk.getInstructionFromOpCode(smNum,
                                         Constants.INSTR_ORIGIN_EXECD,
