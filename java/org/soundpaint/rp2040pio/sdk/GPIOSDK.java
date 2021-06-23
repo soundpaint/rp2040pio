@@ -25,13 +25,13 @@
 package org.soundpaint.rp2040pio.sdk;
 
 import java.io.IOException;
+import org.soundpaint.rp2040pio.AddressSpace;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Direction;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
 import org.soundpaint.rp2040pio.PinState;
-import org.soundpaint.rp2040pio.Registers;
 
 /**
  * Minimal subset of GPIO SDK Interface, just enough to provide all
@@ -44,9 +44,9 @@ public class GPIOSDK implements Constants
     BEFORE, AFTER
   }
 
-  private final Registers memory;
+  private final AddressSpace memory;
 
-  public GPIOSDK(final Registers memory)
+  public GPIOSDK(final AddressSpace memory)
   {
     if (memory == null) {
       throw new NullPointerException("memory");

@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
-import org.soundpaint.rp2040pio.sdk.LocalRegisters;
+import org.soundpaint.rp2040pio.sdk.LocalAddressSpace;
 
 public class EmulationServer
 {
@@ -126,10 +126,10 @@ public class EmulationServer
   {
     try {
       final Emulator emulator = new Emulator(console);
-      final LocalRegisters registers = new LocalRegisters(emulator);
+      final LocalAddressSpace memory = new LocalAddressSpace(emulator);
       final int port = options.getValue(optPort);
-      final RegisterServer server =
-        new RegisterServer(console, registers, port);
+      final RemoteAddressSpaceServer server =
+        new RemoteAddressSpaceServer(console, memory, port);
       if (options.getValue(optSilent) != CmdOptions.Flag.ON) {
         console.println("started emulation server at port " + port);
       }

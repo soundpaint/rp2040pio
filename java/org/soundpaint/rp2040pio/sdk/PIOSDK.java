@@ -26,6 +26,7 @@ package org.soundpaint.rp2040pio.sdk;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import org.soundpaint.rp2040pio.AddressSpace;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Decoder;
@@ -35,7 +36,6 @@ import org.soundpaint.rp2040pio.Instruction;
 import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
-import org.soundpaint.rp2040pio.Registers;
 
 /**
  * PIO SDK Interface
@@ -43,7 +43,7 @@ import org.soundpaint.rp2040pio.Registers;
 public class PIOSDK implements Constants
 {
   private final int pioNum;
-  private final Registers memory;
+  private final AddressSpace memory;
   private final GPIOSDK gpioSdk;
   private final Decoder decoder;
 
@@ -52,7 +52,7 @@ public class PIOSDK implements Constants
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIOSDK(final int pioNum, final Registers memory,
+  public PIOSDK(final int pioNum, final AddressSpace memory,
                 final GPIOSDK gpioSdk)
   {
     Constants.checkPioNum(pioNum, "PIO index number");

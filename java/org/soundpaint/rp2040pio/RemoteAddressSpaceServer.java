@@ -1,5 +1,5 @@
 /*
- * @(#)RegisterServer.java 1.00 21/03/03
+ * @(#)RemoteAddressSpaceServer.java 1.00 21/03/03
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -33,9 +33,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * The idea of the RegisterServer class is to provide access to the
- * PIO emulator applicable even for processes other than the JVM
- * instance that hosts the PIO emulator, and potential integration
+ * The idea of the RemoteAddressSpaceServer class is to provide access
+ * to the PIO emulator applicable even for processes other than the
+ * JVM instance that hosts the PIO emulator, and potential integration
  * with other languages such as C/C++ or Python.  Effectively, this
  * class adds an architectural layer that provides the PIO emulator as
  * software as a service (SaaS).  Access is provided via a standard
@@ -57,32 +57,34 @@ import java.net.Socket;
  * emulator, the SDK is to be extended in a way similar to the Pico
  * Host SDL, such that access to the PIO's registers is not performed
  * via direct memory access (as the default implementation of the C
- * SDK does), but via the socket interface that this RegisterServer
- * class provides.
+ * SDK does), but via the socket interface that this
+ * RemoteAddressSpaceServer class provides.
  */
-public class RegisterServer
+public class RemoteAddressSpaceServer
 {
   private static final String[] NULL_ARGS = new String[0];
 
   private final PrintStream console;
-  private final Registers memory;
+  private final AddressSpace memory;
   private final int portNumber;
   private final ServerSocket serverSocket;
   private int connectionCounter;
 
-  private RegisterServer()
+  private RemoteAddressSpaceServer()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public RegisterServer(final PrintStream console, final Registers memory)
+  public RemoteAddressSpaceServer(final PrintStream console,
+                                  final AddressSpace memory)
     throws IOException
   {
     this(console, memory, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
   }
 
-  public RegisterServer(final PrintStream console, final Registers memory,
-                        final int portNumber)
+  public RemoteAddressSpaceServer(final PrintStream console,
+                                  final AddressSpace memory,
+                                  final int portNumber)
     throws IOException
   {
     if (console == null) {
@@ -98,7 +100,8 @@ public class RegisterServer
     connectionCounter = 0;
     // TODO: Maybe introduce pool of reusable client threads to limit
     // maximum number of simultaneously open connections.
-    new Thread(() -> listen(), "RegisterServer Client Thread").start();
+    new Thread(() -> listen(),
+               "RemoteAddressSpaceServer Client Thread").start();
   }
 
   private void listen()
@@ -106,8 +109,8 @@ public class RegisterServer
     while (true) {
       try {
         final Socket clientSocket = serverSocket.accept();
-        new Thread(() -> serve(clientSocket), "RegisterServer Server Thread").
-          start();
+        new Thread(() -> serve(clientSocket),
+                   "RemoteAddressSpaceServer Server Thread").start();
       } catch (final IOException e) {
         // establishing connection failed => abort connection
       }

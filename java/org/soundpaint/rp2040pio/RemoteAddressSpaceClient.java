@@ -1,5 +1,5 @@
 /*
- * @(#)RegisterClient.java 1.00 21/03/17
+ * @(#)RemoteAddressSpaceClient.java 1.00 21/03/17
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -35,10 +35,10 @@ import java.net.Socket;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
- * Remote client that connects to a RegisterServer via TCP/IP socket
- * connection.
+ * TCP/IP Client that connects to a RemoteAddressSpaceServer via
+ * socket.
  */
-public class RegisterClient extends Registers
+public class RemoteAddressSpaceClient extends AddressSpace
 {
   private static final String MSG_NO_CONNECTION = "no connection";
 
@@ -117,7 +117,7 @@ public class RegisterClient extends Registers
    *
    * @see #connect
    */
-  public RegisterClient(final PrintStream console) throws IOException
+  public RemoteAddressSpaceClient(final PrintStream console) throws IOException
   {
     if (console == null) {
       throw new NullPointerException("console");
@@ -129,7 +129,7 @@ public class RegisterClient extends Registers
    * Creates register client and connects to the default port of the
    * specified host.  If host is null, connects to localhost.
    */
-  public RegisterClient(final PrintStream console, final String host)
+  public RemoteAddressSpaceClient(final PrintStream console, final String host)
     throws IOException
   {
     this(console);
@@ -140,8 +140,8 @@ public class RegisterClient extends Registers
    * Creates register client and connects to the specified port of the
    * specified host.  If host is null, connects to localhost.
    */
-  public RegisterClient(final PrintStream console,
-                        final String host, final int port)
+  public RemoteAddressSpaceClient(final PrintStream console,
+                                  final String host, final int port)
     throws IOException
   {
     this(console);

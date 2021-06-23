@@ -31,11 +31,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
+import org.soundpaint.rp2040pio.AddressSpace;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.IOUtils;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
-import org.soundpaint.rp2040pio.RegisterClient;
+import org.soundpaint.rp2040pio.RemoteAddressSpaceClient;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.Panic;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
@@ -160,12 +161,12 @@ public class Monitor
                    String.format(Command.commandHint));
   }
 
-  private RegisterClient connect() throws IOException
+  private AddressSpace connect() throws IOException
   {
     final int port = options.getValue(optPort);
     try {
       console.printf("connecting to emulation server at port %d…%n", port);
-      return new RegisterClient(console, null, port);
+      return new RemoteAddressSpaceClient(console, null, port);
     } catch (final IOException e) {
       final String message =
         String.format("failed to connect to emulation server: %s%n" +

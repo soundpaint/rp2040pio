@@ -1,5 +1,5 @@
 /*
- * @(#)LocalRegisters.java 1.00 21/03/25
+ * @(#)LocalAddressSpace.java 1.00 21/03/25
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.soundpaint.rp2040pio.AbstractRegisters;
+import org.soundpaint.rp2040pio.AddressSpace;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.GPIO;
@@ -39,9 +40,8 @@ import org.soundpaint.rp2040pio.PicoEmuRegistersImpl;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIORegistersImpl;
 import org.soundpaint.rp2040pio.PIOEmuRegistersImpl;
-import org.soundpaint.rp2040pio.Registers;
 
-public class LocalRegisters extends Registers
+public class LocalAddressSpace extends AddressSpace
 {
   private final Emulator emulator;
   private final PicoEmuRegistersImpl picoEmuRegisters;
@@ -59,7 +59,7 @@ public class LocalRegisters extends Registers
    */
   private final List<AbstractRegisters> registersList;
 
-  public LocalRegisters(final Emulator emulator)
+  public LocalAddressSpace(final Emulator emulator)
   {
     this.emulator = emulator;
 

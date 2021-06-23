@@ -26,15 +26,15 @@ package org.soundpaint.rp2040pio.sdk;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import org.soundpaint.rp2040pio.AddressSpace;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
-import org.soundpaint.rp2040pio.Registers;
 
 public class SDK implements Constants
 {
   private final PrintStream console;
-  private final Registers memory;
+  private final AddressSpace memory;
 
   /*
    * TODO: There is only a single GPIO, but each of the two PIOs has
@@ -52,7 +52,7 @@ public class SDK implements Constants
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public SDK(final PrintStream console, final Registers memory)
+  public SDK(final PrintStream console, final AddressSpace memory)
   {
     if (console == null) {
       throw new NullPointerException("console");

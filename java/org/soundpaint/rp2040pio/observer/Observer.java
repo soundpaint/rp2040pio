@@ -28,10 +28,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
+import org.soundpaint.rp2040pio.AddressSpace;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
-import org.soundpaint.rp2040pio.RegisterClient;
-import org.soundpaint.rp2040pio.Registers;
+import org.soundpaint.rp2040pio.RemoteAddressSpaceClient;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -85,7 +85,7 @@ public class Observer
     this.console = console;
     options = parseArgs(argv);
     printAbout();
-    final Registers memory = connect();
+    final AddressSpace memory = connect();
     sdk = new SDK(console, memory);
   }
 
@@ -144,12 +144,12 @@ public class Observer
                    Constants.getCmdLineCopyrightNotice());
   }
 
-  private Registers connect()
+  private AddressSpace connect()
   {
     final int port = options.getValue(optPort);
     try {
       console.printf("connecting to emulation server at port %d…%n", port);
-      return new RegisterClient(console, null, port);
+      return new RemoteAddressSpaceClient(console, null, port);
     } catch (final IOException e) {
       console.println("failed to connect to emulation server: " +
                       e.getMessage());

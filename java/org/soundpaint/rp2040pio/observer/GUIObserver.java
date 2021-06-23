@@ -41,7 +41,7 @@ import javax.swing.UIManager;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.CmdOptions;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
-import org.soundpaint.rp2040pio.RegisterClient;
+import org.soundpaint.rp2040pio.RemoteAddressSpaceClient;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -87,8 +87,8 @@ public abstract class GUIObserver extends JFrame
   private final JLabel lbStatus;
   private final CmdOptions options;
   private final SDK sdk;
-  private final RegisterClient sdkClient;
-  private final RegisterClient updateLoopClient;
+  private final RemoteAddressSpaceClient sdkClient;
+  private final RemoteAddressSpaceClient updateLoopClient;
 
   private GUIObserver()
   {
@@ -121,9 +121,9 @@ public abstract class GUIObserver extends JFrame
     add(createStatusLine(console), BorderLayout.SOUTH);
     setJMenuBar(createMenuBar(console));
     printAbout();
-    sdkClient = createRegisters("GUI event thread");
+    sdkClient = createRemoteAddressSpace("GUI event thread");
     sdk = new SDK(console, sdkClient);
-    updateLoopClient = createRegisters("update loop thread");
+    updateLoopClient = createRemoteAddressSpace("update loop thread");
     connect(null, getPort());
   }
 
@@ -275,14 +275,14 @@ public abstract class GUIObserver extends JFrame
                    Constants.getGuiCopyrightNotice());
   }
 
-  private RegisterClient createRegisters(final String threadName)
+  private RemoteAddressSpaceClient
+    createRemoteAddressSpace(final String threadName)
   {
     final int port = getPort();
     try {
       console.printf("%s: connecting to emulation server at port %d…%n",
                      threadName, port);
-      final RegisterClient registerClient = new RegisterClient(console);
-      return registerClient;
+      return new RemoteAddressSpaceClient(console);
     } catch (final IOException e) {
       console.println("failed to connect to emulation server: " +
                       e.getMessage());

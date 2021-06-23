@@ -1,5 +1,5 @@
 /*
- * @(#)Registers.java 1.00 21/03/03
+ * @(#)AddressSpace.java 1.00 21/03/03
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -26,7 +26,7 @@ package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
 
-public abstract class Registers
+public abstract class AddressSpace
 {
   static final int REG_ALIAS_RW_BITS = 0x0000;
   static final int REG_ALIAS_XOR_BITS = 0x1000;
