@@ -26,27 +26,111 @@ package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
 
-public interface Registers
+public abstract class Registers
 {
   static final int REG_ALIAS_RW_BITS = 0x0000;
   static final int REG_ALIAS_XOR_BITS = 0x1000;
   static final int REG_ALIAS_SET_BITS = 0x2000;
   static final int REG_ALIAS_CLR_BITS = 0x3000;
 
-  int getBaseAddress();
-  String getEmulatorInfo() throws IOException;
-  boolean providesAddress(final int address) throws IOException;
-  String getAddressLabel(final int address) throws IOException;
-  void writeAddress(final int address, final int value) throws IOException;
-  int readAddress(final int address) throws IOException;
-  int wait(final int address, final int expectedValue, final int mask,
-           final long cyclesTimeout, final long millisTimeout)
+  private enum AccessMethod {
+    NORMAL_RW, ATOMIC_XOR, ATOMIC_SET, ATOMIC_CLEAR;
+  };
+
+  private static AccessMethod[] ACCESS_METHODS = AccessMethod.values();
+
+  protected static void checkAddressAligned(final int address)
+  {
+    if ((address & 0x3) != 0x0) {
+      throw new IllegalArgumentException("address not word-aligned: " +
+                                         String.format("0x%08x", address));
+    }
+  }
+
+  private static void checkAddressNormalRWSpace(final int address)
+  {
+    if ((address & 0x3000) != 0x0) {
+      throw new IllegalArgumentException("address is not in the space of " +
+                                         "normal read / write access: " +
+                                         String.format("0x%08x", address));
+    }
+  }
+
+  public abstract String getEmulatorInfo() throws IOException;
+
+  public abstract boolean providesAddress(final int address)
     throws IOException;
-  void hwSetBits(final int address, final int mask) throws IOException;
-  void hwClearBits(final int address, final int mask) throws IOException;
-  void hwXorBits(final int address, final int mask) throws IOException;
-  void hwWriteMasked(final int address, final int values, final int writeMask)
+
+  public abstract String getAddressLabel(final int address) throws IOException;
+
+  public abstract int readAddress(final int address) throws IOException;
+
+  public abstract void writeAddressMasked(final int address, final int bits,
+                                          final int mask, final boolean xor)
     throws IOException;
+
+  public abstract int waitAddress(final int address, final int expectedValue,
+                                  final int mask,
+                                  final long cyclesTimeout,
+                                  final long millisTimeout)
+    throws IOException;
+
+  public void writeAddress(final int address, final int value)
+    throws IOException
+  {
+    checkAddressAligned(address);
+    final AccessMethod accessMethod = ACCESS_METHODS[((address >> 12) & 0x3)];
+    final int mask;
+    final int bits;
+    switch (accessMethod) {
+    case NORMAL_RW:
+      mask = ~0x0;
+      bits = value;
+      break;
+    case ATOMIC_XOR:
+      mask = value;
+      bits = value;
+      break;
+    case ATOMIC_SET:
+      mask = value;
+      bits = value;
+      break;
+    case ATOMIC_CLEAR:
+      mask = value;
+      bits = 0x0;
+      break;
+    default:
+      throw new InternalError("unexpected case fall-through");
+    }
+    writeAddressMasked(address & ~0x3000, bits, mask,
+                       accessMethod == AccessMethod.ATOMIC_XOR);
+  }
+
+  public void hwSetBits(final int address, final int mask) throws IOException
+  {
+    checkAddressNormalRWSpace(address);
+    writeAddress(address | REG_ALIAS_SET_BITS, mask);
+  }
+
+  public void hwClearBits(final int address, final int mask) throws IOException
+  {
+    checkAddressNormalRWSpace(address);
+    writeAddress(address | REG_ALIAS_CLR_BITS, mask);
+  }
+
+  public void hwXorBits(final int address, final int mask) throws IOException
+  {
+    checkAddressNormalRWSpace(address);
+    writeAddress(address | REG_ALIAS_XOR_BITS, mask);
+  }
+
+  public void hwWriteMasked(final int address, final int values,
+                            final int writeMask)
+    throws IOException
+  {
+    checkAddressNormalRWSpace(address);
+    writeAddressMasked(address, values, writeMask, false);
+  }
 }
 
 /*

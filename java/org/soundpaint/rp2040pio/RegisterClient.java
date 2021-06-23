@@ -38,7 +38,7 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  * Remote client that connects to a RegisterServer via TCP/IP socket
  * connection.
  */
-public class RegisterClient extends AbstractRegisters
+public class RegisterClient extends Registers
 {
   private static final String MSG_NO_CONNECTION = "no connection";
 
@@ -119,7 +119,6 @@ public class RegisterClient extends AbstractRegisters
    */
   public RegisterClient(final PrintStream console) throws IOException
   {
-    super(0x0, (short)0x0);
     if (console == null) {
       throw new NullPointerException("console");
     }
@@ -270,9 +269,6 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  public int getBaseAddress() { return 0; }
-
-  @Override
   public boolean providesAddress(final int address) throws IOException
   {
     final String request = String.format("p 0x%08x", address);
@@ -301,11 +297,6 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  protected <T extends Enum<T>> T[] getRegs() {
-    throw new InternalError("method not applicable for this class");
-  }
-
-  @Override
   public String getAddressLabel(final int address) throws IOException
   {
     final String request = String.format("l 0x%08x", address);
@@ -324,23 +315,17 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  protected void writeRegister(final int regNum,
-                               final int bits, final int mask,
-                               final boolean xor)
-  {
-    throw new InternalError("method not applicable for this class");
-  }
-
-  @Override
-  public void writeAddress(final int address, final int value)
+  public void writeAddressMasked(final int address, final int bits,
+                                 final int mask, final boolean xor)
     throws IOException
   {
-    final String request = String.format("w 0x%08x 0x%08x", address, value);
+    final String request = String.format("w 0x%08x 0x%08x 0x%08x %s",
+                                         address, bits, mask, xor ? "t" : "f");
     final Response response = getResponse(request);
     checkResponse(response);
     final String message =
-      String.format("failed writing value 0x%04x to address 0x%08x",
-                    value, address);
+      String.format("failed writing value 0x%08x to address 0x%08x with " +
+                    "mask 0x%08x and xor=%s", bits, address, mask, xor);
     response.getResultOrThrowOnFailure(message);
   }
 
@@ -365,12 +350,6 @@ public class RegisterClient extends AbstractRegisters
   }
 
   @Override
-  protected int readRegister(final int regNum)
-  {
-    throw new InternalError("method not applicable for this class");
-  }
-
-  @Override
   public int readAddress(final int address) throws IOException
   {
     final String request = String.format("r 0x%08x", address);
@@ -378,16 +357,14 @@ public class RegisterClient extends AbstractRegisters
     checkResponse(response);
     final String message =
       String.format("failed retrieving value for address 0x%08x", address);
-    final String result =
-      response.getResultOrThrowOnFailure(message);
+    final String result = response.getResultOrThrowOnFailure(message);
     return parseIntResult(address, result);
   }
 
   @Override
-  public int wait(final int address,
-                  final int expectedValue, final int mask,
-                  final long cyclesTimeout,
-                  final long millisTimeout)
+  public int waitAddress(final int address,
+                         final int expectedValue, final int mask,
+                         final long cyclesTimeout, final long millisTimeout)
     throws IOException
   {
     final StringBuffer query = new StringBuffer();

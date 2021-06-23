@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.soundpaint.rp2040pio.AbstractRegisters;
+import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.Emulator;
 import org.soundpaint.rp2040pio.GPIO;
 import org.soundpaint.rp2040pio.GPIOIOBank0RegistersImpl;
@@ -38,8 +39,9 @@ import org.soundpaint.rp2040pio.PicoEmuRegistersImpl;
 import org.soundpaint.rp2040pio.PIO;
 import org.soundpaint.rp2040pio.PIORegistersImpl;
 import org.soundpaint.rp2040pio.PIOEmuRegistersImpl;
+import org.soundpaint.rp2040pio.Registers;
 
-public class LocalRegisters extends AbstractRegisters
+public class LocalRegisters extends Registers
 {
   private final Emulator emulator;
   private final PicoEmuRegistersImpl picoEmuRegisters;
@@ -59,7 +61,6 @@ public class LocalRegisters extends AbstractRegisters
 
   public LocalRegisters(final Emulator emulator)
   {
-    super(0x0, (short)0x0);
     this.emulator = emulator;
 
     registersList = new ArrayList<AbstractRegisters>();
@@ -83,6 +84,12 @@ public class LocalRegisters extends AbstractRegisters
     registersList.add(pio1Registers);
     pio1EmuRegisters = new PIOEmuRegistersImpl(pio1);
     registersList.add(pio1EmuRegisters);
+  }
+
+  @Override
+  public String getEmulatorInfo() throws IOException
+  {
+    return Constants.getEmulatorIdAndVersionWithOs();
   }
 
   public int getGPIOAddress(final GPIOIOBank0RegistersImpl.Regs register)
@@ -115,19 +122,24 @@ public class LocalRegisters extends AbstractRegisters
     return pio1EmuRegisters.getAddress(register);
   }
 
+  private static int address2register(final AbstractRegisters registers,
+                                      final int address)
+  {
+    checkAddressAligned(address);
+    return ((address - registers.getBaseAddress()) & ~0x3000) >>> 2;
+  }
+
   private AbstractRegisters getProvidingRegisters(final int address)
     throws IOException
   {
     for (final AbstractRegisters registers : registersList) {
-      if (registers.providesAddress(address)) {
+      final int regNum = address2register(registers, address);
+      if (regNum < registers.getSize()) {
         return registers;
       }
     }
     return null;
   }
-
-  @Override
-  public int getBaseAddress() { return 0; }
 
   @Override
   public boolean providesAddress(final int address) throws IOException
@@ -136,16 +148,12 @@ public class LocalRegisters extends AbstractRegisters
   }
 
   @Override
-  protected <T extends Enum<T>> T[] getRegs() {
-    throw new InternalError("method not applicable for this class");
-  }
-
-  @Override
   public String getAddressLabel(final int address) throws IOException
   {
     final AbstractRegisters registers = getProvidingRegisters(address);
     if (registers != null) {
-      return registers.getAddressLabel(address);
+      final int regNum = address2register(registers, address);
+      return registers.getRegisterLabel(regNum);
     }
     final String message =
       String.format("requesting label for unsupported address: %08x",
@@ -154,21 +162,21 @@ public class LocalRegisters extends AbstractRegisters
   }
 
   @Override
-  protected void writeRegister(final int regNum,
-                               final int bits, final int mask,
-                               final boolean xor)
-  {
-    throw new InternalError("method not applicable for this class");
-  }
-
-  @Override
-  public void writeAddress(final int address, final int value)
+  public synchronized void writeAddressMasked(final int address, final int bits,
+                                              final int mask, final boolean xor)
     throws IOException
   {
+    if ((address & 0x3000) != 0x0000) {
+      final String message =
+        String.format("writeAddressMasked(): " +
+                      "address not in base address range: 0x%8x", address);
+      throw new IOException(message);
+    }
     final AbstractRegisters registers = getProvidingRegisters(address);
     if (registers != null) {
+      final int regNum = address2register(registers, address);
       try {
-        registers.writeAddress(address, value);
+        registers.writeRegister(regNum, bits, mask, xor);
       } catch (final Throwable t) {
         final String message = t.getMessage();
         emulator.getConsole().
@@ -184,18 +192,13 @@ public class LocalRegisters extends AbstractRegisters
   }
 
   @Override
-  protected int readRegister(final int regNum)
-  {
-    throw new InternalError("method not applicable for this class");
-  }
-
-  @Override
-  public int readAddress(final int address) throws IOException
+  public synchronized int readAddress(final int address) throws IOException
   {
     final AbstractRegisters registers = getProvidingRegisters(address);
     if (registers != null) {
+      final int regNum = address2register(registers, address);
       try {
-        return registers.readAddress(address);
+        return registers.readRegister(regNum);
       } catch (final Throwable t) {
         final String message = t.getMessage();
         emulator.getConsole().
@@ -220,8 +223,9 @@ public class LocalRegisters extends AbstractRegisters
   }
 
   @Override
-  public int wait(final int address, final int expectedValue, final int mask,
-                  final long cyclesTimeout, final long millisTimeout)
+  public int waitAddress(final int address, final int expectedValue,
+                         final int mask,
+                         final long cyclesTimeout, final long millisTimeout)
     throws IOException
   {
     if (cyclesTimeout < 0) {

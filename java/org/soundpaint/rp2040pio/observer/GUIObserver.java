@@ -358,12 +358,12 @@ public abstract class GUIObserver extends JFrame
     while (true) {
       try {
         while (true) {
-          updateLoopClient.wait(addressPhase1, expectedValue, mask,
-                                cyclesTimeout, millisTimeoutPhase1);
+          updateLoopClient.waitAddress(addressPhase1, expectedValue, mask,
+                                       cyclesTimeout, millisTimeoutPhase1);
           updateView();
           SwingUtilities.invokeLater(() -> repaint());
-          updateLoopClient.wait(addressPhase0, expectedValue, mask,
-                                cyclesTimeout, millisTimeoutPhase0);
+          updateLoopClient.waitAddress(addressPhase0, expectedValue, mask,
+                                       cyclesTimeout, millisTimeoutPhase0);
         }
       } catch (final IOException e) {
         final String message = String.format("Error: %s", e.getMessage());

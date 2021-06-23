@@ -192,7 +192,7 @@ public abstract class PIORegisters extends AbstractRegisters
 
   public PIORegisters(final int pioNum)
   {
-    super(Constants.getPIOBaseAddress(pioNum), (short)REGS.length);
+    super(Constants.getPIOBaseAddress(pioNum));
   }
 }
 

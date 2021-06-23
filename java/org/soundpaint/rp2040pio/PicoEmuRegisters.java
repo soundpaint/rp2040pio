@@ -219,7 +219,7 @@ public abstract class PicoEmuRegisters extends AbstractRegisters
 
   public PicoEmuRegisters()
   {
-    super(EMULATOR_BASE, (short)REGS.length);
+    super(EMULATOR_BASE);
   }
 }
 

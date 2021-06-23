@@ -104,10 +104,10 @@ public class PIORegistersImpl extends PIORegisters
   }
 
   @Override
-  protected void writeRegister(final int regNum, final int value,
-                               final int mask, final boolean xor)
+  public void writeRegister(final int regNum, final int value,
+                            final int mask, final boolean xor)
   {
-    checkRegNum(regNum, REGS.length);
+    checkRegNum(regNum);
     final Regs register = REGS[regNum];
     switch (register) {
     case CTRL:
@@ -307,9 +307,9 @@ public class PIORegistersImpl extends PIORegisters
   }
 
   @Override
-  protected synchronized int readRegister(final int regNum)
+  public synchronized int readRegister(final int regNum)
   {
-    checkRegNum(regNum, REGS.length);
+    checkRegNum(regNum);
     final Regs register = REGS[regNum];
     switch (register) {
     case CTRL:

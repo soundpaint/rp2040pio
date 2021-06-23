@@ -34,7 +34,7 @@ import org.soundpaint.rp2040pio.Registers;
 public class SDK implements Constants
 {
   private final PrintStream console;
-  private final Registers registers;
+  private final Registers memory;
 
   /*
    * TODO: There is only a single GPIO, but each of the two PIOs has
@@ -52,19 +52,19 @@ public class SDK implements Constants
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public SDK(final PrintStream console, final Registers registers)
+  public SDK(final PrintStream console, final Registers memory)
   {
     if (console == null) {
       throw new NullPointerException("console");
     }
     this.console = console;
-    if (registers == null) {
-      throw new NullPointerException("registers");
+    if (memory == null) {
+      throw new NullPointerException("memory");
     }
-    this.registers = registers;
-    gpioSdk = new GPIOSDK(registers);
-    pio0Sdk = new PIOSDK(0, registers, gpioSdk);
-    pio1Sdk = new PIOSDK(1, registers, gpioSdk);
+    this.memory = memory;
+    gpioSdk = new GPIOSDK(memory);
+    pio0Sdk = new PIOSDK(0, memory, gpioSdk);
+    pio1Sdk = new PIOSDK(1, memory, gpioSdk);
   }
 
   public PrintStream getConsole() { return console; }
@@ -74,7 +74,7 @@ public class SDK implements Constants
 
   public int readAddress(final int address) throws IOException
   {
-    return registers.readAddress(address);
+    return memory.readAddress(address);
   }
 
   public int readAddress(final int address, final int msb, final int lsb)
@@ -91,7 +91,14 @@ public class SDK implements Constants
   public void writeAddress(final int address, final int value)
     throws IOException
   {
-    registers.writeAddress(address, value);
+    memory.writeAddress(address, value);
+  }
+
+  public void writeAddressMasked(final int address, final int bits,
+                                 final int mask, final boolean xor)
+    throws IOException
+  {
+    memory.writeAddressMasked(address, bits, mask, xor);
   }
 
   public int wait(final int address, final int expectedValue)
@@ -118,47 +125,52 @@ public class SDK implements Constants
     throws IOException
   {
     return
-      registers.wait(address, expectedValue, mask,
-                     cyclesTimeout, millisTimeout);
+      memory.waitAddress(address, expectedValue, mask,
+                         cyclesTimeout, millisTimeout);
   }
 
   public void awaitNextCycle() throws IOException
   {
-    registers.wait(EMULATOR_BASE, 0xffffffff, 0x0, 1, 0);
+    memory.waitAddress(EMULATOR_BASE, 0xffffffff, 0x0, 1, 0);
   }
 
   public void hwSetBits(final int address, final int mask) throws IOException
   {
-    registers.hwSetBits(address, mask);
+    memory.hwSetBits(address, mask);
   }
 
   public void hwClearBits(final int address, final int mask) throws IOException
   {
-    registers.hwClearBits(address, mask);
+    memory.hwClearBits(address, mask);
   }
 
   public void hwXorBits(final int address, final int mask) throws IOException
   {
-    registers.hwXorBits(address, mask);
+    memory.hwXorBits(address, mask);
   }
 
   public void hwWriteMasked(final int address, final int values,
                             final int writeMask)
     throws IOException
   {
-    registers.hwWriteMasked(address, values, writeMask);
+    memory.hwWriteMasked(address, values, writeMask);
   }
 
   // -------- address helpers --------
 
-  public boolean matchesProvidingRegisters(final int address) throws IOException
+  public String getEmulatorInfo() throws IOException
   {
-    return registers.providesAddress(address);
+    return memory.getEmulatorInfo();
+  }
+
+  public boolean providesAddress(final int address) throws IOException
+  {
+    return memory.providesAddress(address);
   }
 
   public String getLabelForAddress(final int address) throws IOException
   {
-    return registers.getAddressLabel(address);
+    return memory.getAddressLabel(address);
   }
 
   // -------- PicoEmuRegisters convenience methods --------
@@ -167,7 +179,7 @@ public class SDK implements Constants
   {
     final int address =
       PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.PWR_UP);
-    registers.writeAddress(address, PICO_PWR_UP_VALUE);
+    memory.writeAddress(address, PICO_PWR_UP_VALUE);
     pio0Sdk.reset();
     pio1Sdk.reset();
   }
@@ -177,9 +189,9 @@ public class SDK implements Constants
     throws IOException
   {
     final int triggerAddress = PicoEmuRegisters.getAddress(trigger);
-    synchronized(registers) {
-      registers.writeAddress(triggerAddress, 0);
-      while (await && (registers.readAddress(triggerAddress) == 0)) {
+    synchronized(memory) {
+      memory.writeAddress(triggerAddress, 0);
+      while (await && (memory.readAddress(triggerAddress) == 0)) {
         Thread.yield();
       }
     }
@@ -195,19 +207,14 @@ public class SDK implements Constants
     triggerCyclePhaseX(PicoEmuRegisters.Regs.MASTERCLK_TRIGGER_PHASE1, await);
   }
 
-  public String getEmulatorInfo() throws IOException
-  {
-    return registers.getEmulatorInfo();
-  }
-
   public long getWallClock() throws IOException
   {
     final int addressWallClockLsb =
       PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_LSB);
     final int addressWallClockMsb =
       PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.WALLCLOCK_MSB);
-    final int wallClockLsb = registers.readAddress(addressWallClockLsb);
-    final int wallClockMsb = registers.readAddress(addressWallClockMsb);
+    final int wallClockLsb = memory.readAddress(addressWallClockLsb);
+    final int wallClockMsb = memory.readAddress(addressWallClockMsb);
     return ((long)wallClockMsb << 32) | wallClockLsb;
   }
 }

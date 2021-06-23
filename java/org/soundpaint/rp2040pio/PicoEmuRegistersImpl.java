@@ -44,10 +44,10 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
   public Emulator getEmulator() { return emulator; }
 
   @Override
-  protected void writeRegister(final int regNum, final int value,
-                               final int mask, final boolean xor)
+  public void writeRegister(final int regNum, final int value,
+                            final int mask, final boolean xor)
   {
-    checkRegNum(regNum, REGS.length);
+    checkRegNum(regNum);
     final Regs register = REGS[regNum];
     switch (register) {
     case PWR_UP:
@@ -77,9 +77,9 @@ public class PicoEmuRegistersImpl extends PicoEmuRegisters
   }
 
   @Override
-  protected synchronized int readRegister(final int regNum)
+  public synchronized int readRegister(final int regNum)
   {
-    checkRegNum(regNum, REGS.length);
+    checkRegNum(regNum);
     final Regs register = REGS[regNum];
     switch (register) {
     case PWR_UP:

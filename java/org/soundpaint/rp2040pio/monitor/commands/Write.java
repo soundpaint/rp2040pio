@@ -85,7 +85,7 @@ public class Write extends Command
   {
     final int address = options.getValue(optAddress);
     final int value = options.getValue(optValue);
-    final boolean validAddress = sdk.matchesProvidingRegisters(address);
+    final boolean validAddress = sdk.providesAddress(address);
     if (!validAddress) {
       final String message =
         String.format("write to unsupported address: 0x%08x", address);

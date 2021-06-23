@@ -85,8 +85,8 @@ public class Observer
     this.console = console;
     options = parseArgs(argv);
     printAbout();
-    final Registers registers = connect();
-    sdk = new SDK(console, registers);
+    final Registers memory = connect();
+    sdk = new SDK(console, memory);
   }
 
   private CmdOptions parseArgs(final String argv[])
@@ -164,7 +164,7 @@ public class Observer
   {
     try {
       final int address = options.getValue(optAddress);
-      final boolean validAddress = sdk.matchesProvidingRegisters(address);
+      final boolean validAddress = sdk.providesAddress(address);
       if (!validAddress) {
         final String message =
           String.format("unsupported address: 0x%08x", address);

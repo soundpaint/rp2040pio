@@ -583,7 +583,7 @@ public abstract class PIOEmuRegisters extends AbstractRegisters
 
   public PIOEmuRegisters(final int pioNum)
   {
-    super(Constants.getPIOEmuBaseAddress(pioNum), (short)REGS.length);
+    super(Constants.getPIOEmuBaseAddress(pioNum));
   }
 }
 

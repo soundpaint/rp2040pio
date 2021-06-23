@@ -44,14 +44,14 @@ public class GPIOSDK implements Constants
     BEFORE, AFTER
   }
 
-  private final Registers registers;
+  private final Registers memory;
 
-  public GPIOSDK(final Registers registers)
+  public GPIOSDK(final Registers memory)
   {
-    if (registers == null) {
-      throw new NullPointerException("registers");
+    if (memory == null) {
+      throw new NullPointerException("memory");
     }
-    this.registers = registers;
+    this.memory = memory;
   }
 
   public void setFunction(final int gpioNum, final GPIO_Function fn)
@@ -63,7 +63,7 @@ public class GPIOSDK implements Constants
       GPIOPadsBank0Registers.getGPIOAddress(gpioNum);
     final int padsValues = Bit.LOW.getValue() << PADS_BANK0_GPIO0_IE_LSB;
     final int padsWriteMask = PADS_BANK0_GPIO0_IE_BITS;
-    registers.hwWriteMasked(padsGpioAddress, padsValues, padsWriteMask);
+    memory.hwWriteMasked(padsGpioAddress, padsValues, padsWriteMask);
 
     final GPIOIOBank0Registers.Regs ioBank0Reg =
       GPIOIOBank0Registers.Regs.GPIO0_CTRL;
@@ -71,7 +71,7 @@ public class GPIOSDK implements Constants
       GPIOIOBank0Registers.getGPIOAddress(gpioNum, ioBank0Reg);
     final int ioValues = fn.getValue() << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
     final int ioWriteMask = IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS;
-    registers.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
+    memory.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
   }
 
   public static Direction getDirectionFromStatus(final int statusValue,
@@ -123,7 +123,7 @@ public class GPIOSDK implements Constants
     final int gpioStatusAddress =
       GPIOIOBank0Registers.
       getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
-    final int gpioStatusValue = registers.readAddress(gpioStatusAddress);
+    final int gpioStatusValue = memory.readAddress(gpioStatusAddress);
     return getInputLevelFromStatus(gpioStatusValue, override);
   }
 
@@ -134,7 +134,7 @@ public class GPIOSDK implements Constants
       final int gpioStatusAddress =
         GPIOIOBank0Registers.
         getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
-      final int gpioStatusValue = registers.readAddress(gpioStatusAddress);
+      final int gpioStatusValue = memory.readAddress(gpioStatusAddress);
       final int gpioOeFromPeri =
         (gpioStatusValue & Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_BITS) >>>
         Constants.IO_BANK0_GPIO0_STATUS_OEFROMPERI_LSB;

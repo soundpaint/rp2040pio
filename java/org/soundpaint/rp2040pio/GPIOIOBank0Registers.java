@@ -232,7 +232,7 @@ public abstract class GPIOIOBank0Registers extends AbstractRegisters
 
   public GPIOIOBank0Registers()
   {
-    super(IO_BANK0_BASE, (short)REGS.length);
+    super(IO_BANK0_BASE);
   }
 }
 

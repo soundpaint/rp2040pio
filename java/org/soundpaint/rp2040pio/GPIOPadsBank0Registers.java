@@ -98,7 +98,7 @@ public abstract class GPIOPadsBank0Registers extends AbstractRegisters
 
   public GPIOPadsBank0Registers()
   {
-    super(PADS_BANK0_BASE, (short)REGS.length);
+    super(PADS_BANK0_BASE);
   }
 }
 

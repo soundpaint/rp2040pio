@@ -135,12 +135,11 @@ public class MonitorCommandsDocsBuilder
     s.append(String.format("has been compiled from these sources.%n"));
     s.append(String.format("%n"));
     final PrintStream console = System.out;
-    final Registers registers;
     final Emulator emulator = new Emulator(console);
-    registers = new LocalRegisters(emulator);
+    final Registers memory = new LocalRegisters(emulator);
     final BufferedReader in =
       new BufferedReader(new InputStreamReader(System.in));
-    final SDK sdk = new SDK(console, registers);
+    final SDK sdk = new SDK(console, memory);
     final CommandRegistry commandRegistry =
       new CommandRegistry(console, in, sdk, null);
     s.append(createCommandsOverview(commandRegistry));

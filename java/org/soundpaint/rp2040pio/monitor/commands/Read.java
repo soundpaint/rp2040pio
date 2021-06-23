@@ -77,7 +77,7 @@ public class Read extends Command
   protected boolean execute(final CmdOptions options) throws IOException
   {
     final int address = options.getValue(optAddress);
-    final boolean validAddress = sdk.matchesProvidingRegisters(address);
+    final boolean validAddress = sdk.providesAddress(address);
     if (!validAddress) {
       final String message =
         String.format("read from unsupported address: 0x%08x", address);

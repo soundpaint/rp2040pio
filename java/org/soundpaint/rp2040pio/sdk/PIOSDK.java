@@ -43,7 +43,7 @@ import org.soundpaint.rp2040pio.Registers;
 public class PIOSDK implements Constants
 {
   private final int pioNum;
-  private final Registers registers;
+  private final Registers memory;
   private final GPIOSDK gpioSdk;
   private final Decoder decoder;
 
@@ -52,18 +52,18 @@ public class PIOSDK implements Constants
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public PIOSDK(final int pioNum, final Registers registers,
+  public PIOSDK(final int pioNum, final Registers memory,
                 final GPIOSDK gpioSdk)
   {
     Constants.checkPioNum(pioNum, "PIO index number");
-    if (registers == null) {
-      throw new NullPointerException("registers");
+    if (memory == null) {
+      throw new NullPointerException("memory");
     }
     if (gpioSdk == null) {
       throw new NullPointerException("gpio sdk");
     }
     this.pioNum = pioNum;
-    this.registers = registers;
+    this.memory = memory;
     this.gpioSdk = gpioSdk;
     this.decoder = new Decoder();
   }
@@ -177,13 +177,13 @@ public class PIOSDK implements Constants
     final int smPinCtrlSidesetCountAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
     final int pinCtrlSidesetCount =
-      (registers.readAddress(smPinCtrlSidesetCountAddress) &
+      (memory.readAddress(smPinCtrlSidesetCountAddress) &
        SM0_PINCTRL_SIDESET_COUNT_BITS) >>> SM0_PINCTRL_SIDESET_COUNT_LSB;
 
     final int smExecCtrlSideEnAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
     final boolean execCtrlSideEn =
-      (registers.readAddress(smExecCtrlSideEnAddress) &
+      (memory.readAddress(smExecCtrlSideEnAddress) &
        SM0_EXECCTRL_SIDE_EN_BITS) != 0x0;
 
     /*final*/ Instruction instruction;
@@ -214,7 +214,7 @@ public class PIOSDK implements Constants
     final int instrOriginAddress =
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_INSTR_ORIGIN);
-    final int instrOrigin = registers.readAddress(instrOriginAddress);
+    final int instrOrigin = memory.readAddress(instrOriginAddress);
     final int originMode = (instrOrigin >>> 5) & 0x3;
     return
       originMode == INSTR_ORIGIN_MEMORY ?
@@ -247,7 +247,7 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     final int smInstrAddress =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_INSTR);
-    final int opCode = registers.readAddress(smInstrAddress) & 0xffff;
+    final int opCode = memory.readAddress(smInstrAddress) & 0xffff;
     final int origin = getInstrOrigin(smNum);
     final String addressLabel =
       showOrigin ? renderOrigin(origin) + ": " : "";
@@ -255,13 +255,12 @@ public class PIOSDK implements Constants
     final int smDelayCycleAddress =
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_DELAY_CYCLE);
-    final boolean isDelayCycle =
-      registers.readAddress(smDelayCycleAddress) != 0x0;
+    final boolean isDelayCycle = memory.readAddress(smDelayCycleAddress) != 0x0;
 
     final int smDelayAddress =
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_DELAY);
-    final int delay = registers.readAddress(smDelayAddress);
+    final int delay = memory.readAddress(smDelayAddress);
 
     return getInstructionFromOpCode(smNum, origin, addressLabel, opCode, format,
                                     isDelayCycle, delay);
@@ -289,7 +288,7 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     Constants.checkSmMemAddr(address, "memory address");
     final int instrAddress = PIOEmuRegisters.getMemoryAddress(pioNum, address);
-    final int opCode = registers.readAddress(instrAddress) & 0xffff;
+    final int opCode = memory.readAddress(instrAddress) & 0xffff;
     final String formattedOpCode = String.format("%04x ", opCode);
     final String addressLabel =
       (showAddress ? String.format("%02x: ", address) : "") + formattedOpCode;
@@ -316,12 +315,12 @@ public class PIOSDK implements Constants
     Constants.checkGpioPinsCount(outCount, "GPIO out count");
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    synchronized(registers) {
-      int pinCtrl = registers.readAddress(address);
+    synchronized(memory) {
+      int pinCtrl = memory.readAddress(address);
       pinCtrl &= ~(SM0_PINCTRL_OUT_COUNT_BITS | SM0_PINCTRL_OUT_BASE_BITS);
       pinCtrl |= outCount << SM0_PINCTRL_OUT_COUNT_LSB;
       pinCtrl |= outBase << SM0_PINCTRL_OUT_BASE_LSB;
-      registers.writeAddress(address, pinCtrl);
+      memory.writeAddress(address, pinCtrl);
     }
   }
 
@@ -339,12 +338,12 @@ public class PIOSDK implements Constants
     }
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    synchronized(registers) {
-      int pinCtrl = registers.readAddress(address);
+    synchronized(memory) {
+      int pinCtrl = memory.readAddress(address);
       pinCtrl &= ~(SM0_PINCTRL_SET_COUNT_BITS | SM0_PINCTRL_SET_BASE_BITS);
       pinCtrl |= setCount << SM0_PINCTRL_SET_COUNT_LSB;
       pinCtrl |= setBase << SM0_PINCTRL_SET_BASE_LSB;
-      registers.writeAddress(address, pinCtrl);
+      memory.writeAddress(address, pinCtrl);
     }
   }
 
@@ -354,11 +353,11 @@ public class PIOSDK implements Constants
     Constants.checkGpioPin(inBase, "GPIO in base");
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    synchronized(registers) {
-      int pinCtrl = registers.readAddress(address);
+    synchronized(memory) {
+      int pinCtrl = memory.readAddress(address);
       pinCtrl &= ~SM0_PINCTRL_IN_BASE_BITS;
       pinCtrl |= inBase << SM0_PINCTRL_IN_BASE_LSB;
-      registers.writeAddress(address, pinCtrl);
+      memory.writeAddress(address, pinCtrl);
     }
   }
 
@@ -369,11 +368,11 @@ public class PIOSDK implements Constants
     Constants.checkGpioPin(sideSetBase, "GPIO side set base");
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    synchronized(registers) {
-      int pinCtrl = registers.readAddress(address);
+    synchronized(memory) {
+      int pinCtrl = memory.readAddress(address);
       pinCtrl &= ~SM0_PINCTRL_SIDESET_BASE_BITS;
       pinCtrl |= sideSetBase << SM0_PINCTRL_SIDESET_BASE_LSB;
-      registers.writeAddress(address, pinCtrl);
+      memory.writeAddress(address, pinCtrl);
     }
   }
 
@@ -406,21 +405,21 @@ public class PIOSDK implements Constants
     if (smConfig == null) {
       throw new NullPointerException("smConfig");
     }
-    synchronized(registers) {
+    synchronized(memory) {
       final int smClkDivAddr =
         PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_CLKDIV);
-      registers.writeAddress(smClkDivAddr, smConfig.getClkDiv());
+      memory.writeAddress(smClkDivAddr, smConfig.getClkDiv());
       final int smExecCtrlAddr =
         PIORegisters.getSMAddress(pioNum, smNum,
                                   PIORegisters.Regs.SM0_EXECCTRL);
-      registers.writeAddress(smExecCtrlAddr, smConfig.getExecCtrl());
+      memory.writeAddress(smExecCtrlAddr, smConfig.getExecCtrl());
       final int smShiftCtrlAddr =
         PIORegisters.getSMAddress(pioNum, smNum,
                                   PIORegisters.Regs.SM0_SHIFTCTRL);
-      registers.writeAddress(smShiftCtrlAddr, smConfig.getShiftCtrl());
+      memory.writeAddress(smShiftCtrlAddr, smConfig.getShiftCtrl());
       final int smPinCtrlAddr =
         PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-      registers.writeAddress(smPinCtrlAddr, smConfig.getPinCtrl());
+      memory.writeAddress(smPinCtrlAddr, smConfig.getPinCtrl());
     }
   }
 
@@ -530,16 +529,16 @@ public class PIOSDK implements Constants
     }
     Constants.checkSmMemAddr(addressOffset, "address offset");
     final int length = program.getLength();
-    synchronized(registers) {
+    synchronized(memory) {
       for (int index = 0; index < length; index++) {
         final short instruction = program.getInstruction(index);
         final int memoryAddress = (addressOffset + index) & 0x1f;
         // TODO: FIXME: Code relocation: When (addressOffset != 0),
         // JMP commands need their absolute target address to be
         // adjusted according to the offset.
-        registers.writeAddress(PIORegisters.
-                               getMemoryAddress(pioNum, memoryAddress),
-                               instruction);
+        memory.writeAddress(PIORegisters.
+                            getMemoryAddress(pioNum, memoryAddress),
+                            instruction);
       }
     }
   }
@@ -639,12 +638,12 @@ public class PIOSDK implements Constants
         throw new Panic(message);
       }
       memoryAllocation &= ~allocationMaskForOffset;
-      synchronized(registers) {
+      synchronized(memory) {
         for (int index = 0; index < program.getLength(); index++) {
           final int memoryAddress = (loadedOffset + index) & 0x1f;
-          registers.writeAddress(PIORegisters.getMemoryAddress(pioNum,
-                                                               memoryAddress),
-                                 0);
+          memory.writeAddress(PIORegisters.getMemoryAddress(pioNum,
+                                                            memoryAddress),
+                              0);
         }
       }
     }
@@ -654,12 +653,12 @@ public class PIOSDK implements Constants
   {
     synchronized(memoryAllocation) {
       memoryAllocation = 0;
-      synchronized(registers) {
+      synchronized(memory) {
         for (int memoryAddress = 0; memoryAddress < MEMORY_SIZE;
              memoryAddress++) {
-          registers.writeAddress(PIORegisters.getMemoryAddress(pioNum,
-                                                               memoryAddress),
-                                 0);
+          memory.writeAddress(PIORegisters.getMemoryAddress(pioNum,
+                                                            memoryAddress),
+                              0);
         }
       }
     }
@@ -678,9 +677,9 @@ public class PIOSDK implements Constants
        (0x1 << FDEBUG_TXOVER_LSB) |
        (0x1 << FDEBUG_RXUNDER_LSB) |
        (0x1 << FDEBUG_RXSTALL_LSB)) << smNum;
-    registers.writeAddress(PIORegisters.getAddress(pioNum,
-                                                   PIORegisters.Regs.FDEBUG),
-                           fDebug);
+    memory.writeAddress(PIORegisters.getAddress(pioNum,
+                                                PIORegisters.Regs.FDEBUG),
+                        fDebug);
     smRestart(smNum);
     smClkDivRestart(smNum);
     final int jmpInstruction =
@@ -693,7 +692,7 @@ public class PIOSDK implements Constants
   {
     Constants.checkSmNum(smNum);
     final int address = PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
-    final int ctrl = registers.readAddress(address);
+    final int ctrl = memory.readAddress(address);
     return (ctrl & (0x1 << smNum)) != 0x0;
   }
 
@@ -708,7 +707,7 @@ public class PIOSDK implements Constants
     throws IOException
   {
     final int address = PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
-    registers.hwWriteMasked(address, enabled ? mask : 0, mask);
+    memory.hwWriteMasked(address, enabled ? mask : 0, mask);
   }
 
   public void smRestart(final int smNum) throws IOException
@@ -728,11 +727,8 @@ public class PIOSDK implements Constants
                                          mask);
     }
     final int address = PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
-    synchronized(registers) {
-      int ctrl = registers.readAddress(address);
-      ctrl |= (mask << CTRL_SM_RESTART_LSB) & CTRL_SM_RESTART_BITS;
-      registers.writeAddress(address, ctrl);
-    }
+    memory.hwSetBits(address,
+                     (mask << CTRL_SM_RESTART_LSB) & CTRL_SM_RESTART_BITS);
   }
 
   public void smClkDivRestart(final int smNum) throws IOException
@@ -752,10 +748,10 @@ public class PIOSDK implements Constants
                                          mask);
     }
     final int address = PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
-    synchronized(registers) {
-      int ctrl = registers.readAddress(address);
+    synchronized(memory) {
+      int ctrl = memory.readAddress(address);
       ctrl |= (mask << CTRL_CLKDIV_RESTART_LSB) & CTRL_CLKDIV_RESTART_BITS;
-      registers.writeAddress(address, ctrl);
+      memory.writeAddress(address, ctrl);
     }
   }
 
@@ -770,12 +766,12 @@ public class PIOSDK implements Constants
                                          mask);
     }
     final int address = PIORegisters.getAddress(pioNum, PIORegisters.Regs.CTRL);
-    synchronized(registers) {
-      int ctrl = registers.readAddress(address);
+    synchronized(memory) {
+      int ctrl = memory.readAddress(address);
       ctrl |=
         ((mask << CTRL_CLKDIV_RESTART_LSB) & CTRL_CLKDIV_RESTART_BITS) |
         ((mask << CTRL_SM_ENABLE_LSB) & CTRL_SM_ENABLE_BITS);
-      registers.writeAddress(address, ctrl);
+      memory.writeAddress(address, ctrl);
     }
   }
 
@@ -784,7 +780,7 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_ADDR);
-    return registers.readAddress(address);
+    return memory.readAddress(address);
   }
 
   public void smExec(final int smNum, final short instr) throws IOException
@@ -792,7 +788,7 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_ADDR);
-    registers.writeAddress(address, instr & 0xffff);
+    memory.writeAddress(address, instr & 0xffff);
   }
 
   public boolean smIsExecStalled(final int smNum) throws IOException
@@ -800,7 +796,7 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
-    final int execCtrl = registers.readAddress(address);
+    final int execCtrl = memory.readAddress(address);
     return (execCtrl & SM0_EXECCTRL_EXEC_STALLED_BITS) != 0x0;
   }
 
@@ -821,33 +817,33 @@ public class PIOSDK implements Constants
     Constants.checkSmMemAddr(wrap, "wrap");
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_EXECCTRL);
-    synchronized(registers) {
-      int execCtrl = registers.readAddress(address);
+    synchronized(memory) {
+      int execCtrl = memory.readAddress(address);
       execCtrl &= ~(SM0_EXECCTRL_WRAP_TOP_BITS | SM0_EXECCTRL_WRAP_BOTTOM_BITS);
       execCtrl |= wrap << SM0_EXECCTRL_WRAP_TOP_LSB;
       execCtrl |= wrapTarget << SM0_EXECCTRL_WRAP_BOTTOM_LSB;
-      registers.writeAddress(address, execCtrl);
+      memory.writeAddress(address, execCtrl);
     }
   }
 
   public void smPut(final int smNum, final int data) throws IOException
   {
     Constants.checkSmNum(smNum);
-    registers.writeAddress(PIORegisters.getTXFAddress(pioNum, smNum), data);
+    memory.writeAddress(PIORegisters.getTXFAddress(pioNum, smNum), data);
   }
 
   public int smGet(final int smNum) throws IOException
   {
     Constants.checkSmNum(smNum);
-    return registers.readAddress(PIORegisters.getRXFAddress(pioNum, smNum));
+    return memory.readAddress(PIORegisters.getRXFAddress(pioNum, smNum));
   }
 
   public boolean smIsRXFIFOFull(final int smNum) throws IOException
   {
     Constants.checkSmNum(smNum);
     final int fStat =
-      registers.readAddress(PIORegisters.getAddress(pioNum,
-                                                    PIORegisters.Regs.FSTAT));
+      memory.readAddress(PIORegisters.getAddress(pioNum,
+                                                 PIORegisters.Regs.FSTAT));
     return (fStat & (0x1 << (FSTAT_RXFULL_LSB + smNum))) != 0x0;
   }
 
@@ -855,8 +851,8 @@ public class PIOSDK implements Constants
   {
     Constants.checkSmNum(smNum);
     final int fStat =
-      registers.readAddress(PIORegisters.getAddress(pioNum,
-                                                    PIORegisters.Regs.FSTAT));
+      memory.readAddress(PIORegisters.getAddress(pioNum,
+                                                 PIORegisters.Regs.FSTAT));
     return (fStat & (0x1 << (FSTAT_RXEMPTY_LSB + smNum))) != 0x0;
   }
 
@@ -867,8 +863,8 @@ public class PIOSDK implements Constants
       FLEVEL_RX0_LSB + smNum * (FLEVEL_RX1_LSB - FLEVEL_RX0_LSB);
     final int mask = FLEVEL_RX0_BITS >> FLEVEL_RX0_LSB;
     return
-      (registers.readAddress(PIORegisters.getAddress(pioNum,
-                                                     PIORegisters.Regs.FLEVEL)) >>
+      (memory.readAddress(PIORegisters.getAddress(pioNum,
+                                                  PIORegisters.Regs.FLEVEL)) >>
        shiftCount) & mask;
   }
 
@@ -876,8 +872,8 @@ public class PIOSDK implements Constants
   {
     Constants.checkSmNum(smNum);
     final int fStat =
-      registers.readAddress(PIORegisters.getAddress(pioNum,
-                                                    PIORegisters.Regs.FSTAT));
+      memory.readAddress(PIORegisters.getAddress(pioNum,
+                                                 PIORegisters.Regs.FSTAT));
     return (fStat & (0x1 << (FSTAT_TXFULL_LSB + smNum))) != 0x0;
   }
 
@@ -885,8 +881,8 @@ public class PIOSDK implements Constants
   {
     Constants.checkSmNum(smNum);
     final int fStat =
-      registers.readAddress(PIORegisters.getAddress(pioNum,
-                                                    PIORegisters.Regs.FSTAT));
+      memory.readAddress(PIORegisters.getAddress(pioNum,
+                                                 PIORegisters.Regs.FSTAT));
     return (fStat & (0x1 << (FSTAT_TXEMPTY_LSB + smNum))) != 0x0;
   }
 
@@ -897,8 +893,8 @@ public class PIOSDK implements Constants
       FLEVEL_TX0_LSB + smNum * (FLEVEL_TX1_LSB - FLEVEL_TX0_LSB);
     final int mask = FLEVEL_TX0_BITS >> FLEVEL_TX0_LSB;
     return
-      (registers.readAddress(PIORegisters.getAddress(pioNum,
-                                                     PIORegisters.Regs.FLEVEL)) >>
+      (memory.readAddress(PIORegisters.getAddress(pioNum,
+                                                  PIORegisters.Regs.FLEVEL)) >>
        shiftCount) & mask;
   }
 
@@ -925,7 +921,7 @@ public class PIOSDK implements Constants
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
     final boolean autoPull =
-      (registers.readAddress(address) & SM0_SHIFTCTRL_AUTOPULL_BITS) != 0x0;
+      (memory.readAddress(address) & SM0_SHIFTCTRL_AUTOPULL_BITS) != 0x0;
     final int instruction =
       autoPull ? 0x6060 : 0x8080;
     while (smIsTXFIFOEmpty(smNum)) {
@@ -977,7 +973,7 @@ public class PIOSDK implements Constants
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_CLKDIV);
     final int clkDiv =
       divInt << SM0_CLKDIV_INT_LSB | divFrac << SM0_CLKDIV_FRAC_LSB;
-    registers.writeAddress(address, clkDiv);
+    memory.writeAddress(address, clkDiv);
   }
 
   public void smClearFIFOs(final int smNum) throws IOException
@@ -985,14 +981,14 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_SHIFTCTRL);
-    synchronized(registers) {
-      int shiftCtrl = registers.readAddress(address);
+    synchronized(memory) {
+      int shiftCtrl = memory.readAddress(address);
       // toggle RX join bit to force clearance of both, RX and TX
       shiftCtrl ^= SM0_SHIFTCTRL_FJOIN_RX_BITS;
-      registers.writeAddress(address, shiftCtrl);
+      memory.writeAddress(address, shiftCtrl);
       // toggle once again to restore previous value
       shiftCtrl ^= SM0_SHIFTCTRL_FJOIN_RX_BITS;
-      registers.writeAddress(address, shiftCtrl);
+      memory.writeAddress(address, shiftCtrl);
     }
   }
 
@@ -1001,15 +997,15 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    synchronized(registers) {
-      final int pinCtrlSaved = registers.readAddress(address);
+    synchronized(memory) {
+      final int pinCtrlSaved = memory.readAddress(address);
       int remaining = 32;
       int base = 0;
       while (remaining > 0) {
         final int decrement = remaining > 5 ? 5 : remaining;
-        registers.writeAddress(address,
-                               (decrement << SM0_PINCTRL_SET_COUNT_LSB) |
-                               (base << SM0_PINCTRL_SET_BASE_LSB));
+        memory.writeAddress(address,
+                            (decrement << SM0_PINCTRL_SET_COUNT_LSB) |
+                            (base << SM0_PINCTRL_SET_BASE_LSB));
         final int setInstruction =
           0xe000 | (pins & 0x1f); // no sideset/delay => all other bits are 0
         smExec(smNum, (short)setInstruction);
@@ -1017,7 +1013,7 @@ public class PIOSDK implements Constants
         base += decrement;
         pins >>>= 5;
       }
-      registers.writeAddress(address, pinCtrlSaved);
+      memory.writeAddress(address, pinCtrlSaved);
     }
   }
 
@@ -1028,20 +1024,20 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    synchronized(registers) {
-      final int pinCtrlSaved = registers.readAddress(address);
+    synchronized(memory) {
+      final int pinCtrlSaved = memory.readAddress(address);
       while (pinMask > 0) {
         final int base = Constants.ctz(pinMask);
-        registers.writeAddress(address,
-                               (0x1 << SM0_PINCTRL_SET_COUNT_LSB) |
-                               (base << SM0_PINCTRL_SET_BASE_LSB));
+        memory.writeAddress(address,
+                            (0x1 << SM0_PINCTRL_SET_COUNT_LSB) |
+                            (base << SM0_PINCTRL_SET_BASE_LSB));
         final int setInstruction =
           0xe000 | ((pinValues >> base) & 0x1); // no sideset/delay =>
         // all other bits are 0
         smExec(smNum, (short)setInstruction);
         pinMask &= pinMask - 1;
       }
-      registers.writeAddress(address, pinCtrlSaved);
+      memory.writeAddress(address, pinCtrlSaved);
     }
   }
 
@@ -1052,20 +1048,20 @@ public class PIOSDK implements Constants
     Constants.checkSmNum(smNum);
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    synchronized(registers) {
-      final int pinCtrlSaved = registers.readAddress(address);
+    synchronized(memory) {
+      final int pinCtrlSaved = memory.readAddress(address);
       while (pinMask > 0) {
         final int base = Constants.ctz(pinMask);
-        registers.writeAddress(address,
-                               (0x1 << SM0_PINCTRL_SET_COUNT_LSB) |
-                               (base << SM0_PINCTRL_SET_BASE_LSB));
+        memory.writeAddress(address,
+                            (0x1 << SM0_PINCTRL_SET_COUNT_LSB) |
+                            (base << SM0_PINCTRL_SET_BASE_LSB));
         final int setInstruction =
           0xe080 | ((pinDirs >> base) & 0x1); // no sideset/delay =>
                                               // all other bits are 0
         smExec(smNum, (short)setInstruction);
         pinMask &= pinMask - 1;
       }
-      registers.writeAddress(address, pinCtrlSaved);
+      memory.writeAddress(address, pinCtrlSaved);
     }
   }
 
@@ -1079,13 +1075,13 @@ public class PIOSDK implements Constants
     Constants.checkGpioPin(pinCount, "GPIO pin count");
     final int address =
       PIORegisters.getSMAddress(pioNum, smNum, PIORegisters.Regs.SM0_PINCTRL);
-    synchronized(registers) {
-      final int pinCtrlSaved = registers.readAddress(address);
+    synchronized(memory) {
+      final int pinCtrlSaved = memory.readAddress(address);
       final int pinDirValue = isOut ? 0x1f : 0x0;
       while (pinCount > 5) {
-        registers.writeAddress(address,
-                               (0x5 << SM0_PINCTRL_SET_COUNT_LSB) |
-                               (pinBase << SM0_PINCTRL_SET_BASE_LSB));
+        memory.writeAddress(address,
+                            (0x5 << SM0_PINCTRL_SET_COUNT_LSB) |
+                            (pinBase << SM0_PINCTRL_SET_BASE_LSB));
         final int setInstruction =
           0xe080 | pinDirValue; // no sideset/delay => all other bits
                                 // are 0
@@ -1093,14 +1089,14 @@ public class PIOSDK implements Constants
         pinCount -= 5;
         pinBase = (pinBase + 5) & 0x1f;
       }
-      registers.writeAddress(address,
-                             (pinCount << SM0_PINCTRL_SET_COUNT_LSB) |
+      memory.writeAddress(address,
+                          (pinCount << SM0_PINCTRL_SET_COUNT_LSB) |
                              (pinBase << SM0_PINCTRL_SET_BASE_LSB));
       final int setInstruction =
         0xe080 | pinDirValue; // no sideset/delay => all other bits
                               // are 0
       smExec(smNum, (short)setInstruction);
-      registers.writeAddress(address, pinCtrlSaved);
+      memory.writeAddress(address, pinCtrlSaved);
     }
   }
 
@@ -1179,8 +1175,8 @@ public class PIOSDK implements Constants
       PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINS);
     final int pinDirsAddress =
       PIOEmuRegisters.getAddress(pioNum, PIOEmuRegisters.Regs.GPIO_PINDIRS);
-    final int pins = registers.readAddress(pinsAddress);
-    final int pinDirs = registers.readAddress(pinDirsAddress);
+    final int pins = memory.readAddress(pinsAddress);
+    final int pinDirs = memory.readAddress(pinDirsAddress);
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
       final Direction direction =
         Direction.fromValue((pinDirs >>> gpioNum) & 0x1);

@@ -31,8 +31,6 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import org.soundpaint.rp2040pio.sdk.Panic;
-import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
  * The idea of the RegisterServer class is to provide access to the
@@ -67,7 +65,7 @@ public class RegisterServer
   private static final String[] NULL_ARGS = new String[0];
 
   private final PrintStream console;
-  private final SDK sdk;
+  private final Registers memory;
   private final int portNumber;
   private final ServerSocket serverSocket;
   private int connectionCounter;
@@ -77,24 +75,24 @@ public class RegisterServer
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public RegisterServer(final PrintStream console, final SDK sdk)
+  public RegisterServer(final PrintStream console, final Registers memory)
     throws IOException
   {
-    this(console, sdk, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
+    this(console, memory, Constants.REGISTER_SERVER_DEFAULT_PORT_NUMBER);
   }
 
-  public RegisterServer(final PrintStream console, final SDK sdk,
+  public RegisterServer(final PrintStream console, final Registers memory,
                         final int portNumber)
     throws IOException
   {
     if (console == null) {
       throw new NullPointerException("console");
     }
-    if (sdk == null) {
-      throw new NullPointerException("sdk");
+    if (memory == null) {
+      throw new NullPointerException("memory");
     }
     this.console = console;
-    this.sdk = sdk;
+    this.memory = memory;
     this.portNumber = portNumber;
     serverSocket = new ServerSocket(portNumber);
     connectionCounter = 0;
@@ -120,15 +118,16 @@ public class RegisterServer
   {
     final String ls = System.lineSeparator();
     return "available commands: " + ls +
-      "h                    (help)" + ls +
-      "v                    (version)" + ls +
-      "q                    (quit)" + ls +
-      "r <addr>             (read address)" + ls +
-      "w <addr> <value>     (write address)" + ls +
+      "h                   (help)" + ls +
+      "v                   (version)" + ls +
+      "q                   (quit)" + ls +
+      "r <addr>            (read address)" + ls +
+      "w <addr> <value> <mask> <xor>" + ls +
+      "                    (write address)" + ls +
       "i <addr> <value> [<mask> [<timeout cycles> [<timeout millis>]]]" + ls +
-      "                     (await value)" + ls +
-      "l <addr>             (show address label)" + ls +
-      "p <addr>             (check address validity)";
+      "                    (await value)" + ls +
+      "l <addr>            (show address label)" + ls +
+      "p <addr>            (check address validity)";
   }
 
   private enum ResponseStatus
@@ -139,8 +138,8 @@ public class RegisterServer
     ERR_MISSING_OPERAND("missing operand", 401),
     ERR_UNPARSED_INPUT("unparsed input", 402),
     ERR_INVALID_NUMBER("invalid number", 403),
-    ERR_PANIC("panic", 404),
-    ERR_IO("io", 405),
+    ERR_INVALID_BOOL("invalid Boolean value", 404),
+    ERR_IO("input / output error", 405),
     ERR_UNEXPECTED("unexpected error", 406);
 
     private final String id;
@@ -180,6 +179,21 @@ public class RegisterServer
     return statusDisplay + (message != null ? ": " + message : "");
   }
 
+  private boolean parseBoolean(final String unparsed)
+  {
+    if (unparsed.equals("t") ||
+        unparsed.equals("T")) {
+      return true;
+    } else if (unparsed.equals("f") ||
+        unparsed.equals("F")) {
+      return false;
+    } else {
+      final String message =
+        String.format("expected Boolean value 't' or 'f': %s", unparsed);
+      throw new IllegalArgumentException(message);
+    }
+  }
+
   private int parseInt(final String unparsed)
   {
     if (unparsed.startsWith("0x") ||
@@ -206,7 +220,7 @@ public class RegisterServer
     if (args.length > 0) {
       return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[0]);
     }
-    return createResponse(ResponseStatus.OK, sdk.getEmulatorInfo());
+    return createResponse(ResponseStatus.OK, memory.getEmulatorInfo());
   }
 
   private String handleGetHelp(final String[] args)
@@ -239,7 +253,7 @@ public class RegisterServer
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_INVALID_NUMBER, e.getMessage());
     }
-    final boolean providesAddress = sdk.matchesProvidingRegisters(address);
+    final boolean providesAddress = memory.providesAddress(address);
     return createResponse(ResponseStatus.OK, String.valueOf(providesAddress));
   }
 
@@ -257,17 +271,17 @@ public class RegisterServer
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_INVALID_NUMBER, e.getMessage());
     }
-    final String label = sdk.getLabelForAddress(address);
+    final String label = memory.getAddressLabel(address);
     return createResponse(ResponseStatus.OK, label);
   }
 
   private String handleWriteAddress(final String[] args) throws IOException
   {
-    if (args.length < 2) {
+    if (args.length < 4) {
       return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
     }
-    if (args.length > 2) {
-      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[2]);
+    if (args.length > 4) {
+      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[4]);
     }
     final int address;
     try {
@@ -281,7 +295,19 @@ public class RegisterServer
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_INVALID_NUMBER, e.getMessage());
     }
-    sdk.writeAddress(address, value);
+    final int mask;
+    try {
+      mask = parseInt(args[2]);
+    } catch (final NumberFormatException e) {
+      return createResponse(ResponseStatus.ERR_INVALID_NUMBER, e.getMessage());
+    }
+    final boolean xor;
+    try {
+      xor = parseBoolean(args[3]);
+    } catch (final IllegalArgumentException e) {
+      return createResponse(ResponseStatus.ERR_INVALID_BOOL, e.getMessage());
+    }
+    memory.writeAddressMasked(address, value, mask, xor);
     return createResponse(ResponseStatus.OK);
   }
 
@@ -299,7 +325,7 @@ public class RegisterServer
     } catch (final NumberFormatException e) {
       return createResponse(ResponseStatus.ERR_INVALID_NUMBER, e.getMessage());
     }
-    final int value = sdk.readAddress(address);
+    final int value = memory.readAddress(address);
     return createResponse(ResponseStatus.OK, String.valueOf(value));
   }
 
@@ -354,9 +380,9 @@ public class RegisterServer
       millisTimeout = 0x0;
     }
     final int value =
-      sdk.wait(address, expectedValue, mask,
-               ((long)cyclesTimeout) & 0xffffffffL,
-               ((long)millisTimeout) & 0xffffffffL);
+      memory.waitAddress(address, expectedValue, mask,
+                         ((long)cyclesTimeout) & 0xffffffffL,
+                         ((long)millisTimeout) & 0xffffffffL);
     return createResponse(ResponseStatus.OK, String.valueOf(value));
   }
 
@@ -433,8 +459,6 @@ public class RegisterServer
         }
         clientOut.println(response);
       }
-    } catch (final Panic p) {
-      handleThrowable(clientOut, p, ResponseStatus.ERR_PANIC, id);
     } catch (final IOException e) {
       handleThrowable(clientOut, e, ResponseStatus.ERR_IO, id);
     } catch (final Throwable t) {

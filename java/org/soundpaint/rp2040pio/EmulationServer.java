@@ -29,8 +29,6 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import org.soundpaint.rp2040pio.sdk.LocalRegisters;
-import org.soundpaint.rp2040pio.sdk.PIOSDK;
-import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class EmulationServer
 {
@@ -129,9 +127,9 @@ public class EmulationServer
     try {
       final Emulator emulator = new Emulator(console);
       final LocalRegisters registers = new LocalRegisters(emulator);
-      final SDK sdk = new SDK(console, registers);
       final int port = options.getValue(optPort);
-      final RegisterServer server = new RegisterServer(console, sdk, port);
+      final RegisterServer server =
+        new RegisterServer(console, registers, port);
       if (options.getValue(optSilent) != CmdOptions.Flag.ON) {
         console.println("started emulation server at port " + port);
       }
