@@ -1,5 +1,5 @@
 /*
- * @(#)AbstractRegisters.java 1.00 21/03/05
+ * @(#)RegisterSet.java 1.00 21/03/05
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -26,12 +26,12 @@ package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
 
-public abstract class AbstractRegisters
+public abstract class RegisterSet implements Constants
 {
   private final int baseAddress;
   private final short size;
 
-  private AbstractRegisters()
+  private RegisterSet()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
@@ -42,7 +42,7 @@ public abstract class AbstractRegisters
    * The maximum allowed address computes as &lt;code&gt;baseAddress +
    * (size - 1) * 0x4&lt;/code&gt;.
    */
-  protected AbstractRegisters(final int baseAddress)
+  protected RegisterSet(final int baseAddress)
   {
     if ((baseAddress & 0x3fff) != 0x0) {
       throw new IllegalArgumentException("base address not conforming to " +

@@ -35,8 +35,7 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs;
  * facade is in particular intended for use by software that wants to
  * exploit the emulator's debug facilities.
  */
-public abstract class PicoEmuRegisters extends AbstractRegisters
-  implements Constants
+public abstract class PicoEmuRegisters extends RegisterSet
 {
   public enum Regs implements RegistersDocs<Regs> {
     PWR_UP("Writing the value 0xa55a5aa5 to this address will fully reset%n" +

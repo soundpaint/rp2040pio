@@ -22,24 +22,11 @@
  *
  * Author's web site: www.juergen-reuter.de
  */
-package org.soundpaint.rp2040pio.sdk;
+package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.soundpaint.rp2040pio.AbstractRegisters;
-import org.soundpaint.rp2040pio.AddressSpace;
-import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.Emulator;
-import org.soundpaint.rp2040pio.GPIO;
-import org.soundpaint.rp2040pio.GPIOIOBank0RegistersImpl;
-import org.soundpaint.rp2040pio.GPIOPadsBank0RegistersImpl;
-import org.soundpaint.rp2040pio.MasterClock;
-import org.soundpaint.rp2040pio.PicoEmuRegisters;
-import org.soundpaint.rp2040pio.PicoEmuRegistersImpl;
-import org.soundpaint.rp2040pio.PIO;
-import org.soundpaint.rp2040pio.PIORegistersImpl;
-import org.soundpaint.rp2040pio.PIOEmuRegistersImpl;
 
 public class LocalAddressSpace extends AddressSpace
 {
@@ -57,33 +44,33 @@ public class LocalAddressSpace extends AddressSpace
    * either a responsibility chain or a composite design pattern, as
    * soon as the number of registers interfaces grows.
    */
-  private final List<AbstractRegisters> registersList;
+  private final List<RegisterSet> registerSetList;
 
   public LocalAddressSpace(final Emulator emulator)
   {
     this.emulator = emulator;
 
-    registersList = new ArrayList<AbstractRegisters>();
+    registerSetList = new ArrayList<RegisterSet>();
     picoEmuRegisters = new PicoEmuRegistersImpl(emulator);
-    registersList.add(picoEmuRegisters);
+    registerSetList.add(picoEmuRegisters);
 
     final GPIO gpio = emulator.getGPIO();
     gpioIOBank0Registers = new GPIOIOBank0RegistersImpl(gpio);
-    registersList.add(gpioIOBank0Registers);
+    registerSetList.add(gpioIOBank0Registers);
     gpioPadsBank0Registers = new GPIOPadsBank0RegistersImpl(gpio);
-    registersList.add(gpioPadsBank0Registers);
+    registerSetList.add(gpioPadsBank0Registers);
 
     final PIO pio0 = emulator.getPIO0();
     pio0Registers = new PIORegistersImpl(pio0);
-    registersList.add(pio0Registers);
+    registerSetList.add(pio0Registers);
     pio0EmuRegisters = new PIOEmuRegistersImpl(pio0);
-    registersList.add(pio0EmuRegisters);
+    registerSetList.add(pio0EmuRegisters);
 
     final PIO pio1 = emulator.getPIO1();
     pio1Registers = new PIORegistersImpl(pio1);
-    registersList.add(pio1Registers);
+    registerSetList.add(pio1Registers);
     pio1EmuRegisters = new PIOEmuRegistersImpl(pio1);
-    registersList.add(pio1EmuRegisters);
+    registerSetList.add(pio1EmuRegisters);
   }
 
   @Override
@@ -122,17 +109,17 @@ public class LocalAddressSpace extends AddressSpace
     return pio1EmuRegisters.getAddress(register);
   }
 
-  private static int address2register(final AbstractRegisters registers,
+  private static int address2register(final RegisterSet registers,
                                       final int address)
   {
     checkAddressAligned(address);
     return ((address - registers.getBaseAddress()) & ~0x3000) >>> 2;
   }
 
-  private AbstractRegisters getProvidingRegisters(final int address)
+  private RegisterSet getProvidingRegisters(final int address)
     throws IOException
   {
-    for (final AbstractRegisters registers : registersList) {
+    for (final RegisterSet registers : registerSetList) {
       final int regNum = address2register(registers, address);
       if (regNum < registers.getSize()) {
         return registers;
@@ -150,7 +137,7 @@ public class LocalAddressSpace extends AddressSpace
   @Override
   public String getAddressLabel(final int address) throws IOException
   {
-    final AbstractRegisters registers = getProvidingRegisters(address);
+    final RegisterSet registers = getProvidingRegisters(address);
     if (registers != null) {
       final int regNum = address2register(registers, address);
       return registers.getRegisterLabel(regNum);
@@ -172,7 +159,7 @@ public class LocalAddressSpace extends AddressSpace
                       "address not in base address range: 0x%8x", address);
       throw new IOException(message);
     }
-    final AbstractRegisters registers = getProvidingRegisters(address);
+    final RegisterSet registers = getProvidingRegisters(address);
     if (registers != null) {
       final int regNum = address2register(registers, address);
       try {
@@ -194,7 +181,7 @@ public class LocalAddressSpace extends AddressSpace
   @Override
   public synchronized int readAddress(final int address) throws IOException
   {
-    final AbstractRegisters registers = getProvidingRegisters(address);
+    final RegisterSet registers = getProvidingRegisters(address);
     if (registers != null) {
       final int regNum = address2register(registers, address);
       try {

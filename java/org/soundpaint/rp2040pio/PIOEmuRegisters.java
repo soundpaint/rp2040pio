@@ -35,8 +35,7 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs;
  * facade is in particular intended for use by software that wants to
  * exploit the emulator's debug facilities.
  */
-public abstract class PIOEmuRegisters extends AbstractRegisters
-  implements Constants
+public abstract class PIOEmuRegisters extends RegisterSet
 {
   public enum Regs implements RegistersDocs<Regs> {
     SM0_REGX("Direct read / write access to the SM's%n" +

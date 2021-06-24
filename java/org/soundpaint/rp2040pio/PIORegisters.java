@@ -30,8 +30,7 @@ package org.soundpaint.rp2040pio;
  * datasheet.  The facade is in particular intended for use by the
  * SDK.
  */
-public abstract class PIORegisters extends AbstractRegisters
-  implements Constants
+public abstract class PIORegisters extends RegisterSet
 {
   public enum Regs {
     CTRL,

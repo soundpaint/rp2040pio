@@ -37,8 +37,7 @@ package org.soundpaint.rp2040pio;
  * bits will have no effect, and reading from non-relevant registers
  * or register bits will return a constant value of 0.
  */
-public abstract class GPIOPadsBank0Registers extends AbstractRegisters
-  implements Constants
+public abstract class GPIOPadsBank0Registers extends RegisterSet
 {
   public enum Regs {
     VOLTAGE_SELECT,
