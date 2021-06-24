@@ -179,9 +179,11 @@ public class SDK implements Constants
   {
     final int address =
       PicoEmuRegisters.getAddress(PicoEmuRegisters.Regs.PWR_UP);
-    memory.writeAddress(address, PICO_PWR_UP_VALUE);
-    pio0Sdk.reset();
-    pio1Sdk.reset();
+    synchronized(memory) {
+      memory.writeAddress(address, PICO_PWR_UP_VALUE);
+      pio0Sdk.reset();
+      pio1Sdk.reset();
+    }
   }
 
   private void triggerCyclePhaseX(final PicoEmuRegisters.Regs trigger,
