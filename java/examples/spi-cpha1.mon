@@ -63,11 +63,11 @@ fifo --pio=0 --sm=0 --rx --threshold=8
 clock --pio=0 --sm=0 --divider=1.0
 
 # MOSI, SCK output are low, MISO is input
-gpio --pio=0 --gpio=0 --disable # MISO output
+gpio --pio=0 --gpio=0 --disable # MISO input
 gpio --pio=0 --gpio=0 --init    # MISO init
 gpio --pio=0 --gpio=0 --enable  # MOSI output
 gpio --pio=0 --gpio=0 --clear   # MOSI low
-gpio --pio=0 --gpio=0 --init    # MOSI init
+gpio --pio=0 --gpio=0 --init    # MISO / MOSI init
 gpio --pio=0 --gpio=1 --enable  # SCK output
 gpio --pio=0 --gpio=1 --clear   # SCK low
 gpio --pio=0 --gpio=1 --init    # SCK init

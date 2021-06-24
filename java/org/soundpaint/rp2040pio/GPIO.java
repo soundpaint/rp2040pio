@@ -115,6 +115,17 @@ public class GPIO implements Constants
     private Bit getPadIn(final Bit outBeforeOverride,
                          final Direction oeBeforeOverride)
     {
+      /*
+       * Loopback GPIO output as pad input, if a PIO drives this GPIO
+       * pin as output, while listening to this GPIO pin as input pin.
+       *
+       * See comment in file pico-examples/pio/spi/spi_loopback.c:
+       *
+       *   #define PIN_MISO 16 // same as MOSI, so we get loopback
+       *
+       * Note that, as a result from loopback, a PIO may even observe
+       * the other PIO's GPIO pad output.
+       */
       final Direction oeAfterOverride = getOeAfterOverride(oeBeforeOverride);
       return
         oeAfterOverride == Direction.OUT ?

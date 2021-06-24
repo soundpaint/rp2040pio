@@ -78,19 +78,8 @@ public class GPIOPanel extends JPanel
     setMaximumSize(getPreferredSize());
   }
 
-  public void updateStatus(final GPIOSDK.Override override)
-    throws IOException
+  public void updateStatus(final Direction direction, final Bit level)
   {
-    final int statusAddress =
-      GPIOIOBank0Registers.
-      getGPIOAddress(gpioNum, GPIOIOBank0Registers.Regs.GPIO0_STATUS);
-    final int statusValue = sdk.readAddress(statusAddress);
-
-    final Direction direction = GPIOSDK.getDirectionFromStatus(statusValue, override);
-    final Bit level =
-      direction == Direction.OUT ?
-      GPIOSDK.getOutputLevelFromStatus(statusValue, override) :
-      GPIOSDK.getInputLevelFromStatus(statusValue, override);
     final ImageIcon icon =
       direction == Direction.IN ?
       (level == Bit.HIGH ? GPIOViewPanel.ledInHigh : GPIOViewPanel.ledInLow) :

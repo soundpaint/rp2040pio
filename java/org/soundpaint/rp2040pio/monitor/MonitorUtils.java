@@ -91,7 +91,8 @@ public class MonitorUtils
   /**
    * Global GPIO view of pins.
    */
-  public static String gpioDisplay(final SDK sdk, final GPIOSDK.Override override)
+  public static String gpioDisplay(final SDK sdk,
+                                   final GPIOSDK.Override override)
     throws IOException
   {
     final PinState[] pinStates = sdk.getGPIOSDK().getPinStates(override);

@@ -36,6 +36,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.border.EtchedBorder;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PinState;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.GPIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -107,8 +108,12 @@ public class GPIOArrayPanel extends JPanel
 
   public void updateStatus() throws IOException
   {
+    final GPIOSDK gpioSdk = sdk.getGPIOSDK();
+    final PinState[] pinStates = gpioSdk.getPinStates(override);
     for (int gpioNum = 0; gpioNum < Constants.GPIO_NUM; gpioNum++) {
-      panels[gpioNum].updateStatus(override);
+      final PinState pinState = pinStates[gpioNum];
+      final GPIOPanel panel = panels[gpioNum];
+      panel.updateStatus(pinState.getDirection(), pinState.getLevel());
     }
   }
 

@@ -74,8 +74,8 @@ public class GPIOSDK implements Constants
     memory.hwWriteMasked(ioGpioAddress, ioValues, ioWriteMask);
   }
 
-  public static Direction getDirectionFromStatus(final int statusValue,
-                                                 final Override override)
+  private static Direction getDirectionFromStatus(final int statusValue,
+                                                  final Override override)
   {
     if (override == null) {
       throw new NullPointerException("override");
@@ -88,8 +88,8 @@ public class GPIOSDK implements Constants
     return Direction.fromValue(gpioOe);
   }
 
-  public static Bit getOutputLevelFromStatus(final int statusValue,
-                                             final Override override)
+  private static Bit getOutputLevelFromStatus(final int statusValue,
+                                              final Override override)
   {
     if (override == null) {
       throw new NullPointerException("override");
@@ -102,8 +102,8 @@ public class GPIOSDK implements Constants
     return Bit.fromValue(gpioOut);
   }
 
-  public static Bit getInputLevelFromStatus(final int statusValue,
-                                            final Override override)
+  private static Bit getInputLevelFromStatus(final int statusValue,
+                                             final Override override)
   {
     if (override == null) {
       throw new NullPointerException("override");
@@ -141,11 +141,7 @@ public class GPIOSDK implements Constants
       final Direction direction = Direction.fromValue(gpioOeFromPeri);
       final Bit level;
       if (direction == Direction.OUT) {
-        final int gpioOutFromPeri =
-          (gpioStatusValue &
-           Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_BITS) >>>
-          Constants.IO_BANK0_GPIO0_STATUS_OUTFROMPERI_LSB;
-        level = Bit.fromValue(gpioOutFromPeri);
+        level = getOutputLevelFromStatus(gpioStatusValue, override);
       } else {
         level = getInputLevelFromStatus(gpioStatusValue, override);
       }
