@@ -5,6 +5,8 @@ This emulator is _not_ intended as a real-time emulation of the actual
 hardware, but as a handy tool for understanding how the PIO works and
 for testing and debugging when developing code for the PIO.
 
+For detailed information, see [the full docs on readthedocs.io][1]
+
 ## Motivation
 
 What is the purpose of an RP2040 emulator if you can easily use the
@@ -144,3 +146,7 @@ internal state of the PIO in a graphical and more vivid manner.
 
 * Also add tooltips with descriptive / explanatory text for all
   warnings, where appropriate.
+
+<!-- References -->
+
+[1]: https://rp2040pio-docs.readthedocs.io/
