@@ -92,7 +92,14 @@ public class RemoteAddressSpaceClient extends AddressSpace
     {
       if (!isOk()) {
         final String responseMessage = errorMessage + ": " + toString();
-        console.println(responseMessage);
+        /*
+         * TODO: To avoid duplicate error message display, the message
+         * should be logged (e.g. using log4j) separately rather than
+         * just being printed to the console, since a typical client
+         * application (such as the Monitor application) usually will
+         * already display the message by itself.
+         */
+        console.printf("Remote Address Map Client: %s%n" ,responseMessage);
         throw new IOException(responseMessage);
       }
       return result;

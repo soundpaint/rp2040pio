@@ -34,6 +34,7 @@ import java.util.Objects;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -68,6 +69,28 @@ public class CodeSmViewPanel extends JPanel
   private static final Color bgCurrentInactive = new Color(0xb04f4f);
 
   public static final Font codeFont = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+
+  private static class EmptySelectionModel extends DefaultListSelectionModel
+  {
+    private static final long serialVersionUID = -2981078454514535370L;
+
+    private EmptySelectionModel()
+    {
+      setSelectionMode(SINGLE_SELECTION);
+    }
+
+    @Override
+    public void setAnchorSelectionIndex(final int anchorIndex) {}
+
+    @Override
+    public void setLeadAnchorNotificationEnabled(final boolean flag) {}
+
+    @Override
+    public void setLeadSelectionIndex(final int leadIndex) {}
+
+    @Override
+    public void setSelectionInterval(final int index0, final int index1) {}
+  }
 
   private static class Instruction
   {
@@ -144,6 +167,7 @@ public class CodeSmViewPanel extends JPanel
     }
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     lsInstructions = new JList<Instruction>(instructions);
+    lsInstructions.setSelectionModel(new EmptySelectionModel());
     lsInstructions.setCellRenderer(new InstructionRenderer());
     add(new JScrollPane(lsInstructions));
     setPreferredSize(new Dimension(300, 200));
