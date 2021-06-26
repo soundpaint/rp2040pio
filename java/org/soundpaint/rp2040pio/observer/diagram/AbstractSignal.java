@@ -124,15 +124,16 @@ public abstract class AbstractSignal<T> implements Signal
 
   protected void record(final T value, final boolean enforceChanged)
   {
-    final T previousValue = this.value;
-    this.value = value;
-    if (enforceChanged ||
-        ((value == null) && (previousValue != null)) ||
-        ((value != null) && !value.equals(previousValue))) {
-      notChangedSince = 0;
-    } else {
-      notChangedSince++;
-    }
+    final int size = signalRecords.size();
+    final T previousValue =
+      size > 0 ? signalRecords.get(size - 1).value : null;
+    final int previousNotChangedSince =
+      size > 0 ? signalRecords.get(size - 1).notChangedSince : 0;
+    final int notChangedSince =
+      enforceChanged ||
+      ((value == null) && (previousValue != null)) ||
+      ((value != null) && !value.equals(previousValue)) ?
+      0 : previousNotChangedSince + 1;
     final SignalRecord<T> signalRecord =
       new SignalRecord<T>(value, notChangedSince);
     signalRecords.add(signalRecord);
@@ -225,7 +226,7 @@ public abstract class AbstractSignal<T> implements Signal
   @Override
   public String toString()
   {
-    return String.format("Signal[label=%s, value=%s]", label, value);
+    return String.format("Signal[label=%s]", label);
   }
 }
 
