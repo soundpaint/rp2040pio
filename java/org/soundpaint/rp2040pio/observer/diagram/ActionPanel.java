@@ -68,31 +68,16 @@ public class ActionPanel
   @Override
   protected void addAdditionalButtons(final Diagram diagram)
   {
-    final JButton btScript = new JButton(iconScript);
-    btScript.setToolTipText("Load…");
-    btScript.addActionListener((event) -> { diagram.showScriptDialog(); });
-    add(btScript);
+    addButtonLoad(diagram);
     add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
-
-    final JLabel lbCycles = new JLabel("Cycles");
-    lbCycles.setDisplayedMnemonic(KeyEvent.VK_Y);
-    add(lbCycles);
-    add(Box.createHorizontalStrut(5));
-    final SpinnerModel cyclesModel =
-      new SpinnerNumberModel(defaultCycles, 1, 999, 1);
-    final JSpinner spCycles = new JSpinner(cyclesModel);
-
-    final JSpinner.DefaultEditor editor =
-      (JSpinner.DefaultEditor)spCycles.getEditor();
-    editor.getTextField().setColumns(3);
-    final int spCyclesHeight = spCycles.getPreferredSize().height;
-    spCycles.setMaximumSize(new Dimension(100, spCyclesHeight));
-    lbCycles.setLabelFor(spCycles);
-    add(spCycles);
+    final JSpinner spCycles = addCyclesControl();
     add(Box.createHorizontalStrut(5));
     final JButton btEmulate = new JButton(iconEmulate);
     btEmulate.setToolTipText("Emulate");
+    add(btEmulate);
+    add(Box.createHorizontalStrut(15));
+    add(Box.createHorizontalGlue());
     btEmulate.addActionListener((event) -> {
         final int cycles = (Integer)spCycles.getValue();
         try {
@@ -105,17 +90,51 @@ public class ActionPanel
           diagram.clear();
         }
       });
-    add(btEmulate);
+    addButtonClear(diagram);
     add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
+    addZoomControl(diagram);
+    add(Box.createHorizontalStrut(15));
+    add(Box.createHorizontalGlue());
+  }
 
+  private void addButtonLoad(final Diagram diagram)
+  {
+    final JButton btScript = new JButton(iconScript);
+    btScript.setToolTipText("Load…");
+    btScript.addActionListener((event) -> { diagram.showScriptDialog(); });
+    add(btScript);
+  }
+
+  private JSpinner addCyclesControl()
+  {
+    final JLabel lbCycles = new JLabel("Cycles");
+    lbCycles.setDisplayedMnemonic(KeyEvent.VK_Y);
+    add(lbCycles);
+    add(Box.createHorizontalStrut(5));
+    final SpinnerModel cyclesModel =
+      new SpinnerNumberModel(defaultCycles, 1, 999, 1);
+    final JSpinner spCycles = new JSpinner(cyclesModel);
+    final JSpinner.DefaultEditor editor =
+      (JSpinner.DefaultEditor)spCycles.getEditor();
+    editor.getTextField().setColumns(3);
+    final int spCyclesHeight = spCycles.getPreferredSize().height;
+    spCycles.setMaximumSize(new Dimension(100, spCyclesHeight));
+    lbCycles.setLabelFor(spCycles);
+    add(spCycles);
+    return spCycles;
+  }
+
+  private void addButtonClear(final Diagram diagram)
+  {
     final JButton btClear = new JButton(iconClear);
     btClear.setToolTipText("Clear View");
     btClear.addActionListener((event) -> diagram.clear());
     add(btClear);
-    add(Box.createHorizontalStrut(15));
-    add(Box.createHorizontalGlue());
+  }
 
+  private void addZoomControl(final Diagram diagram)
+  {
     final JLabel lbZoom = new JLabel("Zoom");
     lbZoom.setDisplayedMnemonic(KeyEvent.VK_Z);
     add(lbZoom);
@@ -130,9 +149,6 @@ public class ActionPanel
     slZoom.setPaintLabels(true);
     slZoom.addChangeListener((event) -> diagram.setZoom(slZoom.getValue()));
     add(slZoom);
-
-    add(Box.createHorizontalStrut(15));
-    add(Box.createHorizontalGlue());
   }
 }
 
