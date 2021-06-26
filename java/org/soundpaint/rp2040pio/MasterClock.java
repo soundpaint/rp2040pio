@@ -159,7 +159,7 @@ public class MasterClock implements Clock, Constants
     setFrequency(DEFAULT_FREQUENCY);
     setMode(Mode.SINGLE_STEP);
     phase = Phase.PHASE_1_STABLE;
-    wallClock = -1;
+    wallClock = 0;
   }
 
   private void start()

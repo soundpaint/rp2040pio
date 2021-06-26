@@ -333,7 +333,7 @@ public class DiagramView extends JPanel
       // print label as preview for not yet finished value
       paintValuedLabel(panel, g, xStart, yBottom, signal,
                        signal.getRenderedValue(), signal.getToolTipText(),
-                       -1);
+                       signal.notChangedSince() - 1);
     }
   }
 

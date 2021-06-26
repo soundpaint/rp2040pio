@@ -57,7 +57,7 @@ public class DiagramModel implements Iterable<Signal>
     this.console = console;
     this.sdk = sdk;
     signals = new ArrayList<Signal>();
-    wallClock = sdk.getWallClock();
+    wallClock = -1;
     signalSize = 0;
   }
 
