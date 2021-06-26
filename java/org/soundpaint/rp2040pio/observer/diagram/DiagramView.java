@@ -41,12 +41,12 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JPanel;
+import javax.swing.JComponent;
 
 /**
  * Panel for drawing the view of the diagram.
  */
-public class DiagramView extends JPanel
+public class DiagramView extends JComponent
 {
   private static final long serialVersionUID = 6327282160532117231L;
 
@@ -68,7 +68,7 @@ public class DiagramView extends JPanel
   private static final double LEGEND_LABEL_MARGIN_BOTTOM = 4.0;
   private static final double LEGEND_LABEL_MARGIN_RIGHT = 10.0;
 
-  private static final Font DEFAULT_FONT = new JPanel().getFont();
+  private static final Font DEFAULT_FONT = Font.decode(null);
   private static final Font VALUE_FONT = DEFAULT_FONT.deriveFont(10.0f);
   private static final Stroke PLAIN_STROKE =
     new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f);
@@ -223,7 +223,7 @@ public class DiagramView extends JPanel
     g.draw(new Line2D.Double(x, y, x + 0.5 * arrowWidth, y + arrowHeight));
   }
 
-  private void paintClockCycle(final JPanel panel, final Graphics2D g,
+  private void paintClockCycle(final Graphics2D g,
                                final double xStart, final double yBottom,
                                final SignalFactory.ClockSignal signal)
   {
@@ -238,7 +238,7 @@ public class DiagramView extends JPanel
     g.draw(new Line2D.Double(xFallingEdge, yBottom, xStop, yBottom));
   }
 
-  private void paintBitSignalCycle(final JPanel panel, final Graphics2D g,
+  private void paintBitSignalCycle(final Graphics2D g,
                                    final double xStart, final double yBottom,
                                    final SignalFactory.BitSignal signal,
                                    final boolean firstCycle)
@@ -255,20 +255,19 @@ public class DiagramView extends JPanel
     g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
   }
 
-  private void paintValuedLabel(final JPanel panel, final Graphics2D g,
+  private void paintValuedLabel(final Graphics2D g,
                                 final double xStart, final double yBottom,
                                 final SignalFactory.ValuedSignal<?> signal,
                                 final String label, final String toolTipText,
                                 final int cycles)
   {
     if (label != null) {
-      final FontMetrics fm = panel.getFontMetrics(panel.getFont());
+      final FontMetrics fm = g.getFontMetrics(g.getFont());
       final int width = fm.stringWidth(label);
       final double xLabelStart =
         xStart - 0.5 * (cycles * zoom - SIGNAL_SETUP_X + width);
 
       final double yTextBottom = yBottom - VALUE_LABEL_MARGIN_BOTTOM;
-      g.setFont(VALUE_FONT);
       g.drawString(label, (float)xLabelStart, (float)yTextBottom);
     }
     if (toolTipText != null) {
@@ -279,7 +278,7 @@ public class DiagramView extends JPanel
     }
   }
 
-  private void paintValuedSignalCycle(final JPanel panel, final Graphics2D g,
+  private void paintValuedSignalCycle(final Graphics2D g,
                                       final double xStart, final double yBottom,
                                       final SignalFactory.ValuedSignal<?> signal,
                                       final boolean firstCycle,
@@ -301,7 +300,7 @@ public class DiagramView extends JPanel
       // signal changed => print label of previous, now finished
       // value; but exclude first cycle, as it will be handled on next
       // turn
-      paintValuedLabel(panel, g, xStart, yBottom, signal,
+      paintValuedLabel(g, xStart, yBottom, signal,
                        previousRenderedValue, previousToolTipText,
                        previousNotChangedSince + 1);
     }
@@ -331,26 +330,26 @@ public class DiagramView extends JPanel
 
     if (lastCycle) {
       // print label as preview for not yet finished value
-      paintValuedLabel(panel, g, xStart, yBottom, signal,
+      paintValuedLabel(g, xStart, yBottom, signal,
                        signal.getRenderedValue(), signal.getToolTipText(),
                        signal.notChangedSince() - 1);
     }
   }
 
-  private void paintSignalCycle(final JPanel panel, final Graphics2D g,
+  private void paintSignalCycle(final Graphics2D g,
                                 final double xStart, final double yBottom,
                                 final Signal signal, final boolean firstCycle,
                                 final boolean lastCycle)
   {
     if (signal instanceof SignalFactory.ClockSignal) {
-      paintClockCycle(panel, g, xStart, yBottom,
+      paintClockCycle(g, xStart, yBottom,
                       (SignalFactory.ClockSignal)signal);
     } else if (signal instanceof SignalFactory.BitSignal) {
-      paintBitSignalCycle(panel, g, xStart, yBottom,
+      paintBitSignalCycle(g, xStart, yBottom,
                           (SignalFactory.BitSignal)signal,
                           firstCycle);
     } else if (signal instanceof SignalFactory.ValuedSignal<?>) {
-      paintValuedSignalCycle(panel, g, xStart, yBottom,
+      paintValuedSignalCycle(g, xStart, yBottom,
                              (SignalFactory.ValuedSignal<?>)signal,
                              firstCycle, lastCycle);
     } else {
@@ -358,7 +357,7 @@ public class DiagramView extends JPanel
     }
   }
 
-  private void paintSignalsCycle(final JPanel panel, final Graphics2D g,
+  private void paintSignalsCycle(final Graphics2D g,
                                  final double xStart, final boolean firstCycle,
                                  final boolean lastCycle)
   {
@@ -369,24 +368,24 @@ public class DiagramView extends JPanel
       if (signal.getVisible()) {
         final double height =
           signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-        paintSignalCycle(panel, g, xStart, y += height, signal,
+        paintSignalCycle(g, xStart, y += height, signal,
                          firstCycle, lastCycle);
       }
     }
   }
 
-  private void paintLabel(final JPanel panel, final Graphics2D g,
+  private void paintLabel(final Graphics2D g,
                           final double xStart, final double yBottom,
                           final String label)
   {
-    final FontMetrics fm = panel.getFontMetrics(panel.getFont());
+    final FontMetrics fm = g.getFontMetrics(g.getFont());
     final int width = fm.stringWidth(label);
     g.drawString(label,
                  (float)(xStart - width - LEGEND_LABEL_MARGIN_RIGHT),
                  (float)(yBottom - LEGEND_LABEL_MARGIN_BOTTOM));
   }
 
-  private void paintLabels(final JPanel panel, final Graphics2D g)
+  private void paintLabels(final Graphics2D g)
   {
     double y = TOP_MARGIN;
     for (final Signal signal : model) {
@@ -394,12 +393,12 @@ public class DiagramView extends JPanel
         final String label = signal.getLabel();
         final double height =
           signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-        paintLabel(panel, g, LEFT_MARGIN, y += height, label);
+        paintLabel(g, LEFT_MARGIN, y += height, label);
       }
     }
   }
 
-  private void paintDiagram(final JPanel panel, final Graphics2D g,
+  private void paintDiagram(final Graphics2D g,
                             final int width, final int height)
     throws IOException
   {
@@ -408,7 +407,8 @@ public class DiagramView extends JPanel
       signal.rewind(0);
     }
     g.setStroke(PLAIN_STROKE);
-    paintLabels(panel, g);
+    g.setFont(DEFAULT_FONT);
+    paintLabels(g);
     final int stopCycle =
       (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / zoom + 1);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
@@ -416,12 +416,13 @@ public class DiagramView extends JPanel
       final boolean firstCycle = cycle == 0;
       final boolean lastCycle = cycle == model.getSignalSize() - 1;
       paintGridLine(g, x, height);
-      paintSignalsCycle(panel, g, x, firstCycle, lastCycle);
+      g.setFont(VALUE_FONT);
+      paintSignalsCycle(g, x, firstCycle, lastCycle);
     }
     paintGridLine(g, LEFT_MARGIN + stopCycle * zoom, height);
   }
 
-  private void paintError(final JPanel panel, final Graphics2D g,
+  private void paintError(final Graphics2D g,
                           final int width, final int height,
                           final IOException exception)
   {
@@ -435,9 +436,9 @@ public class DiagramView extends JPanel
   {
     super.paint(g);
     try {
-      paintDiagram(this, (Graphics2D)g, getWidth(), getHeight());
+      paintDiagram((Graphics2D)g, getWidth(), getHeight());
     } catch (final IOException e) {
-      paintError(this, (Graphics2D)g, getWidth(), getHeight(), e);
+      paintError((Graphics2D)g, getWidth(), getHeight(), e);
     }
   }
 }
