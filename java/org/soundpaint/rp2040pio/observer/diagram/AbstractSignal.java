@@ -56,8 +56,6 @@ public abstract class AbstractSignal<T> implements Signal
 
   private final List<SignalRecord<T>> signalRecords;
   private final String label;
-  private T value;
-  private int notChangedSince;
   private Function<T, String> renderer;
   private Function<T, String> toolTipTexter;
   private int replayIndex;
@@ -83,9 +81,8 @@ public abstract class AbstractSignal<T> implements Signal
 
   @Override
   public void reset() {
-    value = null;
-    notChangedSince = 0;
     signalRecords.clear();
+    rewind(0);
     // keep visibility unmodified
   }
 
@@ -101,14 +98,10 @@ public abstract class AbstractSignal<T> implements Signal
       throw new IllegalArgumentException(message);
     }
     replayIndex = index;
-    value = null;
-    notChangedSince = 0;
   }
 
   @Override
   public String getLabel() { return label; }
-
-  public T getValue() { return value; }
 
   @Override
   public boolean isClock() { return false; }
@@ -149,13 +142,20 @@ public abstract class AbstractSignal<T> implements Signal
   {
     if (replayIndex >= signalRecords.size()) return false;
     final SignalRecord<T> signalRecord = signalRecords.get(replayIndex++);
-    value = signalRecord.value;
-    notChangedSince = signalRecord.notChangedSince;
     return true;
   }
 
-  @Override
-  public int notChangedSince() { return notChangedSince; }
+  public T getValue()
+  {
+    return
+      replayIndex > 0 ? signalRecords.get(replayIndex - 1).value : null;
+  }
+
+  public int notChangedSince()
+  {
+    return
+      replayIndex > 0 ? signalRecords.get(replayIndex - 1).notChangedSince : 0;
+  }
 
   public boolean changed() { return notChangedSince() == 0; }
 
@@ -182,7 +182,7 @@ public abstract class AbstractSignal<T> implements Signal
   @Override
   public String getRenderedValue()
   {
-    return renderValue(value);
+    return renderValue(getValue());
   }
 
   /**
@@ -208,7 +208,7 @@ public abstract class AbstractSignal<T> implements Signal
   @Override
   public String getToolTipText()
   {
-    return toolTipTextForValue(value);
+    return toolTipTextForValue(getValue());
   }
 
   @Override

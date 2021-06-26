@@ -32,11 +32,11 @@ public interface Signal
   boolean isBinary();
   boolean isValued();
   int size();
-  int notChangedSince();
   String getRenderedValue();
   String getToolTipText();
   void record();
   void rewind(final int index);
+  int notChangedSince();
   void setVisible(final boolean visible);
   boolean getVisible();
 }
