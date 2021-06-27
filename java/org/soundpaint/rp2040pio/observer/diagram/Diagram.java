@@ -28,7 +28,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.function.Supplier;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
@@ -62,7 +65,8 @@ public class Diagram extends GUIObserver
     "Timing Diagram Creator Version 0.1";
 
   private final DiagramModel model;
-  private final DiagramViewPanel view;
+  private final DiagramViewPanel diagramPanel;
+  private final TelemetryPanel telemetryPanel;
   private final ScriptDialog scriptDialog;
 
   private Diagram(final PrintStream console, final String[] argv)
@@ -70,16 +74,29 @@ public class Diagram extends GUIObserver
   {
     super(APP_TITLE, APP_FULL_NAME, console, argv);
     model = new DiagramModel(console, getSDK());
-    view = new DiagramViewPanel(model);
+    diagramPanel = new DiagramViewPanel(model);
+    telemetryPanel =
+      new TelemetryPanel(model, () -> diagramPanel.getLeftMostVisibleCycle());
     configureModel();
-    view.modelChanged();
-    add(new JScrollPane(view,
-                        ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER));
+    modelChanged();
+    add(createView());
     scriptDialog = new ScriptDialog(this, console);
     pack();
     setVisible(true);
     startUpdating();
+  }
+
+  private JPanel createView()
+  {
+    final JPanel view = new JPanel();
+    view.setLayout(new BoxLayout(view, BoxLayout.PAGE_AXIS));
+    final JScrollPane scrollPane =
+      new JScrollPane(diagramPanel,
+                      ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                      ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+    view.add(scrollPane);
+    view.add(telemetryPanel);
+    return view;
   }
 
   @Override
@@ -94,10 +111,16 @@ public class Diagram extends GUIObserver
     return new MenuBar(this, console);
   }
 
+  private void modelChanged()
+  {
+    diagramPanel.modelChanged();
+    telemetryPanel.modelChanged();
+  }
+
   @Override
   protected void updateView()
   {
-    view.modelChanged();
+    modelChanged();
   }
 
   public void showScriptDialog()
@@ -128,7 +151,6 @@ public class Diagram extends GUIObserver
   private void configureModel() throws IOException
   {
     model.addSignal(SignalFactory.createClockSignal("clock")).setVisible(true);
-
     model.addSignal(PIOEmuRegisters.
                     getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);
     final GPIOIOBank0Registers.Regs regGpio0Status =
@@ -169,30 +191,30 @@ public class Diagram extends GUIObserver
   public void clear()
   {
     model.resetSignals();
-    view.modelChanged();
+    modelChanged();
   }
 
   public void applyCycles(final int count) throws IOException
   {
     model.applyCycles(count);
-    view.modelChanged();
+    modelChanged();
   }
 
   public void setZoom(final int zoom)
   {
-    view.setZoom(zoom);
+    diagramPanel.setZoom(zoom);
   }
 
   public void pullSignals(final List<Signal> signals)
   {
     model.pullSignals(signals);
-    view.modelChanged();
+    modelChanged();
   }
 
   public void pushSignals(final List<Signal> signals)
   {
     model.pushSignals(signals);
-    view.modelChanged();
+    modelChanged();
   }
 
   public static void main(final String argv[])

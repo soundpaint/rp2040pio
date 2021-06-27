@@ -34,10 +34,10 @@ import javax.swing.BoxLayout;
 import javax.swing.Scrollable;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
-import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class DiagramViewPanel extends JPanel implements Scrollable
@@ -122,15 +122,26 @@ public class DiagramViewPanel extends JPanel implements Scrollable
     SwingUtilities.invokeLater(() -> signalPanel.repaint());
   }
 
-  public void setZoom(final int zoom)
+  public double getLeftMostVisibleCycle()
   {
     final JScrollBar scrollBar = scrollPane.getHorizontalScrollBar();
     final int scrollBarValueBefore = scrollBar.getValue();
-    final double leftMostCycle = signalPanel.x2cycle(scrollBarValueBefore);
-    signalPanel.setZoom(zoom);
-    final double scrollBarValueAfter = signalPanel.cycle2x(leftMostCycle);
+    return signalPanel.x2cycle(scrollBarValueBefore);
+  }
+
+  public void setLeftMostVisibleCycle(final double cycle)
+  {
+    final double scrollBarValueAfter = signalPanel.cycle2x(cycle);
+    final JScrollBar scrollBar = scrollPane.getHorizontalScrollBar();
     scrollBar.setValue((int)Math.round(scrollBarValueAfter));
     SwingUtilities.invokeLater(() -> signalPanel.repaint());
+  }
+
+  public void setZoom(final int zoom)
+  {
+    final double leftMostCycle = getLeftMostVisibleCycle();
+    signalPanel.setZoom(zoom);
+    setLeftMostVisibleCycle(leftMostCycle);
   }
 }
 
