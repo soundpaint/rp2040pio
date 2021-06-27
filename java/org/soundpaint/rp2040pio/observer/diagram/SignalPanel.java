@@ -32,6 +32,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.awt.TexturePaint;
 import java.awt.event.MouseEvent;
@@ -54,8 +55,8 @@ public class SignalPanel extends JComponent
   public static final int ZOOM_MAX = 112;
   public static final int ZOOM_DEFAULT = 32;
 
-  private static final double LEFT_MARGIN = 2.0;
-  private static final double RIGHT_MARGIN = 16.0;
+  private static final double LEFT_MARGIN = 2.0; // for clock arrow
+  private static final double RIGHT_MARGIN = 0.0;
   private static final double SIGNAL_SETUP_X = 4.0;
   private static final double VALUE_LABEL_MARGIN_BOTTOM = 8.0;
 
@@ -108,6 +109,7 @@ public class SignalPanel extends JComponent
   private final List<ToolTip> toolTips;
   private final Dimension preferredSize;
   private double zoom;
+  private Rectangle clipBounds;
 
   private SignalPanel()
   {
@@ -124,6 +126,7 @@ public class SignalPanel extends JComponent
     setToolTipText("");
     preferredSize = new Dimension();
     zoom = ZOOM_DEFAULT;
+    clipBounds = new Rectangle();
     updatePreferredSize();
   }
 
@@ -371,27 +374,36 @@ public class SignalPanel extends JComponent
     }
   }
 
+  private int x2cycle(final int x)
+  {
+    return (int)((x - LEFT_MARGIN) / zoom);
+  }
+
   private void paintDiagram(final Graphics2D g,
                             final int width, final int height)
     throws IOException
   {
     toolTips.clear();
-    for (final Signal signal : model) {
-      signal.rewind(0);
-    }
     g.setStroke(PLAIN_STROKE);
     g.setFont(DEFAULT_FONT);
-    final int stopCycle =
-      (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / zoom + 1);
-    for (int cycle = 0; cycle < stopCycle; cycle++) {
+    g.getClipBounds(clipBounds);
+    final int cycles = model.getSignalSize();
+    final int leftCycle = x2cycle(clipBounds.x);
+    final int rightCycle = x2cycle(clipBounds.x + clipBounds.width - 1) + 1;
+    for (final Signal signal : model) {
+      if (signal.getVisible()) {
+        signal.rewind(leftCycle);
+      }
+    }
+    for (int cycle = leftCycle; cycle < rightCycle; cycle++) {
       final double x = LEFT_MARGIN + cycle * zoom;
       final boolean firstCycle = cycle == 0;
-      final boolean lastCycle = cycle == model.getSignalSize() - 1;
+      final boolean lastCycle = cycle == cycles - 1;
       paintGridLine(g, x, height);
       g.setFont(VALUE_FONT);
       paintSignalsCycle(g, x, firstCycle, lastCycle);
     }
-    paintGridLine(g, LEFT_MARGIN + stopCycle * zoom, height);
+    paintGridLine(g, LEFT_MARGIN + rightCycle * zoom, height);
   }
 
   private void paintError(final Graphics2D g,

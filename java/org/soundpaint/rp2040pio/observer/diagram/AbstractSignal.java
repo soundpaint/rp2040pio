@@ -94,7 +94,8 @@ public abstract class AbstractSignal<T> implements Signal
     }
     if (index > signalRecords.size()) {
       final String message =
-        String.format("index > size: %d > %d", index, signalRecords.size());
+        String.format("signal %s: index > size: %d > %d",
+                      this, index, signalRecords.size());
       throw new IllegalArgumentException(message);
     }
     replayIndex = index;
