@@ -25,7 +25,7 @@ enter -a 2 -v 0x4001 # in pins, 1
 enter -a 3 -v 0x0642 # jmp x-- bitloop [6]
 enter -a 4 -v 0x00c8 # jmp pin good_stop
 
-enter -a 5 -v 0xc010 # irq 0 rel
+enter -a 5 -v 0xc014 # irq 4 rel
 enter -a 6 -v 0x20a0 # wait 1 pin 0
 enter -a 7 -v 0x0000 # jmp start
 

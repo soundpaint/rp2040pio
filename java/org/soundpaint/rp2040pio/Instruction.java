@@ -172,24 +172,21 @@ public abstract class Instruction
     if ((irqIndex & 0x08) != 0) {
       throw new Decoder.DecodeException(this, getOpCode());
     }
-    if (((irqIndex & 0x10) != 0) &&
-        ((irqIndex & 0x04) != 0)) {
-      throw new Decoder.DecodeException(this, getOpCode());
-    }
   }
 
   protected static int getIRQNum(final int smNum, final int index)
   {
+    final boolean isRel = (index & 0x10) != 0;
     return
-      (index & 0x10) != 0 ? (smNum + index) & 0x3 : index & 0x7;
+      isRel ?
+      (index & 0x4) | ((smNum + index) & 0x3) :
+      index & 0x7;
   }
 
   protected static String getIRQNumDisplay(final int index)
   {
     return
-      (index & 0x10) != 0 ?
-      (index & 0x3) + "_rel" :
-      String.format("%01x", index & 0x7);
+      String.format("%1x%s", index & 0x7, (index & 0x10) != 0 ? "_rel" : "");
   }
 
   @Override
@@ -1142,8 +1139,8 @@ public abstract class Instruction
        * same thing, namely that both flags (clr, wait) are not set.
        * For display, we deliberately choose "".
        */
-      final String mode = clr ? "clear" : (wait ? "wait" : "");
-      return mode + " " + getIRQNumDisplay(index);
+      final String mode = clr ? "clear " : (wait ? "wait " : "");
+      return mode + getIRQNumDisplay(index);
     }
   }
 
