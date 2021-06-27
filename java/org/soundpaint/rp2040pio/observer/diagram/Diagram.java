@@ -72,7 +72,7 @@ public class Diagram extends GUIObserver
     model = new DiagramModel(console, getSDK());
     view = new DiagramViewPanel(model);
     configureModel();
-    view.updatePreferredSize();
+    view.modelChanged();
     add(new JScrollPane(view,
                         ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                         ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER));
@@ -94,15 +94,10 @@ public class Diagram extends GUIObserver
     return new MenuBar(this, console);
   }
 
-  private void modelChanged()
-  {
-    view.updatePreferredSize();
-  }
-
   @Override
   protected void updateView()
   {
-    modelChanged();
+    view.modelChanged();
   }
 
   public void showScriptDialog()
@@ -174,13 +169,13 @@ public class Diagram extends GUIObserver
   public void clear()
   {
     model.resetSignals();
-    modelChanged();
+    view.modelChanged();
   }
 
   public void applyCycles(final int count) throws IOException
   {
     model.applyCycles(count);
-    modelChanged();
+    view.modelChanged();
   }
 
   public void setZoom(final int zoom)
@@ -191,13 +186,13 @@ public class Diagram extends GUIObserver
   public void pullSignals(final List<Signal> signals)
   {
     model.pullSignals(signals);
-    modelChanged();
+    view.modelChanged();
   }
 
   public void pushSignals(final List<Signal> signals)
   {
     model.pushSignals(signals);
-    modelChanged();
+    view.modelChanged();
   }
 
   public static void main(final String argv[])

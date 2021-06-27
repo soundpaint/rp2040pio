@@ -33,7 +33,9 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.Scrollable;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -53,6 +55,7 @@ public class DiagramViewPanel extends JPanel implements Scrollable
   private final DiagramModel model;
   private final LegendPanel legendPanel;
   private final SignalPanel signalPanel;
+  private final JScrollPane scrollPane;
   private final Dimension preferredViewportSize;
 
   private DiagramViewPanel()
@@ -70,9 +73,11 @@ public class DiagramViewPanel extends JPanel implements Scrollable
     add(legendPanel);
     add(Box.createHorizontalStrut(5));
     signalPanel = new SignalPanel(model);
-    add(new JScrollPane(signalPanel,
-                        ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
-                        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED));
+    scrollPane =
+      new JScrollPane(signalPanel,
+                      ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+                      ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    add(scrollPane);
     preferredViewportSize = new Dimension(320, 240);
   }
 
@@ -110,15 +115,22 @@ public class DiagramViewPanel extends JPanel implements Scrollable
     return false;
   }
 
-  public void updatePreferredSize()
+  public void modelChanged()
   {
     legendPanel.updatePreferredSize();
     signalPanel.updatePreferredSize();
+    SwingUtilities.invokeLater(() -> signalPanel.repaint());
   }
 
   public void setZoom(final int zoom)
   {
+    final JScrollBar scrollBar = scrollPane.getHorizontalScrollBar();
+    final int scrollBarValueBefore = scrollBar.getValue();
+    final double leftMostCycle = signalPanel.x2cycle(scrollBarValueBefore);
     signalPanel.setZoom(zoom);
+    final double scrollBarValueAfter = signalPanel.cycle2x(leftMostCycle);
+    scrollBar.setValue((int)Math.round(scrollBarValueAfter));
+    SwingUtilities.invokeLater(() -> signalPanel.repaint());
   }
 }
 

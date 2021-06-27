@@ -374,9 +374,14 @@ public class SignalPanel extends JComponent
     }
   }
 
-  private int x2cycle(final int x)
+  public double x2cycle(final double x)
   {
-    return (int)((x - LEFT_MARGIN) / zoom);
+    return (x - LEFT_MARGIN) / zoom;
+  }
+
+  public double cycle2x(final double cycle)
+  {
+    return cycle * zoom + LEFT_MARGIN;
   }
 
   private void paintDiagram(final Graphics2D g,
@@ -388,14 +393,15 @@ public class SignalPanel extends JComponent
     g.setFont(DEFAULT_FONT);
     g.getClipBounds(clipBounds);
     final int cycles = model.getSignalSize();
-    final int leftCycle = x2cycle(clipBounds.x);
-    final int rightCycle = x2cycle(clipBounds.x + clipBounds.width - 1) + 1;
+    final int leftMostCycle = (int)x2cycle(clipBounds.x);
+    final int rightMostCycle =
+      ((int)x2cycle(clipBounds.x + clipBounds.width - 1)) + 1;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
-        signal.rewind(leftCycle);
+        signal.rewind(leftMostCycle);
       }
     }
-    for (int cycle = leftCycle; cycle < rightCycle; cycle++) {
+    for (int cycle = leftMostCycle; cycle < rightMostCycle; cycle++) {
       final double x = LEFT_MARGIN + cycle * zoom;
       final boolean firstCycle = cycle == 0;
       final boolean lastCycle = cycle == cycles - 1;
@@ -403,7 +409,7 @@ public class SignalPanel extends JComponent
       g.setFont(VALUE_FONT);
       paintSignalsCycle(g, x, firstCycle, lastCycle);
     }
-    paintGridLine(g, LEFT_MARGIN + rightCycle * zoom, height);
+    paintGridLine(g, LEFT_MARGIN + rightMostCycle * zoom, height);
   }
 
   private void paintError(final Graphics2D g,
