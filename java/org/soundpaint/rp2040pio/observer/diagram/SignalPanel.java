@@ -1,5 +1,5 @@
 /*
- * @(#)DiagramView.java 1.00 21/04/07
+ * @(#)SignalPanel.java 1.00 21/04/07
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -44,9 +44,9 @@ import java.util.List;
 import javax.swing.JComponent;
 
 /**
- * Panel for drawing the view of the diagram.
+ * Panel for drawing the view of the signals.
  */
-public class DiagramView extends JComponent
+public class SignalPanel extends JComponent
 {
   private static final long serialVersionUID = 6327282160532117231L;
 
@@ -54,19 +54,10 @@ public class DiagramView extends JComponent
   public static final int ZOOM_MAX = 112;
   public static final int ZOOM_DEFAULT = 32;
 
-  private static final double TOP_MARGIN = 16.0;
-  private static final double BOTTOM_MARGIN = 16.0;
-  private static final double LEFT_MARGIN = 200.0;
+  private static final double LEFT_MARGIN = 2.0;
   private static final double RIGHT_MARGIN = 16.0;
-  private static final double BIT_SIGNAL_HEIGHT = 16.0;
-  private static final double BIT_LANE_HEIGHT = BIT_SIGNAL_HEIGHT + 16.0;
-  private static final double VALUED_SIGNAL_HEIGHT = 24.0;
-  private static final double VALUED_LANE_HEIGHT =
-    VALUED_SIGNAL_HEIGHT + 16.0;
   private static final double SIGNAL_SETUP_X = 4.0;
   private static final double VALUE_LABEL_MARGIN_BOTTOM = 8.0;
-  private static final double LEGEND_LABEL_MARGIN_BOTTOM = 4.0;
-  private static final double LEGEND_LABEL_MARGIN_RIGHT = 10.0;
 
   private static final Font DEFAULT_FONT = Font.decode(null);
   private static final Font VALUE_FONT = DEFAULT_FONT.deriveFont(10.0f);
@@ -118,12 +109,12 @@ public class DiagramView extends JComponent
   private final Dimension preferredSize;
   private double zoom;
 
-  private DiagramView()
+  private SignalPanel()
   {
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public DiagramView(final DiagramModel model) throws IOException
+  public SignalPanel(final DiagramModel model) throws IOException
   {
     if (model == null) {
       throw new NullPointerException("model");
@@ -162,23 +153,24 @@ public class DiagramView extends JComponent
 
   private void updatePreferredHeight()
   {
-    double preferredWidth = TOP_MARGIN + BOTTOM_MARGIN;
+    double preferredHeight =
+      DiagramViewPanel.TOP_MARGIN + DiagramViewPanel.BOTTOM_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
-        preferredWidth +=
-          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        preferredHeight +=
+          signal.isValued() ?
+          DiagramViewPanel.VALUED_LANE_HEIGHT :
+          DiagramViewPanel.BIT_LANE_HEIGHT;
       }
     }
-    preferredSize.setSize((int)preferredSize.getWidth(),
-                          (int)preferredWidth);
+    preferredSize.setSize((int)preferredSize.getWidth(), (int)preferredHeight);
   }
 
   private void updatePreferredWidth()
   {
     final double preferredWidth =
       Math.round(LEFT_MARGIN + zoom * model.getSignalSize() + RIGHT_MARGIN);
-    preferredSize.setSize((int)preferredWidth,
-                          (int)preferredSize.getHeight());
+    preferredSize.setSize((int)preferredWidth, (int)preferredSize.getHeight());
   }
 
   public void updatePreferredSize()
@@ -212,13 +204,14 @@ public class DiagramView extends JComponent
   {
     g.setColor(Color.LIGHT_GRAY);
     g.setStroke(DOTTED_STROKE);
-    g.draw(new Line2D.Double(x, TOP_MARGIN, x, height - BOTTOM_MARGIN));
+    g.draw(new Line2D.Double(x, DiagramViewPanel.TOP_MARGIN,
+                             x, height - DiagramViewPanel.BOTTOM_MARGIN));
   }
 
   private void drawUpArrow(final Graphics2D g, final double x, final double y)
   {
-    final double arrowWidth = 0.3 * BIT_SIGNAL_HEIGHT;
-    final double arrowHeight = 0.3 * BIT_SIGNAL_HEIGHT;
+    final double arrowWidth = 0.3 * DiagramViewPanel.BIT_SIGNAL_HEIGHT;
+    final double arrowHeight = 0.3 * DiagramViewPanel.BIT_SIGNAL_HEIGHT;
     g.draw(new Line2D.Double(x, y, x - 0.5 * arrowWidth, y + arrowHeight));
     g.draw(new Line2D.Double(x, y, x + 0.5 * arrowWidth, y + arrowHeight));
   }
@@ -227,10 +220,10 @@ public class DiagramView extends JComponent
                                final double xStart, final double yBottom,
                                final SignalFactory.ClockSignal signal)
   {
-    if (!signal.update()) return;
+    if (!signal.next()) return;
     final double xFallingEdge = xStart + 0.5 * zoom;
     final double xStop = xStart + zoom;
-    final double yTop = yBottom - BIT_SIGNAL_HEIGHT;
+    final double yTop = yBottom - DiagramViewPanel.BIT_SIGNAL_HEIGHT;
     drawUpArrow(g, xStart, yTop);
     g.draw(new Line2D.Double(xStart, yBottom, xStart, yTop));
     g.draw(new Line2D.Double(xStart, yTop, xFallingEdge, yTop));
@@ -244,13 +237,15 @@ public class DiagramView extends JComponent
                                    final boolean firstCycle)
   {
     final Boolean previousValue = signal.asBoolean();
-    if (!signal.update()) return;
+    if (!signal.next()) return;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + zoom;
     final double yStable =
-      yBottom - (signal.asBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
+      yBottom - (signal.asBoolean() ? DiagramViewPanel.BIT_SIGNAL_HEIGHT : 0.0);
     final double yPrev =
-      firstCycle ? yStable : yBottom - (previousValue ? BIT_SIGNAL_HEIGHT : 0.0);
+      firstCycle ?
+      yStable :
+      yBottom - (previousValue ? DiagramViewPanel.BIT_SIGNAL_HEIGHT : 0.0);
     g.draw(new Line2D.Double(xStart, yPrev, xStable, yStable));
     g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
   }
@@ -272,7 +267,7 @@ public class DiagramView extends JComponent
     }
     if (toolTipText != null) {
       addToolTip((int)(xStart - cycles * zoom),
-                 (int)(yBottom - VALUED_SIGNAL_HEIGHT),
+                 (int)(yBottom - DiagramViewPanel.VALUED_SIGNAL_HEIGHT),
                  (int)xStart - 1, (int)yBottom,
                  toolTipText);
     }
@@ -285,7 +280,7 @@ public class DiagramView extends JComponent
                                       final boolean lastCycle)
   {
     // safe previous values prior to signal update
-    final int previousNotChangedSince = signal.notChangedSince();
+    final int previousNotChangedSince = signal.getNotChangedSince();
     final String previousRenderedValue = signal.getRenderedValue();
     final String previousToolTipText = signal.getToolTipText();
 
@@ -294,7 +289,7 @@ public class DiagramView extends JComponent
     // reached.  However, if this is the last cycle for that a value
     // has been recorded, then draw it anyway, since we can not forsee
     // the future signal and thus print the current state.
-    if (!signal.update() && !lastCycle) return;
+    if (!signal.next() && !lastCycle) return;
 
     if (signal.changed() && !firstCycle) {
       // signal changed => print label of previous, now finished
@@ -306,7 +301,7 @@ public class DiagramView extends JComponent
     }
 
     // draw lines for current value
-    final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
+    final double yTop = yBottom - DiagramViewPanel.VALUED_SIGNAL_HEIGHT;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + zoom;
     if (signal.changed() && !firstCycle) {
@@ -332,7 +327,7 @@ public class DiagramView extends JComponent
       // print label as preview for not yet finished value
       paintValuedLabel(g, xStart, yBottom, signal,
                        signal.getRenderedValue(), signal.getToolTipText(),
-                       signal.notChangedSince() - 1);
+                       signal.getNotChangedSince() - 1);
     }
   }
 
@@ -363,37 +358,15 @@ public class DiagramView extends JComponent
   {
     g.setColor(Color.BLACK);
     g.setStroke(PLAIN_STROKE);
-    double y = TOP_MARGIN;
+    double y = DiagramViewPanel.TOP_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         final double height =
-          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+          signal.isValued() ?
+          DiagramViewPanel.VALUED_LANE_HEIGHT :
+          DiagramViewPanel.BIT_LANE_HEIGHT;
         paintSignalCycle(g, xStart, y += height, signal,
                          firstCycle, lastCycle);
-      }
-    }
-  }
-
-  private void paintLabel(final Graphics2D g,
-                          final double xStart, final double yBottom,
-                          final String label)
-  {
-    final FontMetrics fm = g.getFontMetrics(g.getFont());
-    final int width = fm.stringWidth(label);
-    g.drawString(label,
-                 (float)(xStart - width - LEGEND_LABEL_MARGIN_RIGHT),
-                 (float)(yBottom - LEGEND_LABEL_MARGIN_BOTTOM));
-  }
-
-  private void paintLabels(final Graphics2D g)
-  {
-    double y = TOP_MARGIN;
-    for (final Signal signal : model) {
-      if (signal.getVisible()) {
-        final String label = signal.getLabel();
-        final double height =
-          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-        paintLabel(g, LEFT_MARGIN, y += height, label);
       }
     }
   }
@@ -408,7 +381,6 @@ public class DiagramView extends JComponent
     }
     g.setStroke(PLAIN_STROKE);
     g.setFont(DEFAULT_FONT);
-    paintLabels(g);
     final int stopCycle =
       (int)((width - LEFT_MARGIN - RIGHT_MARGIN) / zoom + 1);
     for (int cycle = 0; cycle < stopCycle; cycle++) {
@@ -432,9 +404,9 @@ public class DiagramView extends JComponent
   }
 
   @Override
-  public void paint(final Graphics g)
+  public void paintComponent(final Graphics g)
   {
-    super.paint(g);
+    super.paintComponent(g);
     try {
       paintDiagram((Graphics2D)g, getWidth(), getHeight());
     } catch (final IOException e) {

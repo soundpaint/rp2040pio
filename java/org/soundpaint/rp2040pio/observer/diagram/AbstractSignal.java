@@ -138,7 +138,7 @@ public abstract class AbstractSignal<T> implements Signal
     return signalRecords.size();
   }
 
-  public boolean update()
+  public boolean next()
   {
     if (replayIndex >= signalRecords.size()) return false;
     final SignalRecord<T> signalRecord = signalRecords.get(replayIndex++);
@@ -151,13 +151,13 @@ public abstract class AbstractSignal<T> implements Signal
       replayIndex > 0 ? signalRecords.get(replayIndex - 1).value : null;
   }
 
-  public int notChangedSince()
+  public int getNotChangedSince()
   {
     return
       replayIndex > 0 ? signalRecords.get(replayIndex - 1).notChangedSince : 0;
   }
 
-  public boolean changed() { return notChangedSince() == 0; }
+  public boolean changed() { return getNotChangedSince() == 0; }
 
   /**
    * Setting the renderer to &lt;code&gt;null&lt;/code&gt; results in

@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.function.Supplier;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.JScrollPane;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
@@ -61,7 +62,7 @@ public class Diagram extends GUIObserver
     "Timing Diagram Creator Version 0.1";
 
   private final DiagramModel model;
-  private final DiagramView view;
+  private final DiagramViewPanel view;
   private final ScriptDialog scriptDialog;
 
   private Diagram(final PrintStream console, final String[] argv)
@@ -69,10 +70,12 @@ public class Diagram extends GUIObserver
   {
     super(APP_TITLE, APP_FULL_NAME, console, argv);
     model = new DiagramModel(console, getSDK());
-    view = new DiagramView(model);
+    view = new DiagramViewPanel(model);
     configureModel();
     view.updatePreferredSize();
-    add(new JScrollPane(view));
+    add(new JScrollPane(view,
+                        ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER));
     scriptDialog = new ScriptDialog(this, console);
     pack();
     setVisible(true);

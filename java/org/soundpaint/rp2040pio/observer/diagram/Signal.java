@@ -36,7 +36,7 @@ public interface Signal
   String getToolTipText();
   void record();
   void rewind(final int index);
-  int notChangedSince();
+  int getNotChangedSince();
   void setVisible(final boolean visible);
   boolean getVisible();
 }

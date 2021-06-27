@@ -140,12 +140,12 @@ public class ActionPanel
     add(lbZoom);
     add(Box.createHorizontalStrut(5));
     final JSlider slZoom =
-      new JSlider(DiagramView.ZOOM_MIN, DiagramView.ZOOM_MAX,
-                  DiagramView.ZOOM_DEFAULT);
+      new JSlider(SignalPanel.ZOOM_MIN, SignalPanel.ZOOM_MAX,
+                  SignalPanel.ZOOM_DEFAULT);
     lbZoom.setLabelFor(slZoom);
-    slZoom.setMajorTickSpacing(DiagramView.ZOOM_MIN);
+    slZoom.setMajorTickSpacing(SignalPanel.ZOOM_MIN);
     slZoom.setPaintTicks(true);
-    slZoom.setLabelTable(slZoom.createStandardLabels(DiagramView.ZOOM_MIN));
+    slZoom.setLabelTable(slZoom.createStandardLabels(SignalPanel.ZOOM_MIN));
     slZoom.setPaintLabels(true);
     slZoom.addChangeListener((event) -> diagram.setZoom(slZoom.getValue()));
     add(slZoom);
