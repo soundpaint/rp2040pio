@@ -80,7 +80,7 @@ public class DiagramModel implements Iterable<Signal>
                           final Supplier<Boolean> displayFilter)
     throws IOException
   {
-    final SignalFactory.ValuedSignal<Integer> signal =
+    final ValuedSignal<Integer> signal =
       SignalFactory.createFromRegister(sdk, label, address, msb, lsb,
                                        displayFilter);
     return addSignal(signal);
@@ -96,7 +96,7 @@ public class DiagramModel implements Iterable<Signal>
   public Signal addSignal(final String label, final int address, final int bit)
     throws IOException
   {
-    final SignalFactory.BitSignal signal =
+    final BitSignal signal =
       SignalFactory.createFromRegister(sdk, label, address, bit);
     return addSignal(signal);
   }

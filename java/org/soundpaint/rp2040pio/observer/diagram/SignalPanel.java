@@ -221,7 +221,7 @@ public class SignalPanel extends JComponent
 
   private void paintClockCycle(final Graphics2D g,
                                final double xStart, final double yBottom,
-                               final SignalFactory.ClockSignal signal)
+                               final ClockSignal signal)
   {
     if (!signal.next()) return;
     final double xFallingEdge = xStart + 0.5 * zoom;
@@ -236,7 +236,7 @@ public class SignalPanel extends JComponent
 
   private void paintBitSignalCycle(final Graphics2D g,
                                    final double xStart, final double yBottom,
-                                   final SignalFactory.BitSignal signal,
+                                   final BitSignal signal,
                                    final boolean firstCycle)
   {
     final Boolean previousValue = signal.asBoolean();
@@ -255,7 +255,7 @@ public class SignalPanel extends JComponent
 
   private void paintValuedLabel(final Graphics2D g,
                                 final double xStart, final double yBottom,
-                                final SignalFactory.ValuedSignal<?> signal,
+                                final ValuedSignal<?> signal,
                                 final String label, final String toolTipText,
                                 final int cycles)
   {
@@ -278,7 +278,7 @@ public class SignalPanel extends JComponent
 
   private void paintValuedSignalCycle(final Graphics2D g,
                                       final double xStart, final double yBottom,
-                                      final SignalFactory.ValuedSignal<?> signal,
+                                      final ValuedSignal<?> signal,
                                       final boolean firstCycle,
                                       final boolean lastCycle)
   {
@@ -339,16 +339,16 @@ public class SignalPanel extends JComponent
                                 final Signal signal, final boolean firstCycle,
                                 final boolean lastCycle)
   {
-    if (signal instanceof SignalFactory.ClockSignal) {
+    if (signal instanceof ClockSignal) {
       paintClockCycle(g, xStart, yBottom,
-                      (SignalFactory.ClockSignal)signal);
-    } else if (signal instanceof SignalFactory.BitSignal) {
+                      (ClockSignal)signal);
+    } else if (signal instanceof BitSignal) {
       paintBitSignalCycle(g, xStart, yBottom,
-                          (SignalFactory.BitSignal)signal,
+                          (BitSignal)signal,
                           firstCycle);
-    } else if (signal instanceof SignalFactory.ValuedSignal<?>) {
+    } else if (signal instanceof ValuedSignal<?>) {
       paintValuedSignalCycle(g, xStart, yBottom,
-                             (SignalFactory.ValuedSignal<?>)signal,
+                             (ValuedSignal<?>)signal,
                              firstCycle, lastCycle);
     } else {
       throw new InternalError("unexpected signal type: " + signal);
