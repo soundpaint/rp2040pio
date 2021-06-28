@@ -1,5 +1,5 @@
 /*
- * @(#)Signal.java 1.00 21/02/12
+ * @(#)ToolTip.java 1.00 21/04/07
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,28 +24,31 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
-import java.awt.Graphics2D;
-import java.util.List;
-
-public interface Signal
+public class ToolTip
 {
-  void reset();
-  String getLabel();
-  boolean isClock();
-  boolean isBinary();
-  boolean isValued();
-  int size();
-  String getRenderedValue();
-  String getToolTipText();
-  void record();
-  void rewind(final int index);
-  int getNotChangedSince();
-  void setVisible(final boolean visible);
-  boolean getVisible();
-  void paintCycle(final List<ToolTip> toolTips,
-                  final Graphics2D g, final double zoom,
-                  final double xStart, final double yBottom,
-                  final boolean isFirstCycle, final boolean isLastCycle);
+  final int x0;
+  final int y0;
+  final int x1;
+  final int y1;
+  final String text;
+
+  private ToolTip()
+  {
+    throw new UnsupportedOperationException("unsupported empty constructor");
+  }
+
+  public ToolTip(final int x0, final int y0, final int x1, final int y1,
+                 final String text)
+  {
+    if (text == null) {
+      throw new NullPointerException("text");
+    }
+    this.x0 = x0;
+    this.y0 = y0;
+    this.x1 = x1;
+    this.y1 = y1;
+    this.text = text;
+  }
 }
 
 /*

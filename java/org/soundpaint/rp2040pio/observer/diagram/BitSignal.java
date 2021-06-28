@@ -24,10 +24,13 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
+import java.awt.Graphics2D;
+import java.awt.geom.Line2D;
+import java.util.List;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
 
-public class BitSignal extends ValuedSignal<Bit>
+public class BitSignal extends ValuedSignal<Bit> implements Constants
 {
   public BitSignal(final String label,
                    final Supplier<Bit> valueGetter)
@@ -49,6 +52,26 @@ public class BitSignal extends ValuedSignal<Bit>
   {
     final Bit value = getValue();
     return value != null ? (value == Bit.HIGH) : null;
+  }
+
+  @Override
+  public void paintCycle(final List<ToolTip> toolTips,
+                         final Graphics2D g, final double zoom,
+                         final double xStart, final double yBottom,
+                         final boolean firstCycle, final boolean lastCycle)
+  {
+    final Boolean previousValue = asBoolean();
+    if (!next()) return;
+    final double xStable = xStart + SIGNAL_SETUP_X;
+    final double xStop = xStart + zoom;
+    final double yStable =
+      yBottom - (asBoolean() ? DiagramViewPanel.BIT_SIGNAL_HEIGHT : 0.0);
+    final double yPrev =
+      firstCycle ?
+      yStable :
+      yBottom - (previousValue ? DiagramViewPanel.BIT_SIGNAL_HEIGHT : 0.0);
+    g.draw(new Line2D.Double(xStart, yPrev, xStable, yStable));
+    g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
   }
 }
 

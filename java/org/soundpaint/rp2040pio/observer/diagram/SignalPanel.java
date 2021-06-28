@@ -24,21 +24,14 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.Stroke;
-import java.awt.TexturePaint;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
-import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,63 +40,9 @@ import javax.swing.JComponent;
 /**
  * Panel for drawing the view of the signals.
  */
-public class SignalPanel extends JComponent
+public class SignalPanel extends JComponent implements Constants
 {
   private static final long serialVersionUID = 6327282160532117231L;
-
-  public static final int ZOOM_MIN = 16;
-  public static final int ZOOM_MAX = 112;
-  public static final int ZOOM_DEFAULT = 32;
-
-  private static final double LEFT_MARGIN = 2.0; // for clock arrow
-  private static final double RIGHT_MARGIN = 0.0;
-  private static final double SIGNAL_SETUP_X = 4.0;
-  private static final double VALUE_LABEL_MARGIN_BOTTOM = 8.0;
-
-  private static final Font DEFAULT_FONT = Font.decode(null);
-  private static final Font VALUE_FONT = DEFAULT_FONT.deriveFont(10.0f);
-  private static final Stroke PLAIN_STROKE =
-    new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f);
-  private static final Stroke DOTTED_STROKE =
-    new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, 0.0f,
-                    new float[]{2.0f}, 0.0f);
-  private static final BufferedImage FILL_IMAGE =
-    new BufferedImage(12, 12, BufferedImage.TYPE_INT_RGB);
-  static {
-    final Graphics2D g = (Graphics2D)FILL_IMAGE.getGraphics();
-    for (int x = -12; x < 12; x += 2) {
-      g.drawLine(x, 12, x + 12, 0);
-    }
-  }
-  private static final TexturePaint FILL_PAINT =
-    new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
-
-  private static class ToolTip
-  {
-    private final int x0;
-    private final int y0;
-    private final int x1;
-    private final int y1;
-    private final String text;
-
-    private ToolTip()
-    {
-      throw new UnsupportedOperationException("unsupported empty constructor");
-    }
-
-    public ToolTip(final int x0, final int y0, final int x1, final int y1,
-                   final String text)
-    {
-      if (text == null) {
-        throw new NullPointerException("text");
-      }
-      this.x0 = x0;
-      this.y0 = y0;
-      this.x1 = x1;
-      this.y1 = y1;
-      this.text = text;
-    }
-  }
 
   private final DiagramModel model;
   private final List<ToolTip> toolTips;
@@ -211,150 +150,6 @@ public class SignalPanel extends JComponent
                              x, height - DiagramViewPanel.BOTTOM_MARGIN));
   }
 
-  private void drawUpArrow(final Graphics2D g, final double x, final double y)
-  {
-    final double arrowWidth = 0.3 * DiagramViewPanel.BIT_SIGNAL_HEIGHT;
-    final double arrowHeight = 0.3 * DiagramViewPanel.BIT_SIGNAL_HEIGHT;
-    g.draw(new Line2D.Double(x, y, x - 0.5 * arrowWidth, y + arrowHeight));
-    g.draw(new Line2D.Double(x, y, x + 0.5 * arrowWidth, y + arrowHeight));
-  }
-
-  private void paintClockCycle(final Graphics2D g,
-                               final double xStart, final double yBottom,
-                               final ClockSignal signal)
-  {
-    if (!signal.next()) return;
-    final double xFallingEdge = xStart + 0.5 * zoom;
-    final double xStop = xStart + zoom;
-    final double yTop = yBottom - DiagramViewPanel.BIT_SIGNAL_HEIGHT;
-    drawUpArrow(g, xStart, yTop);
-    g.draw(new Line2D.Double(xStart, yBottom, xStart, yTop));
-    g.draw(new Line2D.Double(xStart, yTop, xFallingEdge, yTop));
-    g.draw(new Line2D.Double(xFallingEdge, yTop, xFallingEdge, yBottom));
-    g.draw(new Line2D.Double(xFallingEdge, yBottom, xStop, yBottom));
-  }
-
-  private void paintBitSignalCycle(final Graphics2D g,
-                                   final double xStart, final double yBottom,
-                                   final BitSignal signal,
-                                   final boolean firstCycle)
-  {
-    final Boolean previousValue = signal.asBoolean();
-    if (!signal.next()) return;
-    final double xStable = xStart + SIGNAL_SETUP_X;
-    final double xStop = xStart + zoom;
-    final double yStable =
-      yBottom - (signal.asBoolean() ? DiagramViewPanel.BIT_SIGNAL_HEIGHT : 0.0);
-    final double yPrev =
-      firstCycle ?
-      yStable :
-      yBottom - (previousValue ? DiagramViewPanel.BIT_SIGNAL_HEIGHT : 0.0);
-    g.draw(new Line2D.Double(xStart, yPrev, xStable, yStable));
-    g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
-  }
-
-  private void paintValuedLabel(final Graphics2D g,
-                                final double xStart, final double yBottom,
-                                final ValuedSignal<?> signal,
-                                final String label, final String toolTipText,
-                                final int cycles)
-  {
-    if (label != null) {
-      final FontMetrics fm = g.getFontMetrics(g.getFont());
-      final int width = fm.stringWidth(label);
-      final double xLabelStart =
-        xStart - 0.5 * (cycles * zoom - SIGNAL_SETUP_X + width);
-
-      final double yTextBottom = yBottom - VALUE_LABEL_MARGIN_BOTTOM;
-      g.drawString(label, (float)xLabelStart, (float)yTextBottom);
-    }
-    if (toolTipText != null) {
-      addToolTip((int)(xStart - cycles * zoom),
-                 (int)(yBottom - DiagramViewPanel.VALUED_SIGNAL_HEIGHT),
-                 (int)xStart - 1, (int)yBottom,
-                 toolTipText);
-    }
-  }
-
-  private void paintValuedSignalCycle(final Graphics2D g,
-                                      final double xStart, final double yBottom,
-                                      final ValuedSignal<?> signal,
-                                      final boolean firstCycle,
-                                      final boolean lastCycle)
-  {
-    // safe previous values prior to signal update
-    final int previousNotChangedSince = signal.getNotChangedSince();
-    final String previousRenderedValue = signal.getRenderedValue();
-    final String previousToolTipText = signal.getToolTipText();
-
-    // Draw previous value only if finished, since current value may
-    // be still ongoing such that centered display of text is not yet
-    // reached.  However, if this is the last cycle for that a value
-    // has been recorded, then draw it anyway, since we can not forsee
-    // the future signal and thus print the current state.
-    if (!signal.next() && !lastCycle) return;
-
-    if (signal.changed() && !firstCycle) {
-      // signal changed => print label of previous, now finished
-      // value; but exclude first cycle, as it will be handled on next
-      // turn
-      paintValuedLabel(g, xStart, yBottom, signal,
-                       previousRenderedValue, previousToolTipText,
-                       previousNotChangedSince + 1);
-    }
-
-    // draw lines for current value
-    final double yTop = yBottom - DiagramViewPanel.VALUED_SIGNAL_HEIGHT;
-    final double xStable = xStart + SIGNAL_SETUP_X;
-    final double xStop = xStart + zoom;
-    if (signal.changed() && !firstCycle) {
-      g.draw(new Line2D.Double(xStart, yTop, xStable, yBottom));
-      g.draw(new Line2D.Double(xStart, yBottom, xStable, yTop));
-    } else {
-      g.draw(new Line2D.Double(xStart, yBottom, xStable, yBottom));
-      g.draw(new Line2D.Double(xStart, yTop, xStable, yTop));
-    }
-    g.draw(new Line2D.Double(xStable, yTop, xStop, yTop));
-    g.draw(new Line2D.Double(xStable, yBottom, xStop, yBottom));
-    if (signal.getValue() == null) {
-      final double xPatternStart = signal.changed() ? xStable : xStart;
-      final Graphics2D fillG = (Graphics2D)g.create();
-      final Rectangle2D.Double rectangle =
-        new Rectangle2D.Double(xPatternStart, yTop + 1,
-                               xStop - xPatternStart + 1, yBottom - yTop - 1);
-      fillG.setPaint(FILL_PAINT);
-      fillG.fill(rectangle);
-    }
-
-    if (lastCycle) {
-      // print label as preview for not yet finished value
-      paintValuedLabel(g, xStart, yBottom, signal,
-                       signal.getRenderedValue(), signal.getToolTipText(),
-                       signal.getNotChangedSince() - 1);
-    }
-  }
-
-  private void paintSignalCycle(final Graphics2D g,
-                                final double xStart, final double yBottom,
-                                final Signal signal, final boolean firstCycle,
-                                final boolean lastCycle)
-  {
-    if (signal instanceof ClockSignal) {
-      paintClockCycle(g, xStart, yBottom,
-                      (ClockSignal)signal);
-    } else if (signal instanceof BitSignal) {
-      paintBitSignalCycle(g, xStart, yBottom,
-                          (BitSignal)signal,
-                          firstCycle);
-    } else if (signal instanceof ValuedSignal<?>) {
-      paintValuedSignalCycle(g, xStart, yBottom,
-                             (ValuedSignal<?>)signal,
-                             firstCycle, lastCycle);
-    } else {
-      throw new InternalError("unexpected signal type: " + signal);
-    }
-  }
-
   private void paintSignalsCycle(final Graphics2D g,
                                  final double xStart, final boolean firstCycle,
                                  final boolean lastCycle)
@@ -368,8 +163,8 @@ public class SignalPanel extends JComponent
           signal.isValued() ?
           DiagramViewPanel.VALUED_LANE_HEIGHT :
           DiagramViewPanel.BIT_LANE_HEIGHT;
-        paintSignalCycle(g, xStart, y += height, signal,
-                         firstCycle, lastCycle);
+        signal.paintCycle(toolTips, g, zoom, xStart, y += height,
+                          firstCycle, lastCycle);
       }
     }
   }

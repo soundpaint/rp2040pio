@@ -24,6 +24,10 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
+import java.awt.Graphics2D;
+import java.awt.geom.Line2D;
+import java.util.List;
+
 public class ClockSignal extends AbstractSignal<Void>
 {
   public ClockSignal()
@@ -44,6 +48,31 @@ public class ClockSignal extends AbstractSignal<Void>
 
   @Override
   public boolean isClock() { return true; }
+
+  private void drawUpArrow(final Graphics2D g, final double x, final double y)
+  {
+    final double arrowWidth = 0.3 * DiagramViewPanel.BIT_SIGNAL_HEIGHT;
+    final double arrowHeight = 0.3 * DiagramViewPanel.BIT_SIGNAL_HEIGHT;
+    g.draw(new Line2D.Double(x, y, x - 0.5 * arrowWidth, y + arrowHeight));
+    g.draw(new Line2D.Double(x, y, x + 0.5 * arrowWidth, y + arrowHeight));
+  }
+
+  @Override
+  public void paintCycle(final List<ToolTip> toolTips,
+                         final Graphics2D g, final double zoom,
+                         final double xStart, final double yBottom,
+                         final boolean firstCycle, final boolean lastCycle)
+  {
+    if (!next()) return;
+    final double xFallingEdge = xStart + 0.5 * zoom;
+    final double xStop = xStart + zoom;
+    final double yTop = yBottom - DiagramViewPanel.BIT_SIGNAL_HEIGHT;
+    drawUpArrow(g, xStart, yTop);
+    g.draw(new Line2D.Double(xStart, yBottom, xStart, yTop));
+    g.draw(new Line2D.Double(xStart, yTop, xFallingEdge, yTop));
+    g.draw(new Line2D.Double(xFallingEdge, yTop, xFallingEdge, yBottom));
+    g.draw(new Line2D.Double(xFallingEdge, yBottom, xStop, yBottom));
+  }
 }
 
 /*
