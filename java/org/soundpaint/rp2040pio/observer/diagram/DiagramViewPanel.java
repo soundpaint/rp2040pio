@@ -122,18 +122,44 @@ public class DiagramViewPanel extends JPanel implements Scrollable
     SwingUtilities.invokeLater(() -> signalPanel.repaint());
   }
 
+  public void ensureCycleIsVisible(final int cycle)
+  {
+    scrollPane.validate(); // ensure scrollbar max value is up to date
+    final double leftMostVisibleCycle = getLeftMostVisibleCycle();
+    final double rightMostVisibleCycle = getRightMostVisibleCycle();
+    if ((cycle >= leftMostVisibleCycle) &&
+        (cycle < (int)rightMostVisibleCycle))
+      return;
+    final double newLeftMostVisibleCycle;
+    if (cycle < leftMostVisibleCycle) {
+      newLeftMostVisibleCycle = cycle;
+    } else /* (cycle >= (int)rightMostVisibleCycle) */ {
+      newLeftMostVisibleCycle =
+        cycle + leftMostVisibleCycle - rightMostVisibleCycle + 1;
+    }
+    setLeftMostVisibleCycle(newLeftMostVisibleCycle);
+  }
+
+  public double getRightMostVisibleCycle()
+  {
+    final JScrollBar scrollBar = scrollPane.getHorizontalScrollBar();
+    final int scrollBarValue = scrollBar.getValue();
+    final int viewPortWidth = scrollPane.getViewportBorderBounds().width;
+    return signalPanel.x2cycle(scrollBarValue + viewPortWidth);
+  }
+
   public double getLeftMostVisibleCycle()
   {
     final JScrollBar scrollBar = scrollPane.getHorizontalScrollBar();
-    final int scrollBarValueBefore = scrollBar.getValue();
-    return signalPanel.x2cycle(scrollBarValueBefore);
+    final int scrollBarValue = scrollBar.getValue();
+    return signalPanel.x2cycle(scrollBarValue);
   }
 
   public void setLeftMostVisibleCycle(final double cycle)
   {
-    final double scrollBarValueAfter = signalPanel.cycle2x(cycle);
     final JScrollBar scrollBar = scrollPane.getHorizontalScrollBar();
-    scrollBar.setValue((int)Math.round(scrollBarValueAfter));
+    final double scrollBarValue = signalPanel.cycle2x(cycle);
+    scrollBar.setValue((int)Math.round(scrollBarValue));
     SwingUtilities.invokeLater(() -> signalPanel.repaint());
   }
 

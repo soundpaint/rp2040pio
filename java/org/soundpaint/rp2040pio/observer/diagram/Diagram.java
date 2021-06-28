@@ -198,6 +198,7 @@ public class Diagram extends GUIObserver
   {
     model.applyCycles(count);
     modelChanged();
+    diagramPanel.ensureCycleIsVisible(model.getSignalSize() - 1);
   }
 
   public void setZoom(final int zoom)
