@@ -1,5 +1,5 @@
 /*
- * @(#)ClockSignal.java 1.00 21/02/12
+ * @(#)CycleRuler.java 1.00 21/06/28
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,18 +24,21 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
 import java.util.List;
 
-public class ClockSignal extends AbstractSignal<Void> implements Constants
+public class CycleRuler extends AbstractSignal<Void> implements Constants
 {
-  public ClockSignal()
+  private static final int PADDING = 1;
+
+  public CycleRuler()
   {
-    this("clock");
+    this("cycle count");
   }
 
-  public ClockSignal(final String label)
+  public CycleRuler(final String label)
   {
     super(label);
   }
@@ -47,31 +50,24 @@ public class ClockSignal extends AbstractSignal<Void> implements Constants
   }
 
   @Override
-  public boolean isClock() { return true; }
-
-  private void drawUpArrow(final Graphics2D g, final double x, final double y)
-  {
-    final double arrowWidth = 0.3 * BIT_SIGNAL_HEIGHT;
-    final double arrowHeight = 0.3 * BIT_SIGNAL_HEIGHT;
-    g.draw(new Line2D.Double(x, y, x - 0.5 * arrowWidth, y + arrowHeight));
-    g.draw(new Line2D.Double(x, y, x + 0.5 * arrowWidth, y + arrowHeight));
-  }
-
-  @Override
   public void paintCycle(final List<ToolTip> toolTips,
                          final Graphics2D g, final double zoom,
                          final double xStart, final double yBottom,
                          final boolean firstCycle, final boolean lastCycle)
   {
+    final int cycle = getReplayIndex();
     if (!next()) return;
-    final double xFallingEdge = xStart + 0.5 * zoom;
-    final double xStop = xStart + zoom;
-    final double yTop = yBottom - BIT_SIGNAL_HEIGHT;
-    drawUpArrow(g, xStart, yTop);
-    g.draw(new Line2D.Double(xStart, yBottom, xStart, yTop));
-    g.draw(new Line2D.Double(xStart, yTop, xFallingEdge, yTop));
-    g.draw(new Line2D.Double(xFallingEdge, yTop, xFallingEdge, yBottom));
-    g.draw(new Line2D.Double(xFallingEdge, yBottom, xStop, yBottom));
+    final double tickYBottom = yBottom;
+    final double tickYTop = yBottom - 0.3 * BIT_SIGNAL_HEIGHT;
+    g.draw(new Line2D.Double(xStart, tickYBottom, xStart, tickYTop));
+    if ((cycle % 5) == 0) {
+      final double labelYBottom = yBottom - 0.5 * BIT_SIGNAL_HEIGHT;
+      final String label = String.format("%d", cycle);
+      g.setFont(DEFAULT_FONT);
+      final FontMetrics fm = g.getFontMetrics(g.getFont());
+      final int width = fm.stringWidth(label) - PADDING;
+      g.drawString(label, (float)(xStart - 0.5 * width), (float)labelYBottom);
+    }
   }
 }
 

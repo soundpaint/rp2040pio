@@ -95,14 +95,11 @@ public class SignalPanel extends JComponent implements Constants
 
   private void updatePreferredHeight()
   {
-    double preferredHeight =
-      DiagramViewPanel.TOP_MARGIN + DiagramViewPanel.BOTTOM_MARGIN;
+    double preferredHeight = TOP_MARGIN + BOTTOM_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         preferredHeight +=
-          signal.isValued() ?
-          DiagramViewPanel.VALUED_LANE_HEIGHT :
-          DiagramViewPanel.BIT_LANE_HEIGHT;
+          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
       }
     }
     preferredSize.setSize((int)preferredSize.getWidth(), (int)preferredHeight);
@@ -146,8 +143,7 @@ public class SignalPanel extends JComponent implements Constants
   {
     g.setColor(Color.LIGHT_GRAY);
     g.setStroke(DOTTED_STROKE);
-    g.draw(new Line2D.Double(x, DiagramViewPanel.TOP_MARGIN,
-                             x, height - DiagramViewPanel.BOTTOM_MARGIN));
+    g.draw(new Line2D.Double(x, TOP_MARGIN, x, height - BOTTOM_MARGIN));
   }
 
   private void paintSignalsCycle(final Graphics2D g,
@@ -156,13 +152,11 @@ public class SignalPanel extends JComponent implements Constants
   {
     g.setColor(Color.BLACK);
     g.setStroke(PLAIN_STROKE);
-    double y = DiagramViewPanel.TOP_MARGIN;
+    double y = TOP_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         final double height =
-          signal.isValued() ?
-          DiagramViewPanel.VALUED_LANE_HEIGHT :
-          DiagramViewPanel.BIT_LANE_HEIGHT;
+          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
         signal.paintCycle(toolTips, g, zoom, xStart, y += height,
                           firstCycle, lastCycle);
       }
@@ -185,7 +179,6 @@ public class SignalPanel extends JComponent implements Constants
   {
     toolTips.clear();
     g.setStroke(PLAIN_STROKE);
-    g.setFont(DEFAULT_FONT);
     g.getClipBounds(clipBounds);
     final int cycles = model.getSignalSize();
     final int leftMostCycle = (int)x2cycle(clipBounds.x);
@@ -201,7 +194,6 @@ public class SignalPanel extends JComponent implements Constants
       final boolean firstCycle = cycle == 0;
       final boolean lastCycle = cycle == cycles - 1;
       paintGridLine(g, x, height);
-      g.setFont(VALUE_FONT);
       paintSignalsCycle(g, x, firstCycle, lastCycle);
     }
     paintGridLine(g, LEFT_MARGIN + rightMostCycle * zoom, height);

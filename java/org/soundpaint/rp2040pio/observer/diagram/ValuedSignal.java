@@ -82,6 +82,7 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
                                 final int cycles)
   {
     if (label != null) {
+      g.setFont(VALUE_FONT);
       final FontMetrics fm = g.getFontMetrics(g.getFont());
       final int width = fm.stringWidth(label);
       final double xLabelStart =
@@ -93,7 +94,7 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
     if (toolTipText != null) {
       addToolTip(toolTips,
                  (int)(xStart - cycles * zoom),
-                 (int)(yBottom - DiagramViewPanel.VALUED_SIGNAL_HEIGHT),
+                 (int)(yBottom - VALUED_SIGNAL_HEIGHT),
                  (int)xStart - 1, (int)yBottom,
                  toolTipText);
     }
@@ -127,7 +128,7 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
     }
 
     // draw lines for current value
-    final double yTop = yBottom - DiagramViewPanel.VALUED_SIGNAL_HEIGHT;
+    final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + zoom;
     if (changed() && !firstCycle) {

@@ -139,6 +139,11 @@ public abstract class AbstractSignal<T> implements Signal
     return signalRecords.size();
   }
 
+  public int getReplayIndex()
+  {
+    return replayIndex;
+  }
+
   public boolean next()
   {
     if (replayIndex >= signalRecords.size()) return false;

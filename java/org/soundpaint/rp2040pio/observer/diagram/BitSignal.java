@@ -64,12 +64,11 @@ public class BitSignal extends ValuedSignal<Bit> implements Constants
     if (!next()) return;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + zoom;
-    final double yStable =
-      yBottom - (asBoolean() ? DiagramViewPanel.BIT_SIGNAL_HEIGHT : 0.0);
+    final double yStable = yBottom - (asBoolean() ? BIT_SIGNAL_HEIGHT : 0.0);
     final double yPrev =
       firstCycle ?
       yStable :
-      yBottom - (previousValue ? DiagramViewPanel.BIT_SIGNAL_HEIGHT : 0.0);
+      yBottom - (previousValue ? BIT_SIGNAL_HEIGHT : 0.0);
     g.draw(new Line2D.Double(xStart, yPrev, xStable, yStable));
     g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
   }

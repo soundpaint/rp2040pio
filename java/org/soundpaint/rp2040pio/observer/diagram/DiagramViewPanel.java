@@ -44,14 +44,6 @@ public class DiagramViewPanel extends JPanel implements Scrollable
 {
   private static final long serialVersionUID = 6691239292598254146L;
 
-  public static final double TOP_MARGIN = 16.0;
-  public static final double BOTTOM_MARGIN = 16.0;
-  public static final double BIT_SIGNAL_HEIGHT = 16.0;
-  public static final double BIT_LANE_HEIGHT = BIT_SIGNAL_HEIGHT + 16.0;
-  public static final double VALUED_SIGNAL_HEIGHT = 24.0;
-  public static final double VALUED_LANE_HEIGHT =
-    VALUED_SIGNAL_HEIGHT + 16.0;
-
   private final DiagramModel model;
   private final LegendPanel legendPanel;
   private final SignalPanel signalPanel;

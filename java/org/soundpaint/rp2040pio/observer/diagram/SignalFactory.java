@@ -37,6 +37,11 @@ import org.soundpaint.rp2040pio.sdk.SDK;
  */
 public class SignalFactory
 {
+  public static CycleRuler createRuler(final String label)
+  {
+    return new CycleRuler(label);
+  }
+
   public static ClockSignal createClockSignal(final String label)
   {
     return new ClockSignal(label);

@@ -35,7 +35,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class LegendPanel extends JComponent
+public class LegendPanel extends JComponent implements Constants
 {
   private static final long serialVersionUID = 6634499718877657461L;
 
@@ -63,14 +63,11 @@ public class LegendPanel extends JComponent
 
   private void updatePreferredHeight()
   {
-    double preferredHeight =
-      DiagramViewPanel.TOP_MARGIN + DiagramViewPanel.BOTTOM_MARGIN;
+    double preferredHeight = TOP_MARGIN + BOTTOM_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         preferredHeight +=
-          signal.isValued() ?
-          DiagramViewPanel.VALUED_LANE_HEIGHT :
-          DiagramViewPanel.BIT_LANE_HEIGHT;
+          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
       }
     }
     preferredSize.setSize(preferredSize.getWidth(), (int)preferredHeight);
@@ -101,14 +98,13 @@ public class LegendPanel extends JComponent
 
   private void paintLabels(final Graphics2D g)
   {
-    double y = DiagramViewPanel.TOP_MARGIN;
+    g.setFont(DEFAULT_FONT);
+    double y = TOP_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         final String label = signal.getLabel();
         final double height =
-          signal.isValued() ?
-          DiagramViewPanel.VALUED_LANE_HEIGHT :
-          DiagramViewPanel.BIT_LANE_HEIGHT;
+          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
         paintLabel(g, LEGEND_WIDTH, y += height, label);
       }
     }
