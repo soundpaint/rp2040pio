@@ -39,7 +39,7 @@ public interface Constants
   static final int ZOOM_MAX = 112;
   static final int ZOOM_DEFAULT = 32;
 
-  static final double TOP_MARGIN = 16.0;
+  static final double TOP_MARGIN = 0.0;
   static final double BOTTOM_MARGIN = 16.0;
   static final double BIT_SIGNAL_HEIGHT = 16.0;
   static final double BIT_LANE_HEIGHT = BIT_SIGNAL_HEIGHT + 16.0;

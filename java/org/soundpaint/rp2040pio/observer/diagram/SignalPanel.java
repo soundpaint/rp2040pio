@@ -183,7 +183,8 @@ public class SignalPanel extends JComponent implements Constants
     final int cycles = model.getSignalSize();
     final int leftMostCycle = (int)x2cycle(clipBounds.x);
     final int rightMostCycle =
-      ((int)x2cycle(clipBounds.x + clipBounds.width - 1)) + 1;
+      Math.min(model.getSignalSize(),
+               ((int)x2cycle(clipBounds.x + clipBounds.width - 1)) + 1);
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         signal.rewind(leftMostCycle);
