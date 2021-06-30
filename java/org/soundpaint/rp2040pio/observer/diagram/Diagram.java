@@ -150,7 +150,7 @@ public class Diagram extends GUIObserver
 
   private void configureModel() throws IOException
   {
-    model.addSignal(SignalFactory.createRuler("#cycle")).setVisible(true);
+    model.addSignal(SignalFactory.createRuler("cycle#")).setVisible(true);
     model.addSignal(SignalFactory.createClockSignal("clock")).setVisible(true);
     model.addSignal(PIOEmuRegisters.
                     getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);

@@ -44,8 +44,10 @@ public class SignalsPropertiesPanel extends Box
 
   private final Diagram diagram;
   private final List<Signal> signals;
+  private final List<JTextField> signalIndices;
   private final List<JTextField> signalLabels;
   private final List<JCheckBox> signalVisibilities;
+  private final AddSignalDialog addSignalDialog;
 
   public SignalsPropertiesPanel(final Diagram diagram)
   {
@@ -53,11 +55,15 @@ public class SignalsPropertiesPanel extends Box
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
     signals = new ArrayList<Signal>();
+    signalIndices = new ArrayList<JTextField>();
     signalLabels = new ArrayList<JTextField>();
     signalVisibilities = new ArrayList<JCheckBox>();
+    addSignalDialog =
+      new AddSignalDialog(diagram,
+                          (addIndex, signal) -> addSignal(addIndex, signal));
   }
 
-  public void apply()
+  public void applyChanges()
   {
     int index = 0;
     for (final Signal signal : signals) {
@@ -72,16 +78,23 @@ public class SignalsPropertiesPanel extends Box
     Collections.swap(signals, index, index + 1);
     final Signal signal1 = signals.get(index);
     final Signal signal2 = signals.get(index + 1);
-    final JTextField tfSignal1 = signalLabels.get(index);
-    tfSignal1.setText(signal1.getLabel());
-    final JTextField tfSignal2 = signalLabels.get(index + 1);
-    tfSignal2.setText(signal2.getLabel());
+    final JTextField tfLabel1 = signalLabels.get(index);
+    tfLabel1.setText(signal1.getLabel());
+    final JTextField tfLabel2 = signalLabels.get(index + 1);
+    tfLabel2.setText(signal2.getLabel());
     final JCheckBox cbVisible1 = signalVisibilities.get(index);
     final JCheckBox cbVisible2 = signalVisibilities.get(index + 1);
     final boolean selected = cbVisible1.isSelected();
     cbVisible1.setSelected(cbVisible2.isSelected());
     cbVisible2.setSelected(selected);
     revalidate();
+  }
+
+  private void addSignal(final int addIndex, final Signal signal)
+  {
+    signals.add(addIndex, signal);
+    rebuildSignals();
+    rebuildGUI();
   }
 
   private void rebuildGUI()
@@ -91,9 +104,9 @@ public class SignalsPropertiesPanel extends Box
     final Box headerLine = new Box(BoxLayout.X_AXIS);
     add(headerLine);
     headerLine.add(Box.createHorizontalStrut(5));
-    headerLine.add(new JLabel("Signal"));
+    headerLine.add(new JLabel("# Label"));
     headerLine.add(Box.createHorizontalGlue());
-    headerLine.add(new JLabel("Change Order"));
+    headerLine.add(new JLabel("Actions"));
     headerLine.add(Box.createHorizontalGlue());
     headerLine.add(new JLabel("Show"));
     headerLine.add(Box.createHorizontalStrut(5));
@@ -102,21 +115,32 @@ public class SignalsPropertiesPanel extends Box
     int index = 0;
     for (final Signal signal : signals) {
       if (index > 0) {
-        final Box swapLine = new Box(BoxLayout.X_AXIS);
-        add(swapLine);
-        swapLine.add(Box.createHorizontalGlue());
+        final Box infixLine = new Box(BoxLayout.X_AXIS);
+        add(infixLine);
+        infixLine.add(Box.createHorizontalGlue());
+
         final JButton btSwap =
           SwingUtils.createIconButton("swapv12x12.png", "⬍");
         final int swapIndex = index - 1;
         btSwap.addActionListener((event) -> swapSignals(swapIndex));
         btSwap.setBorderPainted(false);
         btSwap.setContentAreaFilled(false);
-        swapLine.add(btSwap);
-        swapLine.add(Box.createHorizontalGlue());
-        SwingUtils.setPreferredHeightAsMaximum(swapLine);
+        infixLine.add(btSwap);
+
+        final JButton btAdd =
+          SwingUtils.createIconButton("add12x12.png", "+");
+        final int addIndex = index;
+        btAdd.addActionListener((event) -> addSignalDialog.open(addIndex));
+        btAdd.setBorderPainted(false);
+        btAdd.setContentAreaFilled(false);
+        infixLine.add(btAdd);
+
+        infixLine.add(Box.createHorizontalGlue());
+        SwingUtils.setPreferredHeightAsMaximum(infixLine);
       }
       final Box signalLine = new Box(BoxLayout.X_AXIS);
       add(signalLine);
+      signalLine.add(signalIndices.get(index));
       signalLine.add(Box.createHorizontalStrut(5));
       signalLine.add(signalLabels.get(index));
       signalLine.add(Box.createHorizontalGlue());
@@ -131,19 +155,28 @@ public class SignalsPropertiesPanel extends Box
 
   private void rebuildSignals()
   {
-    diagram.pullSignals(signals);
+    signalIndices.clear();
     signalLabels.clear();
     signalVisibilities.clear();
     int index = 0;
     for (final Signal signal : signals) {
-      final JTextField tfSignal = new JTextField() {
+      final JTextField tfIndex = new JTextField() {
           @Override
           public void setBorder(final Border border) {}
         };
-      tfSignal.setText(signal.getLabel());
-      tfSignal.setEditable(false);
-      SwingUtils.setPreferredWidthAsMaximum(tfSignal);
-      signalLabels.add(tfSignal);
+      tfIndex.setText(String.format("#%d", index));
+      tfIndex.setEditable(false);
+      SwingUtils.setPreferredWidthAsMaximum(tfIndex);
+      signalIndices.add(tfIndex);
+
+      final JTextField tfLabel = new JTextField() {
+          @Override
+          public void setBorder(final Border border) {}
+        };
+      tfLabel.setText(signal.getLabel());
+      tfLabel.setEditable(false);
+      SwingUtils.setPreferredWidthAsMaximum(tfLabel);
+      signalLabels.add(tfLabel);
 
       final JCheckBox cbVisible = new JCheckBox();
       cbVisible.setSelected(signal.getVisible());
@@ -155,6 +188,7 @@ public class SignalsPropertiesPanel extends Box
 
   public void rebuild()
   {
+    diagram.pullSignals(signals);
     rebuildSignals();
     rebuildGUI();
   }

@@ -1,5 +1,5 @@
 /*
- * @(#)ViewPropertiesDialog.java 1.00 21/04/07
+ * @(#)AddSignalDialog.java 1.00 21/06/29
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -25,97 +25,87 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
+import java.awt.Dialog;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JScrollPane;
-import javax.swing.border.Border;
-import javax.swing.border.EtchedBorder;
-import javax.swing.border.TitledBorder;
 
-public class ViewPropertiesDialog extends JDialog
+public class AddSignalDialog extends JDialog
 {
-  private static final long serialVersionUID = 8248679860337463934L;
+  private static final long serialVersionUID = 4433806198970312268L;
 
   private class ActionPanel extends Box
   {
-    private static final long serialVersionUID = -4136799373128393432L;
+    private static final long serialVersionUID = 7200614607584132864L;
 
-    private final JButton btOk;
-    private final JButton btApply;
+    private final JButton btAdd;
     private final JButton btCancel;
 
     public ActionPanel()
     {
       super(BoxLayout.X_AXIS);
       setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-      btOk = new JButton("Ok");
-      btOk.setMnemonic(KeyEvent.VK_O);
-      btOk.addActionListener((event) -> {
-          applyChanges();
-          ViewPropertiesDialog.this.setVisible(false);
+      btAdd = new JButton("Add");
+      btAdd.setMnemonic(KeyEvent.VK_A);
+      btAdd.addActionListener((event) -> {
+          if (AddSignalDialog.this.add()) {
+            AddSignalDialog.this.setVisible(false);
+          }
         });
-      add(btOk);
-      add(Box.createHorizontalGlue());
-      btApply = new JButton("Apply");
-      btApply.setMnemonic(KeyEvent.VK_A);
-      btApply.addActionListener((event) -> {
-          applyChanges();
-        });
-      add(btApply);
+      add(btAdd);
       add(Box.createHorizontalGlue());
       btCancel = new JButton("Cancel");
       btCancel.setMnemonic(KeyEvent.VK_C);
       btCancel.addActionListener((event) -> {
-          ViewPropertiesDialog.this.setVisible(false);
+          AddSignalDialog.this.setVisible(false);
         });
       add(btCancel);
     }
   }
 
-  private final SignalsPropertiesPanel signalsPropertiesPanel;
+  private final Diagram diagram;
+  private final BiConsumer<Integer, Signal> signalAdder;
+  private final SignalFactoryPanel signalFactoryPanel;
+  private int addIndex;
 
-  private ViewPropertiesDialog()
+  private AddSignalDialog()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ViewPropertiesDialog(final Diagram diagram)
+  public AddSignalDialog(final Diagram diagram,
+                         final BiConsumer<Integer, Signal> signalAdder)
   {
-    super(diagram, "View Properties");
+    super(diagram, "Add Signal", Dialog.ModalityType.DOCUMENT_MODAL);
     Objects.requireNonNull(diagram);
-    signalsPropertiesPanel = new SignalsPropertiesPanel(diagram);
-    final JScrollPane scrollPane = new JScrollPane(signalsPropertiesPanel);
-    final Border loweredEtched =
-      BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
-    final TitledBorder titled =
-      BorderFactory.createTitledBorder(loweredEtched, "Signals");
-    titled.setTitleJustification(TitledBorder.CENTER);
-    scrollPane.setBorder(titled);
-    getContentPane().add(scrollPane);
+    this.diagram = diagram;
+    this.signalAdder = signalAdder;
+    getContentPane().add(signalFactoryPanel = new SignalFactoryPanel(diagram));
     getContentPane().add(new ActionPanel(), BorderLayout.SOUTH);
-    setPreferredSize(new Dimension(320, 480));
   }
 
-  private void applyChanges()
+  private boolean add()
   {
-    signalsPropertiesPanel.applyChanges();
+    final Signal signal = signalFactoryPanel.createSignal();
+    if (signal != null) {
+      signal.setVisible(true);
+      signalAdder.accept(addIndex, signal);
+      return true;
+    }
+    return false;
   }
 
-  public void open()
+  public void open(final int addIndex)
   {
-    signalsPropertiesPanel.rebuild();
+    setTitle(String.format("Insert New Signal Before Signal #%d", addIndex));
     pack();
     setVisible(true);
+    this.addIndex = addIndex;
   }
 }
 
