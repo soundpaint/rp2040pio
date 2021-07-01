@@ -108,7 +108,7 @@ public class Diagram extends GUIObserver
   @Override
   protected MenuBar createMenuBar(final PrintStream console)
   {
-    return new MenuBar(this, console);
+    return new MenuBar(this, getSDK(), console);
   }
 
   private void modelChanged()

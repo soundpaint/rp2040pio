@@ -36,9 +36,10 @@ public interface RegistersDocs<T>
 {
   public enum BitsType
   {
-    RESERVED("-", "n/a"),
+    RESERVED("―", "n/a"),
+    UNUSED("―", "unused"),
     SC("SC", "???"),
-    WC("WC", "wrtite 1 to clear"),
+    WC("WC", "write 1 to clear"),
     RW("RW", "read/write"),
     RO("RO", "read-only"),
     WO("WO", "write-only"),
@@ -121,6 +122,59 @@ public interface RegistersDocs<T>
     public String getDescription() { return description; }
     public BitsType getType() { return type; }
     public Integer getResetValue() { return resetValue; }
+
+    private static String renderName(final String name)
+    {
+      return name != null ? name + ": " : "";
+    }
+
+    private static String renderName(final String name,
+                                     final String defaultName)
+    {
+      return renderName(name != null ? name : defaultName);
+    }
+
+    private String renderBitRange()
+    {
+      return
+        msb == lsb ?
+        String.format("bit %d", msb) :
+        String.format("bits [%d:%d]", msb, lsb);
+    }
+
+    private String renderDescription()
+    {
+      return description != null ? " " + description : "";
+    }
+
+    private String renderType()
+    {
+      return String.format("Type: %s", type);
+    }
+
+    private String renderResetValue()
+    {
+      if ((type == BitsType.UNUSED) || (type == BitsType.RESERVED))
+        return "";
+      return String.format(", Reset Value: %s",
+                           resetValue != null ? resetValue : "―");
+    }
+
+    public String toString(final String defaultName)
+    {
+      return String.format("%s %s%s, %s %s",
+                           renderName(name, defaultName),
+                           renderBitRange(),
+                           renderDescription(),
+                           renderType(),
+                           renderResetValue());
+    }
+
+    @Override
+    public String toString()
+    {
+      return toString(null);
+    }
   }
 
   public static class RegisterDetails

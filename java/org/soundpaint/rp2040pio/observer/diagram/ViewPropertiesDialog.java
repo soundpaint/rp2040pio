@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.BorderLayout;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import javax.swing.JScrollPane;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class ViewPropertiesDialog extends JDialog
 {
@@ -89,11 +91,11 @@ public class ViewPropertiesDialog extends JDialog
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ViewPropertiesDialog(final Diagram diagram)
+  public ViewPropertiesDialog(final Diagram diagram, final SDK sdk)
   {
-    super(diagram, "View Properties");
+    super(diagram, "View Properties", Dialog.ModalityType.DOCUMENT_MODAL);
     Objects.requireNonNull(diagram);
-    signalsPropertiesPanel = new SignalsPropertiesPanel(diagram);
+    signalsPropertiesPanel = new SignalsPropertiesPanel(diagram, sdk);
     final JScrollPane scrollPane = new JScrollPane(signalsPropertiesPanel);
     final Border loweredEtched =
       BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
@@ -103,7 +105,7 @@ public class ViewPropertiesDialog extends JDialog
     scrollPane.setBorder(titled);
     getContentPane().add(scrollPane);
     getContentPane().add(new ActionPanel(), BorderLayout.SOUTH);
-    setPreferredSize(new Dimension(320, 480));
+    setPreferredSize(new Dimension(400, 400));
   }
 
   private void applyChanges()

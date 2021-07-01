@@ -117,14 +117,14 @@ public abstract class GUIObserver extends JFrame
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     connectDialog = new ConnectDialog(this, getPort());
     lbStatus = new JLabel();
-    add(createActionPanel(console), BorderLayout.NORTH);
-    add(createStatusLine(console), BorderLayout.SOUTH);
-    setJMenuBar(createMenuBar(console));
-    printAbout();
     sdkClient = createRemoteAddressSpace("GUI event thread");
     sdk = new SDK(console, sdkClient);
     updateLoopClient = createRemoteAddressSpace("update loop thread");
     connect(null, getPort());
+    add(createActionPanel(console), BorderLayout.NORTH);
+    add(createStatusLine(console), BorderLayout.SOUTH);
+    setJMenuBar(createMenuBar(console));
+    printAbout();
   }
 
   private Box createStatusLine(final PrintStream console)

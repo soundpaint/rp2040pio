@@ -37,6 +37,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import org.soundpaint.rp2040pio.SwingUtils;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class SignalsPropertiesPanel extends Box
 {
@@ -49,7 +50,7 @@ public class SignalsPropertiesPanel extends Box
   private final List<JCheckBox> signalVisibilities;
   private final AddSignalDialog addSignalDialog;
 
-  public SignalsPropertiesPanel(final Diagram diagram)
+  public SignalsPropertiesPanel(final Diagram diagram, final SDK sdk)
   {
     super(BoxLayout.Y_AXIS);
     Objects.requireNonNull(diagram);
@@ -59,7 +60,7 @@ public class SignalsPropertiesPanel extends Box
     signalLabels = new ArrayList<JTextField>();
     signalVisibilities = new ArrayList<JCheckBox>();
     addSignalDialog =
-      new AddSignalDialog(diagram,
+      new AddSignalDialog(diagram, sdk,
                           (addIndex, signal) -> addSignal(addIndex, signal));
   }
 
@@ -97,6 +98,13 @@ public class SignalsPropertiesPanel extends Box
     rebuildGUI();
   }
 
+  private void deleteSignal(final int delIndex)
+  {
+    signals.remove(delIndex);
+    rebuildSignals();
+    rebuildGUI();
+  }
+
   private void rebuildGUI()
   {
     removeAll();
@@ -106,9 +114,13 @@ public class SignalsPropertiesPanel extends Box
     headerLine.add(Box.createHorizontalStrut(5));
     headerLine.add(new JLabel("# Label"));
     headerLine.add(Box.createHorizontalGlue());
-    headerLine.add(new JLabel("Actions"));
+    headerLine.add(new JLabel("Swap"));
+    headerLine.add(Box.createHorizontalStrut(15));
+    headerLine.add(new JLabel("Add"));
     headerLine.add(Box.createHorizontalGlue());
     headerLine.add(new JLabel("Show"));
+    headerLine.add(Box.createHorizontalStrut(5));
+    headerLine.add(new JLabel("Delete"));
     headerLine.add(Box.createHorizontalStrut(5));
     SwingUtils.setPreferredHeightAsMaximum(headerLine);
     add(Box.createVerticalStrut(15));
@@ -146,6 +158,13 @@ public class SignalsPropertiesPanel extends Box
       signalLine.add(Box.createHorizontalGlue());
       signalLine.add(signalVisibilities.get(index));
       signalLine.add(Box.createHorizontalStrut(12));
+      final JButton btDel =
+        SwingUtils.createIconButton("del12x12.png", "+");
+      final int delIndex = index;
+      btDel.addActionListener((event) -> deleteSignal(delIndex));
+      btDel.setBorderPainted(false);
+      btDel.setContentAreaFilled(false);
+      signalLine.add(btDel);
       SwingUtils.setPreferredHeightAsMaximum(signalLine);
       index++;
     }

@@ -35,6 +35,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import org.soundpaint.rp2040pio.SwingUtils;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class SignalFactoryPanel extends JPanel
 {
@@ -46,14 +47,14 @@ public class SignalFactoryPanel extends JPanel
   private final JRadioButton rbClock;
   private final JRadioButton rbValued;
   private final JTextField tfLabel;
-  private final JPanel valuedProperties;
+  private final ValuedSignalPropertiesPanel valuedProperties;
 
   private SignalFactoryPanel()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public SignalFactoryPanel(final Diagram diagram)
+  public SignalFactoryPanel(final Diagram diagram, final SDK sdk)
   {
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
@@ -72,7 +73,7 @@ public class SignalFactoryPanel extends JPanel
     add(rbValued);
     rbValued.addActionListener((action) -> selectValued());
     rbValued.setSelected(true);
-    add(valuedProperties = new ValuedSignalPropertiesPanel(diagram));
+    add(valuedProperties = new ValuedSignalPropertiesPanel(diagram, sdk));
     selectValued();
     SwingUtils.setPreferredWidthAsMaximum(tfLabel = new JTextField(20));
     add(Box.createVerticalStrut(5));
@@ -120,6 +121,7 @@ public class SignalFactoryPanel extends JPanel
       JOptionPane.showMessageDialog(this, "Signal label must not be empty.",
                                     "Invalid Signal Label",
                                     JOptionPane.ERROR_MESSAGE);
+      return null;
     }
     final ButtonModel button = signalType.getSelection();
     if (button == rbCycleRuler.getModel()) {
@@ -129,8 +131,7 @@ public class SignalFactoryPanel extends JPanel
       return SignalFactory.createClockSignal(label);
     }
     if (button == rbValued.getModel()) {
-      // TODO
-      return null;
+      return valuedProperties.createSignal(label);
     }
     return null;
   }

@@ -34,6 +34,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class AddSignalDialog extends JDialog
 {
@@ -78,14 +79,15 @@ public class AddSignalDialog extends JDialog
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public AddSignalDialog(final Diagram diagram,
+  public AddSignalDialog(final Diagram diagram, final SDK sdk,
                          final BiConsumer<Integer, Signal> signalAdder)
   {
     super(diagram, "Add Signal", Dialog.ModalityType.DOCUMENT_MODAL);
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
     this.signalAdder = signalAdder;
-    getContentPane().add(signalFactoryPanel = new SignalFactoryPanel(diagram));
+    getContentPane().add(signalFactoryPanel =
+                         new SignalFactoryPanel(diagram, sdk));
     getContentPane().add(new ActionPanel(), BorderLayout.SOUTH);
   }
 
@@ -102,10 +104,10 @@ public class AddSignalDialog extends JDialog
 
   public void open(final int addIndex)
   {
+    this.addIndex = addIndex;
     setTitle(String.format("Insert New Signal Before Signal #%d", addIndex));
     pack();
     setVisible(true);
-    this.addIndex = addIndex;
   }
 }
 

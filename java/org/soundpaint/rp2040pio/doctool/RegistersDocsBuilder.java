@@ -54,6 +54,8 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
     final String name = bitsInfo.getName();
     if (bitsInfo.getType() == RegistersDocs.BitsType.RESERVED)
       return "Reserved.";
+    if (bitsInfo.getType() == RegistersDocs.BitsType.UNUSED)
+      return "Unused.";
     if (name == null)
       return "―";
     return String.format(name);
@@ -91,6 +93,8 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
       description = bitsInfoDescription;
     } else if (type == RegistersDocs.BitsType.RESERVED) {
       description = "―";
+    } else if (type == RegistersDocs.BitsType.UNUSED) {
+      description = "―";
     } else if (defaultDescription != null) {
       description = defaultDescription;
     } else {
@@ -103,7 +107,9 @@ public class RegistersDocsBuilder<T extends Enum<T> & RegistersDocs<T>>
   {
     final RegistersDocs.BitsType type = bitsInfo.getType();
     return String.format("%s",
-                         type != RegistersDocs.BitsType.RESERVED ? type : "―");
+                         (type == RegistersDocs.BitsType.RESERVED) ||
+                         (type == RegistersDocs.BitsType.UNUSED) ?
+                         "―" : type);
   }
 
   private static String formatResetValue(final RegistersDocs.BitsInfo bitsInfo)

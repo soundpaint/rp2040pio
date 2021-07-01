@@ -31,6 +31,7 @@ import javax.swing.KeyStroke;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import org.soundpaint.rp2040pio.SwingUtils;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class MenuBar
   extends org.soundpaint.rp2040pio.observer.MenuBar<Diagram>
@@ -40,14 +41,15 @@ public class MenuBar
   private final Diagram diagram;
   private final ViewPropertiesDialog viewPropertiesDialog;
 
-  public MenuBar(final Diagram diagram, final PrintStream console)
+  public MenuBar(final Diagram diagram, final SDK sdk,
+                 final PrintStream console)
   {
     super(diagram, console);
     if (diagram == null) {
       throw new NullPointerException("diagram");
     }
     this.diagram = diagram;
-    viewPropertiesDialog = new ViewPropertiesDialog(diagram);
+    viewPropertiesDialog = new ViewPropertiesDialog(diagram, sdk);
   }
 
   @Override

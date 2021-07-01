@@ -135,7 +135,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
               }),
     SM0_DELAY_CYCLE("Read-only access to the SM's delay status.",
                     new BitsInfo[] {
-                      new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
+                      new BitsInfo(31, 1, null, null, BitsType.UNUSED, null),
                       new BitsInfo(0, 0, "DELAY_CYCLE",
                                    "0x1, if the currently executed cycles%n" +
                                    "is a delay cycle.", BitsType.RO, 0)
@@ -185,7 +185,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                     }),
     SM0_CLK_ENABLE("Read-only access to the SM's current clock enable status.",
                    new BitsInfo[] {
-                     new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
+                     new BitsInfo(31, 1, null, null, BitsType.UNUSED, null),
                      new BitsInfo(0, 0, "CLK_ENABLE",
                                   "0x1, if in the current cycle the clock%n" +
                                   "enable signal evaluates to 0x1.",
@@ -196,7 +196,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                         "when master clock phase 1 has been completed,%n" +
                         "otherwise identical with current clock enable.",
                    new BitsInfo[] {
-                     new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
+                     new BitsInfo(31, 1, null, null, BitsType.UNUSED, null),
                      new BitsInfo(0, 0, "CLK_ENABLE",
                                   "0x1, if in the pre-computed clock%n" +
                                   "enable signal for the upcoming master%n" +
@@ -319,7 +319,8 @@ public abstract class PIOEmuRegisters extends RegisterSet
     SM3_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
     INSTR_MEM0("Read / write access to instruction memory word.",
                new BitsInfo[] {
-                 new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+                 new BitsInfo(31, 16, null, null, BitsType.UNUSED, null),
+                 new BitsInfo(15, 0, null, null, BitsType.RW, 0)
                }),
     INSTR_MEM1(Regs.INSTR_MEM0),
     INSTR_MEM2(Regs.INSTR_MEM0),
