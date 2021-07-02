@@ -59,35 +59,23 @@ public class SignalFactoryPanel extends JPanel
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+    tfLabel = new JTextField(20);
     signalType = new ButtonGroup();
     rbCycleRuler = new JRadioButton("Cycle Ruler");
-    signalType.add(rbCycleRuler);
-    add(rbCycleRuler);
-    rbCycleRuler.addActionListener((action) -> selectCycleRuler());
     rbClock = new JRadioButton("Clock");
-    signalType.add(rbClock);
-    add(rbClock);
-    rbClock.addActionListener((action) -> selectClock());
-    rbValued = new JRadioButton("Valued Signal");
-    signalType.add(rbValued);
-    add(rbValued);
-    rbValued.addActionListener((action) -> selectValued());
-    rbValued.setSelected(true);
-    add(valuedProperties = new ValuedSignalPropertiesPanel(diagram, sdk));
+    rbValued = new JRadioButton("Valued Signal", true);
+    valuedProperties = new ValuedSignalPropertiesPanel(diagram, sdk);
+    createAndAddLabelLine();
+    createAndAddCycleRulerLine();
+    createAndAddClockLine();
+    createAndAddValuedLine();
+    createAndAddValuedProperties();
     selectValued();
-    SwingUtils.setPreferredWidthAsMaximum(tfLabel = new JTextField(20));
     add(Box.createVerticalStrut(5));
-    add(createLabelLine());
     add(Box.createVerticalGlue());
   }
 
-  private JPanel createValuedProperties()
-  {
-    final JPanel valuedProperties = new JPanel();
-    return valuedProperties;
-  }
-
-  private JPanel createLabelLine()
+  private void createAndAddLabelLine()
   {
     final JPanel labelLine = new JPanel();
     labelLine.setLayout(new BoxLayout(labelLine, BoxLayout.LINE_AXIS));
@@ -95,8 +83,54 @@ public class SignalFactoryPanel extends JPanel
     labelLine.add(Box.createHorizontalStrut(5));
     labelLine.add(tfLabel);
     labelLine.add(Box.createHorizontalGlue());
+    SwingUtils.setPreferredWidthAsMaximum(tfLabel);
     SwingUtils.setPreferredHeightAsMaximum(labelLine);
-    return labelLine;
+    add(labelLine);
+  }
+
+  private void createAndAddCycleRulerLine()
+  {
+    final JPanel cycleRulerLine = new JPanel();
+    cycleRulerLine.
+      setLayout(new BoxLayout(cycleRulerLine, BoxLayout.LINE_AXIS));
+    rbCycleRuler.addActionListener((action) -> selectCycleRuler());
+    signalType.add(rbCycleRuler);
+    cycleRulerLine.add(rbCycleRuler);
+    cycleRulerLine.add(Box.createHorizontalGlue());
+    add(cycleRulerLine);
+  }
+
+  private void createAndAddClockLine()
+  {
+    final JPanel clockLine = new JPanel();
+    clockLine.setLayout(new BoxLayout(clockLine, BoxLayout.LINE_AXIS));
+    rbClock.addActionListener((action) -> selectClock());
+    signalType.add(rbClock);
+    clockLine.add(rbClock);
+    clockLine.add(Box.createHorizontalGlue());
+    add(clockLine);
+  }
+
+  private void createAndAddValuedLine()
+  {
+    final JPanel valuedLine = new JPanel();
+    valuedLine.setLayout(new BoxLayout(valuedLine, BoxLayout.LINE_AXIS));
+    rbValued.addActionListener((action) -> selectValued());
+    signalType.add(rbValued);
+    valuedLine.add(rbValued);
+    valuedLine.add(Box.createHorizontalGlue());
+    add(valuedLine);
+  }
+
+  private void createAndAddValuedProperties()
+  {
+    final JPanel valuedPropertiesLine = new JPanel();
+    valuedPropertiesLine.
+      setLayout(new BoxLayout(valuedPropertiesLine, BoxLayout.LINE_AXIS));
+    valuedPropertiesLine.add(Box.createHorizontalStrut(20));
+    valuedPropertiesLine.add(valuedProperties);
+    SwingUtils.setPreferredHeightAsMaximum(valuedPropertiesLine);
+    add(valuedPropertiesLine);
   }
 
   private void selectCycleRuler()

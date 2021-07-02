@@ -25,15 +25,18 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -56,6 +59,8 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 public class ValuedSignalPropertiesPanel extends JPanel
 {
   private static final long serialVersionUID = -726756788602613552L;
+
+  private static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
 
   private enum RegistersSet {
     /* TODO:
@@ -148,10 +153,14 @@ public class ValuedSignalPropertiesPanel extends JPanel
 
   private final Diagram diagram;
   private final SDK sdk;
+  private final JLabel lbRegistersSet;
   private final JComboBox<RegistersSet> cbRegistersSet;
+  private final JLabel lbRegister;
   private final JComboBox<RegistersDocs<? extends Enum<?>>> cbRegister;
+  private final JLabel lbRegisterBitsInfo;
   private final DefaultListModel<BitsInfo> bitsInfos;
   private final JList<BitsInfo> lsBitsInfo;
+  private final JScrollPane lsBitsInfoScroll;
 
   private ValuedSignalPropertiesPanel()
   {
@@ -164,14 +173,24 @@ public class ValuedSignalPropertiesPanel extends JPanel
     this.diagram = diagram;
     Objects.requireNonNull(sdk);
     this.sdk = sdk;
+
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+    setBorder(BorderFactory.createTitledBorder("Valued Signal Properties"));
+    bitsInfos = new DefaultListModel<BitsInfo>();
+    lsBitsInfo = new JList<BitsInfo>(bitsInfos);
+    lsBitsInfoScroll = new JScrollPane(lsBitsInfo);
+    lbRegistersSet = new JLabel("Register Set");
+    lbRegistersSet.setPreferredSize(PREFERRED_LABEL_SIZE);
     cbRegistersSet = addRegistersSetSelection();
     add(Box.createVerticalStrut(5));
-    bitsInfos = new DefaultListModel<BitsInfo>();
+    lbRegister = new JLabel("Register");
+    lbRegister.setPreferredSize(PREFERRED_LABEL_SIZE);
     cbRegister = addRegisterSelection();
     registersSetSelected((RegistersSet)cbRegistersSet.getSelectedItem());
     add(Box.createVerticalStrut(5));
-    lsBitsInfo = addBitsSelection();
+    lbRegisterBitsInfo = new JLabel("Register Bits");
+    lbRegisterBitsInfo.setPreferredSize(PREFERRED_LABEL_SIZE);
+    addBitsSelection();
     SwingUtils.setPreferredHeightAsMaximum(this);
   }
 
@@ -180,7 +199,9 @@ public class ValuedSignalPropertiesPanel extends JPanel
     final JPanel registersSetSelection = new JPanel();
     registersSetSelection.
       setLayout(new BoxLayout(registersSetSelection, BoxLayout.LINE_AXIS));
-    registersSetSelection.add(Box.createHorizontalGlue());
+    lbRegistersSet.setAlignmentX(1.0f);
+    registersSetSelection.add(lbRegistersSet);
+    registersSetSelection.add(Box.createHorizontalStrut(5));
     final JComboBox<RegistersSet> cbRegistersSet =
       new JComboBox<RegistersSet>(RegistersSet.values());
     cbRegistersSet.addItemListener((event) -> {
@@ -188,6 +209,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
           registersSetSelected((RegistersSet)event.getItem());
         }
       });
+    cbRegistersSet.setMaximumSize(cbRegistersSet.getPreferredSize());
     registersSetSelection.add(cbRegistersSet);
     registersSetSelection.add(Box.createHorizontalGlue());
     add(registersSetSelection);
@@ -199,7 +221,8 @@ public class ValuedSignalPropertiesPanel extends JPanel
     final JPanel registerSelection = new JPanel();
     registerSelection.
       setLayout(new BoxLayout(registerSelection, BoxLayout.LINE_AXIS));
-    registerSelection.add(Box.createHorizontalGlue());
+    registerSelection.add(lbRegister);
+    registerSelection.add(Box.createHorizontalStrut(5));
     final JComboBox<RegistersDocs<? extends Enum<?>>> cbRegister =
       new JComboBox<RegistersDocs<? extends Enum<?>>>();
     cbRegister.addItemListener((event) -> {
@@ -216,19 +239,17 @@ public class ValuedSignalPropertiesPanel extends JPanel
     return cbRegister;
   }
 
-  private JList<BitsInfo> addBitsSelection()
+  private void addBitsSelection()
   {
     final JPanel bitsSelection = new JPanel();
     bitsSelection.setLayout(new BoxLayout(bitsSelection, BoxLayout.LINE_AXIS));
-    bitsSelection.add(Box.createHorizontalGlue());
-    final JList<BitsInfo> lsBitsInfo = new JList<BitsInfo>(bitsInfos);
+    bitsSelection.add(lbRegisterBitsInfo);
+    bitsSelection.add(Box.createHorizontalStrut(5));
     lsBitsInfo.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
     lsBitsInfo.setCellRenderer(new BitsInfoRenderer());
-    final JScrollPane scrollPane = new JScrollPane(lsBitsInfo);
-    bitsSelection.add(scrollPane);
+    bitsSelection.add(lsBitsInfoScroll);
     bitsSelection.add(Box.createHorizontalGlue());
     add(bitsSelection);
-    return lsBitsInfo;
   }
 
   private void registersSetSelected(final RegistersSet registersSet)
@@ -237,6 +258,8 @@ public class ValuedSignalPropertiesPanel extends JPanel
     for (RegistersDocs<? extends Enum<?>> register : registersSet.regs) {
       cbRegister.addItem(register);
     }
+    cbRegister.setMaximumSize(cbRegister.getPreferredSize());
+    registerSelected(cbRegister.getItemAt(0));
   }
 
   private void registerSelected(final RegistersDocs<? extends Enum<?>> register)
@@ -246,6 +269,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
     for (final BitsInfo bitsInfo : registerDetails.getBitsInfos()) {
       bitsInfos.addElement(bitsInfo);
     }
+    lsBitsInfoScroll.setMaximumSize(lsBitsInfoScroll.getPreferredSize());
   }
 
   public Signal createSignal(final String label)
@@ -283,9 +307,14 @@ public class ValuedSignalPropertiesPanel extends JPanel
   public void setEnabled(final boolean enabled)
   {
     super.setEnabled(enabled);
+    lbRegistersSet.setEnabled(enabled);
     cbRegistersSet.setEnabled(enabled);
+    lbRegister.setEnabled(enabled);
     cbRegister.setEnabled(enabled);
+    lbRegisterBitsInfo.setEnabled(enabled);
     lsBitsInfo.setEnabled(enabled);
+    lsBitsInfoScroll.getHorizontalScrollBar().setEnabled(enabled);
+    lsBitsInfoScroll.getVerticalScrollBar().setEnabled(enabled);
   }
 }
 
