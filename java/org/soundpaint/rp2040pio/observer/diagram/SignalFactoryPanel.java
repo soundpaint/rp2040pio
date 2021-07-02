@@ -90,7 +90,7 @@ public class SignalFactoryPanel extends JPanel
   private JPanel createLabelLine()
   {
     final JPanel labelLine = new JPanel();
-    labelLine.setLayout(new BoxLayout(labelLine, BoxLayout.X_AXIS));
+    labelLine.setLayout(new BoxLayout(labelLine, BoxLayout.LINE_AXIS));
     labelLine.add(new JLabel("Signal Label"));
     labelLine.add(Box.createHorizontalStrut(5));
     labelLine.add(tfLabel);

@@ -189,7 +189,7 @@ public class FifoEntriesViewPanel extends JPanel
 
   private Box createTopLine()
   {
-    final Box topLine = new Box(BoxLayout.X_AXIS);
+    final Box topLine = new Box(BoxLayout.LINE_AXIS);
     lbTopLine.setFont(codeFont);
     topLine.add(lbTopLine);
     topLine.add(Box.createHorizontalGlue());
@@ -198,7 +198,7 @@ public class FifoEntriesViewPanel extends JPanel
 
   private Box createEntriesLine()
   {
-    final Box entriesLine = new Box(BoxLayout.X_AXIS);
+    final Box entriesLine = new Box(BoxLayout.LINE_AXIS);
     for (int entryNum = 0; entryNum < 2 * Constants.FIFO_DEPTH; entryNum++) {
       final JLabel lbSeparator = new JLabel(entryNum == 0 ? "│" : "  ");
       lbSeparator.setOpaque(true);
@@ -223,7 +223,7 @@ public class FifoEntriesViewPanel extends JPanel
 
   private Box createBottomLine()
   {
-    final Box bottomLine = new Box(BoxLayout.X_AXIS);
+    final Box bottomLine = new Box(BoxLayout.LINE_AXIS);
     lbBottomLine.setFont(codeFont);
     bottomLine.add(lbBottomLine);
     bottomLine.add(Box.createHorizontalGlue());
@@ -232,7 +232,7 @@ public class FifoEntriesViewPanel extends JPanel
 
   private Box createFDebugLine()
   {
-    final Box hBox = new Box(BoxLayout.X_AXIS);
+    final Box hBox = new Box(BoxLayout.LINE_AXIS);
     hBox.add(new JLabel("FDEBUG:"));
     hBox.add(Box.createHorizontalStrut(20));
     createFDebugLineCheck(hBox, "TX Stall", cbFDebugTxStall);
@@ -255,7 +255,7 @@ public class FifoEntriesViewPanel extends JPanel
 
   private Box createShiftRegisters()
   {
-    final Box hBox = new Box(BoxLayout.X_AXIS);
+    final Box hBox = new Box(BoxLayout.LINE_AXIS);
     hBox.add(createShiftRegister("OSR Register",
                                  lbOsrLeftHandArrow, lbOsrRightHandArrow,
                                  lbOsrBits, "Pull",
@@ -276,7 +276,7 @@ public class FifoEntriesViewPanel extends JPanel
                                   final String actionName,
                                   final JCheckBox cbAuto)
   {
-    final Box vBox = new Box(BoxLayout.Y_AXIS);
+    final Box vBox = new Box(BoxLayout.PAGE_AXIS);
     vBox.setBorder(BorderFactory.createTitledBorder(registerName));
     vBox.add(createShiftRegisterContents(lbLeftHandArrow, lbRightHandArrow,
                                          lbBits));
@@ -287,7 +287,7 @@ public class FifoEntriesViewPanel extends JPanel
   private Box createAutoInfo(final String actionName,
                              final JCheckBox cbAuto)
   {
-    final Box hBox = new Box(BoxLayout.X_AXIS);
+    final Box hBox = new Box(BoxLayout.LINE_AXIS);
     final JLabel lbAuto = new JLabel("Auto " + actionName);
     lbAuto.setLabelFor(cbAuto);
     cbAuto.setEnabled(false);
@@ -301,7 +301,7 @@ public class FifoEntriesViewPanel extends JPanel
                                           final JLabel lbRightHandArrow,
                                           final JLabel[] lbBits)
   {
-    final Box hBox = new Box(BoxLayout.X_AXIS);
+    final Box hBox = new Box(BoxLayout.LINE_AXIS);
     hBox.add(lbLeftHandArrow);
     for (int index = 0; index < lbBits.length; index++) {
       final JLabel lbBit = new JLabel();

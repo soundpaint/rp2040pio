@@ -53,7 +53,7 @@ public class TelemetryPanel extends JPanel
     this.model = model;
     Objects.requireNonNull(leftMostVisibleCycleGetter);
     this.leftMostVisibleCycleGetter = leftMostVisibleCycleGetter;
-    setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+    setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
     add(new JLabel("Cycles Recorded:"));
     add(Box.createHorizontalStrut(5));
     lbCycles = new JLabel();

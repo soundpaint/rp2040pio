@@ -179,7 +179,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
   {
     final JPanel registersSetSelection = new JPanel();
     registersSetSelection.
-      setLayout(new BoxLayout(registersSetSelection, BoxLayout.X_AXIS));
+      setLayout(new BoxLayout(registersSetSelection, BoxLayout.LINE_AXIS));
     registersSetSelection.add(Box.createHorizontalGlue());
     final JComboBox<RegistersSet> cbRegistersSet =
       new JComboBox<RegistersSet>(RegistersSet.values());
@@ -198,7 +198,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
   {
     final JPanel registerSelection = new JPanel();
     registerSelection.
-      setLayout(new BoxLayout(registerSelection, BoxLayout.X_AXIS));
+      setLayout(new BoxLayout(registerSelection, BoxLayout.LINE_AXIS));
     registerSelection.add(Box.createHorizontalGlue());
     final JComboBox<RegistersDocs<? extends Enum<?>>> cbRegister =
       new JComboBox<RegistersDocs<? extends Enum<?>>>();
@@ -219,7 +219,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
   private JList<BitsInfo> addBitsSelection()
   {
     final JPanel bitsSelection = new JPanel();
-    bitsSelection.setLayout(new BoxLayout(bitsSelection, BoxLayout.X_AXIS));
+    bitsSelection.setLayout(new BoxLayout(bitsSelection, BoxLayout.LINE_AXIS));
     bitsSelection.add(Box.createHorizontalGlue());
     final JList<BitsInfo> lsBitsInfo = new JList<BitsInfo>(bitsInfos);
     lsBitsInfo.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);

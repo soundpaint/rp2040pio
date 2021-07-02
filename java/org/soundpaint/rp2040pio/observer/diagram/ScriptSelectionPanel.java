@@ -71,7 +71,7 @@ public class ScriptSelectionPanel extends Box
 
   public ScriptSelectionPanel(final PrintStream console)
   {
-    super(BoxLayout.Y_AXIS);
+    super(BoxLayout.PAGE_AXIS);
     Objects.requireNonNull(console);
     this.console = console;
     scriptFileChooser = createScriptFileChooser();
@@ -236,7 +236,7 @@ public class ScriptSelectionPanel extends Box
         BorderFactory.createTitledBorder(loweredEtched,
                                          "Select built-in example");
       titled.setTitleJustification(TitledBorder.CENTER);
-      final Box selectionLine = new Box(BoxLayout.X_AXIS);
+      final Box selectionLine = new Box(BoxLayout.LINE_AXIS);
       setBorder(titled);
       add(selectionLine);
       final JLabel lbExampleScript = new JLabel("Examples:");
@@ -281,7 +281,7 @@ public class ScriptSelectionPanel extends Box
         BorderFactory.createTitledBorder(loweredEtched, "Choose file");
       titled.setTitleJustification(TitledBorder.CENTER);
       setBorder(titled);
-      final Box selectionLine = new Box(BoxLayout.X_AXIS);
+      final Box selectionLine = new Box(BoxLayout.LINE_AXIS);
       add(selectionLine);
       final JLabel lbScriptFilePath = new JLabel("File path:");
       lbScriptFilePath.setDisplayedMnemonic(KeyEvent.VK_F);

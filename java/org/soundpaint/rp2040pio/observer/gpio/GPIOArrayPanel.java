@@ -65,7 +65,7 @@ public class GPIOArrayPanel extends JPanel
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
 
-    final Box overrideSelection = new Box(BoxLayout.X_AXIS);
+    final Box overrideSelection = new Box(BoxLayout.LINE_AXIS);
     add(overrideSelection);
     final JLabel lbOverride = new JLabel("Override");
     overrideSelection.add(lbOverride);
@@ -74,7 +74,7 @@ public class GPIOArrayPanel extends JPanel
     overrideSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(overrideSelection);
 
-    final Box box = new Box(BoxLayout.X_AXIS);
+    final Box box = new Box(BoxLayout.LINE_AXIS);
     add(box);
     box.add(Box.createHorizontalStrut(15));
     panels = new GPIOPanel[Constants.GPIO_NUM];

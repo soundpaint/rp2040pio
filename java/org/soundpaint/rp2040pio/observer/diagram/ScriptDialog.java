@@ -48,7 +48,7 @@ public class ScriptDialog extends JDialog
 
     public ActionPanel()
     {
-      super(BoxLayout.X_AXIS);
+      super(BoxLayout.LINE_AXIS);
       setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
       btExecute = new JButton("Execute");
       btExecute.setMnemonic(KeyEvent.VK_E);

@@ -65,7 +65,7 @@ public class PIOGPIOArrayPanel extends JPanel
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
 
-    final Box pioSelection = new Box(BoxLayout.X_AXIS);
+    final Box pioSelection = new Box(BoxLayout.LINE_AXIS);
     add(pioSelection);
     final JLabel lbPio = new JLabel("PIO");
     pioSelection.add(lbPio);
@@ -74,7 +74,7 @@ public class PIOGPIOArrayPanel extends JPanel
     pioSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(pioSelection);
 
-    final Box box = new Box(BoxLayout.X_AXIS);
+    final Box box = new Box(BoxLayout.LINE_AXIS);
     add(box);
     box.add(Box.createHorizontalStrut(15));
     panels = new PIOGPIOPanel[Constants.GPIO_NUM];

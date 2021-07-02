@@ -129,7 +129,7 @@ public abstract class GUIObserver extends JFrame
 
   private Box createStatusLine(final PrintStream console)
   {
-    final Box hBox = new Box(BoxLayout.X_AXIS);
+    final Box hBox = new Box(BoxLayout.LINE_AXIS);
     hBox.add(lbStatus);
     hBox.add(Box.createHorizontalGlue());
     return hBox;

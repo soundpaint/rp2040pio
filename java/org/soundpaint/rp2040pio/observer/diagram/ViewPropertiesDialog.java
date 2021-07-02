@@ -58,7 +58,7 @@ public class ViewPropertiesDialog extends JDialog
 
     public ActionPanel()
     {
-      super(BoxLayout.X_AXIS);
+      super(BoxLayout.LINE_AXIS);
       setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
       btOk = new JButton("Ok");
       btOk.setMnemonic(KeyEvent.VK_O);

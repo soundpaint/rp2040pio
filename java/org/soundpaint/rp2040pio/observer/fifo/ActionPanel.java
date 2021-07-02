@@ -37,7 +37,7 @@ public class ActionPanel extends Box
 
   public ActionPanel(final FifoObserver fifoObserver)
   {
-    super(BoxLayout.X_AXIS);
+    super(BoxLayout.LINE_AXIS);
     Objects.requireNonNull(fifoObserver);
     setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
     add(Box.createHorizontalGlue());

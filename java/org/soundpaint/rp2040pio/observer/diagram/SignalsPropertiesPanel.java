@@ -52,7 +52,7 @@ public class SignalsPropertiesPanel extends Box
 
   public SignalsPropertiesPanel(final Diagram diagram, final SDK sdk)
   {
-    super(BoxLayout.Y_AXIS);
+    super(BoxLayout.PAGE_AXIS);
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
     signals = new ArrayList<Signal>();
@@ -109,7 +109,7 @@ public class SignalsPropertiesPanel extends Box
   {
     removeAll();
     boolean firstLine = true;
-    final Box headerLine = new Box(BoxLayout.X_AXIS);
+    final Box headerLine = new Box(BoxLayout.LINE_AXIS);
     add(headerLine);
     headerLine.add(Box.createHorizontalStrut(5));
     headerLine.add(new JLabel("# Label"));
@@ -127,7 +127,7 @@ public class SignalsPropertiesPanel extends Box
     int index = 0;
     for (final Signal signal : signals) {
       if (index > 0) {
-        final Box infixLine = new Box(BoxLayout.X_AXIS);
+        final Box infixLine = new Box(BoxLayout.LINE_AXIS);
         add(infixLine);
         infixLine.add(Box.createHorizontalGlue());
 
@@ -150,7 +150,7 @@ public class SignalsPropertiesPanel extends Box
         infixLine.add(Box.createHorizontalGlue());
         SwingUtils.setPreferredHeightAsMaximum(infixLine);
       }
-      final Box signalLine = new Box(BoxLayout.X_AXIS);
+      final Box signalLine = new Box(BoxLayout.LINE_AXIS);
       add(signalLine);
       signalLine.add(signalIndices.get(index));
       signalLine.add(Box.createHorizontalStrut(5));

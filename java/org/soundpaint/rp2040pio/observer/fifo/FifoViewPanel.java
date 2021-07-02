@@ -73,7 +73,7 @@ public class FifoViewPanel extends JPanel
     fifoEntriesViewPanel = new FifoEntriesViewPanel(console, sdk,
                                                     initialAutoScroll);
 
-    final Box pioSelection = new Box(BoxLayout.X_AXIS);
+    final Box pioSelection = new Box(BoxLayout.LINE_AXIS);
     add(pioSelection);
     final JLabel lbPio = new JLabel("PIO");
     pioSelection.add(lbPio);
@@ -82,7 +82,7 @@ public class FifoViewPanel extends JPanel
     pioSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(pioSelection);
 
-    final Box smSelection = new Box(BoxLayout.X_AXIS);
+    final Box smSelection = new Box(BoxLayout.LINE_AXIS);
     add(smSelection);
     final JLabel lbSm = new JLabel("SM");
     lbSm.setMinimumSize(lbPio.getPreferredSize());
@@ -93,7 +93,7 @@ public class FifoViewPanel extends JPanel
     smSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(smSelection);
 
-    final Box scrollSelectionLine = new Box(BoxLayout.X_AXIS);
+    final Box scrollSelectionLine = new Box(BoxLayout.LINE_AXIS);
     add(scrollSelectionLine);
     cbAutoScroll = new JCheckBox("Auto-scroll to front entry");
     cbAutoScroll.setMnemonic('a');
@@ -105,7 +105,7 @@ public class FifoViewPanel extends JPanel
     scrollSelectionLine.add(cbAutoScroll);
     scrollSelectionLine.add(Box.createHorizontalGlue());
 
-    final Box fifoEntriesViewBox = new Box(BoxLayout.X_AXIS);
+    final Box fifoEntriesViewBox = new Box(BoxLayout.LINE_AXIS);
     add(fifoEntriesViewBox);
     fifoEntriesViewBox.add(fifoEntriesViewPanel);
     fifoEntriesViewBox.add(Box.createHorizontalGlue());

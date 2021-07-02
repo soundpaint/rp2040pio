@@ -69,7 +69,7 @@ public class CollapsiblePanel extends JPanel
 
   private Box createToggleButtonLine(final String label)
   {
-    final Box hBox = new Box(BoxLayout.X_AXIS);
+    final Box hBox = new Box(BoxLayout.LINE_AXIS);
     hBox.add(btToggle);
 
     // Workaround: hBox.add(Box.createHorizontalStrut(5)) modifies Y

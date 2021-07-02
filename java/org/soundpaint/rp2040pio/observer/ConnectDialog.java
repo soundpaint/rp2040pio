@@ -53,7 +53,7 @@ public class ConnectDialog extends JDialog
 
     public ActionPanel()
     {
-      super(BoxLayout.X_AXIS);
+      super(BoxLayout.LINE_AXIS);
       setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
       btOk = new JButton("Ok");
       btOk.setMnemonic(KeyEvent.VK_O);
@@ -101,7 +101,7 @@ public class ConnectDialog extends JDialog
 
   private Box createConnectionDetails()
   {
-    final Box vBox = new Box(BoxLayout.Y_AXIS);
+    final Box vBox = new Box(BoxLayout.PAGE_AXIS);
     final Border loweredEtched =
       BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
     final TitledBorder titled =
@@ -115,7 +115,7 @@ public class ConnectDialog extends JDialog
 
   private Box createServerPortLine()
   {
-    final Box hBox = new Box(BoxLayout.X_AXIS);
+    final Box hBox = new Box(BoxLayout.LINE_AXIS);
     hBox.add(new JLabel("Server"));
     final JTextField tfServer = new JTextField("localhost");
     tfServer.setEnabled(false);

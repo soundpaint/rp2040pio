@@ -60,7 +60,7 @@ public class DiagramViewPanel extends JPanel implements Scrollable
   {
     Objects.requireNonNull(model);
     this.model = model;
-    setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+    setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
     legendPanel = new LegendPanel(model);
     add(legendPanel);
     add(Box.createHorizontalStrut(5));

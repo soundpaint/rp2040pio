@@ -55,13 +55,13 @@ public class PIOGPIOPanel extends JPanel
     this.gpioNum = gpioNum;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     add(Box.createVerticalStrut(5));
-    final Box gpioNumBox = new Box(BoxLayout.X_AXIS);
+    final Box gpioNumBox = new Box(BoxLayout.LINE_AXIS);
     gpioNumBox.add(Box.createHorizontalGlue());
     gpioNumBox.add(new JLabel(String.format("%d", gpioNum)));
     gpioNumBox.add(Box.createHorizontalGlue());
     add(gpioNumBox);
     add(Box.createVerticalStrut(5));
-    final Box ledBox = new Box(BoxLayout.X_AXIS);
+    final Box ledBox = new Box(BoxLayout.LINE_AXIS);
     ledBox.add(Box.createHorizontalGlue());
     ledBox.add(lbStatus = new JLabel(GPIOViewPanel.ledInLow));
     ledBox.add(Box.createHorizontalGlue());

@@ -73,7 +73,7 @@ public class CodeViewPanel extends JPanel
     codeSmViewPanel =
       new CodeSmViewPanel(console, sdk, pbDelay, taForcedOrExecdInstruction);
 
-    final Box pioSelection = new Box(BoxLayout.X_AXIS);
+    final Box pioSelection = new Box(BoxLayout.LINE_AXIS);
     add(pioSelection);
     final JLabel lbPio = new JLabel("PIO");
     pioSelection.add(lbPio);
@@ -82,7 +82,7 @@ public class CodeViewPanel extends JPanel
     pioSelection.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(pioSelection);
 
-    final Box smSelection = new Box(BoxLayout.X_AXIS);
+    final Box smSelection = new Box(BoxLayout.LINE_AXIS);
     add(smSelection);
     final JLabel lbSm = new JLabel("SM");
     lbSm.setMinimumSize(lbPio.getPreferredSize());

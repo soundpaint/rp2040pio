@@ -49,7 +49,7 @@ public class AddSignalDialog extends JDialog
 
     public ActionPanel()
     {
-      super(BoxLayout.X_AXIS);
+      super(BoxLayout.LINE_AXIS);
       setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
       btAdd = new JButton("Add");
       btAdd.setMnemonic(KeyEvent.VK_A);
