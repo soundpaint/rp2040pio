@@ -55,6 +55,11 @@ public interface RegistersDocs<T>
       this.description = description;
     }
 
+    public boolean isRelevant()
+    {
+      return (this != RESERVED) && (this != UNUSED);
+    }
+
     public String getId() { return id; }
 
     public String getDescription() { return description; }

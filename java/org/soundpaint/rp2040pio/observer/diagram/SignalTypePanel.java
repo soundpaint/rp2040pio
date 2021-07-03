@@ -138,7 +138,7 @@ public class SignalTypePanel extends JPanel
   private void selectValued()
   {
     valuedProperties.setEnabled(true);
-    suggestedLabelSetter.accept(valuedProperties.getSuggestedLabel());
+    valuedProperties.updateSuggestedLabel();
   }
 
   public Signal createSignal(final String label)

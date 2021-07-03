@@ -44,6 +44,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.event.ListSelectionEvent;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
@@ -54,6 +55,7 @@ import org.soundpaint.rp2040pio.RegisterSet;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs.BitsInfo;
+import org.soundpaint.rp2040pio.doctool.RegistersDocs.BitsType;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs.RegisterDetails;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -161,10 +163,10 @@ public class ValuedSignalPropertiesPanel extends JPanel
   private final JComboBox<RegistersSet> cbRegistersSet;
   private final JLabel lbRegister;
   private final JComboBox<RegistersDocs<? extends Enum<?>>> cbRegister;
-  private final JLabel lbRegisterBitsInfo;
+  private final JLabel lbRegisterBitsInfos;
   private final DefaultListModel<BitsInfo> bitsInfos;
-  private final JList<BitsInfo> lsBitsInfo;
-  private final JScrollPane lsBitsInfoScroll;
+  private final JList<BitsInfo> lsBitsInfos;
+  private final JScrollPane lsBitsInfosScroll;
 
   private ValuedSignalPropertiesPanel()
   {
@@ -183,10 +185,12 @@ public class ValuedSignalPropertiesPanel extends JPanel
     this.suggestedLabelSetter = suggestedLabelSetter;
 
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    setBorder(BorderFactory.createTitledBorder("Valued Signal Properties"));
+    setBorder(BorderFactory.createTitledBorder("Value Source"));
     bitsInfos = new DefaultListModel<BitsInfo>();
-    lsBitsInfo = new JList<BitsInfo>(bitsInfos);
-    lsBitsInfoScroll = new JScrollPane(lsBitsInfo);
+    lsBitsInfos = new JList<BitsInfo>(bitsInfos);
+    lsBitsInfos.addListSelectionListener((selection) ->
+                                         selectionChanged(selection));
+    lsBitsInfosScroll = new JScrollPane(lsBitsInfos);
     lbRegistersSet = new JLabel("Register Set");
     lbRegistersSet.setPreferredSize(PREFERRED_LABEL_SIZE);
     cbRegistersSet = addRegistersSetSelection();
@@ -196,8 +200,8 @@ public class ValuedSignalPropertiesPanel extends JPanel
     cbRegister = addRegisterSelection();
     registersSetSelected((RegistersSet)cbRegistersSet.getSelectedItem());
     add(Box.createVerticalStrut(5));
-    lbRegisterBitsInfo = new JLabel("Register Bits");
-    lbRegisterBitsInfo.setPreferredSize(PREFERRED_LABEL_SIZE);
+    lbRegisterBitsInfos = new JLabel("Bits Range");
+    lbRegisterBitsInfos.setPreferredSize(PREFERRED_LABEL_SIZE);
     addBitsSelection();
     SwingUtils.setPreferredHeightAsMaximum(this);
   }
@@ -250,11 +254,11 @@ public class ValuedSignalPropertiesPanel extends JPanel
   {
     final JPanel bitsSelection = new JPanel();
     bitsSelection.setLayout(new BoxLayout(bitsSelection, BoxLayout.LINE_AXIS));
-    bitsSelection.add(lbRegisterBitsInfo);
+    bitsSelection.add(lbRegisterBitsInfos);
     bitsSelection.add(Box.createHorizontalStrut(5));
-    lsBitsInfo.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-    lsBitsInfo.setCellRenderer(new BitsInfoRenderer());
-    bitsSelection.add(lsBitsInfoScroll);
+    lsBitsInfos.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+    lsBitsInfos.setCellRenderer(new BitsInfoRenderer());
+    bitsSelection.add(lsBitsInfosScroll);
     bitsSelection.add(Box.createHorizontalGlue());
     add(bitsSelection);
   }
@@ -269,7 +273,43 @@ public class ValuedSignalPropertiesPanel extends JPanel
     registerSelected(cbRegister.getItemAt(0));
   }
 
-  public String getSuggestedLabel()
+  private String getSuggestedBitsRange()
+  {
+    if (bitsInfos.size() <= 1) {
+      return "";
+    }
+    boolean haveUnselectedRelevantBits = false;
+    for (int index = 0; index < bitsInfos.size(); index++) {
+      if (!lsBitsInfos.isSelectedIndex(index)) {
+        if (bitsInfos.get(index).getType().isRelevant()) {
+          haveUnselectedRelevantBits = true;
+          break;
+        }
+      }
+    }
+    if (!haveUnselectedRelevantBits) {
+      return "";
+    }
+    final int minSelectionIndex = lsBitsInfos.getMinSelectionIndex();
+    final int maxSelectionIndex = lsBitsInfos.getMaxSelectionIndex();
+    if ((minSelectionIndex < 0) || (maxSelectionIndex < 0)) {
+      // empty range
+      return null;
+    }
+    final BitsInfo minSelection = bitsInfos.get(minSelectionIndex);
+    final BitsInfo maxSelection = bitsInfos.get(maxSelectionIndex);
+    if (minSelection == maxSelection) {
+      final String name = minSelection.getName();
+      if (name != null) {
+        return String.format("_%s", name);
+      }
+    }
+    final int msb = minSelection.getMsb();
+    final int lsb = maxSelection.getLsb();
+    return String.format("[%s]", msb != lsb ? msb + ":" + lsb : msb);
+  }
+
+  private String getSuggestedLabel()
   {
     final RegistersSet registersSet =
       (RegistersSet)cbRegistersSet.getSelectedItem();
@@ -277,18 +317,48 @@ public class ValuedSignalPropertiesPanel extends JPanel
     @SuppressWarnings("unchecked")
     final RegistersDocs<? extends Enum<?>> register =
       (RegistersDocs<? extends Enum<?>>)cbRegister.getSelectedItem();
-    return String.format("%s%s", suggestedLabelPrefix, register);
+    final String suggestedBitsRange = getSuggestedBitsRange();
+    if (suggestedBitsRange == null) {
+      return null;
+    }
+    return String.format("%s%s%s",
+                         suggestedLabelPrefix, register, suggestedBitsRange);
+  }
+
+  private int chooseBitsInfosIndex()
+  {
+    for (int index = bitsInfos.size() - 1; index >= 0; index--) {
+      final BitsInfo bitsInfo = bitsInfos.get(index);
+      final BitsType type = bitsInfo.getType();
+      if ((type != BitsType.RESERVED) && (type != BitsType.UNUSED))
+        return index;
+    }
+    return -1;
+  }
+
+  public void updateSuggestedLabel()
+  {
+    final String suggestedLabel = getSuggestedLabel();
+    if (suggestedLabel != null) {
+      suggestedLabelSetter.accept(suggestedLabel);
+    }
   }
 
   private void registerSelected(final RegistersDocs<? extends Enum<?>> register)
   {
-    suggestedLabelSetter.accept(getSuggestedLabel());
     bitsInfos.clear();
     final RegisterDetails registerDetails = register.getRegisterDetails();
     for (final BitsInfo bitsInfo : registerDetails.getBitsInfos()) {
       bitsInfos.addElement(bitsInfo);
     }
-    lsBitsInfoScroll.setMaximumSize(lsBitsInfoScroll.getPreferredSize());
+    lsBitsInfosScroll.setMaximumSize(lsBitsInfosScroll.getPreferredSize());
+    lsBitsInfosScroll.revalidate();
+    final int index = chooseBitsInfosIndex();
+    if (index >= 0) {
+      lsBitsInfos.setSelectedIndex(index);
+      lsBitsInfos.ensureIndexIsVisible(index);
+    }
+    updateSuggestedLabel();
   }
 
   public Signal createSignal(final String label)
@@ -296,19 +366,19 @@ public class ValuedSignalPropertiesPanel extends JPanel
     final int baseAddress =
       ((RegistersSet)cbRegistersSet.getSelectedItem()).baseAddress;
     final int address = baseAddress + 0x4 * cbRegister.getSelectedIndex();
-    final int minSelectionIndex = lsBitsInfo.getMinSelectionIndex();
-    final int maxSelectionIndex = lsBitsInfo.getMaxSelectionIndex();
+    final int minSelectionIndex = lsBitsInfos.getMinSelectionIndex();
+    final int maxSelectionIndex = lsBitsInfos.getMaxSelectionIndex();
     if ((minSelectionIndex < 0) || (maxSelectionIndex < 0)) {
       JOptionPane.showMessageDialog(this,
                                     "Please select a contiguous range of bits.",
-                                    "No Bit Range Selected",
+                                    "No Bits Range Selected",
                                     JOptionPane.ERROR_MESSAGE);
       return null;
     }
     final int msb =
-      lsBitsInfo.getModel().getElementAt(minSelectionIndex).getMsb();
+      bitsInfos.getElementAt(minSelectionIndex).getMsb();
     final int lsb =
-      lsBitsInfo.getModel().getElementAt(maxSelectionIndex).getLsb();
+      bitsInfos.getElementAt(maxSelectionIndex).getLsb();
     final Supplier<Boolean> displayFilter = null;
     try {
       return
@@ -330,10 +400,17 @@ public class ValuedSignalPropertiesPanel extends JPanel
     cbRegistersSet.setEnabled(enabled);
     lbRegister.setEnabled(enabled);
     cbRegister.setEnabled(enabled);
-    lbRegisterBitsInfo.setEnabled(enabled);
-    lsBitsInfo.setEnabled(enabled);
-    lsBitsInfoScroll.getHorizontalScrollBar().setEnabled(enabled);
-    lsBitsInfoScroll.getVerticalScrollBar().setEnabled(enabled);
+    lbRegisterBitsInfos.setEnabled(enabled);
+    lsBitsInfos.setEnabled(enabled);
+    lsBitsInfosScroll.getHorizontalScrollBar().setEnabled(enabled);
+    lsBitsInfosScroll.getVerticalScrollBar().setEnabled(enabled);
+  }
+
+  private void selectionChanged(final ListSelectionEvent selection)
+  {
+    if (!selection.getValueIsAdjusting()) {
+      updateSuggestedLabel();
+    }
   }
 }
 
