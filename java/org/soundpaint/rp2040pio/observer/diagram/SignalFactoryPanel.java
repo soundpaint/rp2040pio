@@ -1,5 +1,5 @@
 /*
- * @(#)SignalFactoryPanel.java 1.00 21/06/30
+ * @(#)SignalFactoryPanel.java 1.00 21/07/03
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
+import java.awt.Dimension;
 import java.util.Objects;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -33,21 +34,17 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.JTextField;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class SignalFactoryPanel extends JPanel
 {
-  private static final long serialVersionUID = -3023263223044270621L;
+  private static final long serialVersionUID = 4492836175968992560L;
+  private static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
 
   private final Diagram diagram;
-  private final ButtonGroup signalType;
-  private final JRadioButton rbCycleRuler;
-  private final JRadioButton rbClock;
-  private final JRadioButton rbValued;
-  private final JTextField tfLabel;
-  private final ValuedSignalPropertiesPanel valuedProperties;
+  private final SignalLabelPanel signalLabelPanel;
+  private final SignalTypePanel signalTypePanel;
 
   private SignalFactoryPanel()
   {
@@ -59,115 +56,25 @@ public class SignalFactoryPanel extends JPanel
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    tfLabel = new JTextField(20);
-    signalType = new ButtonGroup();
-    rbCycleRuler = new JRadioButton("Cycle Ruler");
-    rbClock = new JRadioButton("Clock");
-    rbValued = new JRadioButton("Valued Signal", true);
-    valuedProperties = new ValuedSignalPropertiesPanel(diagram, sdk);
-    createAndAddLabelLine();
-    createAndAddCycleRulerLine();
-    createAndAddClockLine();
-    createAndAddValuedLine();
-    createAndAddValuedProperties();
-    selectValued();
-    add(Box.createVerticalStrut(5));
+    signalLabelPanel = new SignalLabelPanel(diagram);
+    add(signalLabelPanel);
+    signalTypePanel =
+      new SignalTypePanel(diagram, sdk,
+                          (label) -> signalLabelPanel.setSuggestedText(label));
+    add(signalTypePanel);
     add(Box.createVerticalGlue());
-  }
-
-  private void createAndAddLabelLine()
-  {
-    final JPanel labelLine = new JPanel();
-    labelLine.setLayout(new BoxLayout(labelLine, BoxLayout.LINE_AXIS));
-    labelLine.add(new JLabel("Signal Label"));
-    labelLine.add(Box.createHorizontalStrut(5));
-    labelLine.add(tfLabel);
-    labelLine.add(Box.createHorizontalGlue());
-    SwingUtils.setPreferredWidthAsMaximum(tfLabel);
-    SwingUtils.setPreferredHeightAsMaximum(labelLine);
-    add(labelLine);
-  }
-
-  private void createAndAddCycleRulerLine()
-  {
-    final JPanel cycleRulerLine = new JPanel();
-    cycleRulerLine.
-      setLayout(new BoxLayout(cycleRulerLine, BoxLayout.LINE_AXIS));
-    rbCycleRuler.addActionListener((action) -> selectCycleRuler());
-    signalType.add(rbCycleRuler);
-    cycleRulerLine.add(rbCycleRuler);
-    cycleRulerLine.add(Box.createHorizontalGlue());
-    add(cycleRulerLine);
-  }
-
-  private void createAndAddClockLine()
-  {
-    final JPanel clockLine = new JPanel();
-    clockLine.setLayout(new BoxLayout(clockLine, BoxLayout.LINE_AXIS));
-    rbClock.addActionListener((action) -> selectClock());
-    signalType.add(rbClock);
-    clockLine.add(rbClock);
-    clockLine.add(Box.createHorizontalGlue());
-    add(clockLine);
-  }
-
-  private void createAndAddValuedLine()
-  {
-    final JPanel valuedLine = new JPanel();
-    valuedLine.setLayout(new BoxLayout(valuedLine, BoxLayout.LINE_AXIS));
-    rbValued.addActionListener((action) -> selectValued());
-    signalType.add(rbValued);
-    valuedLine.add(rbValued);
-    valuedLine.add(Box.createHorizontalGlue());
-    add(valuedLine);
-  }
-
-  private void createAndAddValuedProperties()
-  {
-    final JPanel valuedPropertiesLine = new JPanel();
-    valuedPropertiesLine.
-      setLayout(new BoxLayout(valuedPropertiesLine, BoxLayout.LINE_AXIS));
-    valuedPropertiesLine.add(Box.createHorizontalStrut(20));
-    valuedPropertiesLine.add(valuedProperties);
-    SwingUtils.setPreferredHeightAsMaximum(valuedPropertiesLine);
-    add(valuedPropertiesLine);
-  }
-
-  private void selectCycleRuler()
-  {
-    valuedProperties.setEnabled(false);
-  }
-
-  private void selectClock()
-  {
-    valuedProperties.setEnabled(false);
-  }
-
-  private void selectValued()
-  {
-    valuedProperties.setEnabled(true);
   }
 
   public Signal createSignal()
   {
-    final String label = tfLabel.getText();
+    final String label = signalLabelPanel.getText();
     if (label.isEmpty()) {
       JOptionPane.showMessageDialog(this, "Signal label must not be empty.",
                                     "Invalid Signal Label",
                                     JOptionPane.ERROR_MESSAGE);
       return null;
     }
-    final ButtonModel button = signalType.getSelection();
-    if (button == rbCycleRuler.getModel()) {
-      return SignalFactory.createRuler(label);
-    }
-    if (button == rbClock.getModel()) {
-      return SignalFactory.createClockSignal(label);
-    }
-    if (button == rbValued.getModel()) {
-      return valuedProperties.createSignal(label);
-    }
-    return null;
+    return signalTypePanel.createSignal(label);
   }
 }
 

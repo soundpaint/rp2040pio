@@ -29,6 +29,7 @@ import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -59,45 +60,44 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 public class ValuedSignalPropertiesPanel extends JPanel
 {
   private static final long serialVersionUID = -726756788602613552L;
-
   private static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
 
   private enum RegistersSet {
     /* TODO:
-    PIO0_REGS("PIO0 Registers",
+    PIO0_REGS("PIO0 Registers", "PIO0_",
               PIORegisters.Regs.getRegisterSetLabel(),
               PIORegisters.Regs.getRegisterSetDescription(),
               PIORegisters.Regs.values(),
               Constants.PIO0_BASE),
-    PIO1_REGS("PIO1 Registers",
+    PIO1_REGS("PIO1 Registers", "PIO1_",
               PIORegisters.Regs.getRegisterSetLabel(),
               PIORegisters.Regs.getRegisterSetDescription(),
               PIORegisters.Regs.values(),
               Constants.PIO1_BASE),
     */
-    PIO0_ADD_ON_REGS("PIO0 Add-on Registers",
+    PIO0_ADD_ON_REGS("PIO0 Add-on Registers", "PIO0_",
                      PIOEmuRegisters.Regs.getRegisterSetLabel(),
                      PIOEmuRegisters.Regs.getRegisterSetDescription(),
                      PIOEmuRegisters.Regs.values(),
                      Constants.PIO0_EMU_BASE),
-    PIO1_ADD_ON_REGS("PIO1 Add-on Registers",
+    PIO1_ADD_ON_REGS("PIO1 Add-on Registers", "PIO1_",
                      PIOEmuRegisters.Regs.getRegisterSetLabel(),
                      PIOEmuRegisters.Regs.getRegisterSetDescription(),
                      PIOEmuRegisters.Regs.values(),
                      Constants.PIO1_EMU_BASE),
     /* TODO:
-    GPIO_IO_BANK0_REGS("GPIO IO Bank0 Registers",
+    GPIO_IO_BANK0_REGS("GPIO IO Bank0 Registers", "",
                        GPIOIOBank0Registers.Regs.getRegisterSetLabel(),
                        GPIOIOBank0Registers.Regs.getRegisterSetDescription(),
                        GPIOIOBank0Registers.Regs.values(),
                        Constants.IO_BANK0_BASE),
-    GPIO_PADS_BANK0_REGS("GPIO Pads Bank0 Registers",
+    GPIO_PADS_BANK0_REGS("GPIO Pads Bank0 Registers", "",
                          GPIOPadsBank0Registers.Regs.getRegisterSetLabel(),
                          GPIOPadsBank0Registers.Regs.getRegisterSetDescription(),
                          GPIOPadsBank0Registers.Regs.values(),
                          Constants.PADS_BANK0_BASE),
     */
-    PICO_ADD_ON_REGS("Global Add-on Registers",
+    PICO_ADD_ON_REGS("Global Add-on Registers", "",
                      PicoEmuRegisters.Regs.getRegisterSetLabel(),
                      PicoEmuRegisters.Regs.getRegisterSetDescription(),
                      PicoEmuRegisters.Regs.values(),
@@ -108,8 +108,10 @@ public class ValuedSignalPropertiesPanel extends JPanel
     private final String description;
     private final RegistersDocs<? extends Enum<?>>[] regs;
     private final int baseAddress;
+    private final String suggestedLabelPrefix;
 
     private RegistersSet(final String id,
+                         final String suggestedLabelPrefix,
                          final String label,
                          final String description,
                          final RegistersDocs<? extends Enum<?>>[] regs,
@@ -120,6 +122,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
       this.description = description;
       this.regs = regs;
       this.baseAddress = baseAddress;
+      this.suggestedLabelPrefix = suggestedLabelPrefix;
     }
 
     @Override
@@ -153,6 +156,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
 
   private final Diagram diagram;
   private final SDK sdk;
+  private final Consumer<String> suggestedLabelSetter;
   private final JLabel lbRegistersSet;
   private final JComboBox<RegistersSet> cbRegistersSet;
   private final JLabel lbRegister;
@@ -167,12 +171,16 @@ public class ValuedSignalPropertiesPanel extends JPanel
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ValuedSignalPropertiesPanel(final Diagram diagram, final SDK sdk)
+  public ValuedSignalPropertiesPanel(final Diagram diagram, final SDK sdk,
+                                     final Consumer<String>
+                                     suggestedLabelSetter)
   {
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
     Objects.requireNonNull(sdk);
     this.sdk = sdk;
+    Objects.requireNonNull(suggestedLabelSetter);
+    this.suggestedLabelSetter = suggestedLabelSetter;
 
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("Valued Signal Properties"));
@@ -199,7 +207,6 @@ public class ValuedSignalPropertiesPanel extends JPanel
     final JPanel registersSetSelection = new JPanel();
     registersSetSelection.
       setLayout(new BoxLayout(registersSetSelection, BoxLayout.LINE_AXIS));
-    lbRegistersSet.setAlignmentX(1.0f);
     registersSetSelection.add(lbRegistersSet);
     registersSetSelection.add(Box.createHorizontalStrut(5));
     final JComboBox<RegistersSet> cbRegistersSet =
@@ -262,8 +269,20 @@ public class ValuedSignalPropertiesPanel extends JPanel
     registerSelected(cbRegister.getItemAt(0));
   }
 
+  public String getSuggestedLabel()
+  {
+    final RegistersSet registersSet =
+      (RegistersSet)cbRegistersSet.getSelectedItem();
+    final String suggestedLabelPrefix = registersSet.suggestedLabelPrefix;
+    @SuppressWarnings("unchecked")
+    final RegistersDocs<? extends Enum<?>> register =
+      (RegistersDocs<? extends Enum<?>>)cbRegister.getSelectedItem();
+    return String.format("%s%s", suggestedLabelPrefix, register);
+  }
+
   private void registerSelected(final RegistersDocs<? extends Enum<?>> register)
   {
+    suggestedLabelSetter.accept(getSuggestedLabel());
     bitsInfos.clear();
     final RegisterDetails registerDetails = register.getRegisterDetails();
     for (final BitsInfo bitsInfo : registerDetails.getBitsInfos()) {
