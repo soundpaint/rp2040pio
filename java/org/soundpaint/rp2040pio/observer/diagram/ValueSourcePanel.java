@@ -1,5 +1,5 @@
 /*
- * @(#)ValuedSignalPropertiesPanel.java 1.00 21/06/30
+ * @(#)ValueSourcePanel.java 1.00 21/06/30
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -59,7 +59,7 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs.BitsType;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs.RegisterDetails;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class ValuedSignalPropertiesPanel extends JPanel
+public class ValueSourcePanel extends JPanel
 {
   private static final long serialVersionUID = -726756788602613552L;
   private static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
@@ -164,18 +164,18 @@ public class ValuedSignalPropertiesPanel extends JPanel
   private final JLabel lbRegister;
   private final JComboBox<RegistersDocs<? extends Enum<?>>> cbRegister;
   private final JLabel lbRegisterBitsInfos;
+  private final JLabel lbRegisterBits;
   private final DefaultListModel<BitsInfo> bitsInfos;
   private final JList<BitsInfo> lsBitsInfos;
   private final JScrollPane lsBitsInfosScroll;
 
-  private ValuedSignalPropertiesPanel()
+  private ValueSourcePanel()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ValuedSignalPropertiesPanel(final Diagram diagram, final SDK sdk,
-                                     final Consumer<String>
-                                     suggestedLabelSetter)
+  public ValueSourcePanel(final Diagram diagram, final SDK sdk,
+                          final Consumer<String> suggestedLabelSetter)
   {
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
@@ -193,6 +193,10 @@ public class ValuedSignalPropertiesPanel extends JPanel
     lsBitsInfosScroll = new JScrollPane(lsBitsInfos);
     lbRegistersSet = new JLabel("Register Set");
     lbRegistersSet.setPreferredSize(PREFERRED_LABEL_SIZE);
+    lbRegisterBitsInfos = new JLabel("Bits Range");
+    lbRegisterBitsInfos.setPreferredSize(PREFERRED_LABEL_SIZE);
+    lbRegisterBits = new JLabel();
+    lbRegisterBits.setPreferredSize(PREFERRED_LABEL_SIZE);
     cbRegistersSet = addRegistersSetSelection();
     add(Box.createVerticalStrut(5));
     lbRegister = new JLabel("Register");
@@ -200,8 +204,6 @@ public class ValuedSignalPropertiesPanel extends JPanel
     cbRegister = addRegisterSelection();
     registersSetSelected((RegistersSet)cbRegistersSet.getSelectedItem());
     add(Box.createVerticalStrut(5));
-    lbRegisterBitsInfos = new JLabel("Bits Range");
-    lbRegisterBitsInfos.setPreferredSize(PREFERRED_LABEL_SIZE);
     addBitsSelection();
     SwingUtils.setPreferredHeightAsMaximum(this);
   }
@@ -254,7 +256,11 @@ public class ValuedSignalPropertiesPanel extends JPanel
   {
     final JPanel bitsSelection = new JPanel();
     bitsSelection.setLayout(new BoxLayout(bitsSelection, BoxLayout.LINE_AXIS));
-    bitsSelection.add(lbRegisterBitsInfos);
+    final JPanel labelPanel = new JPanel();
+    labelPanel.setLayout(new BoxLayout(labelPanel, BoxLayout.PAGE_AXIS));
+    labelPanel.add(lbRegisterBitsInfos);
+    labelPanel.add(lbRegisterBits);
+    bitsSelection.add(labelPanel);
     bitsSelection.add(Box.createHorizontalStrut(5));
     lsBitsInfos.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
     lsBitsInfos.setCellRenderer(new BitsInfoRenderer());
@@ -274,6 +280,23 @@ public class ValuedSignalPropertiesPanel extends JPanel
   }
 
   private String getSuggestedBitsRange()
+  {
+    if (bitsInfos.size() <= 0) {
+      return null;
+    }
+    final int minSelectionIndex = lsBitsInfos.getMinSelectionIndex();
+    final int maxSelectionIndex = lsBitsInfos.getMaxSelectionIndex();
+    if ((minSelectionIndex < 0) || (maxSelectionIndex < 0)) {
+      return null;
+    }
+    final BitsInfo minSelection = bitsInfos.get(minSelectionIndex);
+    final BitsInfo maxSelection = bitsInfos.get(maxSelectionIndex);
+    final int msb = minSelection.getMsb();
+    final int lsb = maxSelection.getLsb();
+    return String.format("[%s]", msb != lsb ? msb + ":" + lsb : msb);
+  }
+
+  private String getSuggestedBitsLabel()
   {
     if (bitsInfos.size() <= 1) {
       return "";
@@ -309,7 +332,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
     return String.format("[%s]", msb != lsb ? msb + ":" + lsb : msb);
   }
 
-  private String getSuggestedLabel()
+  private String getSuggestedLabel(final String suggestedBitsLabel)
   {
     final RegistersSet registersSet =
       (RegistersSet)cbRegistersSet.getSelectedItem();
@@ -317,12 +340,8 @@ public class ValuedSignalPropertiesPanel extends JPanel
     @SuppressWarnings("unchecked")
     final RegistersDocs<? extends Enum<?>> register =
       (RegistersDocs<? extends Enum<?>>)cbRegister.getSelectedItem();
-    final String suggestedBitsRange = getSuggestedBitsRange();
-    if (suggestedBitsRange == null) {
-      return null;
-    }
     return String.format("%s%s%s",
-                         suggestedLabelPrefix, register, suggestedBitsRange);
+                         suggestedLabelPrefix, register, suggestedBitsLabel);
   }
 
   private int chooseBitsInfosIndex()
@@ -338,8 +357,15 @@ public class ValuedSignalPropertiesPanel extends JPanel
 
   public void updateSuggestedLabel()
   {
-    final String suggestedLabel = getSuggestedLabel();
-    if (suggestedLabel != null) {
+    final String suggestedBitsRange = getSuggestedBitsRange();
+    if (suggestedBitsRange != null) {
+      lbRegisterBits.setText(suggestedBitsRange);
+    } else {
+      lbRegisterBits.setText("");
+    }
+    final String suggestedBitsLabel = getSuggestedBitsLabel();
+    if (suggestedBitsLabel != null) {
+      final String suggestedLabel = getSuggestedLabel(suggestedBitsLabel);
       suggestedLabelSetter.accept(suggestedLabel);
     }
   }
@@ -401,6 +427,7 @@ public class ValuedSignalPropertiesPanel extends JPanel
     lbRegister.setEnabled(enabled);
     cbRegister.setEnabled(enabled);
     lbRegisterBitsInfos.setEnabled(enabled);
+    lbRegisterBits.setEnabled(enabled);
     lsBitsInfos.setEnabled(enabled);
     lsBitsInfosScroll.getHorizontalScrollBar().setEnabled(enabled);
     lsBitsInfosScroll.getVerticalScrollBar().setEnabled(enabled);

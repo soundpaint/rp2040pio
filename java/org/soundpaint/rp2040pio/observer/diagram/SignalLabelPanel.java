@@ -56,17 +56,16 @@ public class SignalLabelPanel extends JPanel
     tfLabel = new JTextField(20);
     add(tfLabel);
     add(Box.createHorizontalStrut(20));
-    add(new JLabel("Suggested Label"));
-    add(Box.createHorizontalStrut(5));
     tfSuggestedLabel = new JTextField(20);
     tfSuggestedLabel.setEditable(false);
-    tfSuggestedLabel.setEnabled(false);
-    add(tfSuggestedLabel);
-    add(Box.createHorizontalStrut(5));
-    final JButton btApply = new JButton("Apply");
+    final JButton btApply = new JButton("←");
     btApply.addActionListener((action) ->
                               tfLabel.setText(tfSuggestedLabel.getText()));
     add(btApply);
+    add(Box.createHorizontalStrut(20));
+    add(new JLabel("Suggested Label"));
+    add(Box.createHorizontalStrut(5));
+    add(tfSuggestedLabel);
     add(Box.createHorizontalGlue());
     SwingUtils.setPreferredWidthAsMaximum(tfLabel);
     SwingUtils.setPreferredHeightAsMaximum(this);

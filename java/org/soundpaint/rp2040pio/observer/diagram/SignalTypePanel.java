@@ -49,7 +49,7 @@ public class SignalTypePanel extends JPanel
   private final JRadioButton rbCycleRuler;
   private final JRadioButton rbClock;
   private final JRadioButton rbValued;
-  private final ValuedSignalPropertiesPanel valuedProperties;
+  private final ValueSourcePanel valueSourcePanel;
 
   private SignalTypePanel()
   {
@@ -69,76 +69,74 @@ public class SignalTypePanel extends JPanel
     rbCycleRuler = new JRadioButton("Cycle Ruler");
     rbClock = new JRadioButton("Clock");
     rbValued = new JRadioButton("Valued Signal", true);
-    valuedProperties =
-      new ValuedSignalPropertiesPanel(diagram, sdk, suggestedLabelSetter);
-    createAndAddCycleRulerLine();
-    createAndAddClockLine();
-    createAndAddValuedLine();
-    createAndAddValuedProperties();
+    valueSourcePanel = new ValueSourcePanel(diagram, sdk, suggestedLabelSetter);
+    createAndAddCycleRulerRadio();
+    createAndAddClockRadio();
+    createAndAddValuedRadio();
+    createAndAddValuedSource();
     selectValued();
   }
 
-  private void createAndAddCycleRulerLine()
+  private void createAndAddCycleRulerRadio()
   {
-    final JPanel cycleRulerLine = new JPanel();
-    cycleRulerLine.
-      setLayout(new BoxLayout(cycleRulerLine, BoxLayout.LINE_AXIS));
+    final JPanel cycleRulerRadio = new JPanel();
+    cycleRulerRadio.
+      setLayout(new BoxLayout(cycleRulerRadio, BoxLayout.LINE_AXIS));
     rbCycleRuler.addActionListener((action) -> selectCycleRuler());
     signalType.add(rbCycleRuler);
-    cycleRulerLine.add(rbCycleRuler);
-    cycleRulerLine.add(Box.createHorizontalGlue());
-    add(cycleRulerLine);
+    cycleRulerRadio.add(rbCycleRuler);
+    cycleRulerRadio.add(Box.createHorizontalGlue());
+    add(cycleRulerRadio);
   }
 
-  private void createAndAddClockLine()
+  private void createAndAddClockRadio()
   {
-    final JPanel clockLine = new JPanel();
-    clockLine.setLayout(new BoxLayout(clockLine, BoxLayout.LINE_AXIS));
+    final JPanel clockRadio = new JPanel();
+    clockRadio.setLayout(new BoxLayout(clockRadio, BoxLayout.LINE_AXIS));
     rbClock.addActionListener((action) -> selectClock());
     signalType.add(rbClock);
-    clockLine.add(rbClock);
-    clockLine.add(Box.createHorizontalGlue());
-    add(clockLine);
+    clockRadio.add(rbClock);
+    clockRadio.add(Box.createHorizontalGlue());
+    add(clockRadio);
   }
 
-  private void createAndAddValuedLine()
+  private void createAndAddValuedRadio()
   {
-    final JPanel valuedLine = new JPanel();
-    valuedLine.setLayout(new BoxLayout(valuedLine, BoxLayout.LINE_AXIS));
+    final JPanel valuedRadio = new JPanel();
+    valuedRadio.setLayout(new BoxLayout(valuedRadio, BoxLayout.LINE_AXIS));
     rbValued.addActionListener((action) -> selectValued());
     signalType.add(rbValued);
-    valuedLine.add(rbValued);
-    valuedLine.add(Box.createHorizontalGlue());
-    add(valuedLine);
+    valuedRadio.add(rbValued);
+    valuedRadio.add(Box.createHorizontalGlue());
+    add(valuedRadio);
   }
 
-  private void createAndAddValuedProperties()
+  private void createAndAddValuedSource()
   {
-    final JPanel valuedPropertiesLine = new JPanel();
-    valuedPropertiesLine.
-      setLayout(new BoxLayout(valuedPropertiesLine, BoxLayout.LINE_AXIS));
-    valuedPropertiesLine.add(Box.createHorizontalStrut(20));
-    valuedPropertiesLine.add(valuedProperties);
-    SwingUtils.setPreferredHeightAsMaximum(valuedPropertiesLine);
-    add(valuedPropertiesLine);
+    final JPanel valuedSource = new JPanel();
+    valuedSource.setLayout(new BoxLayout(valuedSource, BoxLayout.LINE_AXIS));
+    valuedSource.add(Box.createHorizontalStrut(20));
+    valuedSource.add(valueSourcePanel);
+    SwingUtils.setPreferredHeightAsMaximum(valuedSource);
+    add(valuedSource);
   }
 
   private void selectCycleRuler()
   {
-    valuedProperties.setEnabled(false);
-    suggestedLabelSetter.accept("#cycle");
+    valueSourcePanel.setEnabled(false);
+    suggestedLabelSetter.accept("cycle#");
   }
 
   private void selectClock()
   {
-    valuedProperties.setEnabled(false);
+    valueSourcePanel.setEnabled(false);
     suggestedLabelSetter.accept("clock");
   }
 
   private void selectValued()
   {
-    valuedProperties.setEnabled(true);
-    valuedProperties.updateSuggestedLabel();
+    valueSourcePanel.setEnabled(true);
+    valueSourcePanel.updateSuggestedLabel();
   }
 
   public Signal createSignal(final String label)
@@ -151,7 +149,7 @@ public class SignalTypePanel extends JPanel
       return SignalFactory.createClockSignal(label);
     }
     if (button == rbValued.getModel()) {
-      return valuedProperties.createSignal(label);
+      return valueSourcePanel.createSignal(label);
     }
     return null;
   }
