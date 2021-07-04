@@ -65,29 +65,18 @@ public interface RegistersDocs<T>
     public String getDescription() { return description; }
   }
 
-  public static class BitsInfo
+  public static class BitsRange
   {
     private final int msb;
     private final int lsb;
-    private final String name;
-    private final String description;
-    private final BitsType type;
-    private final Integer resetValue;
 
-    private BitsInfo()
+    private BitsRange()
     {
       throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public BitsInfo(final int msb, final int lsb,
-                    final String name,
-                    final String description,
-                    final BitsType type,
-                    final Integer resetValue)
+    public BitsRange(final int msb, final int lsb)
     {
-      if (type == null) {
-        throw new NullPointerException("type");
-      }
       if (msb < 0) {
         throw new IllegalArgumentException("msb < 0: " + msb);
       }
@@ -103,7 +92,62 @@ public interface RegistersDocs<T>
       if (lsb > msb) {
         throw new IllegalArgumentException("lsb > msb: " + lsb + " > " + msb);
       }
+      this.msb = msb;
+      this.lsb = lsb;
+    }
+
+    public int getMsb() { return msb; }
+
+    public int getLsb() { return lsb; }
+
+    @Override
+    public String toString()
+    {
+      return
+        msb == lsb ?
+        String.format("bit %d", msb) :
+        String.format("bits [%d:%d]", msb, lsb);
+    }
+  }
+
+  public static class BitsInfo
+  {
+    private final String name;
+    private final BitsRange bitsRange;
+    private final String description;
+    private final BitsType type;
+    private final Integer resetValue;
+
+    private BitsInfo()
+    {
+      throw new UnsupportedOperationException("unsupported empty constructor");
+    }
+
+    public BitsInfo(final int msb,
+                    final int lsb,
+                    final String name,
+                    final String description,
+                    final BitsType type,
+                    final Integer resetValue)
+    {
+      this(name, new BitsRange(msb, lsb), description, type, resetValue);
+    }
+
+    public BitsInfo(final String name,
+                    final BitsRange bitsRange,
+                    final String description,
+                    final BitsType type,
+                    final Integer resetValue)
+    {
+      if (bitsRange == null) {
+        throw new NullPointerException("bitsRange");
+      }
+      if (type == null) {
+        throw new NullPointerException("type");
+      }
       if (resetValue != null) {
+        final int msb = bitsRange.msb;
+        final int lsb = bitsRange.lsb;
         final long maxResetValue = ((long)0x1 << (msb - lsb + 1)) - 1;
         final long resetValueAsLong = 0x00000000FFFFFFFFL & (long)resetValue;
         if (resetValueAsLong > maxResetValue) {
@@ -113,17 +157,17 @@ public interface RegistersDocs<T>
                                              maxResetValue);
         }
       }
-      this.msb = msb;
-      this.lsb = lsb;
       this.name = name;
+      this.bitsRange = bitsRange;
       this.description = description;
       this.type = type;
       this.resetValue = resetValue;
     }
 
-    public int getMsb() { return msb; }
-    public int getLsb() { return lsb; }
+    public int getMsb() { return bitsRange.msb; }
+    public int getLsb() { return bitsRange.lsb; }
     public String getName() { return name; }
+    public BitsRange getBitsRange() { return bitsRange; }
     public String getDescription() { return description; }
     public BitsType getType() { return type; }
     public Integer getResetValue() { return resetValue; }
@@ -141,10 +185,7 @@ public interface RegistersDocs<T>
 
     private String renderBitRange()
     {
-      return
-        msb == lsb ?
-        String.format("bit %d", msb) :
-        String.format("bits [%d:%d]", msb, lsb);
+      return bitsRange.toString();
     }
 
     private String renderDescription()

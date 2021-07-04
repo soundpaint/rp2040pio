@@ -60,7 +60,7 @@ public abstract class PicoEmuRegisters extends RegisterSet
                    "value corresponds to a target frequency of 125MHz.",
                    new BitsInfo[] {
                      new BitsInfo(31, 0, null, null, BitsType.RW,
-                                  MasterClock.DEFAULT_FREQUENCY)
+                                  DEFAULT_FREQUENCY)
                    }),
     MASTERCLK_MODE("Selects the clock mode.",
                    new BitsInfo[] {

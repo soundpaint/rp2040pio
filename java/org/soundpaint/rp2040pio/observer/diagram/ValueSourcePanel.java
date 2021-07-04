@@ -26,6 +26,8 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.util.Objects;
@@ -34,27 +36,26 @@ import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JList;
+import javax.swing.JTable;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JViewport;
 import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.table.DefaultTableModel;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
 import org.soundpaint.rp2040pio.PicoEmuRegisters;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
-import org.soundpaint.rp2040pio.RegisterSet;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs.BitsInfo;
+import org.soundpaint.rp2040pio.doctool.RegistersDocs.BitsRange;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs.BitsType;
 import org.soundpaint.rp2040pio.doctool.RegistersDocs.RegisterDetails;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -63,6 +64,16 @@ public class ValueSourcePanel extends JPanel
 {
   private static final long serialVersionUID = -726756788602613552L;
   private static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
+  private static final String COLUMN_NAME = "Name";
+  private static final int COLUMN_NAME_IDX = 0;
+  private static final String COLUMN_BITS_RANGE = "Bits Range";
+  private static final int COLUMN_BITS_RANGE_IDX = 1;
+  private static final String COLUMN_DESCRIPTION = "Description";
+  private static final int COLUMN_DESCRIPTION_IDX = 2;
+  private static final String COLUMN_TYPE = "Type";
+  private static final int COLUMN_TYPE_IDX = 3;
+  private static final String COLUMN_RESET_VALUE = "Reset Value";
+  private static final int COLUMN_RESET_VALUE_IDX = 4;
 
   private enum RegistersSet {
     /* TODO:
@@ -131,31 +142,6 @@ public class ValueSourcePanel extends JPanel
     public String toString() { return id; }
   }
 
-  private class BitsInfoRenderer extends DefaultListCellRenderer
-  {
-    private static final long serialVersionUID = -4831476178158333446L;
-
-    public BitsInfoRenderer()
-    {
-      setHorizontalAlignment(SwingConstants.LEFT);
-    }
-
-    @Override
-    public Component
-      getListCellRendererComponent(final JList<?> list,
-                                   final Object value,
-                                   final int index,
-                                   final boolean isSelected,
-                                   final boolean cellHasFocus)
-    {
-      super.getListCellRendererComponent(list, value, index,
-                                         isSelected, cellHasFocus);
-      final BitsInfo bitsInfo = (BitsInfo)value;
-      setText(bitsInfo.toString(String.valueOf(cbRegister.getSelectedItem())));
-      return this;
-    }
-  }
-
   private final Diagram diagram;
   private final SDK sdk;
   private final Consumer<String> suggestedLabelSetter;
@@ -165,9 +151,9 @@ public class ValueSourcePanel extends JPanel
   private final JComboBox<RegistersDocs<? extends Enum<?>>> cbRegister;
   private final JLabel lbRegisterBitsInfos;
   private final JLabel lbRegisterBits;
-  private final DefaultListModel<BitsInfo> bitsInfos;
-  private final JList<BitsInfo> lsBitsInfos;
-  private final JScrollPane lsBitsInfosScroll;
+  private final DefaultTableModel bitsInfos;
+  private final JTable tbBitsInfos;
+  private final JScrollPane tbBitsInfosScroll;
 
   private ValueSourcePanel()
   {
@@ -183,14 +169,13 @@ public class ValueSourcePanel extends JPanel
     this.sdk = sdk;
     Objects.requireNonNull(suggestedLabelSetter);
     this.suggestedLabelSetter = suggestedLabelSetter;
-
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("Value Source"));
-    bitsInfos = new DefaultListModel<BitsInfo>();
-    lsBitsInfos = new JList<BitsInfo>(bitsInfos);
-    lsBitsInfos.addListSelectionListener((selection) ->
-                                         selectionChanged(selection));
-    lsBitsInfosScroll = new JScrollPane(lsBitsInfos);
+    bitsInfos = createTableModel();
+    tbBitsInfos = new JTable(bitsInfos);
+    tbBitsInfos.getSelectionModel().
+      addListSelectionListener((selection) -> selectionChanged(selection));
+    tbBitsInfosScroll = new JScrollPane(tbBitsInfos);
     lbRegistersSet = new JLabel("Register Set");
     lbRegistersSet.setPreferredSize(PREFERRED_LABEL_SIZE);
     lbRegisterBitsInfos = new JLabel("Bits Range");
@@ -206,6 +191,23 @@ public class ValueSourcePanel extends JPanel
     add(Box.createVerticalStrut(5));
     addBitsSelection();
     SwingUtils.setPreferredHeightAsMaximum(this);
+  }
+
+  private DefaultTableModel createTableModel()
+  {
+    final DefaultTableModel model = new DefaultTableModel() {
+        @Override
+        public boolean isCellEditable(final int rowIndex, final int columnIndex)
+        {
+          return false;
+        }
+      };
+    model.addColumn(COLUMN_NAME);
+    model.addColumn(COLUMN_BITS_RANGE);
+    model.addColumn(COLUMN_DESCRIPTION);
+    model.addColumn(COLUMN_TYPE);
+    model.addColumn(COLUMN_RESET_VALUE);
+    return model;
   }
 
   private JComboBox<RegistersSet> addRegistersSetSelection()
@@ -262,9 +264,8 @@ public class ValueSourcePanel extends JPanel
     labelPanel.add(lbRegisterBits);
     bitsSelection.add(labelPanel);
     bitsSelection.add(Box.createHorizontalStrut(5));
-    lsBitsInfos.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-    lsBitsInfos.setCellRenderer(new BitsInfoRenderer());
-    bitsSelection.add(lsBitsInfosScroll);
+    tbBitsInfos.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+    bitsSelection.add(tbBitsInfosScroll);
     bitsSelection.add(Box.createHorizontalGlue());
     add(bitsSelection);
   }
@@ -281,30 +282,34 @@ public class ValueSourcePanel extends JPanel
 
   private String getSuggestedBitsRange()
   {
-    if (bitsInfos.size() <= 0) {
+    if (bitsInfos.getRowCount() == 0) {
       return null;
     }
-    final int minSelectionIndex = lsBitsInfos.getMinSelectionIndex();
-    final int maxSelectionIndex = lsBitsInfos.getMaxSelectionIndex();
-    if ((minSelectionIndex < 0) || (maxSelectionIndex < 0)) {
+    final int minSelectionRow = tbBitsInfos.getSelectedRow();
+    final int maxSelectionRow =
+      minSelectionRow + tbBitsInfos.getSelectedRowCount() - 1;
+    if ((minSelectionRow < 0) || (maxSelectionRow < 0)) {
       return null;
     }
-    final BitsInfo minSelection = bitsInfos.get(minSelectionIndex);
-    final BitsInfo maxSelection = bitsInfos.get(maxSelectionIndex);
-    final int msb = minSelection.getMsb();
-    final int lsb = maxSelection.getLsb();
+    final int msb =
+      ((BitsRange)bitsInfos.getValueAt(minSelectionRow, COLUMN_BITS_RANGE_IDX)).
+      getMsb();
+    final int lsb =
+      ((BitsRange)bitsInfos.getValueAt(maxSelectionRow, COLUMN_BITS_RANGE_IDX)).
+      getLsb();
     return String.format("[%s]", msb != lsb ? msb + ":" + lsb : msb);
   }
 
   private String getSuggestedBitsLabel()
   {
-    if (bitsInfos.size() <= 1) {
+    if (bitsInfos.getRowCount() <= 1) {
       return "";
     }
     boolean haveUnselectedRelevantBits = false;
-    for (int index = 0; index < bitsInfos.size(); index++) {
-      if (!lsBitsInfos.isSelectedIndex(index)) {
-        if (bitsInfos.get(index).getType().isRelevant()) {
+    for (int row = 0; row < bitsInfos.getRowCount(); row++) {
+      if (!tbBitsInfos.isRowSelected(row)) {
+        if (((BitsType)bitsInfos.getValueAt(row, COLUMN_TYPE_IDX)).
+            isRelevant()) {
           haveUnselectedRelevantBits = true;
           break;
         }
@@ -313,22 +318,26 @@ public class ValueSourcePanel extends JPanel
     if (!haveUnselectedRelevantBits) {
       return "";
     }
-    final int minSelectionIndex = lsBitsInfos.getMinSelectionIndex();
-    final int maxSelectionIndex = lsBitsInfos.getMaxSelectionIndex();
-    if ((minSelectionIndex < 0) || (maxSelectionIndex < 0)) {
+    final int minSelectionRow = tbBitsInfos.getSelectedRow();
+    final int maxSelectionRow =
+      minSelectionRow + tbBitsInfos.getSelectedRowCount() - 1;
+    if ((minSelectionRow < 0) || (maxSelectionRow < 0)) {
       // empty range
       return null;
     }
-    final BitsInfo minSelection = bitsInfos.get(minSelectionIndex);
-    final BitsInfo maxSelection = bitsInfos.get(maxSelectionIndex);
-    if (minSelection == maxSelection) {
-      final String name = minSelection.getName();
+    if (minSelectionRow == maxSelectionRow) {
+      final String name =
+        (String)bitsInfos.getValueAt(minSelectionRow, COLUMN_NAME_IDX);
       if (name != null) {
         return String.format("_%s", name);
       }
     }
-    final int msb = minSelection.getMsb();
-    final int lsb = maxSelection.getLsb();
+    final int msb =
+      ((BitsRange)bitsInfos.getValueAt(minSelectionRow, COLUMN_BITS_RANGE_IDX)).
+      getMsb();
+    final int lsb =
+      ((BitsRange)bitsInfos.getValueAt(maxSelectionRow, COLUMN_BITS_RANGE_IDX)).
+      getLsb();
     return String.format("[%s]", msb != lsb ? msb + ":" + lsb : msb);
   }
 
@@ -344,13 +353,13 @@ public class ValueSourcePanel extends JPanel
                          suggestedLabelPrefix, register, suggestedBitsLabel);
   }
 
-  private int chooseBitsInfosIndex()
+  private int chooseBitsInfosRow()
   {
-    for (int index = bitsInfos.size() - 1; index >= 0; index--) {
-      final BitsInfo bitsInfo = bitsInfos.get(index);
-      final BitsType type = bitsInfo.getType();
+    for (int row = bitsInfos.getRowCount() - 1; row >= 0; row--) {
+      final BitsType type =
+        (BitsType)bitsInfos.getValueAt(row, COLUMN_TYPE_IDX);
       if ((type != BitsType.RESERVED) && (type != BitsType.UNUSED))
-        return index;
+        return row;
     }
     return -1;
   }
@@ -370,19 +379,36 @@ public class ValueSourcePanel extends JPanel
     }
   }
 
+  private void ensureCellIsVisible(final int row, final int column)
+  {
+    if (tbBitsInfos.getParent() instanceof JViewport) {
+      final JViewport viewport = (JViewport)tbBitsInfos.getParent();
+      final Rectangle cellRect = tbBitsInfos.getCellRect(row, column, true);
+      final Point viewPosition = viewport.getViewPosition();
+      cellRect.translate(-viewPosition.x, -viewPosition.y);
+      tbBitsInfos.scrollRectToVisible(cellRect);
+    }
+  }
+
   private void registerSelected(final RegistersDocs<? extends Enum<?>> register)
   {
-    bitsInfos.clear();
+    bitsInfos.setRowCount(0);
     final RegisterDetails registerDetails = register.getRegisterDetails();
     for (final BitsInfo bitsInfo : registerDetails.getBitsInfos()) {
-      bitsInfos.addElement(bitsInfo);
+      final Object[] rowData = new Object[5];
+      rowData[COLUMN_NAME_IDX] = bitsInfo.getName();
+      rowData[COLUMN_BITS_RANGE_IDX] = bitsInfo.getBitsRange();
+      rowData[COLUMN_DESCRIPTION_IDX] = bitsInfo.getDescription();
+      rowData[COLUMN_TYPE_IDX] = bitsInfo.getType();
+      rowData[COLUMN_RESET_VALUE_IDX] = bitsInfo.getResetValue();
+      bitsInfos.addRow(rowData);
     }
-    lsBitsInfosScroll.setMaximumSize(lsBitsInfosScroll.getPreferredSize());
-    lsBitsInfosScroll.revalidate();
-    final int index = chooseBitsInfosIndex();
-    if (index >= 0) {
-      lsBitsInfos.setSelectedIndex(index);
-      lsBitsInfos.ensureIndexIsVisible(index);
+    tbBitsInfosScroll.setMaximumSize(tbBitsInfosScroll.getPreferredSize());
+    tbBitsInfosScroll.revalidate();
+    final int row = chooseBitsInfosRow();
+    if (row >= 0) {
+      tbBitsInfos.setRowSelectionInterval(row, row);
+      ensureCellIsVisible(row, 0);
     }
     updateSuggestedLabel();
   }
@@ -392,9 +418,10 @@ public class ValueSourcePanel extends JPanel
     final int baseAddress =
       ((RegistersSet)cbRegistersSet.getSelectedItem()).baseAddress;
     final int address = baseAddress + 0x4 * cbRegister.getSelectedIndex();
-    final int minSelectionIndex = lsBitsInfos.getMinSelectionIndex();
-    final int maxSelectionIndex = lsBitsInfos.getMaxSelectionIndex();
-    if ((minSelectionIndex < 0) || (maxSelectionIndex < 0)) {
+    final int minSelectionRow = tbBitsInfos.getSelectedRow();
+    final int maxSelectionRow =
+      minSelectionRow + tbBitsInfos.getSelectedRowCount() - 1;
+    if ((minSelectionRow < 0) || (maxSelectionRow < 0)) {
       JOptionPane.showMessageDialog(this,
                                     "Please select a contiguous range of bits.",
                                     "No Bits Range Selected",
@@ -402,9 +429,11 @@ public class ValueSourcePanel extends JPanel
       return null;
     }
     final int msb =
-      bitsInfos.getElementAt(minSelectionIndex).getMsb();
+      ((BitsRange)bitsInfos.getValueAt(minSelectionRow, COLUMN_BITS_RANGE_IDX)).
+      getMsb();
     final int lsb =
-      bitsInfos.getElementAt(maxSelectionIndex).getLsb();
+      ((BitsRange)bitsInfos.getValueAt(maxSelectionRow, COLUMN_BITS_RANGE_IDX)).
+      getLsb();
     final Supplier<Boolean> displayFilter = null;
     try {
       return
@@ -428,9 +457,9 @@ public class ValueSourcePanel extends JPanel
     cbRegister.setEnabled(enabled);
     lbRegisterBitsInfos.setEnabled(enabled);
     lbRegisterBits.setEnabled(enabled);
-    lsBitsInfos.setEnabled(enabled);
-    lsBitsInfosScroll.getHorizontalScrollBar().setEnabled(enabled);
-    lsBitsInfosScroll.getVerticalScrollBar().setEnabled(enabled);
+    tbBitsInfos.setEnabled(enabled);
+    tbBitsInfosScroll.getHorizontalScrollBar().setEnabled(enabled);
+    tbBitsInfosScroll.getVerticalScrollBar().setEnabled(enabled);
   }
 
   private void selectionChanged(final ListSelectionEvent selection)
