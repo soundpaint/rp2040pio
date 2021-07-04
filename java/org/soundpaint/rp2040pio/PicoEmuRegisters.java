@@ -41,7 +41,7 @@ public abstract class PicoEmuRegisters extends RegisterSet
     PWR_UP("Writing the value 0xa55a5aa5 to this address will fully reset%n" +
            "the emulator.  Writing any other value will have no effect.",
              new BitsInfo[] {
-               new BitsInfo(31, 0, null, null, BitsType.WF, 0)
+               new BitsInfo(null, 31, 0, null, BitsType.WF, 0)
              }),
     MASTERCLK_FREQ("Unsigned integer value that represents the%n" +
                    "target frequency of the emulation in 1/8Hz.%n" +
@@ -59,13 +59,13 @@ public abstract class PicoEmuRegisters extends RegisterSet
                    "catch up with as close as possible.  The reset%n" +
                    "value corresponds to a target frequency of 125MHz.",
                    new BitsInfo[] {
-                     new BitsInfo(31, 0, null, null, BitsType.RW,
+                     new BitsInfo(null, 31, 0, null, BitsType.RW,
                                   DEFAULT_FREQUENCY)
                    }),
     MASTERCLK_MODE("Selects the clock mode.",
                    new BitsInfo[] {
-                     new BitsInfo(31, 1, null, null, BitsType.RESERVED, null),
-                     new BitsInfo(0, 0, null,
+                     new BitsInfo(null, 31, 1, null, BitsType.RESERVED, null),
+                     new BitsInfo(null, 0, 0,
                                   "Bit 0 = 0: Target frequency mode.%n" +
                                   "Bit 0 = 1: Single step mode.",
                                   BitsType.RW, 0)
@@ -87,7 +87,7 @@ public abstract class PicoEmuRegisters extends RegisterSet
                              "has completed all operations to be performed%n" +
                              "during this phase), and 0x0 otherwise.",
                              new BitsInfo[] {
-                               new BitsInfo(31, 0, null, null,
+                               new BitsInfo(null, 31, 0, null,
                                             BitsType.WF, null)
                              }),
     MASTERCLK_TRIGGER_PHASE1("When master clock is in single step%n" +
@@ -108,7 +108,7 @@ public abstract class PicoEmuRegisters extends RegisterSet
                              "has completed all operations to be performed%n" +
                              "during this phase), and 0x0 otherwise.",
                              new BitsInfo[] {
-                               new BitsInfo(31, 0, null, null,
+                               new BitsInfo(null, 31, 0, null,
                                             BitsType.WF, null)
                              }),
     WALLCLOCK_LSB("LSB value (lower 32 bits) of wall clock.  The%n" +
@@ -116,21 +116,21 @@ public abstract class PicoEmuRegisters extends RegisterSet
                   "to 0 and incremented whenever the master clock has%n" +
                   "completed a cycle.",
                   new BitsInfo[] {
-                    new BitsInfo(31, 0, null, null, BitsType.RO, null)
+                    new BitsInfo(null, 31, 0, null, BitsType.RO, null)
                   }),
     WALLCLOCK_MSB("MSB value (upper 32 bits) of wall clock.  The%n" +
                   "wall clock is a 64 bit counter that is initialized%n" +
                   "to 0 and incremented whenever the master clock has%n" +
                   "completed a cycle.",
                   new BitsInfo[] {
-                    new BitsInfo(31, 0, null, null, BitsType.RO, null)
+                    new BitsInfo(null, 31, 0, null, BitsType.RO, null)
                   }),
     GPIO_PADIN("Each bit of this value represents the corresponding%n" +
                "pad input state of the 32 GPIO pins, virtually provided%n" +
                "from some external source.",
                IntStream.rangeClosed(0, 31).boxed()
-               .map(n -> new BitsInfo(31 - n, 31 - n,
-                                      "INFROMPAD_GPIO" + (31 - n),
+               .map(n -> new BitsInfo("INFROMPAD_GPIO" + (31 - n),
+                                      31 - n, 31 - n,
                                       "signal value 0x0 or 0x1, as%n" +
                                       "provided by some external source.",
                                       BitsType.RW, 0))

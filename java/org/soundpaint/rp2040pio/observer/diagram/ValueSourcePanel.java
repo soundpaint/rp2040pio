@@ -45,7 +45,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JViewport;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.GPIOPadsBank0Registers;
@@ -64,10 +67,10 @@ public class ValueSourcePanel extends JPanel
 {
   private static final long serialVersionUID = -726756788602613552L;
   private static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
+  private static final String COLUMN_BITS_RANGE = "Bits";
+  private static final int COLUMN_BITS_RANGE_IDX = 0;
   private static final String COLUMN_NAME = "Name";
-  private static final int COLUMN_NAME_IDX = 0;
-  private static final String COLUMN_BITS_RANGE = "Bits Range";
-  private static final int COLUMN_BITS_RANGE_IDX = 1;
+  private static final int COLUMN_NAME_IDX = 1;
   private static final String COLUMN_DESCRIPTION = "Description";
   private static final int COLUMN_DESCRIPTION_IDX = 2;
   private static final String COLUMN_TYPE = "Type";
@@ -75,8 +78,18 @@ public class ValueSourcePanel extends JPanel
   private static final String COLUMN_RESET_VALUE = "Reset Value";
   private static final int COLUMN_RESET_VALUE_IDX = 4;
 
+  private static class BitsRangeCellRenderer extends DefaultTableCellRenderer
+  {
+    private static final long serialVersionUID = 8594096152113741258L;
+
+    @Override
+    protected void setValue(final Object value)
+    {
+      setText((value == null) ? "" : ((BitsRange)value).toShortString());
+    }
+  }
+
   private enum RegistersSet {
-    /* TODO:
     PIO0_REGS("PIO0 Registers", "PIO0_",
               PIORegisters.Regs.getRegisterSetLabel(),
               PIORegisters.Regs.getRegisterSetDescription(),
@@ -87,7 +100,6 @@ public class ValueSourcePanel extends JPanel
               PIORegisters.Regs.getRegisterSetDescription(),
               PIORegisters.Regs.values(),
               Constants.PIO1_BASE),
-    */
     PIO0_ADD_ON_REGS("PIO0 Add-on Registers", "PIO0_",
                      PIOEmuRegisters.Regs.getRegisterSetLabel(),
                      PIOEmuRegisters.Regs.getRegisterSetDescription(),
@@ -173,6 +185,7 @@ public class ValueSourcePanel extends JPanel
     setBorder(BorderFactory.createTitledBorder("Value Source"));
     bitsInfos = createTableModel();
     tbBitsInfos = new JTable(bitsInfos);
+    setupTableColumnRenderers();
     tbBitsInfos.getSelectionModel().
       addListSelectionListener((selection) -> selectionChanged(selection));
     tbBitsInfosScroll = new JScrollPane(tbBitsInfos);
@@ -187,10 +200,17 @@ public class ValueSourcePanel extends JPanel
     lbRegister = new JLabel("Register");
     lbRegister.setPreferredSize(PREFERRED_LABEL_SIZE);
     cbRegister = addRegisterSelection();
-    registersSetSelected((RegistersSet)cbRegistersSet.getSelectedItem());
     add(Box.createVerticalStrut(5));
     addBitsSelection();
     SwingUtils.setPreferredHeightAsMaximum(this);
+    registersSetSelected((RegistersSet)cbRegistersSet.getSelectedItem());
+  }
+
+  private void setupTableColumnRenderers()
+  {
+    final TableColumnModel model = tbBitsInfos.getColumnModel();
+    final TableColumn bitsRangeColumn = model.getColumn(COLUMN_BITS_RANGE_IDX);
+    bitsRangeColumn.setCellRenderer(new BitsRangeCellRenderer());
   }
 
   private DefaultTableModel createTableModel()
@@ -202,8 +222,8 @@ public class ValueSourcePanel extends JPanel
           return false;
         }
       };
-    model.addColumn(COLUMN_NAME);
     model.addColumn(COLUMN_BITS_RANGE);
+    model.addColumn(COLUMN_NAME);
     model.addColumn(COLUMN_DESCRIPTION);
     model.addColumn(COLUMN_TYPE);
     model.addColumn(COLUMN_RESET_VALUE);
@@ -396,8 +416,8 @@ public class ValueSourcePanel extends JPanel
     final RegisterDetails registerDetails = register.getRegisterDetails();
     for (final BitsInfo bitsInfo : registerDetails.getBitsInfos()) {
       final Object[] rowData = new Object[5];
-      rowData[COLUMN_NAME_IDX] = bitsInfo.getName();
       rowData[COLUMN_BITS_RANGE_IDX] = bitsInfo.getBitsRange();
+      rowData[COLUMN_NAME_IDX] = bitsInfo.getName();
       rowData[COLUMN_DESCRIPTION_IDX] = bitsInfo.getDescription();
       rowData[COLUMN_TYPE_IDX] = bitsInfo.getType();
       rowData[COLUMN_RESET_VALUE_IDX] = bitsInfo.getResetValue();

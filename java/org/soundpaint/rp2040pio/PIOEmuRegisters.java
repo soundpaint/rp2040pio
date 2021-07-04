@@ -41,41 +41,41 @@ public abstract class PIOEmuRegisters extends RegisterSet
     SM0_REGX("Direct read / write access to the SM's%n" +
              "scratch register X.",
              new BitsInfo[] {
-               new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+               new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
              }),
     SM0_REGY("Direct read / write access to the SM's%n" +
              "scratch register Y.",
              new BitsInfo[] {
-               new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+               new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
              }),
     SM0_PC("Direct read / write access to the SM's%n" +
            "instruction pointer / program counter.",
            new BitsInfo[] {
-             new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+             new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
            }),
     SM0_ISR("Direct read / write access to the SM's%n" +
             "input shift register.",
             new BitsInfo[] {
-              new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+              new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
              }),
     SM0_ISR_SHIFT_COUNT("Direct read / write access to the SM's%n" +
                         "input shift count register.",
                         new BitsInfo[] {
-                          new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+                          new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
                         }),
     SM0_OSR("Direct read / write access to all of the SM's%n" +
             "output shift register.",
             new BitsInfo[] {
-              new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+              new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
              }),
     SM0_OSR_SHIFT_COUNT("Direct read / write access to the SM's%n" +
                         "output shift count register.",
                         new BitsInfo[] {
-                          new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+                          new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
                         }),
     SM0_FIFO_MEM0("Read / write access to FIFO memory word.",
                   new BitsInfo[] {
-                    new BitsInfo(31, 0, null, null, BitsType.RW, 0)
+                    new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
                   }),
     SM0_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
     SM0_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
@@ -88,13 +88,13 @@ public abstract class PIOEmuRegisters extends RegisterSet
                      "forced instruction is cancelled, provided that%n" +
                      "instruction fetch & decode has not yet been started.",
                      new BitsInfo[] {
-                       new BitsInfo(31, 0, null, null, BitsType.WF, 0)
+                       new BitsInfo(null, 31, 0, null, BitsType.WF, 0)
                      }),
     SM0_CLEAR_EXECD("When writing to this address, any pending%n" +
                     "EXEC'd instruction is cancelled, provided that%n" +
                     "instruction fetch & decode has not yet been started.",
                     new BitsInfo[] {
-                      new BitsInfo(31, 0, null, null, BitsType.WF, 0)
+                      new BitsInfo(null, 31, 0, null, BitsType.WF, 0)
                     }),
     SM0_INSTR_ORIGIN("Direct read-only access to the origin of the SM's%n" +
                      "currently executed instruction.  The mode bits%n" +
@@ -108,8 +108,8 @@ public abstract class PIOEmuRegisters extends RegisterSet
                      "if the PC has already been updated while the%n" +
                      "instruction is still in progress.",
                      new BitsInfo[] {
-                       new BitsInfo(31, 7, null, null, BitsType.RESERVED, null),
-                       new BitsInfo(6, 5, "CATEGORY",
+                       new BitsInfo(null, 31, 7, null, BitsType.RESERVED, null),
+                       new BitsInfo("CATEGORY", 6, 5,
                                     "For forced instructions,%n" +
                                     "this is the value " +
                                     (INSTR_ORIGIN_FORCED & 0x3) +
@@ -123,28 +123,28 @@ public abstract class PIOEmuRegisters extends RegisterSet
                                     (INSTR_ORIGIN_UNKNOWN & 0x3) +
                                     ".%n",
                                     BitsType.RO, INSTR_ORIGIN_UNKNOWN & 0x3),
-                       new BitsInfo(4, 0, "MEMORY_ADDRESS",
+                       new BitsInfo("MEMORY_ADDRESS", 4, 0,
                                     "memory address value (0x00…0x1f)",
                                     BitsType.RO, 0)
                      }),
     SM0_DELAY("Direct read-only access to the SM's%n" +
               "currently executed instruction's number of delay cycles.",
               new BitsInfo[] {
-                new BitsInfo(31, 5, null, null, BitsType.RESERVED, null),
-                new BitsInfo(4, 0, null, null, BitsType.RO, 0)
+                new BitsInfo(null, 31, 5, null, BitsType.RESERVED, null),
+                new BitsInfo(null, 4, 0, null, BitsType.RO, 0)
               }),
     SM0_DELAY_CYCLE("Read-only access to the SM's delay status.",
                     new BitsInfo[] {
-                      new BitsInfo(31, 1, null, null, BitsType.UNUSED, null),
-                      new BitsInfo(0, 0, "DELAY_CYCLE",
+                      new BitsInfo(null, 31, 1, null, BitsType.UNUSED, null),
+                      new BitsInfo("DELAY_CYCLE", 0, 0,
                                    "0x1, if the currently executed cycles%n" +
                                    "is a delay cycle.", BitsType.RO, 0)
                     }),
     SM0_PENDING_DELAY("Direct read-only access to the SM's%n" +
                       "number of pending delay cycles.",
                       new BitsInfo[] {
-                        new BitsInfo(31, 5, null, null, BitsType.RESERVED, null),
-                        new BitsInfo(4, 0, "PENDING_DELAY",
+                        new BitsInfo(null, 31, 5, null, BitsType.RESERVED, null),
+                        new BitsInfo("PENDING_DELAY", 4, 0,
                                      "Number (0x00…0x1f) of pending delays%n" +
                                      "of the currently executed instruction.",
                                      BitsType.RO, 0)
@@ -154,13 +154,13 @@ public abstract class PIOEmuRegisters extends RegisterSet
                      "next clock cycle.  For writing a forced instruction,%n" +
                      "use SMx_INSTR of PIORegisters instead.",
                       new BitsInfo[] {
-                        new BitsInfo(31, 17, null, null,
+                        new BitsInfo(null, 31, 17, null,
                                      BitsType.RESERVED, null),
-                        new BitsInfo(16, 16, "PENDING",
+                        new BitsInfo("PENDING", 16, 16,
                                      "0x1, if a forced instruction is%n" +
                                      "awaiting execution, otherwise 0x0.",
                                      BitsType.RO, 0),
-                        new BitsInfo(15, 0, "INSTR",
+                        new BitsInfo("INSTR", 15, 0,
                                      "Instruction op-code, if any;%n" +
                                      "otherwise, 0x0000.",
                                      BitsType.RO, 0)
@@ -172,21 +172,21 @@ public abstract class PIOEmuRegisters extends RegisterSet
                     "pending forced instruction, in which case the forced%n" +
                     "instruction will be executed first.",
                     new BitsInfo[] {
-                      new BitsInfo(31, 17, null, null,
+                      new BitsInfo(null, 31, 17, null,
                                    BitsType.RESERVED, null),
-                      new BitsInfo(16, 16, "PENDING",
+                      new BitsInfo("PENDING", 16, 16,
                                    "0x1, if an EXEC'd instruction is%n" +
                                    "awaiting execution, otherwise 0x0.",
                                    BitsType.RO, 0),
-                      new BitsInfo(15, 0, "INSTR",
+                      new BitsInfo("INSTR", 15, 0,
                                    "Instruction op-code, if any;%n" +
                                    "otherwise, 0x0000.",
                                    BitsType.RW, 0)
                     }),
     SM0_CLK_ENABLE("Read-only access to the SM's current clock enable status.",
                    new BitsInfo[] {
-                     new BitsInfo(31, 1, null, null, BitsType.UNUSED, null),
-                     new BitsInfo(0, 0, "CLK_ENABLE",
+                     new BitsInfo(null, 31, 1, null, BitsType.UNUSED, null),
+                     new BitsInfo("CLK_ENABLE", 0, 0,
                                   "0x1, if in the current cycle the clock%n" +
                                   "enable signal evaluates to 0x1.",
                                   BitsType.RO, 0)
@@ -196,8 +196,8 @@ public abstract class PIOEmuRegisters extends RegisterSet
                         "when master clock phase 1 has been completed,%n" +
                         "otherwise identical with current clock enable.",
                    new BitsInfo[] {
-                     new BitsInfo(31, 1, null, null, BitsType.UNUSED, null),
-                     new BitsInfo(0, 0, "CLK_ENABLE",
+                     new BitsInfo(null, 31, 1, null, BitsType.UNUSED, null),
+                     new BitsInfo("CLK_ENABLE", 0, 0,
                                   "0x1, if in the pre-computed clock%n" +
                                   "enable signal for the upcoming master%n" +
                                   "clock cycle evaluates to 0x1.",
@@ -216,7 +216,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                     "master clock MASTERCLK_MODE will be automatically set%n" +
                     "to single step mode.",
                     IntStream.rangeClosed(0, 31).boxed()
-                    .map(n -> new BitsInfo(31 - n, 31 - n, "BP_MEM" + (31 - n),
+                    .map(n -> new BitsInfo("BP_MEM" + (31 - n), 31 - n, 31 - n,
                                            "0x1, if the memory address is " +
                                            "marked as breakpoint.",
                                            BitsType.RW, 0))
@@ -231,7 +231,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                     "memory address.  Tracepoints work in all master clock%n" +
                     "MASTERCLK_MODE modes.",
                     IntStream.rangeClosed(0, 31).boxed()
-                    .map(n -> new BitsInfo(31 - n, 31 - n, "TP_MEM" + (31 - n),
+                    .map(n -> new BitsInfo("TP_MEM" + (31 - n), 31 - n, 31 - n,
                                            "0x1, if the memory address is " +
                                            "marked as tracepoint.",
                                            BitsType.RW, 0))
@@ -319,8 +319,8 @@ public abstract class PIOEmuRegisters extends RegisterSet
     SM3_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
     INSTR_MEM0("Read / write access to instruction memory word.",
                new BitsInfo[] {
-                 new BitsInfo(31, 16, null, null, BitsType.UNUSED, null),
-                 new BitsInfo(15, 0, null, null, BitsType.RW, 0)
+                 new BitsInfo(null, 31, 16, null, BitsType.UNUSED, null),
+                 new BitsInfo(null, 15, 0, null, BitsType.RW, 0)
                }),
     INSTR_MEM1(Regs.INSTR_MEM0),
     INSTR_MEM2(Regs.INSTR_MEM0),
@@ -360,7 +360,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
          "The data returned to the system on a read from an empty FIFO%n" +
          "is undefined.",
          new BitsInfo[] {
-           new BitsInfo(31, 0, null, null, BitsType.RF, null)
+           new BitsInfo(null, 31, 0, null, BitsType.RF, null)
          }),
     TXF1(Regs.TXF0),
     TXF2(Regs.TXF0),
@@ -370,17 +370,17 @@ public abstract class PIOEmuRegisters extends RegisterSet
          "write to a full FIFO has no effect on the FIFO state or contents,%n" +
          "and sets the sticky FDEBUG_RXOVER error flag for this FIFO.",
          new BitsInfo[] {
-           new BitsInfo(31, 0, null, null, BitsType.WF, 0)
+           new BitsInfo(null, 31, 0, null, BitsType.WF, 0)
          }),
     RXF1(Regs.RXF0),
     RXF2(Regs.RXF0),
     RXF3(Regs.RXF0),
     FREAD_PTR("Read pointers of all of the SM's TX and RX FIFOs.",
               IntStream.rangeClosed(0, 7).boxed()
-              .map(n -> new BitsInfo(31 - (n << 2),
-                                     28 - (n << 2),
-                                     ((n & 0x1) == 0 ? "TX" : "RX") + "F" +
+              .map(n -> new BitsInfo(((n & 0x1) == 0 ? "TX" : "RX") + "F" +
                                      (n >> 1) + "_READ_PTR",
+                                     31 - (n << 2),
+                                     28 - (n << 2),
                                      "Offset (0…7) within FIFO memory for%n" +
                                      "the next FIFO read operation",
                                      BitsType.RO, 0))
@@ -388,22 +388,22 @@ public abstract class PIOEmuRegisters extends RegisterSet
     GPIO_PINS("Direct read / write access to all of the 32 GPIO pins%n" +
               "that PIO is currently driving to the GPIOs.",
               IntStream.rangeClosed(0, 31).boxed()
-              .map(n -> new BitsInfo(31 - n, 31 - n, "GPIO_PIN" + (31 - n),
+              .map(n -> new BitsInfo("GPIO_PIN" + (31 - n), 31 - n, 31 - n,
                                      "0x1 for HIGH or 0x0 for LOW",
                                      BitsType.RW, 0))
               .collect(Collectors.toList())),
     GPIO_PINDIRS("Direct read / write access to all of the 32 GPIO pin%n" +
                  "directions that PIO is currently driving to the GPIOs.",
                  IntStream.rangeClosed(0, 31).boxed()
-                 .map(n -> new BitsInfo(31 - n, 31 - n,
-                                        "GPIO_PINDIR" + (31 - n),
+                 .map(n -> new BitsInfo("GPIO_PINDIR" + (31 - n),
+                                        31 - n, 31 - n,
                                         "0x1 for pin direction out or%n" +
                                         "0x0 for pin direction in",
                                         BitsType.RW, 0))
                  .collect(Collectors.toList())),
     IRQ("Direct read access of all PIO IRQ.",
         IntStream.rangeClosed(0, 7).boxed()
-        .map(n -> new BitsInfo(7 - n, 7 - n, "IRQ" + (7 - n),
+        .map(n -> new BitsInfo("IRQ" + (7 - n), 7 - n, 7 - n,
                                "0x1 for HIGH or 0x0 for LOW",
                                BitsType.RO, 0))
         .collect(Collectors.toList()));

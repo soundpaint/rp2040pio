@@ -100,6 +100,14 @@ public interface RegistersDocs<T>
 
     public int getLsb() { return lsb; }
 
+    public String toShortString()
+    {
+      return
+        msb == lsb ?
+        String.format("%d", msb) :
+        String.format("%d:%d", msb, lsb);
+    }
+
     @Override
     public String toString()
     {
@@ -123,9 +131,9 @@ public interface RegistersDocs<T>
       throw new UnsupportedOperationException("unsupported empty constructor");
     }
 
-    public BitsInfo(final int msb,
+    public BitsInfo(final String name,
+                    final int msb,
                     final int lsb,
-                    final String name,
                     final String description,
                     final BitsType type,
                     final Integer resetValue)
@@ -151,10 +159,11 @@ public interface RegistersDocs<T>
         final long maxResetValue = ((long)0x1 << (msb - lsb + 1)) - 1;
         final long resetValueAsLong = 0x00000000FFFFFFFFL & (long)resetValue;
         if (resetValueAsLong > maxResetValue) {
-          throw new IllegalArgumentException("resetValueAsLong > " +
-                                             "maxResetValue: " +
-                                             resetValueAsLong + " > " +
-                                             maxResetValue);
+          final String message =
+            String.format("%s [%d:%d]: " +
+                          "resetValueAsLong > maxResetValue: %d > %d",
+                          name, msb, lsb, resetValueAsLong, maxResetValue);
+          throw new IllegalArgumentException(message);
         }
       }
       this.name = name;
@@ -183,7 +192,7 @@ public interface RegistersDocs<T>
       return renderName(name != null ? name : defaultName);
     }
 
-    private String renderBitRange()
+    private String renderBitsRange()
     {
       return bitsRange.toString();
     }
@@ -210,7 +219,7 @@ public interface RegistersDocs<T>
     {
       return String.format("%s %s%s, %s %s",
                            renderName(name, defaultName),
-                           renderBitRange(),
+                           renderBitsRange(),
                            renderDescription(),
                            renderType(),
                            renderResetValue());
