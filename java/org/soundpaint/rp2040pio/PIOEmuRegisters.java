@@ -428,7 +428,6 @@ public abstract class PIOEmuRegisters extends RegisterSet
                       PIO0_EMU_BASE, PIO1_EMU_BASE);
     }
 
-    private final String info;
     private final RegisterDetails registerDetails;
 
     private Regs()
@@ -438,35 +437,28 @@ public abstract class PIOEmuRegisters extends RegisterSet
 
     private Regs(final Regs ref)
     {
-      this(ref.getInfo(), ref.getRegisterDetails());
+      this(ref.getRegisterDetails());
     }
 
     private Regs(final String info, final BitsInfo[] bitsInfos)
     {
-      this(info,
-           bitsInfos == null ?
-           (RegisterDetails)null :
-           new RegisterDetails(info, bitsInfos));
+      this(RegistersDocs.createRegisterDetails(info, bitsInfos));
     }
 
     private Regs(final String info, final List<BitsInfo> bitsInfos)
     {
-      this(info,
-           bitsInfos == null ?
-           (RegisterDetails)null :
-           new RegisterDetails(info, bitsInfos));
+      this(RegistersDocs.createRegisterDetails(info, bitsInfos));
     }
 
-    private Regs(final String info, final RegisterDetails registerDetails)
+    private Regs(final RegisterDetails registerDetails)
     {
-      this.info = info;
       this.registerDetails = registerDetails;
     }
 
     @Override
     public String getInfo()
     {
-      return info;
+      return registerDetails.getInfo();
     }
 
     @Override

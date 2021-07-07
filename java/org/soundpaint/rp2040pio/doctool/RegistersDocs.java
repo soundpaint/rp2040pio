@@ -266,6 +266,24 @@ public interface RegistersDocs<T>
 
   String getInfo();
   RegisterDetails getRegisterDetails();
+
+  static RegisterDetails createRegisterDetails(final String info,
+                                               final BitsInfo[] bitsInfos)
+  {
+    return
+      bitsInfos == null ?
+      (RegisterDetails)null :
+      new RegisterDetails(info, bitsInfos);
+  }
+
+  static RegisterDetails createRegisterDetails(final String info,
+                                               final List<BitsInfo> bitsInfos)
+  {
+    return
+      bitsInfos == null ?
+      (RegisterDetails)null :
+      new RegisterDetails(info, bitsInfos);
+  }
 }
 
 /*

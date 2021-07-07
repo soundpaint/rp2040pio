@@ -110,7 +110,6 @@ public class ValueSourcePanel extends JPanel
                      PIOEmuRegisters.Regs.getRegisterSetDescription(),
                      PIOEmuRegisters.Regs.values(),
                      Constants.PIO1_EMU_BASE),
-    /* TODO:
     GPIO_IO_BANK0_REGS("GPIO IO Bank0 Registers", "",
                        GPIOIOBank0Registers.Regs.getRegisterSetLabel(),
                        GPIOIOBank0Registers.Regs.getRegisterSetDescription(),
@@ -121,7 +120,6 @@ public class ValueSourcePanel extends JPanel
                          GPIOPadsBank0Registers.Regs.getRegisterSetDescription(),
                          GPIOPadsBank0Registers.Regs.values(),
                          Constants.PADS_BANK0_BASE),
-    */
     PICO_ADD_ON_REGS("Global Add-on Registers", "",
                      PicoEmuRegisters.Regs.getRegisterSetLabel(),
                      PicoEmuRegisters.Regs.getRegisterSetDescription(),
@@ -159,8 +157,10 @@ public class ValueSourcePanel extends JPanel
   private final Consumer<String> suggestedLabelSetter;
   private final JLabel lbRegistersSet;
   private final JComboBox<RegistersSet> cbRegistersSet;
+  private final JLabel lbRegistersSetInfo;
   private final JLabel lbRegister;
   private final JComboBox<RegistersDocs<? extends Enum<?>>> cbRegister;
+  private final JLabel lbRegisterInfo;
   private final JLabel lbRegisterBitsInfos;
   private final JLabel lbRegisterBits;
   private final DefaultTableModel bitsInfos;
@@ -190,6 +190,7 @@ public class ValueSourcePanel extends JPanel
       addListSelectionListener((selection) -> selectionChanged(selection));
     tbBitsInfosScroll = new JScrollPane(tbBitsInfos);
     lbRegistersSet = new JLabel("Register Set");
+    lbRegistersSetInfo = new JLabel();
     lbRegistersSet.setPreferredSize(PREFERRED_LABEL_SIZE);
     lbRegisterBitsInfos = new JLabel("Bits Range");
     lbRegisterBitsInfos.setPreferredSize(PREFERRED_LABEL_SIZE);
@@ -199,6 +200,7 @@ public class ValueSourcePanel extends JPanel
     add(Box.createVerticalStrut(5));
     lbRegister = new JLabel("Register");
     lbRegister.setPreferredSize(PREFERRED_LABEL_SIZE);
+    lbRegisterInfo = new JLabel();
     cbRegister = addRegisterSelection();
     add(Box.createVerticalStrut(5));
     addBitsSelection();
@@ -248,6 +250,16 @@ public class ValueSourcePanel extends JPanel
     registersSetSelection.add(cbRegistersSet);
     registersSetSelection.add(Box.createHorizontalGlue());
     add(registersSetSelection);
+    final JPanel registersSetInfo = new JPanel();
+    registersSetInfo.
+      setLayout(new BoxLayout(registersSetInfo, BoxLayout.LINE_AXIS));
+    final JLabel lbFiller = new JLabel();
+    lbFiller.setPreferredSize(PREFERRED_LABEL_SIZE);
+    registersSetInfo.add(lbFiller);
+    registersSetInfo.add(Box.createHorizontalStrut(5));
+    registersSetInfo.add(lbRegistersSetInfo);
+    registersSetInfo.add(Box.createHorizontalGlue());
+    add(registersSetInfo);
     return cbRegistersSet;
   }
 
@@ -271,6 +283,15 @@ public class ValueSourcePanel extends JPanel
     registerSelection.add(cbRegister);
     registerSelection.add(Box.createHorizontalGlue());
     add(registerSelection);
+    final JPanel registerInfo = new JPanel();
+    registerInfo.setLayout(new BoxLayout(registerInfo, BoxLayout.LINE_AXIS));
+    final JLabel lbFiller = new JLabel();
+    lbFiller.setPreferredSize(PREFERRED_LABEL_SIZE);
+    registerInfo.add(lbFiller);
+    registerInfo.add(Box.createHorizontalStrut(5));
+    registerInfo.add(lbRegisterInfo);
+    registerInfo.add(Box.createHorizontalGlue());
+    add(registerInfo);
     return cbRegister;
   }
 
@@ -292,6 +313,9 @@ public class ValueSourcePanel extends JPanel
 
   private void registersSetSelected(final RegistersSet registersSet)
   {
+    lbRegistersSetInfo.setText(String.format("%s @ 0x%08x",
+                                             registersSet.label,
+                                             registersSet.baseAddress));
     cbRegister.removeAllItems();
     for (RegistersDocs<? extends Enum<?>> register : registersSet.regs) {
       cbRegister.addItem(register);
@@ -412,6 +436,7 @@ public class ValueSourcePanel extends JPanel
 
   private void registerSelected(final RegistersDocs<? extends Enum<?>> register)
   {
+    lbRegisterInfo.setText(String.format("%s", register.getInfo()));
     bitsInfos.setRowCount(0);
     final RegisterDetails registerDetails = register.getRegisterDetails();
     for (final BitsInfo bitsInfo : registerDetails.getBitsInfos()) {
@@ -473,8 +498,10 @@ public class ValueSourcePanel extends JPanel
     super.setEnabled(enabled);
     lbRegistersSet.setEnabled(enabled);
     cbRegistersSet.setEnabled(enabled);
+    lbRegistersSetInfo.setEnabled(enabled);
     lbRegister.setEnabled(enabled);
     cbRegister.setEnabled(enabled);
+    lbRegisterInfo.setEnabled(enabled);
     lbRegisterBitsInfos.setEnabled(enabled);
     lbRegisterBits.setEnabled(enabled);
     tbBitsInfos.setEnabled(enabled);
