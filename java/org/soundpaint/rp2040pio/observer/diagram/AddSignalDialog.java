@@ -105,6 +105,7 @@ public class AddSignalDialog extends JDialog
   public void open(final int addIndex)
   {
     this.addIndex = addIndex;
+    signalFactoryPanel.reset();
     setTitle(String.format("Insert New Signal Before Signal #%d", addIndex));
     pack();
     setVisible(true);

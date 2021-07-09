@@ -37,7 +37,8 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs;
  */
 public abstract class PIOEmuRegisters extends RegisterSet
 {
-  public enum Regs implements RegistersDocs<Regs> {
+  public enum Regs implements RegistersDocs<Regs>
+  {
     SM0_REGX("Direct read / write access to the SM's%n" +
              "scratch register X.",
              new BitsInfo[] {

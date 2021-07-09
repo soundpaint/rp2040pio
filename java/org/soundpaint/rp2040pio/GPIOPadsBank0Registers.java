@@ -42,7 +42,8 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs;
  */
 public abstract class GPIOPadsBank0Registers extends RegisterSet
 {
-  public enum Regs implements RegistersDocs<Regs> {
+  public enum Regs implements RegistersDocs<Regs>
+  {
     VOLTAGE_SELECT("Voltage select.",
                    new BitsInfo[] {
                      new BitsInfo(null, 31, 1, null, BitsType.RESERVED, null),

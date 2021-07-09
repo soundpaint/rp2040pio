@@ -46,7 +46,8 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs;
  */
 public abstract class GPIOIOBank0Registers extends RegisterSet
 {
-  public enum Regs implements RegistersDocs<Regs> {
+  public enum Regs implements RegistersDocs<Regs>
+  {
     GPIO0_STATUS("GPIO status.",
                  new BitsInfo[] {
                    new BitsInfo(null, 31, 27, null, BitsType.RESERVED, null),

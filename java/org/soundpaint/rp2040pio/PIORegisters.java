@@ -37,7 +37,8 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs;
  */
 public abstract class PIORegisters extends RegisterSet
 {
-  public enum Regs implements RegistersDocs<Regs> {
+  public enum Regs implements RegistersDocs<Regs>
+  {
     CTRL("PIO control register.",
          new BitsInfo[] {
            new BitsInfo(null, 31, 12, null, BitsType.RESERVED, null),

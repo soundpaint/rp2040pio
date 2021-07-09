@@ -76,6 +76,11 @@ public class SignalFactoryPanel extends JPanel
     }
     return signalTypePanel.createSignal(label);
   }
+
+  public void reset()
+  {
+    signalLabelPanel.reset();
+  }
 }
 
 /*

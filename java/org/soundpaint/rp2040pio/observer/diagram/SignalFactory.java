@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
@@ -56,6 +57,31 @@ public class SignalFactory
                                    PIOEmuRegisters.Regs.SM0_CLK_ENABLE);
     final int clkEnable = sdk.readAddress(clkEnableAddress) & 0x1;
     return clkEnable != 0x0;
+  }
+
+  public static ValuedSignal<PIOSDK.InstructionInfo>
+    createInstructionSignal(final SDK sdk,
+                            final int pioNum,
+                            final int smNum,
+                            final String label,
+                            final int address,
+                            final boolean showAddress,
+                            final Supplier<Boolean> displayFilter)
+    throws IOException
+  {
+    final PIOSDK pioSdk;
+    switch (pioNum) {
+    case 0:
+      pioSdk = sdk.getPIO0SDK();
+      break;
+    case 1:
+      pioSdk = sdk.getPIO1SDK();
+      break;
+    default:
+      throw new IllegalArgumentException("invalid PIO number: " + pioNum);
+    }
+    return createInstructionSignal(sdk, pioSdk, address, smNum, label,
+                                   showAddress, displayFilter);
   }
 
   public static ValuedSignal<PIOSDK.InstructionInfo>
@@ -156,6 +182,18 @@ public class SignalFactory
                        final Supplier<Boolean> displayFilter)
     throws IOException
   {
+    return createFromRegister(sdk, label, address, msb, lsb,
+                              (value) -> String.format("%x", value),
+                              displayFilter);
+  }
+
+  public static ValuedSignal<Integer>
+    createFromRegister(final SDK sdk, final String label,
+                       final int address, final int msb, final int lsb,
+                       final Function<Integer, String> formatter,
+                       final Supplier<Boolean> displayFilter)
+    throws IOException
+  {
     if (sdk == null) {
       throw new NullPointerException("sdk");
     }
@@ -173,8 +211,7 @@ public class SignalFactory
     };
     final ValuedSignal<Integer> intSignal =
       new ValuedSignal<Integer>(signalLabel, supplier);
-    intSignal.setRenderer((instructionInfo) ->
-                          String.format("%x", instructionInfo));
+    intSignal.setRenderer((intValue) -> formatter.apply(intValue));
     return intSignal;
   }
 }

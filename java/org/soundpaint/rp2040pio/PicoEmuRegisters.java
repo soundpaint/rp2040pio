@@ -37,7 +37,8 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs;
  */
 public abstract class PicoEmuRegisters extends RegisterSet
 {
-  public enum Regs implements RegistersDocs<Regs> {
+  public enum Regs implements RegistersDocs<Regs>
+  {
     PWR_UP("Writing the value 0xa55a5aa5 to this address will fully reset%n" +
            "the emulator.  Writing any other value will have no effect.",
              new BitsInfo[] {

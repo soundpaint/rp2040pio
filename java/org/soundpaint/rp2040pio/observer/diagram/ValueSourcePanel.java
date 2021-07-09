@@ -89,7 +89,8 @@ public class ValueSourcePanel extends JPanel
     }
   }
 
-  private enum RegistersSet {
+  private enum RegistersSet
+  {
     PIO0_REGS("PIO0 Registers", "PIO0_",
               PIORegisters.Regs.getRegisterSetLabel(),
               PIORegisters.Regs.getRegisterSetDescription(),
@@ -458,38 +459,30 @@ public class ValueSourcePanel extends JPanel
     updateSuggestedLabel();
   }
 
-  public Signal createSignal(final String label)
+  public int getSelectedRegisterAddress()
   {
     final int baseAddress =
       ((RegistersSet)cbRegistersSet.getSelectedItem()).baseAddress;
-    final int address = baseAddress + 0x4 * cbRegister.getSelectedIndex();
+    return baseAddress + 0x4 * cbRegister.getSelectedIndex();
+  }
+
+  public int getSelectedRegisterMsb()
+  {
     final int minSelectionRow = tbBitsInfos.getSelectedRow();
+    if (minSelectionRow < 0) return -1;
+    final BitsRange upperMostBitsRange =
+      (BitsRange)bitsInfos.getValueAt(minSelectionRow, COLUMN_BITS_RANGE_IDX);
+    return upperMostBitsRange.getMsb();
+  }
+
+  public int getSelectedRegisterLsb()
+  {
     final int maxSelectionRow =
-      minSelectionRow + tbBitsInfos.getSelectedRowCount() - 1;
-    if ((minSelectionRow < 0) || (maxSelectionRow < 0)) {
-      JOptionPane.showMessageDialog(this,
-                                    "Please select a contiguous range of bits.",
-                                    "No Bits Range Selected",
-                                    JOptionPane.ERROR_MESSAGE);
-      return null;
-    }
-    final int msb =
-      ((BitsRange)bitsInfos.getValueAt(minSelectionRow, COLUMN_BITS_RANGE_IDX)).
-      getMsb();
-    final int lsb =
-      ((BitsRange)bitsInfos.getValueAt(maxSelectionRow, COLUMN_BITS_RANGE_IDX)).
-      getLsb();
-    final Supplier<Boolean> displayFilter = null;
-    try {
-      return
-        SignalFactory.createFromRegister(sdk, label, address, msb, lsb,
-                                         displayFilter);
-    } catch (final IOException e) {
-      JOptionPane.showMessageDialog(this, e.getMessage(),
-                                    "I/O Exception",
-                                    JOptionPane.ERROR_MESSAGE);
-      return null;
-    }
+      tbBitsInfos.getSelectedRow() + tbBitsInfos.getSelectedRowCount() - 1;
+    if (maxSelectionRow < 0) return -1;
+    final BitsRange lowerMostBitsRange =
+      (BitsRange)bitsInfos.getValueAt(maxSelectionRow, COLUMN_BITS_RANGE_IDX);
+    return lowerMostBitsRange.getLsb();
   }
 
   @Override

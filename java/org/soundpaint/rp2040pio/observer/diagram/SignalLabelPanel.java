@@ -83,6 +83,11 @@ public class SignalLabelPanel extends JPanel
     }
     tfSuggestedLabel.setText(label);
   }
+
+  public void reset()
+  {
+    tfLabel.setText(null);
+  }
 }
 
 /*
