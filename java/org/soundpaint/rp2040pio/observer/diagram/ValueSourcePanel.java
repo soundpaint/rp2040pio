@@ -25,7 +25,6 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ItemEvent;
@@ -64,9 +63,9 @@ import org.soundpaint.rp2040pio.doctool.RegistersDocs.RegisterDetails;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class ValueSourcePanel extends JPanel
+  implements org.soundpaint.rp2040pio.observer.diagram.Constants
 {
   private static final long serialVersionUID = -726756788602613552L;
-  private static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
   private static final String COLUMN_BITS_RANGE = "Bits";
   private static final int COLUMN_BITS_RANGE_IDX = 0;
   private static final String COLUMN_NAME = "Name";
@@ -177,10 +176,10 @@ public class ValueSourcePanel extends JPanel
                           final Consumer<String> suggestedLabelSetter)
   {
     Objects.requireNonNull(diagram);
-    this.diagram = diagram;
     Objects.requireNonNull(sdk);
-    this.sdk = sdk;
     Objects.requireNonNull(suggestedLabelSetter);
+    this.diagram = diagram;
+    this.sdk = sdk;
     this.suggestedLabelSetter = suggestedLabelSetter;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("Value Source"));

@@ -61,7 +61,8 @@ public class SignalsPropertiesPanel extends Box
     signalVisibilities = new ArrayList<JCheckBox>();
     addSignalDialog =
       new AddSignalDialog(diagram, sdk,
-                          (addIndex, signal) -> addSignal(addIndex, signal));
+                          (addIndex, signal) -> addSignal(addIndex, signal),
+                          (label) -> checkLabel(label));
   }
 
   public void applyChanges()
@@ -103,6 +104,22 @@ public class SignalsPropertiesPanel extends Box
     signals.remove(delIndex);
     rebuildSignals();
     rebuildGUI();
+  }
+
+  private String checkLabel(final String label)
+  {
+    if (label == null) {
+      return "Signal label must not be null.";
+    }
+    if (label.isEmpty()) {
+      return "Signal label must not be empty.";
+    }
+    for (final Signal signal : signals) {
+      if (label.equals(signal.getLabel())) {
+        return "Signal label is already in use.";
+      }
+    }
+    return null;
   }
 
   private void rebuildGUI()

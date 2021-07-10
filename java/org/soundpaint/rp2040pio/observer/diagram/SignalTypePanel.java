@@ -62,8 +62,8 @@ public class SignalTypePanel extends JPanel
                          final Consumer<String> suggestedLabelSetter)
   {
     Objects.requireNonNull(diagram);
-    this.diagram = diagram;
     Objects.requireNonNull(suggestedLabelSetter);
+    this.diagram = diagram;
     this.suggestedLabelSetter = suggestedLabelSetter;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     setBorder(BorderFactory.createTitledBorder("Signal Type"));

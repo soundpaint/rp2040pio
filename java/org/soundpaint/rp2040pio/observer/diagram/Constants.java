@@ -25,6 +25,7 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.BasicStroke;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
@@ -70,6 +71,8 @@ public interface Constants
 
   static final TexturePaint FILL_PAINT =
     new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
+
+  static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
 }
 
 /*

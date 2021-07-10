@@ -24,8 +24,8 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
-import java.awt.Dimension;
 import java.util.Objects;
+import java.util.function.Function;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -37,12 +37,12 @@ import javax.swing.JRadioButton;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class SignalFactoryPanel extends JPanel
+public class SignalFactoryPanel extends JPanel implements Constants
 {
   private static final long serialVersionUID = 4492836175968992560L;
-  private static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
 
   private final Diagram diagram;
+  private final Function<String, String> labelChecker;
   private final SignalLabelPanel signalLabelPanel;
   private final SignalTypePanel signalTypePanel;
 
@@ -51,10 +51,13 @@ public class SignalFactoryPanel extends JPanel
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public SignalFactoryPanel(final Diagram diagram, final SDK sdk)
+  public SignalFactoryPanel(final Diagram diagram, final SDK sdk,
+                            final Function<String, String> labelChecker)
   {
     Objects.requireNonNull(diagram);
+    Objects.requireNonNull(labelChecker);
     this.diagram = diagram;
+    this.labelChecker = labelChecker;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     signalLabelPanel = new SignalLabelPanel(diagram);
     add(signalLabelPanel);
@@ -68,9 +71,9 @@ public class SignalFactoryPanel extends JPanel
   public Signal createSignal()
   {
     final String label = signalLabelPanel.getText();
-    if (label.isEmpty()) {
-      JOptionPane.showMessageDialog(this, "Signal label must not be empty.",
-                                    "Invalid Signal Label",
+    final String message = labelChecker.apply(label);
+    if (message != null) {
+      JOptionPane.showMessageDialog(this, message, "Invalid Signal Label",
                                     JOptionPane.ERROR_MESSAGE);
       return null;
     }

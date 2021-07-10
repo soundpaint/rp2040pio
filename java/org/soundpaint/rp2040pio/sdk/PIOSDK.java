@@ -42,10 +42,11 @@ import org.soundpaint.rp2040pio.PIORegisters;
  */
 public class PIOSDK implements Constants
 {
+  private static final Decoder decoder = new Decoder();
+
   private final int pioNum;
   private final AddressSpace memory;
   private final GPIOSDK gpioSdk;
-  private final Decoder decoder;
 
   private PIOSDK()
   {
@@ -65,7 +66,6 @@ public class PIOSDK implements Constants
     this.pioNum = pioNum;
     this.memory = memory;
     this.gpioSdk = gpioSdk;
-    this.decoder = new Decoder();
   }
 
   /**
@@ -160,13 +160,7 @@ public class PIOSDK implements Constants
     }
   }
 
-  /**
-   * Note: This method is synchronized since we have only a single
-   * instance of a decoder, with a single instance of each
-   * instruction.  Therefore, use of this decoder and access to
-   * instances of Instruction objects must be serialized.
-   */
-  public synchronized InstructionInfo
+  public InstructionInfo
     getInstructionFromOpCode(final int smNum, final int origin,
                              final String addressLabel, final int opCode,
                              final boolean format,
@@ -185,7 +179,25 @@ public class PIOSDK implements Constants
     final boolean execCtrlSideEn =
       (memory.readAddress(smExecCtrlSideEnAddress) &
        SM0_EXECCTRL_SIDE_EN_BITS) != 0x0;
+    return getInstructionFromOpCode(pinCtrlSidesetCount, execCtrlSideEn,
+                                    origin, addressLabel, opCode,
+                                    format, isDelayCycle, delay);
+  }
 
+  /**
+   * Note: This method is synchronized since we have only a single
+   * instance of a decoder, with a single instance of each
+   * instruction.  Therefore, use of this decoder and access to
+   * instances of Instruction objects must be serialized.
+   */
+  public static synchronized InstructionInfo
+    getInstructionFromOpCode(final int pinCtrlSidesetCount,
+                             final boolean execCtrlSideEn,
+                             final int origin,
+                             final String addressLabel, final int opCode,
+                             final boolean format,
+                             final boolean isDelayCycle, final int delay)
+  {
     /*final*/ Instruction instruction;
     try {
       instruction =
@@ -267,22 +279,16 @@ public class PIOSDK implements Constants
   }
 
   /**
-   * Note: This method is synchronized since we have only a single
-   * instance of a decoder, with a single instance of each
-   * instruction.  Therefore, use of this decoder and access to
-   * instances of Instruction objects must be serialized.
-   *
    * @param smNum Index of state machine.  For decoding an
    * instruction, it is essential to know for which state machine the
    * instruction applies, since the state machine's configuration of
    * the side set / delay settings has an impact on interpretation of
    * the instruction even for disassembling.
    */
-  public synchronized InstructionInfo
-    getMemoryInstruction(final int smNum,
-                         final int address,
-                         final boolean showAddress,
-                         final boolean format)
+  public InstructionInfo getMemoryInstruction(final int smNum,
+                                              final int address,
+                                              final boolean showAddress,
+                                              final boolean format)
     throws IOException
   {
     Constants.checkSmNum(smNum);

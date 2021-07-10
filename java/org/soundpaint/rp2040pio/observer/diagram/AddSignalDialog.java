@@ -29,6 +29,7 @@ import java.awt.Dialog;
 import java.awt.event.KeyEvent;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -80,14 +81,15 @@ public class AddSignalDialog extends JDialog
   }
 
   public AddSignalDialog(final Diagram diagram, final SDK sdk,
-                         final BiConsumer<Integer, Signal> signalAdder)
+                         final BiConsumer<Integer, Signal> signalAdder,
+                         final Function<String, String> labelChecker)
   {
     super(diagram, "Add Signal", Dialog.ModalityType.DOCUMENT_MODAL);
     Objects.requireNonNull(diagram);
     this.diagram = diagram;
     this.signalAdder = signalAdder;
     getContentPane().add(signalFactoryPanel =
-                         new SignalFactoryPanel(diagram, sdk));
+                         new SignalFactoryPanel(diagram, sdk, labelChecker));
     getContentPane().add(new ActionPanel(), BorderLayout.SOUTH);
   }
 
