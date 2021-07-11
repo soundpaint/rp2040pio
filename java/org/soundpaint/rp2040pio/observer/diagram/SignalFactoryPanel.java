@@ -28,13 +28,8 @@ import java.util.Objects;
 import java.util.function.Function;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.ButtonModel;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class SignalFactoryPanel extends JPanel implements Constants

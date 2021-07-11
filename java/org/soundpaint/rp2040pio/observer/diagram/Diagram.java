@@ -128,26 +128,6 @@ public class Diagram extends GUIObserver
     scriptDialog.setVisible(true);
   }
 
-  private static Supplier<Boolean> createDelayFilter(final SDK sdk,
-                                                     final int pioNum,
-                                                     final int smNum)
-  {
-    final Supplier<Boolean> displayFilter = () -> {
-      final int smDelayCycleAddress =
-      PIOEmuRegisters.getSMAddress(pioNum, smNum,
-                                   PIOEmuRegisters.Regs.SM0_DELAY_CYCLE);
-      try {
-        final boolean isDelayCycle =
-          sdk.readAddress(smDelayCycleAddress) != 0x0;
-        return !isDelayCycle;
-      } catch (final IOException e) {
-        // TODO: Maybe log warning that we failed to evaluate delay?
-        return false;
-      }
-    };
-    return displayFilter;
-  }
-
   private void configureModel() throws IOException
   {
     model.addSignal(SignalFactory.createRuler("cycle#")).setVisible(true);
@@ -164,11 +144,12 @@ public class Diagram extends GUIObserver
       model.addSignal(label + " Level", address, 8);
     }
     final SDK sdk = getSDK();
+    final Supplier<Boolean> delayFilter =
+      ValueFilterPanel.createDelayFilter(sdk, 0, 0);
     final int addrSm0Pc =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
     model.addSignal("SM0_PC", addrSm0Pc);
-    model.addSignal("SM0_PC (hidden delay)",
-                    addrSm0Pc, createDelayFilter(sdk, 0, 0));
+    model.addSignal("SM0_PC (hidden delay)", addrSm0Pc, delayFilter);
     final int instrAddr =
       PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     final Signal instr1 =
@@ -179,7 +160,7 @@ public class Diagram extends GUIObserver
     final Signal instr2 =
       SignalFactory.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR (hidden delay)",
-                                            true, createDelayFilter(sdk, 0, 0));
+                                            true, delayFilter);
     model.addSignal(instr2).setVisible(true);
     final int addrSm0RegX =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGX);

@@ -24,6 +24,7 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
+import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -50,8 +52,10 @@ public class SignalTypePanel extends JPanel
   private final JRadioButton rbCycleRuler;
   private final JRadioButton rbClock;
   private final JRadioButton rbValued;
+  private final JTabbedPane valueTabs;
   private final ValueSourcePanel valueSourcePanel;
-  private final ValueRepresentationPanel valueRepresentationPanel;
+  private final ValueFormatPanel valueFormatPanel;
+  private final ValueFilterPanel valueFilterPanel;
 
   private SignalTypePanel()
   {
@@ -71,13 +75,14 @@ public class SignalTypePanel extends JPanel
     rbCycleRuler = new JRadioButton("Cycle Ruler");
     rbClock = new JRadioButton("Clock");
     rbValued = new JRadioButton("Valued Signal", true);
+    valueTabs = new JTabbedPane();
     valueSourcePanel = new ValueSourcePanel(diagram, sdk, suggestedLabelSetter);
-    valueRepresentationPanel = new ValueRepresentationPanel(diagram, sdk);
+    valueFormatPanel = new ValueFormatPanel(diagram, sdk);
+    valueFilterPanel = new ValueFilterPanel(diagram, sdk);
     createAndAddCycleRulerRadio();
     createAndAddClockRadio();
     createAndAddValuedRadio();
-    createAndAddValueSourcePanel();
-    createAndAddValueRepresentationPanel();
+    createAndAddValuePanels();
     selectValued();
   }
 
@@ -115,45 +120,68 @@ public class SignalTypePanel extends JPanel
     add(row);
   }
 
-  private void createAndAddValueSourcePanel()
+  private void createAndAddValuePanels()
   {
     final JPanel row = new JPanel();
     row.setLayout(new BoxLayout(row, BoxLayout.LINE_AXIS));
     row.add(Box.createHorizontalStrut(20));
-    row.add(valueSourcePanel);
+    createAndAddValueSourcePanel(valueTabs);
+    createAndAddValueFormatPanel(valueTabs);
+    createAndAddValueFilterPanel(valueTabs);
+    row.add(valueTabs);
     SwingUtils.setPreferredHeightAsMaximum(row);
     add(row);
   }
 
-  private void createAndAddValueRepresentationPanel()
+  private void createAndAddValueSourcePanel(final JTabbedPane valueTabs)
   {
-    final JPanel row = new JPanel();
-    row.setLayout(new BoxLayout(row, BoxLayout.LINE_AXIS));
-    row.add(Box.createHorizontalStrut(20));
-    row.add(valueRepresentationPanel);
-    SwingUtils.setPreferredHeightAsMaximum(row);
-    add(row);
+    valueTabs.addTab("Value Source", null, valueSourcePanel,
+                     "specify how to get values of this signal");
+    final int tabIndex = valueTabs.indexOfComponent(valueSourcePanel);
+    valueTabs.setMnemonicAt(tabIndex, KeyEvent.VK_S);
+  }
+
+  private void createAndAddValueFormatPanel(final JTabbedPane valueTabs)
+  {
+    valueTabs.addTab("Value Rendering", null, valueFormatPanel,
+                     "specify how to render values of this signal");
+    final int tabIndex = valueTabs.indexOfComponent(valueFormatPanel);
+    valueTabs.setMnemonicAt(tabIndex, KeyEvent.VK_R);
+  }
+
+  private void createAndAddValueFilterPanel(final JTabbedPane valueTabs)
+  {
+    valueTabs.addTab("Value Filter", null, valueFilterPanel,
+                     "specify which filters to apply to decide if signal " +
+                     "value is defined");
+    final int tabIndex = valueTabs.indexOfComponent(valueFilterPanel);
+    valueTabs.setMnemonicAt(tabIndex, KeyEvent.VK_F);
   }
 
   private void selectCycleRuler()
   {
-    valueSourcePanel.setEnabled(false);
-    valueRepresentationPanel.setEnabled(false);
+    setValueEnabled(false);
     suggestedLabelSetter.accept("cycle#");
   }
 
   private void selectClock()
   {
-    valueSourcePanel.setEnabled(false);
-    valueRepresentationPanel.setEnabled(false);
+    setValueEnabled(false);
     suggestedLabelSetter.accept("clock");
   }
 
   private void selectValued()
   {
-    valueSourcePanel.setEnabled(true);
-    valueRepresentationPanel.setEnabled(true);
+    setValueEnabled(true);
     valueSourcePanel.updateSuggestedLabel();
+  }
+
+  private void setValueEnabled(final boolean enabled)
+  {
+    valueSourcePanel.setEnabled(enabled);
+    valueFormatPanel.setEnabled(enabled);
+    valueFilterPanel.setEnabled(enabled);
+    valueTabs.setEnabled(enabled);
   }
 
   public Signal createSignal(final String label)
@@ -169,10 +197,12 @@ public class SignalTypePanel extends JPanel
       final int address = valueSourcePanel.getSelectedRegisterAddress();
       final int msb = valueSourcePanel.getSelectedRegisterMsb();
       final int lsb = valueSourcePanel.getSelectedRegisterLsb();
-      final Supplier<Boolean> displayFilter = null; // TODO
+      final int pioNum = valueSourcePanel.getSelectedRegisterSetPio();
+      final int smNum = valueSourcePanel.getSelectedRegisterSm();
+      final Supplier<Boolean> displayFilter =
+        valueFilterPanel.createFilter(pioNum, smNum);
       return
-        valueRepresentationPanel.createSignal(label, address, msb, lsb,
-                                              displayFilter);
+        valueFormatPanel.createSignal(label, address, msb, lsb, displayFilter);
     }
     return null;
   }

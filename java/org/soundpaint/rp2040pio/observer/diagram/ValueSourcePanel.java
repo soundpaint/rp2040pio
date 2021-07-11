@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
@@ -94,43 +93,44 @@ public class ValueSourcePanel extends JPanel
               PIORegisters.Regs.getRegisterSetLabel(),
               PIORegisters.Regs.getRegisterSetDescription(),
               PIORegisters.Regs.values(),
-              Constants.PIO0_BASE),
+              Constants.PIO0_BASE, 0),
     PIO1_REGS("PIO1 Registers", "PIO1_",
               PIORegisters.Regs.getRegisterSetLabel(),
               PIORegisters.Regs.getRegisterSetDescription(),
               PIORegisters.Regs.values(),
-              Constants.PIO1_BASE),
+              Constants.PIO1_BASE, 1),
     PIO0_ADD_ON_REGS("PIO0 Add-on Registers", "PIO0_",
                      PIOEmuRegisters.Regs.getRegisterSetLabel(),
                      PIOEmuRegisters.Regs.getRegisterSetDescription(),
                      PIOEmuRegisters.Regs.values(),
-                     Constants.PIO0_EMU_BASE),
+                     Constants.PIO0_EMU_BASE, 0),
     PIO1_ADD_ON_REGS("PIO1 Add-on Registers", "PIO1_",
                      PIOEmuRegisters.Regs.getRegisterSetLabel(),
                      PIOEmuRegisters.Regs.getRegisterSetDescription(),
                      PIOEmuRegisters.Regs.values(),
-                     Constants.PIO1_EMU_BASE),
+                     Constants.PIO1_EMU_BASE, 1),
     GPIO_IO_BANK0_REGS("GPIO IO Bank0 Registers", "",
                        GPIOIOBank0Registers.Regs.getRegisterSetLabel(),
                        GPIOIOBank0Registers.Regs.getRegisterSetDescription(),
                        GPIOIOBank0Registers.Regs.values(),
-                       Constants.IO_BANK0_BASE),
+                       Constants.IO_BANK0_BASE, -1),
     GPIO_PADS_BANK0_REGS("GPIO Pads Bank0 Registers", "",
                          GPIOPadsBank0Registers.Regs.getRegisterSetLabel(),
                          GPIOPadsBank0Registers.Regs.getRegisterSetDescription(),
                          GPIOPadsBank0Registers.Regs.values(),
-                         Constants.PADS_BANK0_BASE),
+                         Constants.PADS_BANK0_BASE, -1),
     PICO_ADD_ON_REGS("Global Add-on Registers", "",
                      PicoEmuRegisters.Regs.getRegisterSetLabel(),
                      PicoEmuRegisters.Regs.getRegisterSetDescription(),
                      PicoEmuRegisters.Regs.values(),
-                     Constants.EMULATOR_BASE);
+                     Constants.EMULATOR_BASE, -1);
 
     private final String id;
     private final String label;
     private final String description;
     private final RegistersDocs<? extends Enum<?>>[] regs;
     private final int baseAddress;
+    private final int pioNum;
     private final String suggestedLabelPrefix;
 
     private RegistersSet(final String id,
@@ -138,13 +138,15 @@ public class ValueSourcePanel extends JPanel
                          final String label,
                          final String description,
                          final RegistersDocs<? extends Enum<?>>[] regs,
-                         final int baseAddress)
+                         final int baseAddress,
+                         final int pioNum)
     {
       this.id = id;
       this.label = label;
       this.description = description;
       this.regs = regs;
       this.baseAddress = baseAddress;
+      this.pioNum = pioNum;
       this.suggestedLabelPrefix = suggestedLabelPrefix;
     }
 
@@ -182,10 +184,10 @@ public class ValueSourcePanel extends JPanel
     this.sdk = sdk;
     this.suggestedLabelSetter = suggestedLabelSetter;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    setBorder(BorderFactory.createTitledBorder("Value Source"));
     bitsInfos = createTableModel();
     tbBitsInfos = new JTable(bitsInfos);
     setupTableColumnRenderers();
+    tbBitsInfos.setColumnSelectionAllowed(false);
     tbBitsInfos.getSelectionModel().
       addListSelectionListener((selection) -> selectionChanged(selection));
     tbBitsInfosScroll = new JScrollPane(tbBitsInfos);
@@ -458,6 +460,11 @@ public class ValueSourcePanel extends JPanel
     updateSuggestedLabel();
   }
 
+  public int getSelectedRegisterSetPio()
+  {
+    return ((RegistersSet)cbRegistersSet.getSelectedItem()).pioNum;
+  }
+
   public int getSelectedRegisterAddress()
   {
     final int baseAddress =
@@ -484,6 +491,12 @@ public class ValueSourcePanel extends JPanel
     return lowerMostBitsRange.getLsb();
   }
 
+  public int getSelectedRegisterSm()
+  {
+    // TODO
+    return 0;
+  }
+
   @Override
   public void setEnabled(final boolean enabled)
   {
@@ -497,6 +510,7 @@ public class ValueSourcePanel extends JPanel
     lbRegisterBitsInfos.setEnabled(enabled);
     lbRegisterBits.setEnabled(enabled);
     tbBitsInfos.setEnabled(enabled);
+    tbBitsInfos.setRowSelectionAllowed(enabled);
     tbBitsInfosScroll.getHorizontalScrollBar().setEnabled(enabled);
     tbBitsInfosScroll.getVerticalScrollBar().setEnabled(enabled);
   }
