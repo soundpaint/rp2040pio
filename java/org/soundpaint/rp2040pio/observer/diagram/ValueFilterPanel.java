@@ -25,14 +25,18 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javax.swing.AbstractButton;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.soundpaint.rp2040pio.Constants;
@@ -46,7 +50,9 @@ public class ValueFilterPanel extends JPanel
 
   private final Diagram diagram;
   private final SDK sdk;
-  private final JCheckBox cbDelayFilter;
+  private final JCheckBox cbNoDelayFilter;
+  private final JCheckBox cbClkEnabledFilter;
+  private final JPanel smSelection;
   private final JCheckBox cbUseSourcePio;
   private final ButtonGroup pioButtons;
   private final JCheckBox cbUseSourceSm;
@@ -66,10 +72,17 @@ public class ValueFilterPanel extends JPanel
     this.diagram = diagram;
     this.sdk = sdk;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    cbDelayFilter = new JCheckBox("Accept only non-delay cycles of the " +
-                                  "following state machine:");
-    cbDelayFilter.addChangeListener((event) -> updateEnableForDelayFilter());
-    addDelayFilter();
+    cbNoDelayFilter = new JCheckBox("Accept only non-delay cycles of the " +
+                                    "below state machine.");
+    cbNoDelayFilter.
+      addChangeListener((event) -> updateEnableForSmSelection());
+    addNoDelayFilter();
+    cbClkEnabledFilter = new JCheckBox("Accept only cycles with CLK signal " +
+                                       "enabled for the below state machine.");
+    cbClkEnabledFilter.
+      addChangeListener((event) -> updateEnableForSmSelection());
+    addClkEnabledFilter();
+    smSelection = addSmSelectionPanel();
     cbUseSourcePio = new JCheckBox("Use PIO of source value, if available");
     pioButtons = new ButtonGroup();
     addPioSelection();
@@ -78,14 +91,35 @@ public class ValueFilterPanel extends JPanel
     addSmSelection();
   }
 
-  private void addDelayFilter()
+  private void addNoDelayFilter()
   {
     final JPanel line = new JPanel();
     line.setLayout(new BoxLayout(line, BoxLayout.LINE_AXIS));
-    line.add(cbDelayFilter);
+    line.add(cbNoDelayFilter);
     line.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(line);
     add(line);
+  }
+
+  private void addClkEnabledFilter()
+  {
+    final JPanel line = new JPanel();
+    line.setLayout(new BoxLayout(line, BoxLayout.LINE_AXIS));
+    line.add(cbClkEnabledFilter);
+    line.add(Box.createHorizontalGlue());
+    SwingUtils.setPreferredHeightAsMaximum(line);
+    add(line);
+  }
+
+  private JPanel addSmSelectionPanel()
+  {
+    final JPanel smSelection = new JPanel();
+    smSelection.setBorder(BorderFactory.createTitledBorder("State Machine"));
+    smSelection.setLayout(new BoxLayout(smSelection, BoxLayout.PAGE_AXIS));
+    smSelection.add(Box.createHorizontalGlue());
+    //SwingUtils.setPreferredHeightAsMaximum(smSelection);
+    add(smSelection);
+    return smSelection;
   }
 
   private void addPioSelection()
@@ -102,13 +136,13 @@ public class ValueFilterPanel extends JPanel
     }
     selectedPio = 0;
     SwingUtils.setPreferredHeightAsMaximum(pioLine);
-    add(pioLine);
+    smSelection.add(pioLine);
     final JPanel sourcePioLine = new JPanel();
     sourcePioLine.setLayout(new BoxLayout(sourcePioLine, BoxLayout.LINE_AXIS));
     sourcePioLine.add(Box.createHorizontalStrut(20));
     sourcePioLine.add(cbUseSourcePio);
     SwingUtils.setPreferredHeightAsMaximum(sourcePioLine);
-    add(sourcePioLine);
+    smSelection.add(sourcePioLine);
   }
 
   private void addSmSelection()
@@ -125,18 +159,21 @@ public class ValueFilterPanel extends JPanel
     }
     selectedPio = 0;
     SwingUtils.setPreferredHeightAsMaximum(smLine);
-    add(smLine);
+    smSelection.add(smLine);
     final JPanel sourceSmLine = new JPanel();
     sourceSmLine.setLayout(new BoxLayout(sourceSmLine, BoxLayout.LINE_AXIS));
     sourceSmLine.add(Box.createHorizontalStrut(20));
     sourceSmLine.add(cbUseSourceSm);
     SwingUtils.setPreferredHeightAsMaximum(sourceSmLine);
-    add(sourceSmLine);
+    smSelection.add(sourceSmLine);
   }
 
-  private void updateEnableForDelayFilter()
+  private void updateEnableForSmSelection()
   {
-    final boolean enabled = isEnabled() && cbDelayFilter.isSelected();
+    final boolean enabled =
+      isEnabled() &&
+      (cbNoDelayFilter.isSelected() || cbClkEnabledFilter.isSelected());
+    smSelection.setEnabled(enabled);
     setButtonsEnabled(pioButtons, enabled);
     cbUseSourcePio.setEnabled(enabled);
     setButtonsEnabled(smButtons, enabled);
@@ -146,23 +183,43 @@ public class ValueFilterPanel extends JPanel
   public Supplier<Boolean> createFilter(final int sourcePioNum,
                                         final int sourceSmNum)
   {
-    if (!cbDelayFilter.isSelected()) {
-      return null;
-    }
-    final int pioNum =
-      (cbUseSourcePio.isSelected() && sourcePioNum >= 0) ?
-      sourcePioNum : selectedPio;
-    final int smNum =
-      (cbUseSourceSm.isSelected() && sourceSmNum >= 0) ?
-      sourceSmNum : selectedSm;
-    return createDelayFilter(sdk, pioNum, smNum);
+    return createFilter(sdk,
+                        cbNoDelayFilter.isSelected(),
+                        cbClkEnabledFilter.isSelected(),
+                        sourcePioNum, selectedPio, cbUseSourcePio.isSelected(),
+                        sourceSmNum, selectedSm, cbUseSourceSm.isSelected());
   }
 
-  public static Supplier<Boolean> createDelayFilter(final SDK sdk,
-                                                    final int pioNum,
-                                                    final int smNum)
+  private static Supplier<Boolean> createFilter(final SDK sdk,
+                                                final boolean createNoDelay,
+                                                final boolean createClkEnabled,
+                                                final int sourcePioNum,
+                                                final int defaultPioNum,
+                                                final boolean useSourcePio,
+                                                final int sourceSmNum,
+                                                final int defaultSmNum,
+                                                final boolean useSourceSm)
   {
-    final Supplier<Boolean> displayFilter = () -> {
+    final int pioNum =
+      (useSourcePio && sourcePioNum >= 0) ? sourcePioNum : defaultPioNum;
+    final int smNum =
+      (useSourceSm && sourceSmNum >= 0) ? sourceSmNum : defaultSmNum;
+    final List<Supplier<Boolean>> suppliers =
+      new ArrayList<Supplier<Boolean>>();
+    if (createNoDelay) {
+      suppliers.add(createNoDelayFilter(sdk, pioNum, smNum));
+    }
+    if (createClkEnabled) {
+      suppliers.add(createClkEnabledFilter(sdk, pioNum, smNum));
+    }
+    return () -> suppliers.stream().allMatch(supplier -> supplier.get());
+  }
+
+  public static Supplier<Boolean> createNoDelayFilter(final SDK sdk,
+                                                      final int pioNum,
+                                                      final int smNum)
+  {
+    final Supplier<Boolean> filter = () -> {
       final int smDelayCycleAddress =
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_DELAY_CYCLE);
@@ -175,7 +232,26 @@ public class ValueFilterPanel extends JPanel
         return false;
       }
     };
-    return displayFilter;
+    return filter;
+  }
+
+  public static Supplier<Boolean> createClkEnabledFilter(final SDK sdk,
+                                                         final int pioNum,
+                                                         final int smNum)
+  {
+    final Supplier<Boolean> filter = () -> {
+      final int clkEnableAddress =
+      PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                   PIOEmuRegisters.Regs.SM0_CLK_ENABLE);
+      try {
+        final int clkEnable = sdk.readAddress(clkEnableAddress) & 0x1;
+        return clkEnable != 0x0;
+      } catch (final IOException e) {
+        // TODO: Maybe log warning that we failed to evaluate delay?
+        return false;
+      }
+    };
+    return filter;
   }
 
   public int getPioNum()
@@ -195,8 +271,9 @@ public class ValueFilterPanel extends JPanel
   public void setEnabled(final boolean enabled)
   {
     super.setEnabled(enabled);
-    cbDelayFilter.setEnabled(enabled);
-    updateEnableForDelayFilter();
+    cbNoDelayFilter.setEnabled(enabled);
+    cbClkEnabledFilter.setEnabled(enabled);
+    updateEnableForSmSelection();
   }
 }
 

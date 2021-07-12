@@ -163,9 +163,9 @@ public class SignalPanel extends JComponent implements Constants
     }
   }
 
-  public double x2cycle(final double x)
+  public int x2cycle(final double x)
   {
-    return (x - LEFT_MARGIN) / zoom;
+    return (int)((x - LEFT_MARGIN) / zoom);
   }
 
   public double cycle2x(final double cycle)
@@ -181,10 +181,12 @@ public class SignalPanel extends JComponent implements Constants
     g.setStroke(PLAIN_STROKE);
     g.getClipBounds(clipBounds);
     final int cycles = model.getSignalSize();
-    final int leftMostCycle = (int)x2cycle(clipBounds.x);
+    final int leftMostCycle =
+      Math.min(model.getSignalSize(),
+               x2cycle(clipBounds.x));
     final int rightMostCycle =
       Math.min(model.getSignalSize(),
-               ((int)x2cycle(clipBounds.x + clipBounds.width - 1)) + 1);
+               x2cycle(clipBounds.x + clipBounds.width - 1) + 1);
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         signal.rewind(leftMostCycle);
