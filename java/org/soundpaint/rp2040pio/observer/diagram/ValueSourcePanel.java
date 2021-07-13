@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
@@ -157,6 +158,7 @@ public class ValueSourcePanel extends JPanel
   private final Diagram diagram;
   private final SDK sdk;
   private final Consumer<String> suggestedLabelSetter;
+  private final Consumer<Void> sourceChangedListener;
   private final JLabel lbRegistersSet;
   private final JComboBox<RegistersSet> cbRegistersSet;
   private final JLabel lbRegistersSetInfo;
@@ -176,15 +178,19 @@ public class ValueSourcePanel extends JPanel
   }
 
   public ValueSourcePanel(final Diagram diagram, final SDK sdk,
-                          final Consumer<String> suggestedLabelSetter)
+                          final Consumer<String> suggestedLabelSetter,
+                          final Consumer<Void> sourceChangedListener)
   {
     Objects.requireNonNull(diagram);
     Objects.requireNonNull(sdk);
     Objects.requireNonNull(suggestedLabelSetter);
+    Objects.requireNonNull(sourceChangedListener);
     this.diagram = diagram;
     this.sdk = sdk;
     this.suggestedLabelSetter = suggestedLabelSetter;
+    this.sourceChangedListener = sourceChangedListener;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+    setBorder(BorderFactory.createTitledBorder("Use Value From Register"));
     bitsInfos = createTableModel();
     tbBitsInfos = new JTable(bitsInfos);
     setupTableColumnRenderers();
@@ -208,6 +214,10 @@ public class ValueSourcePanel extends JPanel
     add(Box.createVerticalStrut(5));
     addBitsSelection();
     SwingUtils.setPreferredHeightAsMaximum(this);
+  }
+
+  public void initRegistersForSelectedRegisterSet()
+  {
     registersSetSelected((RegistersSet)cbRegistersSet.getSelectedItem());
   }
 
@@ -432,6 +442,12 @@ public class ValueSourcePanel extends JPanel
     }
   }
 
+  private void sourceChanged()
+  {
+    updateSuggestedLabel();
+    sourceChangedListener.accept(null);
+  }
+
   private void ensureCellIsVisible(final int row, final int column)
   {
     if (tbBitsInfos.getParent() instanceof JViewport) {
@@ -464,7 +480,7 @@ public class ValueSourcePanel extends JPanel
       tbBitsInfos.setRowSelectionInterval(row, row);
       ensureCellIsVisible(row, 0);
     }
-    updateSuggestedLabel();
+    sourceChanged();
   }
 
   /**
@@ -533,7 +549,7 @@ public class ValueSourcePanel extends JPanel
   private void selectionChanged(final ListSelectionEvent selection)
   {
     if (!selection.getValueIsAdjusting()) {
-      updateSuggestedLabel();
+      sourceChanged();
     }
   }
 }

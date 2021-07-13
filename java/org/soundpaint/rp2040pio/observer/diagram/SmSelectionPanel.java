@@ -49,9 +49,13 @@ public class SmSelectionPanel extends JPanel
   private final JLabel lbPio;
   private final ButtonGroup pioButtons;
   private final JCheckBox cbUseSourcePio;
+  private final JLabel lbSourcePioLabel;
+  private final JLabel lbSourcePioNum;
   private final JLabel lbSm;
   private final ButtonGroup smButtons;
   private final JCheckBox cbUseSourceSm;
+  private final JLabel lbSourceSmLabel;
+  private final JLabel lbSourceSmNum;
   private int selectedPio;
   private int selectedSm;
 
@@ -70,12 +74,18 @@ public class SmSelectionPanel extends JPanel
     setBorder(BorderFactory.
               createTitledBorder("Select Target State Machine"));
     lbPio = new JLabel("PIO");
-    cbUseSourcePio = new JCheckBox("Prefer PIO of source value, if available");
+    cbUseSourcePio = new JCheckBox("Prefer PIO from currently " +
+                                   "selected source, if available");
     pioButtons = new ButtonGroup();
+    lbSourcePioLabel = new JLabel("Current value:");
+    lbSourcePioNum = new JLabel();
     addPioSelection();
     lbSm = new JLabel("SM");
-    cbUseSourceSm = new JCheckBox("Prefer SM of source value, if available");
+    cbUseSourceSm = new JCheckBox("Prefer SM from currently " +
+                                  "selected source, if available");
     smButtons = new ButtonGroup();
+    lbSourceSmLabel = new JLabel("Current value:");
+    lbSourceSmNum = new JLabel();
     addSmSelection();
     SwingUtils.setPreferredHeightAsMaximum(this);
   }
@@ -106,6 +116,17 @@ public class SmSelectionPanel extends JPanel
     sourcePioLine.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(sourcePioLine);
     add(sourcePioLine);
+    final JPanel sourcePioValueLine = new JPanel();
+    sourcePioValueLine.
+      setLayout(new BoxLayout(sourcePioValueLine, BoxLayout.LINE_AXIS));
+    sourcePioValueLine.
+      add(Box.createHorizontalStrut(PREFERRED_LABEL_SIZE.width));
+    sourcePioValueLine.add(Box.createHorizontalStrut(40));
+    sourcePioValueLine.add(lbSourcePioLabel);
+    sourcePioValueLine.add(Box.createHorizontalStrut(5));
+    sourcePioValueLine.add(lbSourcePioNum);
+    SwingUtils.setPreferredHeightAsMaximum(sourcePioValueLine);
+    add(sourcePioValueLine);
   }
 
   private void addSmSelection()
@@ -134,6 +155,17 @@ public class SmSelectionPanel extends JPanel
     sourceSmLine.add(Box.createHorizontalGlue());
     SwingUtils.setPreferredHeightAsMaximum(sourceSmLine);
     add(sourceSmLine);
+    final JPanel sourceSmValueLine = new JPanel();
+    sourceSmValueLine.
+      setLayout(new BoxLayout(sourceSmValueLine, BoxLayout.LINE_AXIS));
+    sourceSmValueLine.
+      add(Box.createHorizontalStrut(PREFERRED_LABEL_SIZE.width));
+    sourceSmValueLine.add(Box.createHorizontalStrut(40));
+    sourceSmValueLine.add(lbSourceSmLabel);
+    sourceSmValueLine.add(Box.createHorizontalStrut(5));
+    sourceSmValueLine.add(lbSourceSmNum);
+    SwingUtils.setPreferredHeightAsMaximum(sourceSmValueLine);
+    add(sourceSmValueLine);
   }
 
   public int getPioNum(final int sourcePioNum)
@@ -157,6 +189,16 @@ public class SmSelectionPanel extends JPanel
     }
   }
 
+  public void updateSourceInfo(final int sourcePioNum, final int sourceSmNum)
+  {
+    final String sourcePioText =
+      sourcePioNum >= 0 ? "PIO" + sourcePioNum : "not available";
+    lbSourcePioNum.setText(sourcePioText);
+    final String sourceSmText =
+      sourceSmNum >= 0 ? "SM" + sourceSmNum : "not available";
+    lbSourceSmNum.setText(sourceSmText);
+  }
+
   @Override
   public void setEnabled(final boolean enabled)
   {
@@ -164,9 +206,13 @@ public class SmSelectionPanel extends JPanel
     lbPio.setEnabled(enabled);
     setButtonsEnabled(pioButtons, enabled);
     cbUseSourcePio.setEnabled(enabled);
+    lbSourcePioLabel.setEnabled(enabled);
+    lbSourcePioNum.setEnabled(enabled);
     lbSm.setEnabled(enabled);
     setButtonsEnabled(smButtons, enabled);
     cbUseSourceSm.setEnabled(enabled);
+    lbSourceSmLabel.setEnabled(enabled);
+    lbSourceSmNum.setEnabled(enabled);
   }
 }
 

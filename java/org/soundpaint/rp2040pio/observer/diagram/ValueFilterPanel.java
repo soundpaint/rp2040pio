@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -63,14 +64,15 @@ public class ValueFilterPanel extends JPanel
     this.sdk = sdk;
     this.filterChangedListener = filterChangedListener;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    cbNoDelayFilter = new JCheckBox("Accept only non-delay cycles of the " +
+    setBorder(BorderFactory.
+              createTitledBorder("Gray Out Cycle As Undefined When"));
+    cbNoDelayFilter = new JCheckBox("Cycle is a delay cycle on " +
                                     "below target state machine.");
     cbNoDelayFilter.
       addChangeListener((event) -> filterChangedListener.accept(null));
     addNoDelayFilter();
-    cbClkEnabledFilter = new JCheckBox("Accept only cycles with CLK signal " +
-                                       "enabled for the below " +
-                                       "target state machine.");
+    cbClkEnabledFilter = new JCheckBox("CLK enable signal is false for " +
+                                       "below target state machine.");
     cbClkEnabledFilter.
       addChangeListener((event) -> filterChangedListener.accept(null));
     addClkEnabledFilter();

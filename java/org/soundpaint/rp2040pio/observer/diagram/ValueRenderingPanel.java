@@ -1,5 +1,5 @@
 /*
- * @(#)ValueFormatPanel.java 1.00 21/07/10
+ * @(#)ValueRenderingPanel.java 1.00 21/07/10
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.swing.AbstractButton;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -40,7 +41,7 @@ import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class ValueFormatPanel extends JPanel
+public class ValueRenderingPanel extends JPanel
 {
   private static final long serialVersionUID = -5251622302191656176L;
 
@@ -94,13 +95,14 @@ public class ValueFormatPanel extends JPanel
 
   private enum Representation
   {
-    Bit("bit", "single bit value visualized by upper or lower signal pulse",
+    Bit("bit signal shape",
+        "single bit value visualized by upper or lower signal pulse",
         (signalParams, bitSize) ->
         SignalFactory.createFromRegister(signalParams.sdk,
                                          signalParams.label,
                                          signalParams.address,
                                          signalParams.msb)),
-    Binary("binary", "binary representation of unsigned integer value",
+    Binary("binary digits", "binary representation of unsigned integer value",
            (signalParams, bitSize) ->
            SignalFactory.createFromRegister(signalParams.sdk,
                                             signalParams.label,
@@ -154,7 +156,7 @@ public class ValueFormatPanel extends JPanel
                                            (value) ->
                                            formatOctal(value, bitSize),
                                            signalParams.displayFilter)),
-    Mnemonic("PIO instruction on below target state machine",
+    Mnemonic("PIO instruction with side-set for below target state machine",
              "mnemonic of PIO instruction with op-code that equals the value",
              (signalParams, bitSize) ->
              SignalFactory.createFromRegister(signalParams.sdk,
@@ -232,26 +234,27 @@ public class ValueFormatPanel extends JPanel
 
   private final Diagram diagram;
   private final SDK sdk;
-  private final Consumer<Void> formatChangedListener;
+  private final Consumer<Void> renderingChangedListener;
   private final ButtonGroup buttonGroup;
-  private Representation selectedFormat;
+  private Representation selectedRendering;
 
-  private ValueFormatPanel()
+  private ValueRenderingPanel()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ValueFormatPanel(final Diagram diagram, final SDK sdk,
-                          final Consumer<Void> formatChangedListener)
+  public ValueRenderingPanel(final Diagram diagram, final SDK sdk,
+                             final Consumer<Void> renderingChangedListener)
   {
     Objects.requireNonNull(diagram);
     Objects.requireNonNull(sdk);
-    Objects.requireNonNull(formatChangedListener);
+    Objects.requireNonNull(renderingChangedListener);
     this.diagram = diagram;
     this.sdk = sdk;
-    this.formatChangedListener = formatChangedListener;
-    selectedFormat = null;
+    this.renderingChangedListener = renderingChangedListener;
+    selectedRendering = null;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+    setBorder(BorderFactory.createTitledBorder("Render Value As"));
     buttonGroup = new ButtonGroup();
     for (final Representation representation : Representation.values()) {
       createAndAddRepresentation(representation);
@@ -267,22 +270,22 @@ public class ValueFormatPanel extends JPanel
     final JRadioButton rbRepresentation =
       new JRadioButton(representation.toString(), selected);
     rbRepresentation.addActionListener((action) ->
-                                       formatSelected(representation));
+                                       renderingSelected(representation));
     buttonGroup.add(rbRepresentation);
     line.add(rbRepresentation);
     line.add(Box.createHorizontalGlue());
     add(line);
   }
 
-  private void formatSelected(final Representation representation)
+  private void renderingSelected(final Representation representation)
   {
-    selectedFormat = representation;
-    formatChangedListener.accept(null);
+    selectedRendering = representation;
+    renderingChangedListener.accept(null);
   }
 
   public boolean isSmSelectionRelevant()
   {
-    return selectedFormat == Representation.Mnemonic;
+    return selectedRendering == Representation.Mnemonic;
   }
 
   public Signal createSignal(final String label,
@@ -306,7 +309,7 @@ public class ValueFormatPanel extends JPanel
         new SignalParams(sdk, pioNum, smNum, label, address, msb, lsb,
                          showAddress, displayFilter);
       return
-        selectedFormat.signalCreator.apply(signalParams, msb - lsb + 1);
+        selectedRendering.signalCreator.apply(signalParams, msb - lsb + 1);
     } catch (final IOException e) {
       JOptionPane.showMessageDialog(this, e.getMessage(),
                                     "I/O Exception",

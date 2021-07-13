@@ -190,7 +190,7 @@ public class SignalFactory
   public static ValuedSignal<Integer>
     createFromRegister(final SDK sdk, final String label,
                        final int address, final int msb, final int lsb,
-                       final Function<Integer, String> formatter,
+                       final Function<Integer, String> renderer,
                        final Supplier<Boolean> displayFilter)
     throws IOException
   {
@@ -211,7 +211,7 @@ public class SignalFactory
     };
     final ValuedSignal<Integer> intSignal =
       new ValuedSignal<Integer>(signalLabel, supplier);
-    intSignal.setRenderer((intValue) -> formatter.apply(intValue));
+    intSignal.setRenderer((intValue) -> renderer.apply(intValue));
     return intSignal;
   }
 }

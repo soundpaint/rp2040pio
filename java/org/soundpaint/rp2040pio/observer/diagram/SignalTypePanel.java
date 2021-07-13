@@ -51,7 +51,7 @@ public class SignalTypePanel extends JPanel
   private final JRadioButton rbValued;
   private final JTabbedPane valueTabs;
   private final ValueSourcePanel valueSourcePanel;
-  private final ValueFormatPanel valueFormatPanel;
+  private final ValueRenderingPanel valueRenderingPanel;
   private final ValueFilterPanel valueFilterPanel;
   private final SmSelectionPanel smSelectionPanel;
 
@@ -74,10 +74,12 @@ public class SignalTypePanel extends JPanel
     rbClock = new JRadioButton("Clock");
     rbValued = new JRadioButton("Valued Signal", true);
     valueTabs = new JTabbedPane();
-    valueSourcePanel = new ValueSourcePanel(diagram, sdk, suggestedLabelSetter);
-    valueFormatPanel =
-      new ValueFormatPanel(diagram, sdk,
-                           (dummy) -> updateSmSelectionEnableStatus());
+    valueSourcePanel =
+      new ValueSourcePanel(diagram, sdk, suggestedLabelSetter,
+                           (dummy) -> updateSmSelectionInfo());
+    valueRenderingPanel =
+      new ValueRenderingPanel(diagram, sdk,
+                              (dummy) -> updateSmSelectionEnableStatus());
     valueFilterPanel =
       new ValueFilterPanel(diagram, sdk,
                            (dummy) -> updateSmSelectionEnableStatus());
@@ -87,6 +89,7 @@ public class SignalTypePanel extends JPanel
     createAndAddValuePanels();
     smSelectionPanel = new SmSelectionPanel(diagram, sdk);
     createAndAddSmSelectionPanel();
+    valueSourcePanel.initRegistersForSelectedRegisterSet();
     selectValued();
   }
 
@@ -130,7 +133,7 @@ public class SignalTypePanel extends JPanel
     row.setLayout(new BoxLayout(row, BoxLayout.LINE_AXIS));
     row.add(Box.createHorizontalStrut(20));
     createAndAddValueSourcePanel(valueTabs);
-    createAndAddValueFormatPanel(valueTabs);
+    createAndAddValueRenderingPanel(valueTabs);
     createAndAddValueFilterPanel(valueTabs);
     row.add(valueTabs);
     SwingUtils.setPreferredHeightAsMaximum(row);
@@ -139,23 +142,23 @@ public class SignalTypePanel extends JPanel
 
   private void createAndAddValueSourcePanel(final JTabbedPane valueTabs)
   {
-    valueTabs.addTab("Value Source", null, valueSourcePanel,
+    valueTabs.addTab("Source", null, valueSourcePanel,
                      "specify how to get values of this signal");
     final int tabIndex = valueTabs.indexOfComponent(valueSourcePanel);
     valueTabs.setMnemonicAt(tabIndex, KeyEvent.VK_S);
   }
 
-  private void createAndAddValueFormatPanel(final JTabbedPane valueTabs)
+  private void createAndAddValueRenderingPanel(final JTabbedPane valueTabs)
   {
-    valueTabs.addTab("Value Rendering", null, valueFormatPanel,
+    valueTabs.addTab("Rendering", null, valueRenderingPanel,
                      "specify how to render values of this signal");
-    final int tabIndex = valueTabs.indexOfComponent(valueFormatPanel);
+    final int tabIndex = valueTabs.indexOfComponent(valueRenderingPanel);
     valueTabs.setMnemonicAt(tabIndex, KeyEvent.VK_R);
   }
 
   private void createAndAddValueFilterPanel(final JTabbedPane valueTabs)
   {
-    valueTabs.addTab("Value Filter", null, valueFilterPanel,
+    valueTabs.addTab("Filter", null, valueFilterPanel,
                      "specify which filters to apply to decide if signal " +
                      "value is defined");
     final int tabIndex = valueTabs.indexOfComponent(valueFilterPanel);
@@ -193,7 +196,7 @@ public class SignalTypePanel extends JPanel
   private void setValueEnabled(final boolean enabled)
   {
     valueSourcePanel.setEnabled(enabled);
-    valueFormatPanel.setEnabled(enabled);
+    valueRenderingPanel.setEnabled(enabled);
     valueFilterPanel.setEnabled(enabled);
     valueTabs.setEnabled(enabled);
     updateSmSelectionEnableStatus();
@@ -202,10 +205,17 @@ public class SignalTypePanel extends JPanel
   private void updateSmSelectionEnableStatus()
   {
     final boolean enabled =
-      isEnabled() &&
-      (valueFormatPanel.isSmSelectionRelevant() ||
+      valueTabs.isEnabled() &&
+      (valueRenderingPanel.isSmSelectionRelevant() ||
        valueFilterPanel.isSmSelectionRelevant());
     smSelectionPanel.setEnabled(enabled);
+  }
+
+  private void updateSmSelectionInfo()
+  {
+    final int sourcePioNum = valueSourcePanel.getSelectedRegisterSetPio();
+    final int sourceSmNum = valueSourcePanel.getSelectedRegisterSm();
+    smSelectionPanel.updateSourceInfo(sourcePioNum, sourceSmNum);
   }
 
   public Signal createSignal(final String label)
@@ -228,8 +238,8 @@ public class SignalTypePanel extends JPanel
       final Supplier<Boolean> displayFilter =
         valueFilterPanel.createFilter(pioNum, smNum);
       return
-        valueFormatPanel.createSignal(label, pioNum, smNum, address, msb, lsb,
-                                      displayFilter);
+        valueRenderingPanel.createSignal(label, pioNum, smNum,
+                                         address, msb, lsb, displayFilter);
     }
     return null;
   }
