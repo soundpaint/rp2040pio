@@ -27,6 +27,7 @@ package org.soundpaint.rp2040pio.doctool;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.soundpaint.rp2040pio.Constants;
 
 /**
  * Documentation interface for automatic creation of registers
@@ -234,8 +235,18 @@ public interface RegistersDocs<T>
 
   public static class RegisterDetails
   {
+    public static int SM_UNDEFINED = -1;
+
     private String info;
+    private int smNum;
     private List<BitsInfo> bitsInfos;
+
+    private static void checkSmNum(final int smNum)
+    {
+      if (smNum != SM_UNDEFINED) {
+        Constants.checkSmNum(smNum);
+      }
+    }
 
     private RegisterDetails()
     {
@@ -249,12 +260,22 @@ public interface RegistersDocs<T>
 
     public RegisterDetails(final String info, final List<BitsInfo> bitsInfos)
     {
+      this(info, SM_UNDEFINED, bitsInfos);
+    }
+
+    public RegisterDetails(final String info, final int smNum,
+                           final List<BitsInfo> bitsInfos)
+    {
+      checkSmNum(smNum);
       this.info = info;
+      this.smNum = smNum;
       this.bitsInfos = new ArrayList<BitsInfo>();
       this.bitsInfos.addAll(bitsInfos);
     }
 
     public String getInfo() { return info; }
+
+    public int getSmNum() { return smNum; }
 
     public Iterable<BitsInfo> getBitsInfos()
     {

@@ -53,7 +53,7 @@ public class SignalTypePanel extends JPanel
   private final ValueSourcePanel valueSourcePanel;
   private final ValueFormatPanel valueFormatPanel;
   private final ValueFilterPanel valueFilterPanel;
-  private final InstructionOptionsPanel instructionOptionsPanel;
+  private final SmSelectionPanel smSelectionPanel;
 
   private SignalTypePanel()
   {
@@ -85,8 +85,8 @@ public class SignalTypePanel extends JPanel
     createAndAddClockRadio();
     createAndAddValuedRadio();
     createAndAddValuePanels();
-    instructionOptionsPanel = new InstructionOptionsPanel(diagram, sdk);
-    createAndAddInstructionOptionsPanel();
+    smSelectionPanel = new SmSelectionPanel(diagram, sdk);
+    createAndAddSmSelectionPanel();
     selectValued();
   }
 
@@ -162,12 +162,12 @@ public class SignalTypePanel extends JPanel
     valueTabs.setMnemonicAt(tabIndex, KeyEvent.VK_F);
   }
 
-  private void createAndAddInstructionOptionsPanel()
+  private void createAndAddSmSelectionPanel()
   {
     final JPanel row = new JPanel();
     row.setLayout(new BoxLayout(row, BoxLayout.LINE_AXIS));
     row.add(Box.createHorizontalStrut(20));
-    row.add(instructionOptionsPanel);
+    row.add(smSelectionPanel);
     SwingUtils.setPreferredHeightAsMaximum(row);
     add(row);
   }
@@ -205,7 +205,7 @@ public class SignalTypePanel extends JPanel
       isEnabled() &&
       (valueFormatPanel.isSmSelectionRelevant() ||
        valueFilterPanel.isSmSelectionRelevant());
-    instructionOptionsPanel.setEnabled(enabled);
+    smSelectionPanel.setEnabled(enabled);
   }
 
   public Signal createSignal(final String label)
@@ -223,8 +223,8 @@ public class SignalTypePanel extends JPanel
       final int lsb = valueSourcePanel.getSelectedRegisterLsb();
       final int sourcePioNum = valueSourcePanel.getSelectedRegisterSetPio();
       final int sourceSmNum = valueSourcePanel.getSelectedRegisterSm();
-      final int pioNum = instructionOptionsPanel.getPioNum(sourcePioNum);
-      final int smNum = instructionOptionsPanel.getSmNum(sourceSmNum);
+      final int pioNum = smSelectionPanel.getPioNum(sourcePioNum);
+      final int smNum = smSelectionPanel.getSmNum(sourceSmNum);
       final Supplier<Boolean> displayFilter =
         valueFilterPanel.createFilter(pioNum, smNum);
       return

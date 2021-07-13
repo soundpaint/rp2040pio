@@ -1,5 +1,5 @@
 /*
- * @(#)InstructionOptionsPanel.java 1.00 21/07/10
+ * @(#)SmSelectionPanel.java 1.00 21/07/10
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -39,7 +39,7 @@ import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class InstructionOptionsPanel extends JPanel
+public class SmSelectionPanel extends JPanel
   implements org.soundpaint.rp2040pio.observer.diagram.Constants
 {
   private static final long serialVersionUID = -4932796542558706478L;
@@ -55,12 +55,12 @@ public class InstructionOptionsPanel extends JPanel
   private int selectedPio;
   private int selectedSm;
 
-  private InstructionOptionsPanel()
+  private SmSelectionPanel()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public InstructionOptionsPanel(final Diagram diagram, final SDK sdk)
+  public SmSelectionPanel(final Diagram diagram, final SDK sdk)
   {
     Objects.requireNonNull(diagram);
     Objects.requireNonNull(sdk);

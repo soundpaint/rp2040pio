@@ -168,6 +168,7 @@ public class ValueSourcePanel extends JPanel
   private final DefaultTableModel bitsInfos;
   private final JTable tbBitsInfos;
   private final JScrollPane tbBitsInfosScroll;
+  private RegistersDocs<? extends Enum<?>> selectedRegister;
 
   private ValueSourcePanel()
   {
@@ -387,14 +388,20 @@ public class ValueSourcePanel extends JPanel
     return String.format("[%s]", msb != lsb ? msb + ":" + lsb : msb);
   }
 
+  private RegistersDocs<? extends Enum<?>> getSelectedRegister()
+  {
+    @SuppressWarnings("unchecked")
+    final RegistersDocs<? extends Enum<?>> register =
+      (RegistersDocs<? extends Enum<?>>)cbRegister.getSelectedItem();
+    return register;
+  }
+
   private String getSuggestedLabel(final String suggestedBitsLabel)
   {
     final RegistersSet registersSet =
       (RegistersSet)cbRegistersSet.getSelectedItem();
     final String suggestedLabelPrefix = registersSet.suggestedLabelPrefix;
-    @SuppressWarnings("unchecked")
-    final RegistersDocs<? extends Enum<?>> register =
-      (RegistersDocs<? extends Enum<?>>)cbRegister.getSelectedItem();
+    final RegistersDocs<? extends Enum<?>> register = getSelectedRegister();
     return String.format("%s%s%s",
                          suggestedLabelPrefix, register, suggestedBitsLabel);
   }
@@ -460,9 +467,23 @@ public class ValueSourcePanel extends JPanel
     updateSuggestedLabel();
   }
 
+  /**
+   * @return The number of the associated PIO (0…1), or -1, if the
+   * selected register set is not related to any specific PIO.
+   */
   public int getSelectedRegisterSetPio()
   {
     return ((RegistersSet)cbRegistersSet.getSelectedItem()).pioNum;
+  }
+
+  /**
+   * @return The number of the associated SM (0…3), or -1, if the
+   * selected register is not related to any specific SM.
+   */
+  public int getSelectedRegisterSm()
+  {
+    final RegistersDocs<? extends Enum<?>> register = getSelectedRegister();
+    return register.getRegisterDetails().getSmNum();
   }
 
   public int getSelectedRegisterAddress()
@@ -489,12 +510,6 @@ public class ValueSourcePanel extends JPanel
     final BitsRange lowerMostBitsRange =
       (BitsRange)bitsInfos.getValueAt(maxSelectionRow, COLUMN_BITS_RANGE_IDX);
     return lowerMostBitsRange.getLsb();
-  }
-
-  public int getSelectedRegisterSm()
-  {
-    // TODO
-    return 0;
   }
 
   @Override
