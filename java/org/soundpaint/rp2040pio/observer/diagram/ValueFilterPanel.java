@@ -26,20 +26,14 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.swing.AbstractButton;
-import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -50,45 +44,36 @@ public class ValueFilterPanel extends JPanel
 
   private final Diagram diagram;
   private final SDK sdk;
+  private final Consumer<Void> filterChangedListener;
   private final JCheckBox cbNoDelayFilter;
   private final JCheckBox cbClkEnabledFilter;
-  private final JPanel smSelection;
-  private final JCheckBox cbUseSourcePio;
-  private final ButtonGroup pioButtons;
-  private final JCheckBox cbUseSourceSm;
-  private final ButtonGroup smButtons;
-  private int selectedPio;
-  private int selectedSm;
 
   private ValueFilterPanel()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ValueFilterPanel(final Diagram diagram, final SDK sdk)
+  public ValueFilterPanel(final Diagram diagram, final SDK sdk,
+                          final Consumer<Void> filterChangedListener)
   {
     Objects.requireNonNull(diagram);
     Objects.requireNonNull(sdk);
+    Objects.requireNonNull(filterChangedListener);
     this.diagram = diagram;
     this.sdk = sdk;
+    this.filterChangedListener = filterChangedListener;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     cbNoDelayFilter = new JCheckBox("Accept only non-delay cycles of the " +
-                                    "below state machine.");
+                                    "below target state machine.");
     cbNoDelayFilter.
-      addChangeListener((event) -> updateEnableForSmSelection());
+      addChangeListener((event) -> filterChangedListener.accept(null));
     addNoDelayFilter();
     cbClkEnabledFilter = new JCheckBox("Accept only cycles with CLK signal " +
-                                       "enabled for the below state machine.");
+                                       "enabled for the below " +
+                                       "target state machine.");
     cbClkEnabledFilter.
-      addChangeListener((event) -> updateEnableForSmSelection());
+      addChangeListener((event) -> filterChangedListener.accept(null));
     addClkEnabledFilter();
-    smSelection = addSmSelectionPanel();
-    cbUseSourcePio = new JCheckBox("Use PIO of source value, if available");
-    pioButtons = new ButtonGroup();
-    addPioSelection();
-    cbUseSourceSm = new JCheckBox("Use SM of source value, if available");
-    smButtons = new ButtonGroup();
-    addSmSelection();
   }
 
   private void addNoDelayFilter()
@@ -111,99 +96,27 @@ public class ValueFilterPanel extends JPanel
     add(line);
   }
 
-  private JPanel addSmSelectionPanel()
+  public boolean isSmSelectionRelevant()
   {
-    final JPanel smSelection = new JPanel();
-    smSelection.setBorder(BorderFactory.createTitledBorder("State Machine"));
-    smSelection.setLayout(new BoxLayout(smSelection, BoxLayout.PAGE_AXIS));
-    smSelection.add(Box.createHorizontalGlue());
-    //SwingUtils.setPreferredHeightAsMaximum(smSelection);
-    add(smSelection);
-    return smSelection;
-  }
-
-  private void addPioSelection()
-  {
-    final JPanel pioLine = new JPanel();
-    pioLine.setLayout(new BoxLayout(pioLine, BoxLayout.LINE_AXIS));
-    for (int pioNum = 0; pioNum < Constants.PIO_NUM; pioNum++) {
-      final JRadioButton rbPio = new JRadioButton("PIO" + pioNum, pioNum == 0);
-      pioButtons.add(rbPio);
-      final int pio = pioNum;
-      rbPio.addActionListener((action) -> selectedPio = pio);
-      pioLine.add(Box.createHorizontalStrut(20));
-      pioLine.add(rbPio);
-    }
-    selectedPio = 0;
-    SwingUtils.setPreferredHeightAsMaximum(pioLine);
-    smSelection.add(pioLine);
-    final JPanel sourcePioLine = new JPanel();
-    sourcePioLine.setLayout(new BoxLayout(sourcePioLine, BoxLayout.LINE_AXIS));
-    sourcePioLine.add(Box.createHorizontalStrut(20));
-    sourcePioLine.add(cbUseSourcePio);
-    SwingUtils.setPreferredHeightAsMaximum(sourcePioLine);
-    smSelection.add(sourcePioLine);
-  }
-
-  private void addSmSelection()
-  {
-    final JPanel smLine = new JPanel();
-    smLine.setLayout(new BoxLayout(smLine, BoxLayout.LINE_AXIS));
-    for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
-      final JRadioButton rbSm = new JRadioButton("SM" + smNum, smNum == 0);
-      smButtons.add(rbSm);
-      final int sm = smNum;
-      rbSm.addActionListener((action) -> selectedSm = sm);
-      smLine.add(Box.createHorizontalStrut(20));
-      smLine.add(rbSm);
-    }
-    selectedPio = 0;
-    SwingUtils.setPreferredHeightAsMaximum(smLine);
-    smSelection.add(smLine);
-    final JPanel sourceSmLine = new JPanel();
-    sourceSmLine.setLayout(new BoxLayout(sourceSmLine, BoxLayout.LINE_AXIS));
-    sourceSmLine.add(Box.createHorizontalStrut(20));
-    sourceSmLine.add(cbUseSourceSm);
-    SwingUtils.setPreferredHeightAsMaximum(sourceSmLine);
-    smSelection.add(sourceSmLine);
-  }
-
-  private void updateEnableForSmSelection()
-  {
-    final boolean enabled =
+    return
       isEnabled() &&
       (cbNoDelayFilter.isSelected() || cbClkEnabledFilter.isSelected());
-    smSelection.setEnabled(enabled);
-    setButtonsEnabled(pioButtons, enabled);
-    cbUseSourcePio.setEnabled(enabled);
-    setButtonsEnabled(smButtons, enabled);
-    cbUseSourceSm.setEnabled(enabled);
   }
 
-  public Supplier<Boolean> createFilter(final int sourcePioNum,
-                                        final int sourceSmNum)
+  public Supplier<Boolean> createFilter(final int pioNum, final int smNum)
   {
     return createFilter(sdk,
                         cbNoDelayFilter.isSelected(),
                         cbClkEnabledFilter.isSelected(),
-                        sourcePioNum, selectedPio, cbUseSourcePio.isSelected(),
-                        sourceSmNum, selectedSm, cbUseSourceSm.isSelected());
+                        pioNum, smNum);
   }
 
   private static Supplier<Boolean> createFilter(final SDK sdk,
                                                 final boolean createNoDelay,
                                                 final boolean createClkEnabled,
-                                                final int sourcePioNum,
-                                                final int defaultPioNum,
-                                                final boolean useSourcePio,
-                                                final int sourceSmNum,
-                                                final int defaultSmNum,
-                                                final boolean useSourceSm)
+                                                final int pioNum,
+                                                final int smNum)
   {
-    final int pioNum =
-      (useSourcePio && sourcePioNum >= 0) ? sourcePioNum : defaultPioNum;
-    final int smNum =
-      (useSourceSm && sourceSmNum >= 0) ? sourceSmNum : defaultSmNum;
     final List<Supplier<Boolean>> suppliers =
       new ArrayList<Supplier<Boolean>>();
     if (createNoDelay) {
@@ -254,26 +167,12 @@ public class ValueFilterPanel extends JPanel
     return filter;
   }
 
-  public int getPioNum()
-  {
-    return selectedPio;
-  }
-
-  private void setButtonsEnabled(final ButtonGroup buttons,
-                                 final boolean enabled)
-  {
-    final Enumeration<AbstractButton> elements = buttons.getElements();
-    while (elements.hasMoreElements()) {
-      elements.nextElement().setEnabled(enabled);
-    }
-  }
-
+  @Override
   public void setEnabled(final boolean enabled)
   {
     super.setEnabled(enabled);
     cbNoDelayFilter.setEnabled(enabled);
     cbClkEnabledFilter.setEnabled(enabled);
-    updateEnableForSmSelection();
   }
 }
 

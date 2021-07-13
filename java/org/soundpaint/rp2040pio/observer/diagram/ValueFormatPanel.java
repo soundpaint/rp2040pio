@@ -27,17 +27,16 @@ package org.soundpaint.rp2040pio.observer.diagram;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.swing.AbstractButton;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.SwingUtils;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -155,7 +154,7 @@ public class ValueFormatPanel extends JPanel
                                            (value) ->
                                            formatOctal(value, bitSize),
                                            signalParams.displayFilter)),
-    Mnemonic("PIO instruction",
+    Mnemonic("PIO instruction on below target state machine",
              "mnemonic of PIO instruction with op-code that equals the value",
              (signalParams, bitSize) ->
              SignalFactory.createFromRegister(signalParams.sdk,
@@ -233,8 +232,8 @@ public class ValueFormatPanel extends JPanel
 
   private final Diagram diagram;
   private final SDK sdk;
+  private final Consumer<Void> formatChangedListener;
   private final ButtonGroup buttonGroup;
-  private final InstructionOptionsPanel instructionOptionsPanel;
   private Representation selectedFormat;
 
   private ValueFormatPanel()
@@ -242,20 +241,21 @@ public class ValueFormatPanel extends JPanel
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ValueFormatPanel(final Diagram diagram, final SDK sdk)
+  public ValueFormatPanel(final Diagram diagram, final SDK sdk,
+                          final Consumer<Void> formatChangedListener)
   {
     Objects.requireNonNull(diagram);
     Objects.requireNonNull(sdk);
+    Objects.requireNonNull(formatChangedListener);
     this.diagram = diagram;
     this.sdk = sdk;
+    this.formatChangedListener = formatChangedListener;
     selectedFormat = null;
     setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     buttonGroup = new ButtonGroup();
-    instructionOptionsPanel = new InstructionOptionsPanel(diagram, sdk);
     for (final Representation representation : Representation.values()) {
       createAndAddRepresentation(representation);
     }
-    createAndAddInstructionOptionsPanel();
   }
 
   private void createAndAddRepresentation(final Representation representation)
@@ -268,40 +268,31 @@ public class ValueFormatPanel extends JPanel
       new JRadioButton(representation.toString(), selected);
     rbRepresentation.addActionListener((action) ->
                                        formatSelected(representation));
-    if (selected) {
-      formatSelected(representation);
-    }
     buttonGroup.add(rbRepresentation);
     line.add(rbRepresentation);
     line.add(Box.createHorizontalGlue());
     add(line);
   }
 
-  private void createAndAddInstructionOptionsPanel()
-  {
-    final JPanel row = new JPanel();
-    row.setLayout(new BoxLayout(row, BoxLayout.LINE_AXIS));
-    row.add(Box.createHorizontalStrut(20));
-    row.add(instructionOptionsPanel);
-    SwingUtils.setPreferredHeightAsMaximum(row);
-    add(row);
-  }
-
   private void formatSelected(final Representation representation)
   {
     selectedFormat = representation;
-    instructionOptionsPanel.setEnabled(selectedFormat ==
-                                       Representation.Mnemonic);
+    formatChangedListener.accept(null);
+  }
+
+  public boolean isSmSelectionRelevant()
+  {
+    return selectedFormat == Representation.Mnemonic;
   }
 
   public Signal createSignal(final String label,
+                             final int pioNum,
+                             final int smNum,
                              final int address,
                              final int msb,
                              final int lsb,
                              final Supplier<Boolean> displayFilter)
   {
-    final int pioNum = instructionOptionsPanel.getSelectedPio();
-    final int smNum = instructionOptionsPanel.getSelectedSm();
     final boolean showAddress = false; // TODO
     if ((msb < 0) || (lsb < 0)) {
       JOptionPane.showMessageDialog(this,
@@ -324,6 +315,7 @@ public class ValueFormatPanel extends JPanel
     }
   }
 
+  @Override
   public void setEnabled(final boolean enabled)
   {
     super.setEnabled(enabled);
@@ -331,9 +323,6 @@ public class ValueFormatPanel extends JPanel
     while (buttons.hasMoreElements()) {
       buttons.nextElement().setEnabled(enabled);
     }
-    final boolean instructionOptionsEnabled =
-      enabled && (selectedFormat == Representation.Mnemonic);
-    instructionOptionsPanel.setEnabled(instructionOptionsEnabled);
   }
 }
 
