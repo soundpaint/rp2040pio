@@ -75,14 +75,14 @@ public class SmSelectionPanel extends JPanel
               createTitledBorder("Select Target State Machine"));
     lbPio = new JLabel("PIO");
     cbUseSourcePio = new JCheckBox("Prefer PIO from currently " +
-                                   "selected source, if available");
+                                   "selected source, if available", true);
     pioButtons = new ButtonGroup();
     lbSourcePioLabel = new JLabel("Current value:");
     lbSourcePioNum = new JLabel();
     addPioSelection();
     lbSm = new JLabel("SM");
     cbUseSourceSm = new JCheckBox("Prefer SM from currently " +
-                                  "selected source, if available");
+                                  "selected source, if available", true);
     smButtons = new ButtonGroup();
     lbSourceSmLabel = new JLabel("Current value:");
     lbSourceSmNum = new JLabel();

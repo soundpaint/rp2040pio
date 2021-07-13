@@ -164,17 +164,34 @@ public abstract class PicoEmuRegisters extends RegisterSet
 
     private Regs(final Regs ref)
     {
-      this(ref.getRegisterDetails());
+      this(ref.registerDetails);
+    }
+
+    private Regs(final Regs ref, final int smNum)
+    {
+      this(ref.registerDetails.createCopyForDifferentSm(smNum));
     }
 
     private Regs(final String info, final BitsInfo[] bitsInfos)
     {
-      this(RegistersDocs.createRegisterDetails(info, bitsInfos));
+      this(new RegisterDetails(info, bitsInfos));
     }
 
     private Regs(final String info, final List<BitsInfo> bitsInfos)
     {
-      this(RegistersDocs.createRegisterDetails(info, bitsInfos));
+      this(new RegisterDetails(info, bitsInfos));
+    }
+
+    private Regs(final String info, final int smNum,
+                 final BitsInfo[] bitsInfos)
+    {
+      this(new RegisterDetails(info, smNum, bitsInfos));
+    }
+
+    private Regs(final String info, final int smNum,
+                 final List<BitsInfo> bitsInfos)
+    {
+      this(new RegisterDetails(info, smNum, bitsInfos));
     }
 
     private Regs(final RegisterDetails registerDetails)

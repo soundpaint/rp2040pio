@@ -107,20 +107,20 @@ public abstract class PIORegisters extends RegisterSet
                                   "X" + (3 - (n / 2)), 31 - (n << 2),
                                   28 - (n << 2), null, BitsType.RO, 0))
            .collect(Collectors.toList())),
-    TXF0("Direct write access to the TX FIFO for state machine *N*.",
+    TXF0("Direct write access to the TX FIFO for state machine *N*.", 0,
          new BitsInfo[] {
            new BitsInfo(null, 31, 0, null, BitsType.WF, 0)
          }),
-    TXF1(Regs.TXF0),
-    TXF2(Regs.TXF0),
-    TXF3(Regs.TXF0),
-    RXF0("Direct read access to the RX FIFO for state machine *N*.",
+    TXF1(Regs.TXF0, 1),
+    TXF2(Regs.TXF0, 2),
+    TXF3(Regs.TXF0, 3),
+    RXF0("Direct read access to the RX FIFO for state machine *N*.", 0,
          new BitsInfo[] {
            new BitsInfo(null, 31, 0, null, BitsType.RF, 0)
          }),
-    RXF1(Regs.RXF0),
-    RXF2(Regs.RXF0),
-    RXF3(Regs.RXF0),
+    RXF1(Regs.RXF0, 1),
+    RXF2(Regs.RXF0, 2),
+    RXF3(Regs.RXF0, 3),
     IRQ("State machine IRQ flags register.  Write 1 to clear.",
         new BitsInfo[] {
           new BitsInfo(null, 31, 8, null, BitsType.RESERVED, null),
@@ -209,13 +209,13 @@ public abstract class PIORegisters extends RegisterSet
     INSTR_MEM29(Regs.INSTR_MEM0),
     INSTR_MEM30(Regs.INSTR_MEM0),
     INSTR_MEM31(Regs.INSTR_MEM0),
-    SM0_CLKDIV("Clock divisor register for state machine *N*.",
+    SM0_CLKDIV("Clock divisor register for state machine *N*.", 0,
                new BitsInfo[] {
                  new BitsInfo("INT", 31, 16, null, BitsType.RW, 1),
                  new BitsInfo("FRAC", 15, 8, null, BitsType.RW, 0),
                  new BitsInfo(null, 7, 0, null, BitsType.RESERVED, null)
                }),
-    SM0_EXECCTRL("Execution/behavioural settings for state machine *N*.",
+    SM0_EXECCTRL("Execution/behavioural settings for state machine *N*.", 0,
                  new BitsInfo[] {
                    new BitsInfo("EXEC_STALLED", 31, 31, null, BitsType.RO, 0),
                    new BitsInfo("SIDE_EN", 30, 30, null, BitsType.RW, 0),
@@ -231,7 +231,7 @@ public abstract class PIORegisters extends RegisterSet
                    new BitsInfo("STATUS_N", 3, 0, null, BitsType.RW, 0)
                  }),
     SM0_SHIFTCTRL("Control behaviour of the input/output shift registers " +
-                  "for state machine *N*.",
+                  "for state machine *N*.", 0,
                   new BitsInfo[] {
                     new BitsInfo("FJOIN_RX", 31, 31, null, BitsType.RW, 0),
                     new BitsInfo("FJOIN_TX", 30, 30, null, BitsType.RW, 0),
@@ -243,18 +243,18 @@ public abstract class PIORegisters extends RegisterSet
                     new BitsInfo("AUTOPUSH", 16, 16, null, BitsType.RW, 0),
                     new BitsInfo(null, 15, 0, null, BitsType.RESERVED, null)
                   }),
-    SM0_ADDR("Current instruction address of state machine *N*.",
+    SM0_ADDR("Current instruction address of state machine *N*.", 0,
              new BitsInfo[] {
                new BitsInfo(null, 31, 5, null, BitsType.RESERVED, null),
                new BitsInfo(null, 4, 0, null, BitsType.RO, 0)
              }),
-    SM0_INSTR("Read to see current instruction on state machine *N*.  " +
-              "Write to execute instruction immediately on state machine *N*.",
+    SM0_INSTR("Read to see current instruction on state machine *N*.  Write " +
+              "to execute instruction immediately on state machine *N*.", 0,
               new BitsInfo[] {
                 new BitsInfo(null, 31, 16, null, BitsType.RESERVED, null),
                 new BitsInfo(null, 15, 0, null, BitsType.RW, null)
               }),
-    SM0_PINCTRL("State machine pin control for state machine *N*.",
+    SM0_PINCTRL("State machine pin control for state machine *N*.", 0,
                 new BitsInfo[] {
                   new BitsInfo("SIDESET_COUNT", 31, 29, null, BitsType.RW, 0),
                   new BitsInfo("SET_COUNT", 28, 26, null, BitsType.RW, 5),
@@ -264,24 +264,24 @@ public abstract class PIORegisters extends RegisterSet
                   new BitsInfo("SET_BASE", 9, 5, null, BitsType.RW, 0),
                   new BitsInfo("OUT_BASE", 4, 0, null, BitsType.RW, 0)
                 }),
-    SM1_CLKDIV(Regs.SM0_CLKDIV),
-    SM1_EXECCTRL(Regs.SM0_EXECCTRL),
-    SM1_SHIFTCTRL(Regs.SM0_SHIFTCTRL),
-    SM1_ADDR(Regs.SM0_ADDR),
-    SM1_INSTR(Regs.SM0_INSTR),
-    SM1_PINCTRL(Regs.SM0_PINCTRL),
-    SM2_CLKDIV(Regs.SM0_CLKDIV),
-    SM2_EXECCTRL(Regs.SM0_EXECCTRL),
-    SM2_SHIFTCTRL(Regs.SM0_SHIFTCTRL),
-    SM2_ADDR(Regs.SM0_ADDR),
-    SM2_INSTR(Regs.SM0_INSTR),
-    SM2_PINCTRL(Regs.SM0_PINCTRL),
-    SM3_CLKDIV(Regs.SM0_CLKDIV),
-    SM3_EXECCTRL(Regs.SM0_EXECCTRL),
-    SM3_SHIFTCTRL(Regs.SM0_SHIFTCTRL),
-    SM3_ADDR(Regs.SM0_ADDR),
-    SM3_INSTR(Regs.SM0_INSTR),
-    SM3_PINCTRL(Regs.SM0_PINCTRL),
+    SM1_CLKDIV(Regs.SM0_CLKDIV, 1),
+    SM1_EXECCTRL(Regs.SM0_EXECCTRL, 1),
+    SM1_SHIFTCTRL(Regs.SM0_SHIFTCTRL, 1),
+    SM1_ADDR(Regs.SM0_ADDR, 1),
+    SM1_INSTR(Regs.SM0_INSTR, 1),
+    SM1_PINCTRL(Regs.SM0_PINCTRL, 1),
+    SM2_CLKDIV(Regs.SM0_CLKDIV, 2),
+    SM2_EXECCTRL(Regs.SM0_EXECCTRL, 2),
+    SM2_SHIFTCTRL(Regs.SM0_SHIFTCTRL, 2),
+    SM2_ADDR(Regs.SM0_ADDR, 2),
+    SM2_INSTR(Regs.SM0_INSTR, 2),
+    SM2_PINCTRL(Regs.SM0_PINCTRL, 2),
+    SM3_CLKDIV(Regs.SM0_CLKDIV, 3),
+    SM3_EXECCTRL(Regs.SM0_EXECCTRL, 3),
+    SM3_SHIFTCTRL(Regs.SM0_SHIFTCTRL, 3),
+    SM3_ADDR(Regs.SM0_ADDR, 3),
+    SM3_INSTR(Regs.SM0_INSTR, 3),
+    SM3_PINCTRL(Regs.SM0_PINCTRL, 3),
     INTR("Raw Interrupts.",
          new BitsInfo[] {
            new BitsInfo(null, 31, 12, null, BitsType.RESERVED, null),
@@ -420,17 +420,34 @@ public abstract class PIORegisters extends RegisterSet
 
     private Regs(final Regs ref)
     {
-      this(ref.getRegisterDetails());
+      this(ref.registerDetails);
+    }
+
+    private Regs(final Regs ref, final int smNum)
+    {
+      this(ref.registerDetails.createCopyForDifferentSm(smNum));
     }
 
     private Regs(final String info, final BitsInfo[] bitsInfos)
     {
-      this(RegistersDocs.createRegisterDetails(info, bitsInfos));
+      this(new RegisterDetails(info, bitsInfos));
     }
 
     private Regs(final String info, final List<BitsInfo> bitsInfos)
     {
-      this(RegistersDocs.createRegisterDetails(info, bitsInfos));
+      this(new RegisterDetails(info, bitsInfos));
+    }
+
+    private Regs(final String info, final int smNum,
+                 final BitsInfo[] bitsInfos)
+    {
+      this(new RegisterDetails(info, smNum, bitsInfos));
+    }
+
+    private Regs(final String info, final int smNum,
+                 final List<BitsInfo> bitsInfos)
+    {
+      this(new RegisterDetails(info, smNum, bitsInfos));
     }
 
     private Regs(final RegisterDetails registerDetails)

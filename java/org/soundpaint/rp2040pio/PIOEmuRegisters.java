@@ -40,60 +40,60 @@ public abstract class PIOEmuRegisters extends RegisterSet
   public enum Regs implements RegistersDocs<Regs>
   {
     SM0_REGX("Direct read / write access to the SM's%n" +
-             "scratch register X.",
+             "scratch register X.", 0,
              new BitsInfo[] {
                new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
              }),
     SM0_REGY("Direct read / write access to the SM's%n" +
-             "scratch register Y.",
+             "scratch register Y.", 0,
              new BitsInfo[] {
                new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
              }),
     SM0_PC("Direct read / write access to the SM's%n" +
-           "instruction pointer / program counter.",
+           "instruction pointer / program counter.", 0,
            new BitsInfo[] {
              new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
            }),
     SM0_ISR("Direct read / write access to the SM's%n" +
-            "input shift register.",
+            "input shift register.", 0,
             new BitsInfo[] {
               new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
              }),
     SM0_ISR_SHIFT_COUNT("Direct read / write access to the SM's%n" +
-                        "input shift count register.",
+                        "input shift count register.", 0,
                         new BitsInfo[] {
                           new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
                         }),
     SM0_OSR("Direct read / write access to all of the SM's%n" +
-            "output shift register.",
+            "output shift register.", 0,
             new BitsInfo[] {
               new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
              }),
     SM0_OSR_SHIFT_COUNT("Direct read / write access to the SM's%n" +
-                        "output shift count register.",
+                        "output shift count register.", 0,
                         new BitsInfo[] {
                           new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
                         }),
-    SM0_FIFO_MEM0("Read / write access to FIFO memory word.",
+    SM0_FIFO_MEM0("Read / write access to FIFO memory word.", 0,
                   new BitsInfo[] {
                     new BitsInfo(null, 31, 0, null, BitsType.RW, 0)
                   }),
-    SM0_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
-    SM0_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
-    SM0_FIFO_MEM3(Regs.SM0_FIFO_MEM0),
-    SM0_FIFO_MEM4(Regs.SM0_FIFO_MEM0),
-    SM0_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
-    SM0_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
-    SM0_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
+    SM0_FIFO_MEM1(Regs.SM0_FIFO_MEM0, 0),
+    SM0_FIFO_MEM2(Regs.SM0_FIFO_MEM0, 0),
+    SM0_FIFO_MEM3(Regs.SM0_FIFO_MEM0, 0),
+    SM0_FIFO_MEM4(Regs.SM0_FIFO_MEM0, 0),
+    SM0_FIFO_MEM5(Regs.SM0_FIFO_MEM0, 0),
+    SM0_FIFO_MEM6(Regs.SM0_FIFO_MEM0, 0),
+    SM0_FIFO_MEM7(Regs.SM0_FIFO_MEM0, 0),
     SM0_CLEAR_FORCED("When writing to this address, any pending%n" +
                      "forced instruction is cancelled, provided that%n" +
-                     "instruction fetch & decode has not yet been started.",
+                     "instruction fetch & decode has not yet been started.", 0,
                      new BitsInfo[] {
                        new BitsInfo(null, 31, 0, null, BitsType.WF, 0)
                      }),
     SM0_CLEAR_EXECD("When writing to this address, any pending%n" +
                     "EXEC'd instruction is cancelled, provided that%n" +
-                    "instruction fetch & decode has not yet been started.",
+                    "instruction fetch & decode has not yet been started.", 0,
                     new BitsInfo[] {
                       new BitsInfo(null, 31, 0, null, BitsType.WF, 0)
                     }),
@@ -107,7 +107,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                      "Note that for memory instructions, the address may%n" +
                      "differ from the value of the instruction pointer PC,%n" +
                      "if the PC has already been updated while the%n" +
-                     "instruction is still in progress.",
+                     "instruction is still in progress.", 0,
                      new BitsInfo[] {
                        new BitsInfo(null, 31, 7, null, BitsType.RESERVED, null),
                        new BitsInfo("CATEGORY", 6, 5,
@@ -129,12 +129,12 @@ public abstract class PIOEmuRegisters extends RegisterSet
                                     BitsType.RO, 0)
                      }),
     SM0_DELAY("Direct read-only access to the SM's%n" +
-              "currently executed instruction's number of delay cycles.",
+              "currently executed instruction's number of delay cycles.", 0,
               new BitsInfo[] {
                 new BitsInfo(null, 31, 5, null, BitsType.RESERVED, null),
                 new BitsInfo(null, 4, 0, null, BitsType.RO, 0)
               }),
-    SM0_DELAY_CYCLE("Read-only access to the SM's delay status.",
+    SM0_DELAY_CYCLE("Read-only access to the SM's delay status.", 0,
                     new BitsInfo[] {
                       new BitsInfo(null, 31, 1, null, BitsType.UNUSED, null),
                       new BitsInfo("DELAY_CYCLE", 0, 0,
@@ -142,7 +142,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                                    "is a delay cycle.", BitsType.RO, 0)
                     }),
     SM0_PENDING_DELAY("Direct read-only access to the SM's%n" +
-                      "number of pending delay cycles.",
+                      "number of pending delay cycles.", 0,
                       new BitsInfo[] {
                         new BitsInfo(null, 31, 5, null, BitsType.RESERVED, null),
                         new BitsInfo("PENDING_DELAY", 4, 0,
@@ -153,7 +153,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
     SM0_FORCED_INSTR("Direct read-only access to the op-code of a forced%n" +
                      "instruction that is awaiting execution during the%n" +
                      "next clock cycle.  For writing a forced instruction,%n" +
-                     "use SMx_INSTR of PIORegisters instead.",
+                     "use SMx_INSTR of PIORegisters instead.", 0,
                       new BitsInfo[] {
                         new BitsInfo(null, 31, 17, null,
                                      BitsType.RESERVED, null),
@@ -171,7 +171,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                     "next clock cycle, unless the state machine's clock%n" +
                     "signal does not evaluate to true, or there is a%n" +
                     "pending forced instruction, in which case the forced%n" +
-                    "instruction will be executed first.",
+                    "instruction will be executed first.", 0,
                     new BitsInfo[] {
                       new BitsInfo(null, 31, 17, null,
                                    BitsType.RESERVED, null),
@@ -185,6 +185,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                                    BitsType.RW, 0)
                     }),
     SM0_CLK_ENABLE("Read-only access to the SM's current clock enable status.",
+                   0,
                    new BitsInfo[] {
                      new BitsInfo(null, 31, 1, null, BitsType.UNUSED, null),
                      new BitsInfo("CLK_ENABLE", 0, 0,
@@ -195,7 +196,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
     SM0_NEXT_CLK_ENABLE("Read-only access to the SM's next clock enable%n" +
                         "status.  May differ from current clock enable%n" +
                         "when master clock phase 1 has been completed,%n" +
-                        "otherwise identical with current clock enable.",
+                        "otherwise identical with current clock enable.", 0,
                    new BitsInfo[] {
                      new BitsInfo(null, 31, 1, null, BitsType.UNUSED, null),
                      new BitsInfo("CLK_ENABLE", 0, 0,
@@ -215,7 +216,7 @@ public abstract class PIOEmuRegisters extends RegisterSet
                     "As soon as the program counter of the state machine%n" +
                     "reaches an address that is marked as a breakpoint,%n" +
                     "master clock MASTERCLK_MODE will be automatically set%n" +
-                    "to single step mode.",
+                    "to single step mode.", 0,
                     IntStream.rangeClosed(0, 31).boxed()
                     .map(n -> new BitsInfo("BP_MEM" + (31 - n), 31 - n, 31 - n,
                                            "0x1, if the memory address is " +
@@ -230,94 +231,94 @@ public abstract class PIOEmuRegisters extends RegisterSet
                     "for example, caontain the state machine's number and%n" +
                     "disassembled instruction with prefixed instruction%n" +
                     "memory address.  Tracepoints work in all master clock%n" +
-                    "MASTERCLK_MODE modes.",
+                    "MASTERCLK_MODE modes.", 0,
                     IntStream.rangeClosed(0, 31).boxed()
                     .map(n -> new BitsInfo("TP_MEM" + (31 - n), 31 - n, 31 - n,
                                            "0x1, if the memory address is " +
                                            "marked as tracepoint.",
                                            BitsType.RW, 0))
                     .collect(Collectors.toList())),
-    SM1_REGX(Regs.SM0_REGX),
-    SM1_REGY(Regs.SM0_REGY),
-    SM1_PC(Regs.SM0_PC),
-    SM1_ISR(Regs.SM0_ISR),
-    SM1_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT),
-    SM1_OSR(Regs.SM0_OSR),
-    SM1_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT),
-    SM1_FIFO_MEM0(Regs.SM0_FIFO_MEM0),
-    SM1_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
-    SM1_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
-    SM1_FIFO_MEM3(Regs.SM0_FIFO_MEM0),
-    SM1_FIFO_MEM4(Regs.SM0_FIFO_MEM0),
-    SM1_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
-    SM1_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
-    SM1_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
-    SM1_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED),
-    SM1_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD),
-    SM1_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
-    SM1_DELAY(Regs.SM0_DELAY),
-    SM1_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
-    SM1_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
-    SM1_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
-    SM1_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
-    SM1_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
-    SM1_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE),
-    SM1_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
-    SM1_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
-    SM2_REGX(Regs.SM0_REGX),
-    SM2_REGY(Regs.SM0_REGY),
-    SM2_PC(Regs.SM0_PC),
-    SM2_ISR(Regs.SM0_ISR),
-    SM2_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT),
-    SM2_OSR(Regs.SM0_OSR),
-    SM2_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT),
-    SM2_FIFO_MEM0(Regs.SM0_FIFO_MEM0),
-    SM2_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
-    SM2_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
-    SM2_FIFO_MEM3(Regs.SM0_FIFO_MEM0),
-    SM2_FIFO_MEM4(Regs.SM0_FIFO_MEM0),
-    SM2_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
-    SM2_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
-    SM2_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
-    SM2_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED),
-    SM2_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD),
-    SM2_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
-    SM2_DELAY(Regs.SM0_DELAY),
-    SM2_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
-    SM2_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
-    SM2_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
-    SM2_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
-    SM2_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
-    SM2_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE),
-    SM2_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
-    SM2_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
-    SM3_REGX(Regs.SM0_REGX),
-    SM3_REGY(Regs.SM0_REGY),
-    SM3_PC(Regs.SM0_PC),
-    SM3_ISR(Regs.SM0_ISR),
-    SM3_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT),
-    SM3_OSR(Regs.SM0_OSR),
-    SM3_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT),
-    SM3_FIFO_MEM0(Regs.SM0_FIFO_MEM0),
-    SM3_FIFO_MEM1(Regs.SM0_FIFO_MEM0),
-    SM3_FIFO_MEM2(Regs.SM0_FIFO_MEM0),
-    SM3_FIFO_MEM3(Regs.SM0_FIFO_MEM0),
-    SM3_FIFO_MEM4(Regs.SM0_FIFO_MEM0),
-    SM3_FIFO_MEM5(Regs.SM0_FIFO_MEM0),
-    SM3_FIFO_MEM6(Regs.SM0_FIFO_MEM0),
-    SM3_FIFO_MEM7(Regs.SM0_FIFO_MEM0),
-    SM3_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED),
-    SM3_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD),
-    SM3_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN),
-    SM3_DELAY(Regs.SM0_DELAY),
-    SM3_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE),
-    SM3_PENDING_DELAY(Regs.SM0_PENDING_DELAY),
-    SM3_FORCED_INSTR(Regs.SM0_FORCED_INSTR),
-    SM3_EXECD_INSTR(Regs.SM0_EXECD_INSTR),
-    SM3_CLK_ENABLE(Regs.SM0_CLK_ENABLE),
-    SM3_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE),
-    SM3_BREAKPOINTS(Regs.SM0_BREAKPOINTS),
-    SM3_TRACEPOINTS(Regs.SM0_TRACEPOINTS),
+    SM1_REGX(Regs.SM0_REGX, 1),
+    SM1_REGY(Regs.SM0_REGY, 1),
+    SM1_PC(Regs.SM0_PC, 1),
+    SM1_ISR(Regs.SM0_ISR, 1),
+    SM1_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT, 1),
+    SM1_OSR(Regs.SM0_OSR, 1),
+    SM1_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT, 1),
+    SM1_FIFO_MEM0(Regs.SM0_FIFO_MEM0, 1),
+    SM1_FIFO_MEM1(Regs.SM0_FIFO_MEM0, 1),
+    SM1_FIFO_MEM2(Regs.SM0_FIFO_MEM0, 1),
+    SM1_FIFO_MEM3(Regs.SM0_FIFO_MEM0, 1),
+    SM1_FIFO_MEM4(Regs.SM0_FIFO_MEM0, 1),
+    SM1_FIFO_MEM5(Regs.SM0_FIFO_MEM0, 1),
+    SM1_FIFO_MEM6(Regs.SM0_FIFO_MEM0, 1),
+    SM1_FIFO_MEM7(Regs.SM0_FIFO_MEM0, 1),
+    SM1_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED, 1),
+    SM1_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD, 1),
+    SM1_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN, 1),
+    SM1_DELAY(Regs.SM0_DELAY, 1),
+    SM1_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE, 1),
+    SM1_PENDING_DELAY(Regs.SM0_PENDING_DELAY, 1),
+    SM1_FORCED_INSTR(Regs.SM0_FORCED_INSTR, 1),
+    SM1_EXECD_INSTR(Regs.SM0_EXECD_INSTR, 1),
+    SM1_CLK_ENABLE(Regs.SM0_CLK_ENABLE, 1),
+    SM1_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE, 1),
+    SM1_BREAKPOINTS(Regs.SM0_BREAKPOINTS, 1),
+    SM1_TRACEPOINTS(Regs.SM0_TRACEPOINTS, 1),
+    SM2_REGX(Regs.SM0_REGX, 2),
+    SM2_REGY(Regs.SM0_REGY, 2),
+    SM2_PC(Regs.SM0_PC, 2),
+    SM2_ISR(Regs.SM0_ISR, 2),
+    SM2_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT, 2),
+    SM2_OSR(Regs.SM0_OSR, 2),
+    SM2_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT, 2),
+    SM2_FIFO_MEM0(Regs.SM0_FIFO_MEM0, 2),
+    SM2_FIFO_MEM1(Regs.SM0_FIFO_MEM0, 2),
+    SM2_FIFO_MEM2(Regs.SM0_FIFO_MEM0, 2),
+    SM2_FIFO_MEM3(Regs.SM0_FIFO_MEM0, 2),
+    SM2_FIFO_MEM4(Regs.SM0_FIFO_MEM0, 2),
+    SM2_FIFO_MEM5(Regs.SM0_FIFO_MEM0, 2),
+    SM2_FIFO_MEM6(Regs.SM0_FIFO_MEM0, 2),
+    SM2_FIFO_MEM7(Regs.SM0_FIFO_MEM0, 2),
+    SM2_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED, 2),
+    SM2_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD, 2),
+    SM2_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN, 2),
+    SM2_DELAY(Regs.SM0_DELAY, 2),
+    SM2_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE, 2),
+    SM2_PENDING_DELAY(Regs.SM0_PENDING_DELAY, 2),
+    SM2_FORCED_INSTR(Regs.SM0_FORCED_INSTR, 2),
+    SM2_EXECD_INSTR(Regs.SM0_EXECD_INSTR, 2),
+    SM2_CLK_ENABLE(Regs.SM0_CLK_ENABLE, 2),
+    SM2_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE, 2),
+    SM2_BREAKPOINTS(Regs.SM0_BREAKPOINTS, 2),
+    SM2_TRACEPOINTS(Regs.SM0_TRACEPOINTS, 2),
+    SM3_REGX(Regs.SM0_REGX, 3),
+    SM3_REGY(Regs.SM0_REGY, 3),
+    SM3_PC(Regs.SM0_PC, 3),
+    SM3_ISR(Regs.SM0_ISR, 3),
+    SM3_ISR_SHIFT_COUNT(Regs.SM0_ISR_SHIFT_COUNT, 3),
+    SM3_OSR(Regs.SM0_OSR, 3),
+    SM3_OSR_SHIFT_COUNT(Regs.SM0_OSR_SHIFT_COUNT, 3),
+    SM3_FIFO_MEM0(Regs.SM0_FIFO_MEM0, 3),
+    SM3_FIFO_MEM1(Regs.SM0_FIFO_MEM0, 3),
+    SM3_FIFO_MEM2(Regs.SM0_FIFO_MEM0, 3),
+    SM3_FIFO_MEM3(Regs.SM0_FIFO_MEM0, 3),
+    SM3_FIFO_MEM4(Regs.SM0_FIFO_MEM0, 3),
+    SM3_FIFO_MEM5(Regs.SM0_FIFO_MEM0, 3),
+    SM3_FIFO_MEM6(Regs.SM0_FIFO_MEM0, 3),
+    SM3_FIFO_MEM7(Regs.SM0_FIFO_MEM0, 3),
+    SM3_CLEAR_FORCED(Regs.SM0_CLEAR_FORCED, 3),
+    SM3_CLEAR_EXECD(Regs.SM0_CLEAR_EXECD, 3),
+    SM3_INSTR_ORIGIN(Regs.SM0_INSTR_ORIGIN, 3),
+    SM3_DELAY(Regs.SM0_DELAY, 3),
+    SM3_DELAY_CYCLE(Regs.SM0_DELAY_CYCLE, 3),
+    SM3_PENDING_DELAY(Regs.SM0_PENDING_DELAY, 3),
+    SM3_FORCED_INSTR(Regs.SM0_FORCED_INSTR, 3),
+    SM3_EXECD_INSTR(Regs.SM0_EXECD_INSTR, 3),
+    SM3_CLK_ENABLE(Regs.SM0_CLK_ENABLE, 3),
+    SM3_NEXT_CLK_ENABLE(Regs.SM0_NEXT_CLK_ENABLE, 3),
+    SM3_BREAKPOINTS(Regs.SM0_BREAKPOINTS, 3),
+    SM3_TRACEPOINTS(Regs.SM0_TRACEPOINTS, 3),
     INSTR_MEM0("Read / write access to instruction memory word.",
                new BitsInfo[] {
                  new BitsInfo(null, 31, 16, null, BitsType.UNUSED, null),
@@ -359,23 +360,23 @@ public abstract class PIOEmuRegisters extends RegisterSet
          "read from an empty FIFO has no effect on the FIFO state,%n" +
          "and sets the sticky FDEBUG_TXUNDER error flag for this FIFO.%n" +
          "The data returned to the system on a read from an empty FIFO%n" +
-         "is undefined.",
+         "is undefined.", 0,
          new BitsInfo[] {
            new BitsInfo(null, 31, 0, null, BitsType.RF, null)
          }),
-    TXF1(Regs.TXF0),
-    TXF2(Regs.TXF0),
-    TXF3(Regs.TXF0),
+    TXF1(Regs.TXF0, 1),
+    TXF2(Regs.TXF0, 2),
+    TXF3(Regs.TXF0, 3),
     RXF0("Direct write access to the RX FIFO for the corresponding state%n" +
          "machine.  Each write pushes one word to the FIFO.  Attempting to%n" +
          "write to a full FIFO has no effect on the FIFO state or contents,%n" +
-         "and sets the sticky FDEBUG_RXOVER error flag for this FIFO.",
+         "and sets the sticky FDEBUG_RXOVER error flag for this FIFO.", 0,
          new BitsInfo[] {
            new BitsInfo(null, 31, 0, null, BitsType.WF, 0)
          }),
-    RXF1(Regs.RXF0),
-    RXF2(Regs.RXF0),
-    RXF3(Regs.RXF0),
+    RXF1(Regs.RXF0, 1),
+    RXF2(Regs.RXF0, 2),
+    RXF3(Regs.RXF0, 3),
     FREAD_PTR("Read pointers of all of the SM's TX and RX FIFOs.",
               IntStream.rangeClosed(0, 7).boxed()
               .map(n -> new BitsInfo(((n & 0x1) == 0 ? "TX" : "RX") + "F" +
@@ -438,17 +439,34 @@ public abstract class PIOEmuRegisters extends RegisterSet
 
     private Regs(final Regs ref)
     {
-      this(ref.getRegisterDetails());
+      this(ref.registerDetails);
+    }
+
+    private Regs(final Regs ref, final int smNum)
+    {
+      this(ref.registerDetails.createCopyForDifferentSm(smNum));
     }
 
     private Regs(final String info, final BitsInfo[] bitsInfos)
     {
-      this(RegistersDocs.createRegisterDetails(info, bitsInfos));
+      this(new RegisterDetails(info, bitsInfos));
     }
 
     private Regs(final String info, final List<BitsInfo> bitsInfos)
     {
-      this(RegistersDocs.createRegisterDetails(info, bitsInfos));
+      this(new RegisterDetails(info, bitsInfos));
+    }
+
+    private Regs(final String info, final int smNum,
+                 final BitsInfo[] bitsInfos)
+    {
+      this(new RegisterDetails(info, smNum, bitsInfos));
+    }
+
+    private Regs(final String info, final int smNum,
+                 final List<BitsInfo> bitsInfos)
+    {
+      this(new RegisterDetails(info, smNum, bitsInfos));
     }
 
     private Regs(final RegisterDetails registerDetails)

@@ -27,6 +27,7 @@ package org.soundpaint.rp2040pio.doctool;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import org.soundpaint.rp2040pio.Constants;
 
 /**
@@ -235,7 +236,7 @@ public interface RegistersDocs<T>
 
   public static class RegisterDetails
   {
-    public static int SM_UNDEFINED = -1;
+    public static final int SM_UNDEFINED = -1;
 
     private String info;
     private int smNum;
@@ -258,6 +259,12 @@ public interface RegistersDocs<T>
       this(info, Arrays.asList(bitsInfos));
     }
 
+    public RegisterDetails(final String info, final int smNum,
+                           final BitsInfo[] bitsInfos)
+    {
+      this(info, smNum, Arrays.asList(bitsInfos));
+    }
+
     public RegisterDetails(final String info, final List<BitsInfo> bitsInfos)
     {
       this(info, SM_UNDEFINED, bitsInfos);
@@ -266,6 +273,8 @@ public interface RegistersDocs<T>
     public RegisterDetails(final String info, final int smNum,
                            final List<BitsInfo> bitsInfos)
     {
+      Objects.requireNonNull(info);
+      Objects.requireNonNull(bitsInfos);
       checkSmNum(smNum);
       this.info = info;
       this.smNum = smNum;
@@ -283,28 +292,15 @@ public interface RegistersDocs<T>
       bitsInfosCopy.addAll(bitsInfos);
       return bitsInfosCopy;
     }
+
+    public RegisterDetails createCopyForDifferentSm(final int smNum)
+    {
+      return new RegisterDetails(info, smNum, bitsInfos);
+    }
   }
 
   String getInfo();
   RegisterDetails getRegisterDetails();
-
-  static RegisterDetails createRegisterDetails(final String info,
-                                               final BitsInfo[] bitsInfos)
-  {
-    return
-      bitsInfos == null ?
-      (RegisterDetails)null :
-      new RegisterDetails(info, bitsInfos);
-  }
-
-  static RegisterDetails createRegisterDetails(final String info,
-                                               final List<BitsInfo> bitsInfos)
-  {
-    return
-      bitsInfos == null ?
-      (RegisterDetails)null :
-      new RegisterDetails(info, bitsInfos);
-  }
 }
 
 /*
