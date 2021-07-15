@@ -38,10 +38,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.soundpaint.rp2040pio.Constants;
+import org.soundpaint.rp2040pio.PIOEmuRegisters;
+import org.soundpaint.rp2040pio.PIORegisters;
 import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class ValueRenderingPanel extends JPanel
+public class ValueRenderingPanel extends JPanel implements Constants
 {
   private static final long serialVersionUID = -5251622302191656176L;
 
@@ -54,6 +56,7 @@ public class ValueRenderingPanel extends JPanel
 
   private static class SignalParams
   {
+    private final Diagram diagram;
     private final SDK sdk;
     private final int pioNum;
     private final int smNum;
@@ -61,26 +64,29 @@ public class ValueRenderingPanel extends JPanel
     private final int address;
     private final int msb;
     private final int lsb;
-    private final boolean showAddress;
     private final Supplier<Boolean> displayFilter;
+    private final boolean isSmInstr;
 
     private SignalParams()
     {
       throw new UnsupportedOperationException("unsupported default constructor");
     }
 
-    private SignalParams(final SDK sdk,
+    private SignalParams(final Diagram diagram,
+                         final SDK sdk,
                          final int pioNum,
                          final int smNum,
                          final String label,
                          final int address,
                          final int msb,
                          final int lsb,
-                         final boolean showAddress,
                          final Supplier<Boolean> displayFilter)
+      throws IOException
     {
+      Objects.requireNonNull(diagram);
       Objects.requireNonNull(sdk);
       Objects.requireNonNull(label);
+      this.diagram = diagram;
       this.sdk = sdk;
       this.pioNum = pioNum;
       this.label = label;
@@ -88,8 +94,86 @@ public class ValueRenderingPanel extends JPanel
       this.smNum = smNum;
       this.msb = msb;
       this.lsb = lsb;
-      this.showAddress = showAddress;
       this.displayFilter = displayFilter;
+      /*
+       * TODO: For safety against clashing register names in different
+       * register sets, we should have version of getLabelForAddress()
+       * including the register set's name as prefix, e.g. "PIOx_".
+       */
+      isSmInstr = sdk.getLabelForAddress(address).matches("SM\\d_INSTR");
+    }
+
+    private PIOSDK.InstructionInfo getInstructionFromOpCode(final int cycle,
+                                                            final int value)
+    {
+      final int pinCtrlSidesetCount;
+      final boolean execCtrlSideEn;
+      final boolean isDelayCycle;
+      final int delay;
+      final int origin;
+      final String addressLabel;
+      final int signalSize = diagram.getModel().getSignalSize();
+      if ((pioNum >= 0) && (smNum >= 0) && (cycle > 0)) {
+        final int smPinCtrlSidesetCountAddress =
+          PIORegisters.getSMAddress(pioNum, smNum,
+                                    PIORegisters.Regs.SM0_PINCTRL);
+        pinCtrlSidesetCount =
+          (diagram.getInternalSignalByAddress(smPinCtrlSidesetCountAddress).
+           getValue() &
+           SM0_PINCTRL_SIDESET_COUNT_BITS) >>> SM0_PINCTRL_SIDESET_COUNT_LSB;
+        final int smExecCtrlSideEnAddress =
+          PIORegisters.getSMAddress(pioNum, smNum,
+                                    PIORegisters.Regs.SM0_EXECCTRL);
+        execCtrlSideEn =
+          (diagram.getInternalSignalByAddress(smExecCtrlSideEnAddress).
+           getValue() &
+           SM0_EXECCTRL_SIDE_EN_BITS) != 0x0;
+        if (isSmInstr) {
+          final int smDelayCycleAddress =
+            PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                         PIOEmuRegisters.Regs.SM0_DELAY_CYCLE);
+          /*
+            FIXME: For some reason, the following code does not work correctly:
+
+          isDelayCycle =
+            diagram.getInternalSignalByAddress(smDelayCycleAddress).
+            getValue(cycle) == 0x1;
+          */
+          isDelayCycle = false; // TODO: Eliminate this workaround.
+
+          final int smDelayAddress =
+            PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                         PIOEmuRegisters.Regs.SM0_DELAY);
+          delay =
+            diagram.getInternalSignalByAddress(smDelayAddress).
+            getValue();
+          final int instrOriginAddress =
+            PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                         PIOEmuRegisters.Regs.SM0_INSTR_ORIGIN);
+          final int instrOrigin =
+            diagram.getInternalSignalByAddress(instrOriginAddress).
+            getValue(cycle - 1);
+          origin = PIOSDK.decodeInstrOrigin(instrOrigin);
+          addressLabel = PIOSDK.renderOrigin(origin) + ": ";
+        } else {
+          isDelayCycle = false;
+          delay = 0;
+          origin = INSTR_ORIGIN_UNKNOWN;
+          addressLabel = "";
+        }
+      } else {
+        pinCtrlSidesetCount = 0;
+        execCtrlSideEn = false;
+        isDelayCycle = false;
+        delay = 0;
+        origin = INSTR_ORIGIN_UNKNOWN;
+        addressLabel = "";
+      }
+      final boolean format = false;
+      return
+        PIOSDK.getInstructionFromOpCode(pinCtrlSidesetCount, execCtrlSideEn,
+                                        origin, addressLabel, value, format,
+                                        isDelayCycle, delay);
     }
   }
 
@@ -109,8 +193,10 @@ public class ValueRenderingPanel extends JPanel
                                             signalParams.address,
                                             signalParams.msb,
                                             signalParams.lsb,
-                                            (value) ->
+                                            (cycle, value) ->
                                             formatBinary(value, bitSize),
+                                            (cycle, value) ->
+                                            "0b" + formatBinary(value, bitSize),
                                             signalParams.displayFilter)),
     Unsigned("unsigned decimal",
              "decimal representation of unsigned integer value",
@@ -120,7 +206,9 @@ public class ValueRenderingPanel extends JPanel
                                               signalParams.address,
                                               signalParams.msb,
                                               signalParams.lsb,
-                                              (value) ->
+                                              (cycle, value) ->
+                                              formatUnsigned(value),
+                                              (cycle, value) ->
                                               formatUnsigned(value),
                                               signalParams.displayFilter)),
     Signed("signed decimal",
@@ -131,7 +219,9 @@ public class ValueRenderingPanel extends JPanel
                                             signalParams.address,
                                             signalParams.msb,
                                             signalParams.lsb,
-                                            (value) ->
+                                            (cycle, value) ->
+                                            formatSigned(value),
+                                            (cycle, value) ->
                                             formatSigned(value),
                                             signalParams.displayFilter)),
     Hex("hexadecimal",
@@ -142,8 +232,10 @@ public class ValueRenderingPanel extends JPanel
                                          signalParams.address,
                                          signalParams.msb,
                                          signalParams.lsb,
-                                         (value) ->
+                                         (cycle, value) ->
                                          formatHex(value, bitSize),
+                                         (cycle, value) ->
+                                         "0x" + formatHex(value, bitSize),
                                          signalParams.displayFilter)),
     Octal("octal",
           "octal representation of unsigned integer value",
@@ -153,8 +245,10 @@ public class ValueRenderingPanel extends JPanel
                                            signalParams.address,
                                            signalParams.msb,
                                            signalParams.lsb,
-                                           (value) ->
+                                           (cycle, value) ->
                                            formatOctal(value, bitSize),
+                                           (cycle, value) ->
+                                           "0o" + formatOctal(value, bitSize),
                                            signalParams.displayFilter)),
     Mnemonic("PIO instruction with side-set for below target state machine",
              "mnemonic of PIO instruction with op-code that equals the value",
@@ -164,9 +258,12 @@ public class ValueRenderingPanel extends JPanel
                                               signalParams.address,
                                               signalParams.msb,
                                               signalParams.lsb,
-                                              (value) ->
-                                              formatMnemonic(value,
-                                                             signalParams),
+                                              (cycle, value) ->
+                                              formatShortMnemonic(cycle, value,
+                                                                  signalParams),
+                                              (cycle, value) ->
+                                              formatFullMnemonic(cycle, value,
+                                                                 signalParams),
                                               signalParams.displayFilter));
 
     private static String formatBinary(final int value, final int bitSize)
@@ -199,21 +296,24 @@ public class ValueRenderingPanel extends JPanel
         String.format("%" + (bitSize / 3 + 1) + "s", digits).replace(' ', '0');
     }
 
-    private static String formatMnemonic(final int value,
-                                         final SignalParams signalParams)
+    private static String formatShortMnemonic(final int cycle,
+                                              final int value,
+                                              final SignalParams signalParams)
     {
-      // TODO: determine side-set cfg by signalParams pioNum + smNum
-      final int pinCtrlSidesetCount = 0; // TODO
-      final boolean execCtrlSideEn = false; // TODO
-      final int origin = Constants.INSTR_ORIGIN_UNKNOWN; // TODO
-      final String addressLabel = ""; // TODO
-      final boolean format = false; // TODO
-      final boolean isDelayCycle = false; // TODO
-      final int delay = 0; // TODO
+      return signalParams.getInstructionFromOpCode(cycle, value).toString();
+    }
+
+    private static String formatFullMnemonic(final int cycle,
+                                             final int value,
+                                             final SignalParams signalParams)
+    {
+      /*
+       * TODO: Performance: Avoid re-creating the same InstructionInfo
+       * again that has already been constructed in the course of
+       * executing method formatShortMnemonic().
+       */
       return
-        PIOSDK.getInstructionFromOpCode(pinCtrlSidesetCount, execCtrlSideEn,
-                                        origin, addressLabel, value, format,
-                                        isDelayCycle, delay).toString();
+        signalParams.getInstructionFromOpCode(cycle, value).getToolTipText();
     }
 
     private final String label;
@@ -269,6 +369,9 @@ public class ValueRenderingPanel extends JPanel
     final boolean selected = representation == Representation.Signed;
     final JRadioButton rbRepresentation =
       new JRadioButton(representation.toString(), selected);
+    if (selected) {
+      selectedRendering = representation;
+    }
     rbRepresentation.addActionListener((action) ->
                                        renderingSelected(representation));
     buttonGroup.add(rbRepresentation);
@@ -296,7 +399,6 @@ public class ValueRenderingPanel extends JPanel
                              final int lsb,
                              final Supplier<Boolean> displayFilter)
   {
-    final boolean showAddress = false; // TODO
     if ((msb < 0) || (lsb < 0)) {
       JOptionPane.showMessageDialog(this,
                                     "Please select a contiguous range of bits.",
@@ -306,8 +408,8 @@ public class ValueRenderingPanel extends JPanel
     }
     try {
       final SignalParams signalParams =
-        new SignalParams(sdk, pioNum, smNum, label, address, msb, lsb,
-                         showAddress, displayFilter);
+        new SignalParams(diagram, sdk, pioNum, smNum, label, address,
+                         msb, lsb, displayFilter);
       return
         selectedRendering.signalCreator.apply(signalParams, msb - lsb + 1);
     } catch (final IOException e) {

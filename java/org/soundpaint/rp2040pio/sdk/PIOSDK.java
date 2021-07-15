@@ -221,20 +221,25 @@ public class PIOSDK implements Constants
                                isDelayCycle, delay);
   }
 
+  public static int decodeInstrOrigin(final int encoded)
+  {
+    final int originMode = (encoded >>> 5) & 0x3;
+    return
+      originMode == INSTR_ORIGIN_MEMORY ?
+      encoded & (MEMORY_SIZE - 1) :
+      ~((~originMode) & 0x3);
+  }
+
   private int getInstrOrigin(final int smNum) throws IOException
   {
     final int instrOriginAddress =
       PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                    PIOEmuRegisters.Regs.SM0_INSTR_ORIGIN);
     final int instrOrigin = memory.readAddress(instrOriginAddress);
-    final int originMode = (instrOrigin >>> 5) & 0x3;
-    return
-      originMode == INSTR_ORIGIN_MEMORY ?
-      instrOrigin & (MEMORY_SIZE - 1) :
-      ~((~originMode) & 0x3);
+    return decodeInstrOrigin(instrOrigin);
   }
 
-  private String renderOrigin(final int origin)
+  public static String renderOrigin(final int origin)
   {
     if (origin >= 0) {
       return String.format("%02x", origin);

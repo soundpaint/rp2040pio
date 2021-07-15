@@ -67,19 +67,22 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
     record(valueGetter.get(), enforceChanged);
   }
 
-  private void addToolTip(final List<ToolTip> toolTips,
-                          final int x0, final int y0,
-                          final int x1, final int y1,
-                          final String text)
+  private static void addToolTip(final List<ToolTip> toolTips,
+                                 final int x0, final int y0,
+                                 final int x1, final int y1,
+                                 final String text)
   {
     toolTips.add(new ToolTip(x0, y0, x1, y1, text));
   }
 
-  private void paintValuedLabel(final List<ToolTip> toolTips,
-                                final Graphics2D g, final double zoom,
-                                final double xStart, final double yBottom,
-                                final String label, final String toolTipText,
-                                final int cycles)
+  private static void paintValuedLabel(final List<ToolTip> toolTips,
+                                       final Graphics2D g,
+                                       final double zoom,
+                                       final double xStart,
+                                       final double yBottom,
+                                       final String label,
+                                       final String toolTipText,
+                                       final int cycles)
   {
     if (label != null) {
       g.setFont(VALUE_FONT);

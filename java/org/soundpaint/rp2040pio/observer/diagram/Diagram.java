@@ -33,6 +33,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
 import org.soundpaint.rp2040pio.PIORegisters;
@@ -99,6 +100,11 @@ public class Diagram extends GUIObserver
     return view;
   }
 
+  public DiagramModel getModel()
+  {
+    return model;
+  }
+
   @Override
   protected ActionPanel createActionPanel(final PrintStream console)
   {
@@ -128,8 +134,47 @@ public class Diagram extends GUIObserver
     scriptDialog.setVisible(true);
   }
 
+  /**
+   * Add pseudo signals that are not directly displayed, but provided
+   * for shared use for instruction rendering.
+   */
+  private void createInternalSignals() throws IOException
+  {
+    for (int pioNum = 0; pioNum < Constants.PIO_NUM; pioNum++) {
+      for (int smNum = 0; smNum < Constants.SM_COUNT; smNum++) {
+        final String labelPrefix = String.format("_PIO%d_SM%d_", pioNum, smNum);
+        final int addressPinCtrl =
+          PIORegisters.getSMAddress(pioNum, smNum,
+                                    PIORegisters.Regs.SM0_PINCTRL);
+        final String labelPinCtrl = labelPrefix + "PINCTRL";
+        model.addInternalSignal(labelPinCtrl, addressPinCtrl);
+        final int addressExecCtrl =
+          PIORegisters.getSMAddress(pioNum, smNum,
+                                    PIORegisters.Regs.SM0_EXECCTRL);
+        final String labelExecCtrl = labelPrefix + "EXECCTRL";
+        model.addInternalSignal(labelExecCtrl, addressExecCtrl);
+        final int addressDelayCycle =
+          PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                       PIOEmuRegisters.Regs.SM0_DELAY_CYCLE);
+        final String labelDelayCycle = labelPrefix + "DELAY_CYCLE";
+        model.addInternalSignal(labelDelayCycle, addressDelayCycle);
+        final int addressDelay =
+          PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                       PIOEmuRegisters.Regs.SM0_DELAY);
+        final String labelDelay = labelPrefix + "DELAY";
+        model.addInternalSignal(labelDelay, addressDelay);
+        final int addressInstrOrigin =
+          PIOEmuRegisters.getSMAddress(pioNum, smNum,
+                                       PIOEmuRegisters.Regs.SM0_INSTR_ORIGIN);
+        final String labelInstrOrigin = labelPrefix + "INSTR_ORIGIN";
+        model.addInternalSignal(labelInstrOrigin, addressInstrOrigin);
+      }
+    }
+  }
+
   private void configureModel() throws IOException
   {
+    createInternalSignals();
     model.addSignal(SignalFactory.createRuler("cycle#")).setVisible(true);
     model.addSignal(SignalFactory.createClockSignal("clock")).setVisible(true);
     model.addSignal(PIOEmuRegisters.
@@ -186,6 +231,11 @@ public class Diagram extends GUIObserver
   public void setZoom(final int zoom)
   {
     diagramPanel.setZoom(zoom);
+  }
+
+  public ValuedSignal<Integer> getInternalSignalByAddress(final int address)
+  {
+    return model.getInternalSignalByAddress(address);
   }
 
   public void pullSignals(final List<Signal> signals)

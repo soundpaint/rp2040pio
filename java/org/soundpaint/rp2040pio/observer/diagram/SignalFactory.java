@@ -25,7 +25,7 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
@@ -112,9 +112,9 @@ public class SignalFactory
     };
     final ValuedSignal<PIOSDK.InstructionInfo> instructionSignal =
       new ValuedSignal<PIOSDK.InstructionInfo>(signalLabel, valueGetter);
-    instructionSignal.setRenderer((instructionInfo) ->
+    instructionSignal.setRenderer((cycle, instructionInfo) ->
                                   instructionInfo.toString());
-    instructionSignal.setToolTipTexter((instructionInfo) ->
+    instructionSignal.setToolTipTexter((cycle, instructionInfo) ->
                                        instructionInfo.getToolTipText());
     return instructionSignal;
   }
@@ -161,6 +161,22 @@ public class SignalFactory
   }
 
   public static ValuedSignal<Integer>
+    createInternal(final SDK sdk, final String label,
+                   final int address)
+    throws IOException
+  {
+    return
+      new ValuedSignal<Integer>(label,
+                                () -> {
+                                  try {
+                                    return sdk.readAddress(address);
+                                  } catch (final IOException e) {
+                                    // TODO: console.println(e.getMessage());
+                                    return null;
+                                  }});
+  }
+
+  public static ValuedSignal<Integer>
     createFromRegister(final SDK sdk, final String label,
                        final int address)
     throws IOException
@@ -183,14 +199,16 @@ public class SignalFactory
     throws IOException
   {
     return createFromRegister(sdk, label, address, msb, lsb,
-                              (value) -> String.format("%x", value),
+                              (cycle, value) -> String.format("%x", value),
+                              (cycle, value) -> String.format("0x%x", value),
                               displayFilter);
   }
 
   public static ValuedSignal<Integer>
     createFromRegister(final SDK sdk, final String label,
                        final int address, final int msb, final int lsb,
-                       final Function<Integer, String> renderer,
+                       final BiFunction<Integer, Integer, String> valueRenderer,
+                       final BiFunction<Integer, Integer, String> toolTipRenderer,
                        final Supplier<Boolean> displayFilter)
     throws IOException
   {
@@ -211,7 +229,12 @@ public class SignalFactory
     };
     final ValuedSignal<Integer> intSignal =
       new ValuedSignal<Integer>(signalLabel, supplier);
-    intSignal.setRenderer((intValue) -> renderer.apply(intValue));
+    intSignal.setRenderer((cycle, intValue) ->
+                          valueRenderer.apply(cycle, intValue));
+    if (toolTipRenderer != null) {
+      intSignal.setToolTipTexter((cycle, intValue) ->
+                                 toolTipRenderer.apply(cycle, intValue));
+    }
     return intSignal;
   }
 }

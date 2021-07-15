@@ -70,18 +70,7 @@ public class SignalPanel extends JComponent implements Constants
   }
 
   @Override
-  public String getToolTipText(final MouseEvent event) {
-    return getDiagramToolTipText(event);
-  }
-
-  private void addToolTip(final int x0, final int y0,
-                          final int x1, final int y1,
-                          final String text)
-  {
-    toolTips.add(new ToolTip(x0, y0, x1, y1, text));
-  }
-
-  private String getDiagramToolTipText(final MouseEvent event)
+  public String getToolTipText(final MouseEvent event)
   {
     final Point p = event.getPoint();
     for (final ToolTip toolTip: toolTips) {
@@ -153,6 +142,9 @@ public class SignalPanel extends JComponent implements Constants
     g.setColor(Color.BLACK);
     g.setStroke(PLAIN_STROKE);
     double y = TOP_MARGIN;
+    for (final ValuedSignal<Integer> signal : model.getInternalSignals()) {
+      signal.next();
+    }
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         final double height =
@@ -187,11 +179,7 @@ public class SignalPanel extends JComponent implements Constants
     final int rightMostCycle =
       Math.min(model.getSignalSize(),
                x2cycle(clipBounds.x + clipBounds.width - 1) + 1);
-    for (final Signal signal : model) {
-      if (signal.getVisible()) {
-        signal.rewind(leftMostCycle);
-      }
-    }
+    model.rewind(leftMostCycle);
     for (int cycle = leftMostCycle; cycle < rightMostCycle; cycle++) {
       final double x = LEFT_MARGIN + cycle * zoom;
       final boolean firstCycle = cycle == 0;

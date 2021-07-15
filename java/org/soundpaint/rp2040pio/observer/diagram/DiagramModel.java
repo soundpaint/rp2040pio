@@ -27,6 +27,8 @@ package org.soundpaint.rp2040pio.observer.diagram;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
@@ -36,6 +38,7 @@ public class DiagramModel implements Iterable<Signal>
 {
   private final PrintStream console;
   private final SDK sdk;
+  private final HashMap<Integer, ValuedSignal<Integer>> address2internalSignal;
   private final List<Signal> signals;
   private long wallClock;
   private int signalSize;
@@ -56,6 +59,7 @@ public class DiagramModel implements Iterable<Signal>
     }
     this.console = console;
     this.sdk = sdk;
+    address2internalSignal = new HashMap<Integer, ValuedSignal<Integer>>();
     signals = new ArrayList<Signal>();
     wallClock = -1;
     signalSize = 0;
@@ -64,6 +68,37 @@ public class DiagramModel implements Iterable<Signal>
   public Iterator<Signal> iterator()
   {
     return signals.iterator();
+  }
+
+  public Collection<ValuedSignal<Integer>> getInternalSignals()
+  {
+    return address2internalSignal.values();
+  }
+
+  public void rewind(final int cycle)
+  {
+    for (final ValuedSignal<Integer> signal : address2internalSignal.values()) {
+      signal.rewind(cycle);
+    }
+    for (final Signal signal : signals) {
+      if (signal.getVisible()) {
+        signal.rewind(cycle);
+      }
+    }
+  }
+
+  public Signal addInternalSignal(final String label, final int address)
+    throws IOException
+  {
+    final ValuedSignal<Integer> signal =
+      SignalFactory.createInternal(sdk, label, address);
+    address2internalSignal.put(address, signal);
+    return signal;
+  }
+
+  public ValuedSignal<Integer> getInternalSignalByAddress(final int address)
+  {
+    return address2internalSignal.get(address);
   }
 
   public Signal addSignal(final Signal signal)
@@ -133,6 +168,9 @@ public class DiagramModel implements Iterable<Signal>
 
   public void resetSignals()
   {
+    for (final Signal signal : address2internalSignal.values()) {
+      signal.reset();
+    }
     for (final Signal signal : signals) {
       signal.reset();
     }
@@ -141,6 +179,9 @@ public class DiagramModel implements Iterable<Signal>
 
   private void appendRecordToSignals()
   {
+    for (final Signal signal : address2internalSignal.values()) {
+      signal.record();
+    }
     for (final Signal signal : signals) {
       if (signal.getVisible()) {
         signal.record();

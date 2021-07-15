@@ -26,7 +26,7 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 public abstract class AbstractSignal<T> implements Signal
 {
@@ -56,8 +56,8 @@ public abstract class AbstractSignal<T> implements Signal
 
   private final List<SignalRecord<T>> signalRecords;
   private final String label;
-  private Function<T, String> renderer;
-  private Function<T, String> toolTipTexter;
+  private BiFunction<Integer, T, String> renderer;
+  private BiFunction<Integer, T, String> toolTipTexter;
   private int replayIndex;
   private boolean visible;
 
@@ -146,17 +146,25 @@ public abstract class AbstractSignal<T> implements Signal
 
   public boolean next()
   {
-    if (replayIndex >= signalRecords.size()) return false;
-    final SignalRecord<T> signalRecord = signalRecords.get(replayIndex++);
+    if (replayIndex > signalRecords.size()) return false;
+    replayIndex++;
     return true;
   }
 
   public T getValue()
   {
-    return
-      replayIndex > 0 ? signalRecords.get(replayIndex - 1).value : null;
+    return replayIndex > 0 ? signalRecords.get(replayIndex - 1).value : null;
   }
 
+  public T getValue(final int index)
+  {
+    return
+      index < 0 ?
+      null :
+      (index >= size() ? null : signalRecords.get(index).value);
+  }
+
+  @Override
   public int getNotChangedSince()
   {
     return
@@ -170,17 +178,17 @@ public abstract class AbstractSignal<T> implements Signal
    * reverting to the default behavior of calling method
    * String.valueOf(value) for rendering.
    */
-  public void setRenderer(final Function<T, String> renderer)
+  public void setRenderer(final BiFunction<Integer, T, String> renderer)
   {
     this.renderer = renderer;
   }
 
-  protected String renderValue(final T value)
+  protected String renderValue(final int cycle, final T value)
   {
     if (value == null)
       return null;
     else if (renderer != null)
-      return renderer.apply(value);
+      return renderer.apply(cycle, value);
     else
       return String.valueOf(value);
   }
@@ -188,7 +196,7 @@ public abstract class AbstractSignal<T> implements Signal
   @Override
   public String getRenderedValue()
   {
-    return renderValue(getValue());
+    return renderValue(replayIndex - 1, getValue());
   }
 
   /**
@@ -196,17 +204,18 @@ public abstract class AbstractSignal<T> implements Signal
    * results in reverting to the default behavior of not providing any
    * tooltip text.
    */
-  public void setToolTipTexter(final Function<T, String> toolTipTexter)
+  public void setToolTipTexter(final BiFunction<Integer, T, String>
+                               toolTipTexter)
   {
     this.toolTipTexter = toolTipTexter;
   }
 
-  protected String toolTipTextForValue(final T value)
+  protected String toolTipTextForValue(final int cycle, final T value)
   {
     if (value == null)
       return null;
     else if (toolTipTexter != null)
-      return toolTipTexter.apply(value);
+      return toolTipTexter.apply(cycle, value);
     else
       return null;
   }
@@ -214,7 +223,7 @@ public abstract class AbstractSignal<T> implements Signal
   @Override
   public String getToolTipText()
   {
-    return toolTipTextForValue(getValue());
+    return toolTipTextForValue(replayIndex, getValue());
   }
 
   @Override
