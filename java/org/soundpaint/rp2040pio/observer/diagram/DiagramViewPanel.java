@@ -31,13 +31,14 @@ import java.io.PrintStream;
 import java.util.Objects;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.Scrollable;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
+import javax.swing.JViewport;
+import javax.swing.Scrollable;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class DiagramViewPanel extends JPanel implements Scrollable
@@ -48,6 +49,7 @@ public class DiagramViewPanel extends JPanel implements Scrollable
   private final LegendPanel legendPanel;
   private final SignalPanel signalPanel;
   private final JScrollPane scrollPane;
+  private final JViewport viewport;
   private final Dimension preferredViewportSize;
 
   private DiagramViewPanel()
@@ -69,8 +71,10 @@ public class DiagramViewPanel extends JPanel implements Scrollable
       new JScrollPane(signalPanel,
                       ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
                       ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    viewport = scrollPane.getViewport();
+    viewport.addChangeListener((event) -> viewportChanged());
     add(scrollPane);
-    preferredViewportSize = new Dimension(320, 240);
+    preferredViewportSize = new Dimension(720, 360);
   }
 
   @Override
@@ -160,6 +164,16 @@ public class DiagramViewPanel extends JPanel implements Scrollable
     final double leftMostCycle = getLeftMostVisibleCycle();
     signalPanel.setZoom(zoom);
     setLeftMostVisibleCycle(leftMostCycle);
+  }
+
+  /**
+   * While redraw of viewport is done via paintComponent() methods,
+   * re-build of tooltips is triggered via view port changes.
+   */
+  public void viewportChanged()
+  {
+    final Rectangle viewRect = viewport.getViewRect();
+    signalPanel.rebuildToolTips(viewRect);
   }
 }
 

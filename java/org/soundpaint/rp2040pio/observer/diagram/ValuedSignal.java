@@ -72,7 +72,37 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
                                  final int x1, final int y1,
                                  final String text)
   {
-    toolTips.add(new ToolTip(x0, y0, x1, y1, text));
+    if (text != null) {
+      toolTips.add(new ToolTip(x0, y0, x1, y1, text));
+    }
+  }
+
+  @Override
+  public void createToolTip(final List<ToolTip> toolTips,
+                            final int cycle,
+                            final boolean isFirstCycle,
+                            final boolean isLastCycle,
+                            final double zoom,
+                            final double xStart,
+                            final double yBottom)
+  {
+    final String previousToolTipText = getToolTipText(cycle - 1);
+    final int previousCycles = getNotChangedSince(cycle - 1) + 1;
+    addToolTip(toolTips,
+               (int)(xStart - previousCycles * zoom),
+               (int)(yBottom - VALUED_SIGNAL_HEIGHT),
+               (int)xStart - 1, (int)yBottom,
+               previousToolTipText);
+    if (isLastCycle) {
+      // print label as preview for not yet finished value
+      final String toolTipText = getToolTipText(cycle);
+      final int cycles = getNotChangedSince(cycle) - 1;
+      addToolTip(toolTips,
+                 (int)(xStart - cycles * zoom),
+                 (int)(yBottom - VALUED_SIGNAL_HEIGHT),
+                 (int)xStart - 1, (int)yBottom,
+                 toolTipText);
+    }
   }
 
   private static void paintValuedLabel(final List<ToolTip> toolTips,
@@ -94,47 +124,36 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
       final double yTextBottom = yBottom - VALUE_LABEL_MARGIN_BOTTOM;
       g.drawString(label, (float)xLabelStart, (float)yTextBottom);
     }
-    if (toolTipText != null) {
-      addToolTip(toolTips,
-                 (int)(xStart - cycles * zoom),
-                 (int)(yBottom - VALUED_SIGNAL_HEIGHT),
-                 (int)xStart - 1, (int)yBottom,
-                 toolTipText);
-    }
   }
 
   @Override
   public void paintCycle(final List<ToolTip> toolTips,
                          final Graphics2D g, final double zoom,
                          final double xStart, final double yBottom,
+                         final int cycle,
                          final boolean firstCycle, final boolean lastCycle)
   {
-    // safe previous values prior to signal update
-    final int previousNotChangedSince = getNotChangedSince();
-    final String previousRenderedValue = getRenderedValue();
-    final String previousToolTipText = getToolTipText();
-
     // Draw previous value only if finished, since current value may
     // be still ongoing such that centered display of text is not yet
     // reached.  However, if this is the last cycle for that a value
     // has been recorded, then draw it anyway, since we can not forsee
     // the future signal and thus print the current state.
-    if (!next() && !lastCycle) return;
+    if (!next(cycle) && !lastCycle) return;
 
-    if (changed() && !firstCycle) {
+    if (changed(cycle) && !firstCycle) {
       // signal changed => print label of previous, now finished
       // value; but exclude first cycle, as it will be handled on next
       // turn
       paintValuedLabel(toolTips, g, zoom, xStart, yBottom,
-                       previousRenderedValue, previousToolTipText,
-                       previousNotChangedSince + 1);
+                       getRenderedValue(cycle - 1), getToolTipText(cycle - 1),
+                       getNotChangedSince(cycle - 1) + 1);
     }
 
     // draw lines for current value
     final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
     final double xStable = xStart + SIGNAL_SETUP_X;
     final double xStop = xStart + zoom;
-    if (changed() && !firstCycle) {
+    if (changed(cycle) && !firstCycle) {
       g.draw(new Line2D.Double(xStart, yTop, xStable, yBottom));
       g.draw(new Line2D.Double(xStart, yBottom, xStable, yTop));
     } else {
@@ -143,8 +162,8 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
     }
     g.draw(new Line2D.Double(xStable, yTop, xStop, yTop));
     g.draw(new Line2D.Double(xStable, yBottom, xStop, yBottom));
-    if (getValue() == null) {
-      final double xPatternStart = changed() ? xStable : xStart;
+    if (getValue(cycle) == null) {
+      final double xPatternStart = changed(cycle) ? xStable : xStart;
       final Graphics2D fillG = (Graphics2D)g.create();
       final Rectangle2D.Double rectangle =
         new Rectangle2D.Double(xPatternStart, yTop + 1,
@@ -156,8 +175,8 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
     if (lastCycle) {
       // print label as preview for not yet finished value
       paintValuedLabel(toolTips, g, zoom, xStart, yBottom,
-                       getRenderedValue(), getToolTipText(),
-                       getNotChangedSince() - 1);
+                       getRenderedValue(cycle), getToolTipText(cycle),
+                       getNotChangedSince(cycle) - 1);
     }
   }
 }

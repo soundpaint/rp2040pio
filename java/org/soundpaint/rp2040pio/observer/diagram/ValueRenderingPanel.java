@@ -54,7 +54,8 @@ public class ValueRenderingPanel extends JPanel implements Constants
       throws IOException;
   }
 
-  private static class SignalParams
+  // TODO: Make private again when removing demo signals from Diagram class
+  public static class SignalParams
   {
     private final Diagram diagram;
     private final SDK sdk;
@@ -64,7 +65,8 @@ public class ValueRenderingPanel extends JPanel implements Constants
     private final int address;
     private final int msb;
     private final int lsb;
-    private final Supplier<Boolean> displayFilter;
+    // TODO: Make private again when removing demo signals from Diagram class
+    public final Supplier<Boolean> displayFilter;
     private final boolean isSmInstr;
 
     private SignalParams()
@@ -72,7 +74,8 @@ public class ValueRenderingPanel extends JPanel implements Constants
       throw new UnsupportedOperationException("unsupported default constructor");
     }
 
-    private SignalParams(final Diagram diagram,
+    // TODO: Make private again when removing demo signals from Diagram class
+    public SignalParams(final Diagram diagram,
                          final SDK sdk,
                          final int pioNum,
                          final int smNum,
@@ -103,6 +106,14 @@ public class ValueRenderingPanel extends JPanel implements Constants
       isSmInstr = sdk.getLabelForAddress(address).matches("SM\\d_INSTR");
     }
 
+    /*
+     * TODO: Performance: This method is typically called twice with
+     * identical arguments (once for value rendering, once for tooltip
+     * rendering).  To avoid creating two equal instances of
+     * InstructionInfo, maybe cache the instance of the most recent
+     * call and return it again, if arguments cycle and value match
+     * those of the previous call?
+     */
     private PIOSDK.InstructionInfo getInstructionFromOpCode(final int cycle,
                                                             final int value)
     {
@@ -113,46 +124,41 @@ public class ValueRenderingPanel extends JPanel implements Constants
       final int origin;
       final String addressLabel;
       final int signalSize = diagram.getModel().getSignalSize();
-      if ((pioNum >= 0) && (smNum >= 0) && (cycle > 0)) {
+      if ((pioNum >= 0) && (smNum >= 0) && (cycle >= 0)) {
         final int smPinCtrlSidesetCountAddress =
           PIORegisters.getSMAddress(pioNum, smNum,
                                     PIORegisters.Regs.SM0_PINCTRL);
         pinCtrlSidesetCount =
           (diagram.getInternalSignalByAddress(smPinCtrlSidesetCountAddress).
-           getValue() &
+           getValue(cycle) &
            SM0_PINCTRL_SIDESET_COUNT_BITS) >>> SM0_PINCTRL_SIDESET_COUNT_LSB;
         final int smExecCtrlSideEnAddress =
           PIORegisters.getSMAddress(pioNum, smNum,
                                     PIORegisters.Regs.SM0_EXECCTRL);
         execCtrlSideEn =
           (diagram.getInternalSignalByAddress(smExecCtrlSideEnAddress).
-           getValue() &
+           getValue(cycle) &
            SM0_EXECCTRL_SIDE_EN_BITS) != 0x0;
         if (isSmInstr) {
           final int smDelayCycleAddress =
             PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                          PIOEmuRegisters.Regs.SM0_DELAY_CYCLE);
-          /*
-            FIXME: For some reason, the following code does not work correctly:
-
           isDelayCycle =
             diagram.getInternalSignalByAddress(smDelayCycleAddress).
             getValue(cycle) == 0x1;
-          */
-          isDelayCycle = false; // TODO: Eliminate this workaround.
 
           final int smDelayAddress =
             PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                          PIOEmuRegisters.Regs.SM0_DELAY);
           delay =
             diagram.getInternalSignalByAddress(smDelayAddress).
-            getValue();
+            getValue(cycle);
           final int instrOriginAddress =
             PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                          PIOEmuRegisters.Regs.SM0_INSTR_ORIGIN);
           final int instrOrigin =
             diagram.getInternalSignalByAddress(instrOriginAddress).
-            getValue(cycle - 1);
+            getValue(cycle);
           origin = PIOSDK.decodeInstrOrigin(instrOrigin);
           addressLabel = PIOSDK.renderOrigin(origin) + ": ";
         } else {
@@ -177,7 +183,8 @@ public class ValueRenderingPanel extends JPanel implements Constants
     }
   }
 
-  private enum Representation
+  // TODO: Make private again when removing demo signals from Diagram class
+  public enum Representation
   {
     Bit("bit signal shape",
         "single bit value visualized by upper or lower signal pulse",
@@ -296,22 +303,19 @@ public class ValueRenderingPanel extends JPanel implements Constants
         String.format("%" + (bitSize / 3 + 1) + "s", digits).replace(' ', '0');
     }
 
-    private static String formatShortMnemonic(final int cycle,
+    // TODO: Make private again when removing demo signals from Diagram class
+    public static String formatShortMnemonic(final int cycle,
                                               final int value,
                                               final SignalParams signalParams)
     {
       return signalParams.getInstructionFromOpCode(cycle, value).toString();
     }
 
-    private static String formatFullMnemonic(final int cycle,
-                                             final int value,
-                                             final SignalParams signalParams)
+    // TODO: Make private again when removing demo signals from Diagram class
+    public static String formatFullMnemonic(final int cycle,
+                                            final int value,
+                                            final SignalParams signalParams)
     {
-      /*
-       * TODO: Performance: Avoid re-creating the same InstructionInfo
-       * again that has already been constructed in the course of
-       * executing method formatShortMnemonic().
-       */
       return
         signalParams.getInstructionFromOpCode(cycle, value).getToolTipText();
     }

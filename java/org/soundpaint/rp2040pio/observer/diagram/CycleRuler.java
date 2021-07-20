@@ -53,10 +53,10 @@ public class CycleRuler extends AbstractSignal<Void> implements Constants
   public void paintCycle(final List<ToolTip> toolTips,
                          final Graphics2D g, final double zoom,
                          final double xStart, final double yBottom,
+                         final int cycle,
                          final boolean firstCycle, final boolean lastCycle)
   {
-    final int cycle = getReplayIndex();
-    if (!next()) return;
+    if (!next(cycle - 1)) return;
     final double tickYBottom = yBottom;
     final double tickYTop = yBottom - 0.3 * BIT_SIGNAL_HEIGHT;
     g.draw(new Line2D.Double(xStart, tickYBottom, xStart, tickYTop));

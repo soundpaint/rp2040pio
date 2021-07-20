@@ -35,17 +35,24 @@ public interface Signal
   boolean isBinary();
   boolean isValued();
   int size();
-  String getRenderedValue();
-  String getToolTipText();
+  String getRenderedValue(final int cycle);
+  String getToolTipText(final int cycle);
   void record();
-  void rewind(final int index);
-  int getNotChangedSince();
+  int getNotChangedSince(final int cycle);
   void setVisible(final boolean visible);
   boolean getVisible();
   void paintCycle(final List<ToolTip> toolTips,
                   final Graphics2D g, final double zoom,
                   final double xStart, final double yBottom,
+                  final int cycle,
                   final boolean isFirstCycle, final boolean isLastCycle);
+  void createToolTip(final List<ToolTip> toolTips,
+                     final int cycle,
+                     final boolean isFirstCycle,
+                     final boolean isLastCycle,
+                     final double zoom,
+                     final double xStart,
+                     final double yBottom);
 }
 
 /*

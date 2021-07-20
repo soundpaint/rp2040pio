@@ -30,9 +30,10 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.GPIOIOBank0Registers;
 import org.soundpaint.rp2040pio.PIOEmuRegisters;
@@ -175,6 +176,8 @@ public class Diagram extends GUIObserver
   private void configureModel() throws IOException
   {
     createInternalSignals();
+    final int instrAddr =
+      PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     model.addSignal(SignalFactory.createRuler("cycle#")).setVisible(true);
     model.addSignal(SignalFactory.createClockSignal("clock")).setVisible(true);
     model.addSignal(PIOEmuRegisters.
@@ -195,8 +198,6 @@ public class Diagram extends GUIObserver
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
     model.addSignal("SM0_PC", addrSm0Pc);
     model.addSignal("SM0_PC (hidden delay)", addrSm0Pc, noDelayFilter);
-    final int instrAddr =
-      PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     final Signal instr1 =
       SignalFactory.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
                                             0, "SM0_INSTR",
@@ -226,6 +227,7 @@ public class Diagram extends GUIObserver
     model.applyCycles(count);
     modelChanged();
     diagramPanel.ensureCycleIsVisible(model.getSignalSize() - 1);
+    SwingUtilities.invokeLater(() -> diagramPanel.viewportChanged());
   }
 
   public void setZoom(final int zoom)

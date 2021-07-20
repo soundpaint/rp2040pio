@@ -75,18 +75,6 @@ public class DiagramModel implements Iterable<Signal>
     return address2internalSignal.values();
   }
 
-  public void rewind(final int cycle)
-  {
-    for (final ValuedSignal<Integer> signal : address2internalSignal.values()) {
-      signal.rewind(cycle);
-    }
-    for (final Signal signal : signals) {
-      if (signal.getVisible()) {
-        signal.rewind(cycle);
-      }
-    }
-  }
-
   public Signal addInternalSignal(final String label, final int address)
     throws IOException
   {

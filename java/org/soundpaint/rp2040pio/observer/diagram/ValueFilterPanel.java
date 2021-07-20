@@ -105,6 +105,10 @@ public class ValueFilterPanel extends JPanel
       (cbNoDelayFilter.isSelected() || cbClkEnabledFilter.isSelected());
   }
 
+  /**
+   * Filter returns true, if current signal value passes the filter's
+   * condition(s) for value display, and false otherwise.
+   */
   public Supplier<Boolean> createFilter(final int pioNum, final int smNum)
   {
     return createFilter(sdk,
@@ -113,7 +117,8 @@ public class ValueFilterPanel extends JPanel
                         pioNum, smNum);
   }
 
-  private static Supplier<Boolean> createFilter(final SDK sdk,
+  // TODO: Make private again when removing demo signals from Diagram class
+  public static Supplier<Boolean> createFilter(final SDK sdk,
                                                 final boolean createNoDelay,
                                                 final boolean createClkEnabled,
                                                 final int pioNum,
@@ -130,6 +135,10 @@ public class ValueFilterPanel extends JPanel
     return () -> suppliers.stream().allMatch(supplier -> supplier.get());
   }
 
+  /*
+   * TODO: Make this method private as soon as preliminary example
+   * filter configuration in Diagram class will be eliminated.
+   */
   public static Supplier<Boolean> createNoDelayFilter(final SDK sdk,
                                                       final int pioNum,
                                                       final int smNum)
@@ -150,9 +159,9 @@ public class ValueFilterPanel extends JPanel
     return filter;
   }
 
-  public static Supplier<Boolean> createClkEnabledFilter(final SDK sdk,
-                                                         final int pioNum,
-                                                         final int smNum)
+  private static Supplier<Boolean> createClkEnabledFilter(final SDK sdk,
+                                                          final int pioNum,
+                                                          final int smNum)
   {
     final Supplier<Boolean> filter = () -> {
       final int clkEnableAddress =

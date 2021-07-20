@@ -61,9 +61,10 @@ public class ClockSignal extends AbstractSignal<Void> implements Constants
   public void paintCycle(final List<ToolTip> toolTips,
                          final Graphics2D g, final double zoom,
                          final double xStart, final double yBottom,
+                         final int cycle,
                          final boolean firstCycle, final boolean lastCycle)
   {
-    if (!next()) return;
+    if (!next(cycle - 1)) return;
     final double xFallingEdge = xStart + 0.5 * zoom;
     final double xStop = xStart + zoom;
     final double yTop = yBottom - BIT_SIGNAL_HEIGHT;

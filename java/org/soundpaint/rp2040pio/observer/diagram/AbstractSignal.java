@@ -58,7 +58,6 @@ public abstract class AbstractSignal<T> implements Signal
   private final String label;
   private BiFunction<Integer, T, String> renderer;
   private BiFunction<Integer, T, String> toolTipTexter;
-  private int replayIndex;
   private boolean visible;
 
   private AbstractSignal()
@@ -76,29 +75,12 @@ public abstract class AbstractSignal<T> implements Signal
     this.renderer = null;
     this.toolTipTexter = null;
     visible = false;
-    reset();
   }
 
   @Override
   public void reset() {
     signalRecords.clear();
-    rewind(0);
     // keep visibility unmodified
-  }
-
-  @Override
-  public void rewind(final int index)
-  {
-    if (index < 0) {
-      throw new IllegalArgumentException("index < 0: " + index);
-    }
-    if (index > signalRecords.size()) {
-      final String message =
-        String.format("signal %s: index > size: %d > %d",
-                      this, index, signalRecords.size());
-      throw new IllegalArgumentException(message);
-    }
-    replayIndex = index;
   }
 
   @Override
@@ -139,21 +121,9 @@ public abstract class AbstractSignal<T> implements Signal
     return signalRecords.size();
   }
 
-  public int getReplayIndex()
+  public boolean next(final int cycle)
   {
-    return replayIndex;
-  }
-
-  public boolean next()
-  {
-    if (replayIndex > signalRecords.size()) return false;
-    replayIndex++;
-    return true;
-  }
-
-  public T getValue()
-  {
-    return replayIndex > 0 ? signalRecords.get(replayIndex - 1).value : null;
+    return cycle < signalRecords.size() - 1;
   }
 
   public T getValue(final int index)
@@ -165,13 +135,16 @@ public abstract class AbstractSignal<T> implements Signal
   }
 
   @Override
-  public int getNotChangedSince()
+  public int getNotChangedSince(final int cycle)
   {
     return
-      replayIndex > 0 ? signalRecords.get(replayIndex - 1).notChangedSince : 0;
+      cycle >= 0 ? signalRecords.get(cycle).notChangedSince : 0;
   }
 
-  public boolean changed() { return getNotChangedSince() == 0; }
+  public boolean changed(final int cycle)
+  {
+    return getNotChangedSince(cycle) == 0;
+  }
 
   /**
    * Setting the renderer to &lt;code&gt;null&lt;/code&gt; results in
@@ -194,9 +167,9 @@ public abstract class AbstractSignal<T> implements Signal
   }
 
   @Override
-  public String getRenderedValue()
+  public String getRenderedValue(final int cycle)
   {
-    return renderValue(replayIndex - 1, getValue());
+    return renderValue(cycle, getValue(cycle));
   }
 
   /**
@@ -221,9 +194,24 @@ public abstract class AbstractSignal<T> implements Signal
   }
 
   @Override
-  public String getToolTipText()
+  public String getToolTipText(final int cycle)
   {
-    return toolTipTextForValue(replayIndex, getValue());
+    return toolTipTextForValue(cycle, getValue(cycle));
+  }
+
+  /**
+   * Default implementation does not create any tooltip.  Override
+   * this method for a signal to create tooltips.
+   */
+  @Override
+  public void createToolTip(final List<ToolTip> toolTips,
+                            final int cycle,
+                            final boolean isFirstCycle,
+                            final boolean isLastCycle,
+                            final double zoom,
+                            final double xStart,
+                            final double yBottom)
+  {
   }
 
   @Override
@@ -241,7 +229,12 @@ public abstract class AbstractSignal<T> implements Signal
   @Override
   public String toString()
   {
-    return String.format("Signal[label=%s]", label);
+    final StringBuffer values = new StringBuffer();
+    for (final SignalRecord<T> record : signalRecords) {
+      if (values.length() > 0) values.append(", ");
+      values.append(record.value);
+    }
+    return String.format("Signal[label=%s, values={%s}]", label, values);
   }
 }
 

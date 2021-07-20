@@ -136,20 +136,18 @@ public class SignalPanel extends JComponent implements Constants
   }
 
   private void paintSignalsCycle(final Graphics2D g,
-                                 final double xStart, final boolean firstCycle,
+                                 final double xStart, final int cycle,
+                                 final boolean firstCycle,
                                  final boolean lastCycle)
   {
     g.setColor(Color.BLACK);
     g.setStroke(PLAIN_STROKE);
     double y = TOP_MARGIN;
-    for (final ValuedSignal<Integer> signal : model.getInternalSignals()) {
-      signal.next();
-    }
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         final double height =
           signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
-        signal.paintCycle(toolTips, g, zoom, xStart, y += height,
+        signal.paintCycle(toolTips, g, zoom, xStart, y += height, cycle,
                           firstCycle, lastCycle);
       }
     }
@@ -169,7 +167,6 @@ public class SignalPanel extends JComponent implements Constants
                             final int width, final int height)
     throws IOException
   {
-    toolTips.clear();
     g.setStroke(PLAIN_STROKE);
     g.getClipBounds(clipBounds);
     final int cycles = model.getSignalSize();
@@ -179,13 +176,12 @@ public class SignalPanel extends JComponent implements Constants
     final int rightMostCycle =
       Math.min(model.getSignalSize(),
                x2cycle(clipBounds.x + clipBounds.width - 1) + 1);
-    model.rewind(leftMostCycle);
     for (int cycle = leftMostCycle; cycle < rightMostCycle; cycle++) {
       final double x = LEFT_MARGIN + cycle * zoom;
       final boolean firstCycle = cycle == 0;
       final boolean lastCycle = cycle == cycles - 1;
       paintGridLine(g, x, height);
-      paintSignalsCycle(g, x, firstCycle, lastCycle);
+      paintSignalsCycle(g, x, cycle, firstCycle, lastCycle);
     }
     paintGridLine(g, LEFT_MARGIN + rightMostCycle * zoom, height);
   }
@@ -207,6 +203,40 @@ public class SignalPanel extends JComponent implements Constants
       paintDiagram((Graphics2D)g, getWidth(), getHeight());
     } catch (final IOException e) {
       paintError((Graphics2D)g, getWidth(), getHeight(), e);
+    }
+  }
+
+  private final void createToolTips(final int cycle,
+                                    final boolean firstCycle,
+                                    final boolean lastCycle,
+                                    final double xStart)
+  {
+    double y = TOP_MARGIN;
+    for (final Signal signal : model) {
+      if (signal.getVisible()) {
+        final double height =
+          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        signal.createToolTip(toolTips, cycle, firstCycle, lastCycle,
+                             zoom, xStart, y += height);
+      }
+    }
+  }
+
+  public void rebuildToolTips(final Rectangle clipBounds)
+  {
+    toolTips.clear();
+    final int cycles = model.getSignalSize();
+    final int leftMostCycle =
+      Math.min(model.getSignalSize(),
+               x2cycle(clipBounds.x));
+    final int rightMostCycle =
+      Math.min(model.getSignalSize(),
+               x2cycle(clipBounds.x + clipBounds.width - 1) + 1);
+    for (int cycle = leftMostCycle; cycle <= rightMostCycle; cycle++) {
+      final double x = LEFT_MARGIN + cycle * zoom;
+      final boolean firstCycle = cycle == 0;
+      final boolean lastCycle = cycle == cycles - 1;
+      createToolTips(cycle, firstCycle, lastCycle, x);
     }
   }
 }
