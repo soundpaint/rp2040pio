@@ -211,7 +211,7 @@ public abstract class GPIOPadsBank0Registers extends RegisterSet
 
   public GPIOPadsBank0Registers()
   {
-    super(PADS_BANK0_BASE);
+    super("GPIOPadsBank0", PADS_BANK0_BASE);
   }
 }
 

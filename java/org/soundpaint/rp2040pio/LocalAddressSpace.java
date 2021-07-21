@@ -135,6 +135,19 @@ public class LocalAddressSpace extends AddressSpace
   }
 
   @Override
+  public String getRegisterSetId(final int address) throws IOException
+  {
+    final RegisterSet registers = getProvidingRegisters(address);
+    if (registers != null) {
+      return registers.getId();
+    }
+    final String message =
+      String.format("requesting register set ID for unsupported address: %08x",
+                    address);
+    throw new IOException(message);
+  }
+
+  @Override
   public String getAddressLabel(final int address) throws IOException
   {
     final RegisterSet registers = getProvidingRegisters(address);

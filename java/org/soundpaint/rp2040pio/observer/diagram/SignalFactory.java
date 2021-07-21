@@ -29,8 +29,6 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
-import org.soundpaint.rp2040pio.PIOEmuRegisters;
-import org.soundpaint.rp2040pio.sdk.PIOSDK;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 /**
@@ -46,77 +44,6 @@ public class SignalFactory
   public static ClockSignal createClockSignal(final String label)
   {
     return new ClockSignal(label);
-  }
-
-  private static boolean isClkEnabled(final SDK sdk,
-                                      final int pioNum, final int smNum)
-    throws IOException
-  {
-    final int clkEnableAddress =
-      PIOEmuRegisters.getSMAddress(pioNum, smNum,
-                                   PIOEmuRegisters.Regs.SM0_CLK_ENABLE);
-    final int clkEnable = sdk.readAddress(clkEnableAddress) & 0x1;
-    return clkEnable != 0x0;
-  }
-
-  public static ValuedSignal<PIOSDK.InstructionInfo>
-    createInstructionSignal(final SDK sdk,
-                            final int pioNum,
-                            final int smNum,
-                            final String label,
-                            final int address,
-                            final boolean showAddress,
-                            final Supplier<Boolean> displayFilter)
-    throws IOException
-  {
-    final PIOSDK pioSdk;
-    switch (pioNum) {
-    case 0:
-      pioSdk = sdk.getPIO0SDK();
-      break;
-    case 1:
-      pioSdk = sdk.getPIO1SDK();
-      break;
-    default:
-      throw new IllegalArgumentException("invalid PIO number: " + pioNum);
-    }
-    return createInstructionSignal(sdk, pioSdk, address, smNum, label,
-                                   showAddress, displayFilter);
-  }
-
-  public static ValuedSignal<PIOSDK.InstructionInfo>
-    createInstructionSignal(final SDK sdk,
-                            final PIOSDK pioSdk,
-                            final int address, final int smNum,
-                            final String label,
-                            final boolean showAddress,
-                            final Supplier<Boolean> displayFilter)
-    throws IOException
-  {
-    if (sdk == null) {
-      throw new NullPointerException("sdk");
-    }
-    if (pioSdk == null) {
-      throw new NullPointerException("pioSdk");
-    }
-    Constants.checkSmNum(smNum);
-    final String signalLabel = createSignalLabel(sdk, label, address, 31, 0);
-    final Supplier<PIOSDK.InstructionInfo> valueGetter = () -> {
-      try {
-        if (!isClkEnabled(sdk, pioSdk.getIndex(), smNum)) return null;
-        if ((displayFilter != null) && (!displayFilter.get())) return null;
-        return pioSdk.getCurrentInstruction(smNum, showAddress, false);
-      } catch (final IOException e) {
-        return new PIOSDK.InstructionInfo(e);
-      }
-    };
-    final ValuedSignal<PIOSDK.InstructionInfo> instructionSignal =
-      new ValuedSignal<PIOSDK.InstructionInfo>(signalLabel, valueGetter);
-    instructionSignal.setRenderer((cycle, instructionInfo) ->
-                                  instructionInfo.toString());
-    instructionSignal.setToolTipTexter((cycle, instructionInfo) ->
-                                       instructionInfo.getToolTipText());
-    return instructionSignal;
   }
 
   private static String createSignalLabel(final SDK sdk, final String label,
@@ -161,8 +88,7 @@ public class SignalFactory
   }
 
   public static ValuedSignal<Integer>
-    createInternal(final SDK sdk, final String label,
-                   final int address)
+    createInternal(final SDK sdk, final String label, final int address)
     throws IOException
   {
     return

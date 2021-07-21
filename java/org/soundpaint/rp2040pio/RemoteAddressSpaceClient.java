@@ -281,11 +281,11 @@ public class RemoteAddressSpaceClient extends AddressSpace
     final String request = String.format("p 0x%08x", address);
     final Response response = getResponse(request);
     checkResponse(response);
-    final String provisionRetrievalMessage =
+    final String retrievalMessage =
       String.format("failed retrieving provision info for address 0x%08x",
                     address);
     final String result =
-      response.getResultOrThrowOnFailure(provisionRetrievalMessage);
+      response.getResultOrThrowOnFailure(retrievalMessage);
     if (result == null) {
       final String message =
         String.format("missing provision info for address 0x%08x", address);
@@ -304,15 +304,34 @@ public class RemoteAddressSpaceClient extends AddressSpace
   }
 
   @Override
+  public String getRegisterSetId(final int address) throws IOException
+  {
+    final String request = String.format("s 0x%08x", address);
+    final Response response = getResponse(request);
+    checkResponse(response);
+    final String retrievalMessage =
+      String.format("failed retrieving register set for address 0x%08x",
+                    address);
+    final String result =
+      response.getResultOrThrowOnFailure(retrievalMessage);
+    if (result == null) {
+      final String message =
+        String.format("missing register set for address 0x%08x", address);
+      throw new IOException(message);
+    }
+    return result;
+  }
+
+  @Override
   public String getAddressLabel(final int address) throws IOException
   {
     final String request = String.format("l 0x%08x", address);
     final Response response = getResponse(request);
     checkResponse(response);
-    final String labelRetrievalMessage =
+    final String retrievalMessage =
       String.format("failed retrieving label for address 0x%08x", address);
     final String result =
-      response.getResultOrThrowOnFailure(labelRetrievalMessage);
+      response.getResultOrThrowOnFailure(retrievalMessage);
     if (result == null) {
       final String message =
         String.format("missing label for address 0x%08x", address);

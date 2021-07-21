@@ -228,7 +228,7 @@ public abstract class PicoEmuRegisters extends RegisterSet
 
   public PicoEmuRegisters()
   {
-    super(EMULATOR_BASE);
+    super("PicoEmu", EMULATOR_BASE);
   }
 }
 

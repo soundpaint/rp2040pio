@@ -61,6 +61,8 @@ public abstract class AddressSpace
   public abstract boolean providesAddress(final int address)
     throws IOException;
 
+  public abstract String getRegisterSetId(final int address) throws IOException;
+
   public abstract String getAddressLabel(final int address) throws IOException;
 
   public abstract int readAddress(final int address) throws IOException;

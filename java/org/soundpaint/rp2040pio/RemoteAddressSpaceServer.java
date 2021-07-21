@@ -129,6 +129,7 @@ public class RemoteAddressSpaceServer
       "                    (write address)" + ls +
       "i <addr> <value> [<mask> [<timeout cycles> [<timeout millis>]]]" + ls +
       "                    (await value)" + ls +
+      "s <addr>            (show address register set id)" + ls +
       "l <addr>            (show address label)" + ls +
       "p <addr>            (check address validity)";
   }
@@ -258,6 +259,24 @@ public class RemoteAddressSpaceServer
     }
     final boolean providesAddress = memory.providesAddress(address);
     return createResponse(ResponseStatus.OK, String.valueOf(providesAddress));
+  }
+
+  private String handleGetRegisterSetId(final String[] args) throws IOException
+  {
+    if (args.length < 1) {
+      return createResponse(ResponseStatus.ERR_MISSING_OPERAND, null);
+    }
+    if (args.length > 1) {
+      return createResponse(ResponseStatus.ERR_UNPARSED_INPUT, args[1]);
+    }
+    final int address;
+    try {
+      address = parseAddress(args[0]);
+    } catch (final NumberFormatException e) {
+      return createResponse(ResponseStatus.ERR_INVALID_NUMBER, e.getMessage());
+    }
+    final String id = memory.getRegisterSetId(address);
+    return createResponse(ResponseStatus.OK, id);
   }
 
   private String handleGetLabel(final String[] args) throws IOException
@@ -416,6 +435,8 @@ public class RemoteAddressSpaceServer
       return handleQuit(args);
     case 'p':
       return handleProvidesAddress(args);
+    case 's':
+      return handleGetRegisterSetId(args);
     case 'l':
       return handleGetLabel(args);
     case 'w':

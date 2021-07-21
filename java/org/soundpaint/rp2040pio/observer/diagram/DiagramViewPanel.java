@@ -72,7 +72,7 @@ public class DiagramViewPanel extends JPanel implements Scrollable
                       ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
                       ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     viewport = scrollPane.getViewport();
-    viewport.addChangeListener((event) -> viewportChanged());
+    viewport.addChangeListener((event) -> rebuildToolTips());
     add(scrollPane);
     preferredViewportSize = new Dimension(720, 360);
   }
@@ -151,12 +151,15 @@ public class DiagramViewPanel extends JPanel implements Scrollable
     return signalPanel.x2cycle(scrollBarValue);
   }
 
-  public void setLeftMostVisibleCycle(final double cycle)
+  private void setLeftMostVisibleCycle(final double cycle)
   {
     final JScrollBar scrollBar = scrollPane.getHorizontalScrollBar();
     final double scrollBarValue = signalPanel.cycle2x(cycle);
     scrollBar.setValue((int)Math.round(scrollBarValue));
-    SwingUtilities.invokeLater(() -> signalPanel.repaint());
+    SwingUtilities.invokeLater(() -> {
+        rebuildToolTips();
+        signalPanel.repaint();
+      });
   }
 
   public void setZoom(final int zoom)
@@ -168,9 +171,12 @@ public class DiagramViewPanel extends JPanel implements Scrollable
 
   /**
    * While redraw of viewport is done via paintComponent() methods,
-   * re-build of tooltips is triggered via view port changes.
+   * rebuild of tooltips is triggered separately and executed via this
+   * method, such that partial repaint (e.g. when a displayed tooltip
+   * disappears) does not retrigger a complete rebuild of all
+   * tooltips.
    */
-  public void viewportChanged()
+  public void rebuildToolTips()
   {
     final Rectangle viewRect = viewport.getViewRect();
     signalPanel.rebuildToolTips(viewRect);

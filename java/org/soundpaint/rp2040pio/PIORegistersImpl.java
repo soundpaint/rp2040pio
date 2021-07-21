@@ -36,10 +36,8 @@ public class PIORegistersImpl extends PIORegisters
 
   public PIORegistersImpl(final PIO pio)
   {
-    super(pio.getIndex());
-    if (pio == null) {
-      throw new NullPointerException("pio");
-    }
+    super("PIO" + pio.getIndex(),
+          Constants.getPIOBaseAddress(pio.getIndex()));
     this.pio = pio;
   }
 

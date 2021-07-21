@@ -27,6 +27,7 @@ package org.soundpaint.rp2040pio;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Peripheral I/O Unit
@@ -116,15 +117,9 @@ public class PIO implements Constants, Clock.TransitionListener
     if (index > 1) {
       throw new IllegalArgumentException("PIO index > 1: " + index);
     }
-    if (console == null) {
-      throw new NullPointerException("console");
-    }
-    if (masterClock == null) {
-      throw new NullPointerException("masterClock");
-    }
-    if (gpio == null) {
-      throw new NullPointerException("gpio");
-    }
+    Objects.requireNonNull(console);
+    Objects.requireNonNull(masterClock);
+    Objects.requireNonNull(gpio);
     this.index = index;
     this.console = console;
     this.masterClock = masterClock;

@@ -168,9 +168,19 @@ public class SDK implements Constants
     return memory.providesAddress(address);
   }
 
+  public String getRegisterSetId(final int address) throws IOException
+  {
+    return memory.getRegisterSetId(address);
+  }
+
   public String getLabelForAddress(final int address) throws IOException
   {
     return memory.getAddressLabel(address);
+  }
+
+  public String getFullLabelForAddress(final int address) throws IOException
+  {
+    return getRegisterSetId(address) + "_" + getLabelForAddress(address);
   }
 
   // -------- PicoEmuRegisters convenience methods --------

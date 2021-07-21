@@ -176,8 +176,6 @@ public class Diagram extends GUIObserver
   private void configureModel() throws IOException
   {
     createInternalSignals();
-    final int instrAddr =
-      PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     model.addSignal(SignalFactory.createRuler("cycle#")).setVisible(true);
     model.addSignal(SignalFactory.createClockSignal("clock")).setVisible(true);
     model.addSignal(PIOEmuRegisters.
@@ -198,16 +196,27 @@ public class Diagram extends GUIObserver
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
     model.addSignal("SM0_PC", addrSm0Pc);
     model.addSignal("SM0_PC (hidden delay)", addrSm0Pc, noDelayFilter);
-    final Signal instr1 =
-      SignalFactory.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
-                                            0, "SM0_INSTR",
-                                            true, null);
-    model.addSignal(instr1);
-    final Signal instr2 =
-      SignalFactory.createInstructionSignal(sdk, sdk.getPIO0SDK(), instrAddr,
-                                            0, "SM0_INSTR (hidden delay)",
-                                            true, noDelayFilter);
-    model.addSignal(instr2).setVisible(true);
+    final int instrAddr =
+      PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
+    final Supplier<Boolean> displayFilter =
+      ValueFilterPanel.createFilter(getSDK(), true, true, 0, 0);
+    final ValueRenderingPanel.SignalParams signalParams =
+      new ValueRenderingPanel.SignalParams(this, getSDK(), 0, 0,
+                                           "PIO0_SM0_INSTR", instrAddr,
+                                           15, 0, displayFilter);
+    model.addSignal(SignalFactory.
+                    createFromRegister(getSDK(), "PIO0_SM0_INSTR",
+                                       instrAddr, 15, 0,
+                                       (cycle, value) ->
+                                       ValueRenderingPanel.Representation.
+                                       formatShortMnemonic(cycle, value,
+                                                           signalParams),
+                                       (cycle, value) ->
+                                       ValueRenderingPanel.Representation.
+                                       formatFullMnemonic(cycle, value,
+                                                          signalParams),
+                                       signalParams.displayFilter)).
+      setVisible(true);
     final int addrSm0RegX =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGX);
     model.addSignal("SM0_REGX", addrSm0RegX).setVisible(true);
@@ -227,7 +236,7 @@ public class Diagram extends GUIObserver
     model.applyCycles(count);
     modelChanged();
     diagramPanel.ensureCycleIsVisible(model.getSignalSize() - 1);
-    SwingUtilities.invokeLater(() -> diagramPanel.viewportChanged());
+    diagramPanel.rebuildToolTips();
   }
 
   public void setZoom(final int zoom)

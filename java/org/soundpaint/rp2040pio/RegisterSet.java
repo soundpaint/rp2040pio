@@ -25,9 +25,11 @@
 package org.soundpaint.rp2040pio;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public abstract class RegisterSet implements Constants
 {
+  private final String id;
   private final int baseAddress;
   private final short size;
 
@@ -42,8 +44,10 @@ public abstract class RegisterSet implements Constants
    * The maximum allowed address computes as &lt;code&gt;baseAddress +
    * (size - 1) * 0x4&lt;/code&gt;.
    */
-  protected RegisterSet(final int baseAddress)
+  protected RegisterSet(final String id, final int baseAddress)
   {
+    Objects.requireNonNull(id);
+    this.id = id;
     if ((baseAddress & 0x3fff) != 0x0) {
       throw new IllegalArgumentException("base address not conforming to " +
                                          "model of register access methods: " +
@@ -56,6 +60,8 @@ public abstract class RegisterSet implements Constants
                                                        "0x%08x" + size * 0x4));
     }
   }
+
+  public String getId() { return id; }
 
   public int getBaseAddress() { return baseAddress; }
 

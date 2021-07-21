@@ -36,10 +36,8 @@ public class PIOEmuRegistersImpl extends PIOEmuRegisters
 
   public PIOEmuRegistersImpl(final PIO pio)
   {
-    super(pio.getIndex());
-    if (pio == null) {
-      throw new NullPointerException("pio");
-    }
+    super("PIOEmu" + pio.getIndex(),
+          Constants.getPIOEmuBaseAddress(pio.getIndex()));
     this.pio = pio;
   }
 

@@ -592,9 +592,9 @@ public abstract class PIOEmuRegisters extends RegisterSet
       0x4 * (Regs.RXF0.ordinal() + smNum);
   }
 
-  public PIOEmuRegisters(final int pioNum)
+  public PIOEmuRegisters(final String id, final int baseAddress)
   {
-    super(Constants.getPIOEmuBaseAddress(pioNum));
+    super(id, baseAddress);
   }
 }
 

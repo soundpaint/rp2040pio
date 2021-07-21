@@ -382,7 +382,7 @@ public abstract class GPIOIOBank0Registers extends RegisterSet
 
   public GPIOIOBank0Registers()
   {
-    super(IO_BANK0_BASE);
+    super("GPIOIOBank0", IO_BANK0_BASE);
   }
 }
 

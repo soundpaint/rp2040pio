@@ -541,9 +541,9 @@ public abstract class PIORegisters extends RegisterSet
       0x4 * (Regs.RXF0.ordinal() + smNum);
   }
 
-  public PIORegisters(final int pioNum)
+  public PIORegisters(final String id, final int baseAddress)
   {
-    super(Constants.getPIOBaseAddress(pioNum));
+    super(id, baseAddress);
   }
 }
 

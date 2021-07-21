@@ -98,12 +98,8 @@ public class ValueRenderingPanel extends JPanel implements Constants
       this.msb = msb;
       this.lsb = lsb;
       this.displayFilter = displayFilter;
-      /*
-       * TODO: For safety against clashing register names in different
-       * register sets, we should have version of getLabelForAddress()
-       * including the register set's name as prefix, e.g. "PIOx_".
-       */
-      isSmInstr = sdk.getLabelForAddress(address).matches("SM\\d_INSTR");
+      isSmInstr =
+        sdk.getFullLabelForAddress(address).matches("PIO\\d_SM\\d_INSTR");
     }
 
     /*
