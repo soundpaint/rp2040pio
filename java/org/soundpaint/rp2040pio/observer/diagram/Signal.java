@@ -25,19 +25,18 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Graphics2D;
+import java.io.IOException;
 import java.util.List;
 
 public interface Signal
 {
   void reset();
   String getLabel();
-  boolean isClock();
-  boolean isBinary();
-  boolean isValued();
+  double getDisplayHeight();
   int size();
   String getRenderedValue(final int cycle);
   String getToolTipText(final int cycle);
-  void record();
+  void record() throws IOException;
   int getNotChangedSince(final int cycle);
   void setVisible(final boolean visible);
   boolean getVisible();

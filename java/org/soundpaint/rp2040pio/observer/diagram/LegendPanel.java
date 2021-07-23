@@ -35,7 +35,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class LegendPanel extends JComponent implements Constants
+public class LegendPanel extends JComponent
 {
   private static final long serialVersionUID = 6634499718877657461L;
 
@@ -63,11 +63,10 @@ public class LegendPanel extends JComponent implements Constants
 
   private void updatePreferredHeight()
   {
-    double preferredHeight = TOP_MARGIN + BOTTOM_MARGIN;
+    double preferredHeight = Constants.TOP_MARGIN + Constants.BOTTOM_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
-        preferredHeight +=
-          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        preferredHeight += signal.getDisplayHeight();
       }
     }
     preferredSize.setSize(preferredSize.getWidth(), (int)preferredHeight);
@@ -98,13 +97,12 @@ public class LegendPanel extends JComponent implements Constants
 
   private void paintLabels(final Graphics2D g)
   {
-    g.setFont(DEFAULT_FONT);
-    double y = TOP_MARGIN;
+    g.setFont(Constants.DEFAULT_FONT);
+    double y = Constants.TOP_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         final String label = signal.getLabel();
-        final double height =
-          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        final double height = signal.getDisplayHeight();
         paintLabel(g, LEGEND_WIDTH, y += height, label);
       }
     }

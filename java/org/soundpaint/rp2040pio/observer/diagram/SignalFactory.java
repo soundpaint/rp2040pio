@@ -76,61 +76,17 @@ public class SignalFactory
     }
     Constants.checkBit(bit);
     final String signalLabel = createSignalLabel(sdk, label, address, bit);
-    final Supplier<Bit> supplier = () -> {
-      try {
-        return Bit.fromValue(sdk.readAddress(address, bit, bit));
-      } catch (final IOException e) {
-        // TODO: console.println(e.getMessage());
-        return null;
-      }
-    };
-    return new BitSignal(signalLabel, supplier);
+    return new BitSignal(sdk, signalLabel, address, bit);
   }
 
-  public static ValuedSignal<Integer>
+  public static RegisterIntSignal
     createInternal(final SDK sdk, final String label, final int address)
     throws IOException
   {
-    return
-      new ValuedSignal<Integer>(label,
-                                () -> {
-                                  try {
-                                    return sdk.readAddress(address);
-                                  } catch (final IOException e) {
-                                    // TODO: console.println(e.getMessage());
-                                    return null;
-                                  }});
+    return new RegisterIntSignal(sdk, label, null, address, 31, 0);
   }
 
-  public static ValuedSignal<Integer>
-    createFromRegister(final SDK sdk, final String label,
-                       final int address)
-    throws IOException
-  {
-    return createFromRegister(sdk, label, address, 31, 0);
-  }
-
-  public static ValuedSignal<Integer>
-    createFromRegister(final SDK sdk, final String label,
-                       final int address, final int msb, final int lsb)
-    throws IOException
-  {
-    return createFromRegister(sdk, label, address, msb, lsb, null);
-  }
-
-  public static ValuedSignal<Integer>
-    createFromRegister(final SDK sdk, final String label,
-                       final int address, final int msb, final int lsb,
-                       final Supplier<Boolean> displayFilter)
-    throws IOException
-  {
-    return createFromRegister(sdk, label, address, msb, lsb,
-                              (cycle, value) -> String.format("%x", value),
-                              (cycle, value) -> String.format("0x%x", value),
-                              displayFilter);
-  }
-
-  public static ValuedSignal<Integer>
+  public static RegisterIntSignal
     createFromRegister(final SDK sdk, final String label,
                        final int address, final int msb, final int lsb,
                        final BiFunction<Integer, Integer, String> valueRenderer,
@@ -143,18 +99,9 @@ public class SignalFactory
     }
     Constants.checkMSBLSB(msb, lsb);
     final String signalLabel = createSignalLabel(sdk, label, address, msb, lsb);
-    final Supplier<Integer> supplier = () -> {
-      if ((displayFilter != null) && (!displayFilter.get()))
-        return null;
-      try {
-        return sdk.readAddress(address, msb, lsb);
-      } catch (final IOException e) {
-        // TODO: console.println(e.getMessage());
-        return null;
-      }
-    };
-    final ValuedSignal<Integer> intSignal =
-      new ValuedSignal<Integer>(signalLabel, supplier);
+    final RegisterIntSignal intSignal =
+      new RegisterIntSignal(sdk, signalLabel, displayFilter,
+                            address, msb, lsb);
     intSignal.setRenderer((cycle, intValue) ->
                           valueRenderer.apply(cycle, intValue));
     if (toolTipRenderer != null) {

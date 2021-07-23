@@ -29,8 +29,9 @@ import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
 import java.util.List;
 
-public class CycleRuler extends AbstractSignal<Void> implements Constants
+public class CycleRuler extends AbstractSignal<Void>
 {
+  private static final double SIGNAL_HEIGHT = 16.0;
   private static final int PADDING = 1;
 
   public CycleRuler()
@@ -50,6 +51,12 @@ public class CycleRuler extends AbstractSignal<Void> implements Constants
   }
 
   @Override
+  public double getDisplayHeight()
+  {
+    return SIGNAL_HEIGHT + 16.0;
+  }
+
+  @Override
   public void paintCycle(final List<ToolTip> toolTips,
                          final Graphics2D g, final double zoom,
                          final double xStart, final double yBottom,
@@ -58,12 +65,12 @@ public class CycleRuler extends AbstractSignal<Void> implements Constants
   {
     if (!next(cycle - 1)) return;
     final double tickYBottom = yBottom;
-    final double tickYTop = yBottom - 0.3 * BIT_SIGNAL_HEIGHT;
+    final double tickYTop = yBottom - 0.3 * SIGNAL_HEIGHT;
     g.draw(new Line2D.Double(xStart, tickYBottom, xStart, tickYTop));
     if ((cycle % 5) == 0) {
-      final double labelYBottom = yBottom - 0.5 * BIT_SIGNAL_HEIGHT;
+      final double labelYBottom = yBottom - 0.5 * SIGNAL_HEIGHT;
       final String label = String.format("%d", cycle);
-      g.setFont(DEFAULT_FONT);
+      g.setFont(Constants.DEFAULT_FONT);
       final FontMetrics fm = g.getFontMetrics(g.getFont());
       final int width = fm.stringWidth(label) - PADDING;
       g.drawString(label, (float)(xStart - 0.5 * width), (float)labelYBottom);

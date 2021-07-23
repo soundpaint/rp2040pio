@@ -104,8 +104,11 @@ public class DiagramModel implements Iterable<Signal>
     throws IOException
   {
     final ValuedSignal<Integer> signal =
-      SignalFactory.createFromRegister(sdk, label, address, msb, lsb,
-                                       displayFilter);
+      SignalFactory.
+      createFromRegister(sdk, label, address, msb, lsb,
+                         (cycle, value) -> String.format("%x", value),
+                         (cycle, value) -> String.format("0x%x", value),
+                         displayFilter);
     return addSignal(signal);
   }
 
@@ -165,7 +168,7 @@ public class DiagramModel implements Iterable<Signal>
     signalSize = 0;
   }
 
-  private void appendRecordToSignals()
+  private void appendRecordToSignals() throws IOException
   {
     for (final Signal signal : address2internalSignal.values()) {
       signal.record();
@@ -178,7 +181,7 @@ public class DiagramModel implements Iterable<Signal>
     signalSize++;
   }
 
-  private void checkForUpdate()
+  private void checkForUpdate() throws IOException
   {
     try {
       final long wallClock = sdk.getWallClock();

@@ -84,9 +84,11 @@ public class SignalLabelPanel extends JPanel
     tfSuggestedLabel.setText(label);
   }
 
-  public void reset()
+  public void load(final Signal signal)
   {
-    tfLabel.setText(null);
+    final String label = signal != null ? signal.getLabel() : null;
+    tfLabel.setText(label);
+    if (label != null) tfSuggestedLabel.setText(label);
   }
 }
 

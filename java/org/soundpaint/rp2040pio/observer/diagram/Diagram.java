@@ -179,7 +179,8 @@ public class Diagram extends GUIObserver
     model.addSignal(SignalFactory.createRuler("cycle#")).setVisible(true);
     model.addSignal(SignalFactory.createClockSignal("clock")).setVisible(true);
     model.addSignal(PIOEmuRegisters.
-                    getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0);
+                    getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0).
+      setVisible(true);
     final GPIOIOBank0Registers.Regs regGpio0Status =
       GPIOIOBank0Registers.Regs.GPIO0_STATUS;
     for (int gpioNum = 0; gpioNum < 32; gpioNum++) {

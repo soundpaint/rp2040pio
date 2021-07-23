@@ -28,8 +28,10 @@ import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
 import java.util.List;
 
-public class ClockSignal extends AbstractSignal<Void> implements Constants
+public class ClockSignal extends AbstractSignal<Void>
 {
+  private static final double SIGNAL_HEIGHT = 16.0;
+
   public ClockSignal()
   {
     this("clock");
@@ -47,12 +49,15 @@ public class ClockSignal extends AbstractSignal<Void> implements Constants
   }
 
   @Override
-  public boolean isClock() { return true; }
+  public double getDisplayHeight()
+  {
+    return SIGNAL_HEIGHT + 16.0;
+  }
 
   private void drawUpArrow(final Graphics2D g, final double x, final double y)
   {
-    final double arrowWidth = 0.3 * BIT_SIGNAL_HEIGHT;
-    final double arrowHeight = 0.3 * BIT_SIGNAL_HEIGHT;
+    final double arrowWidth = 0.3 * SIGNAL_HEIGHT;
+    final double arrowHeight = 0.3 * SIGNAL_HEIGHT;
     g.draw(new Line2D.Double(x, y, x - 0.5 * arrowWidth, y + arrowHeight));
     g.draw(new Line2D.Double(x, y, x + 0.5 * arrowWidth, y + arrowHeight));
   }
@@ -67,7 +72,7 @@ public class ClockSignal extends AbstractSignal<Void> implements Constants
     if (!next(cycle - 1)) return;
     final double xFallingEdge = xStart + 0.5 * zoom;
     final double xStop = xStart + zoom;
-    final double yTop = yBottom - BIT_SIGNAL_HEIGHT;
+    final double yTop = yBottom - SIGNAL_HEIGHT;
     drawUpArrow(g, xStart, yTop);
     g.draw(new Line2D.Double(xStart, yBottom, xStart, yTop));
     g.draw(new Line2D.Double(xStart, yTop, xFallingEdge, yTop));

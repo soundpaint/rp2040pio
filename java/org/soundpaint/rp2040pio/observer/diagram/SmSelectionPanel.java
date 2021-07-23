@@ -214,6 +214,16 @@ public class SmSelectionPanel extends JPanel
     lbSourceSmLabel.setEnabled(enabled);
     lbSourceSmNum.setEnabled(enabled);
   }
+
+  public void load(final RegisterIntSignal signal)
+  {
+    // TODO
+  }
+
+  public void load(final BitSignal signal)
+  {
+    // TODO
+  }
 }
 
 /*

@@ -243,6 +243,39 @@ public class SignalTypePanel extends JPanel
     }
     return null;
   }
+
+  public void load(final Signal signal)
+  {
+    if (signal == null) {
+      // keep settings unmodified
+    } else if (signal instanceof CycleRuler) {
+      rbCycleRuler.setSelected(true);
+      selectCycleRuler();
+    } else if (signal instanceof ClockSignal) {
+      rbClock.setSelected(true);
+      selectClock();
+    } else if (signal instanceof BitSignal) {
+      rbValued.setSelected(true);
+      selectValued();
+      final BitSignal bitSignal = (BitSignal)signal;
+      valueSourcePanel.load(bitSignal);
+      valueRenderingPanel.load(bitSignal);
+      valueFilterPanel.load(bitSignal);
+      smSelectionPanel.load(bitSignal);
+    } else if (signal instanceof RegisterIntSignal) {
+      rbValued.setSelected(true);
+      selectValued();
+      final RegisterIntSignal valuedSignal = (RegisterIntSignal)signal;
+      valueSourcePanel.load(valuedSignal);
+      valueRenderingPanel.load(valuedSignal);
+      valueFilterPanel.load(valuedSignal);
+      smSelectionPanel.load(valuedSignal);
+    } else {
+      // TODO: Do not use System.out.  Use console instead.
+      System.out.println("warning: failed loading signal preload values: " +
+                         "unknown signal type: " + signal.getClass());
+    }
+  }
 }
 
 /*

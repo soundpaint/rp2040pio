@@ -86,18 +86,6 @@ public abstract class AbstractSignal<T> implements Signal
   @Override
   public String getLabel() { return label; }
 
-  @Override
-  public boolean isClock() { return false; }
-
-  @Override
-  public boolean isBinary() { return false; }
-
-  @Override
-  public boolean isValued()
-  {
-    return !isClock() && !isBinary();
-  }
-
   protected void record(final T value, final boolean enforceChanged)
   {
     final int size = signalRecords.size();

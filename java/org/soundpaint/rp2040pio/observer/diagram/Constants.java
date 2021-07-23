@@ -24,54 +24,19 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
-import java.awt.BasicStroke;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
-import java.awt.TexturePaint;
-import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
-import java.util.function.Supplier;
 
 public interface Constants
 {
   static final int ZOOM_MIN = 16;
   static final int ZOOM_MAX = 112;
   static final int ZOOM_DEFAULT = 32;
-
   static final double TOP_MARGIN = 0.0;
   static final double BOTTOM_MARGIN = 16.0;
-  static final double BIT_SIGNAL_HEIGHT = 16.0;
-  static final double BIT_LANE_HEIGHT = BIT_SIGNAL_HEIGHT + 16.0;
-  static final double VALUED_SIGNAL_HEIGHT = 24.0;
-  static final double VALUED_LANE_HEIGHT = VALUED_SIGNAL_HEIGHT + 16.0;
-  static final double LEFT_MARGIN = 2.0; // for clock arrow
-  static final double RIGHT_MARGIN = 0.0;
   static final double SIGNAL_SETUP_X = 4.0;
-  static final double VALUE_LABEL_MARGIN_BOTTOM = 8.0;
-
   static final Font DEFAULT_FONT = Font.decode(null);
-  static final Font VALUE_FONT = DEFAULT_FONT.deriveFont(10.0f);
-  static final Stroke PLAIN_STROKE =
-    new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f);
-  static final Stroke DOTTED_STROKE =
-    new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, 0.0f,
-                    new float[]{2.0f}, 0.0f);
-  static final BufferedImage FILL_IMAGE =
-    ((Supplier<BufferedImage>)(() -> {
-        final BufferedImage image =
-          new BufferedImage(12, 12, BufferedImage.TYPE_INT_RGB);
-        final Graphics2D g = (Graphics2D)image.getGraphics();
-        for (int x = -12; x < 12; x += 2) {
-          g.drawLine(x, 12, x + 12, 0);
-        }
-        return image;
-      })).get();
-
-  static final TexturePaint FILL_PAINT =
-    new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
-
+  static final Font LABEL_FONT = DEFAULT_FONT.deriveFont(10.0f);
   static final Dimension PREFERRED_LABEL_SIZE = new Dimension(120, 32);
 }
 

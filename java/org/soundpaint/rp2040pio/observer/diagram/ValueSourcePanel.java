@@ -170,7 +170,6 @@ public class ValueSourcePanel extends JPanel
   private final DefaultTableModel bitsInfos;
   private final JTable tbBitsInfos;
   private final JScrollPane tbBitsInfosScroll;
-  private RegistersDocs<? extends Enum<?>> selectedRegister;
 
   private ValueSourcePanel()
   {
@@ -551,6 +550,29 @@ public class ValueSourcePanel extends JPanel
     if (!selection.getValueIsAdjusting()) {
       sourceChanged();
     }
+  }
+
+  private void selectRegister(final int address)
+  {
+    // TODO
+  }
+
+  private void selectBitsRange(final int msb, final int lsb)
+  {
+    // TODO
+  }
+
+  public void load(final RegisterIntSignal signal)
+  {
+    selectRegister(signal.getAddress());
+    selectBitsRange(signal.getMsb(), signal.getLsb());
+  }
+
+  public void load(final BitSignal signal)
+  {
+    selectRegister(signal.getAddress());
+    final int bit = signal.getBit();
+    selectBitsRange(bit, bit);
   }
 }
 

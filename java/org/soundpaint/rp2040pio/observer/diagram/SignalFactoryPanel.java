@@ -32,7 +32,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class SignalFactoryPanel extends JPanel implements Constants
+public class SignalFactoryPanel extends JPanel
 {
   private static final long serialVersionUID = 4492836175968992560L;
 
@@ -75,9 +75,10 @@ public class SignalFactoryPanel extends JPanel implements Constants
     return signalTypePanel.createSignal(label);
   }
 
-  public void reset()
+  public void load(final Signal signal)
   {
-    signalLabelPanel.reset();
+    signalLabelPanel.load(signal);
+    signalTypePanel.load(signal);
   }
 }
 

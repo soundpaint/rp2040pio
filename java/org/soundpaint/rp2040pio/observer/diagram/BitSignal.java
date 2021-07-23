@@ -26,32 +26,68 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
+import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class BitSignal extends ValuedSignal<Bit> implements Constants
+public class BitSignal extends ValuedSignal<Bit>
 {
-  public BitSignal(final String label,
-                   final Supplier<Bit> valueGetter)
+  private static final double SIGNAL_HEIGHT = 16.0;
+
+  private final SDK sdk;
+  private final int address;
+  private final int bit;
+
+  public BitSignal(final SDK sdk,
+                   final String label,
+                   final int address,
+                   final int bit)
   {
-    super(label, valueGetter);
+    this(sdk, label, address, bit, null);
   }
 
-  public BitSignal(final String label,
-                   final Supplier<Bit> valueGetter,
+  public BitSignal(final SDK sdk,
+                   final String label,
+                   final int address,
+                   final int bit,
                    final Supplier<Boolean> changeInfoGetter)
   {
-    super(label, valueGetter, changeInfoGetter);
+    super(label, changeInfoGetter);
+    Objects.requireNonNull(sdk);
+    this.sdk = sdk;
+    this.address = address;
+    this.bit = bit;
+  }
+
+  public int getAddress()
+  {
+    return address;
+  }
+
+  public int getBit()
+  {
+    return bit;
   }
 
   @Override
-  public boolean isBinary() { return true; }
+  protected Bit sampleValue() throws IOException
+  {
+    return Bit.fromValue(sdk.readAddress(address, bit, bit));
+  }
 
   public Boolean asBoolean(final int cycle)
   {
     final Bit value = getValue(cycle);
     return value != null ? (value == Bit.HIGH) : null;
+  }
+
+  @Override
+  public double getDisplayHeight()
+  {
+    return SIGNAL_HEIGHT + 16.0;
   }
 
   @Override
@@ -62,14 +98,14 @@ public class BitSignal extends ValuedSignal<Bit> implements Constants
                          final boolean firstCycle, final boolean lastCycle)
   {
     if (!next(cycle - 1)) return;
-    final double xStable = xStart + SIGNAL_SETUP_X;
+    final double xStable = xStart + Constants.SIGNAL_SETUP_X;
     final double xStop = xStart + zoom;
     final double yStable =
-      yBottom - (asBoolean(cycle) ? BIT_SIGNAL_HEIGHT : 0.0);
+      yBottom - (asBoolean(cycle) ? SIGNAL_HEIGHT : 0.0);
     final double yPrev =
       firstCycle ?
       yStable :
-      yBottom - (asBoolean(cycle - 1) ? BIT_SIGNAL_HEIGHT : 0.0);
+      yBottom - (asBoolean(cycle - 1) ? SIGNAL_HEIGHT : 0.0);
     g.draw(new Line2D.Double(xStart, yPrev, xStable, yStable));
     g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
   }

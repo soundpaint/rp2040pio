@@ -429,6 +429,16 @@ public class ValueRenderingPanel extends JPanel implements Constants
       buttons.nextElement().setEnabled(enabled);
     }
   }
+
+  public void load(final RegisterIntSignal signal)
+  {
+    // TODO
+  }
+
+  public void load(final BitSignal signal)
+  {
+    // TODO
+  }
 }
 
 /*

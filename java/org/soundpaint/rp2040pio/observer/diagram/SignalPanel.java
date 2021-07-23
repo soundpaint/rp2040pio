@@ -24,12 +24,14 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Stroke;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
 import java.io.IOException;
@@ -43,6 +45,13 @@ import javax.swing.JComponent;
 public class SignalPanel extends JComponent implements Constants
 {
   private static final long serialVersionUID = 6327282160532117231L;
+  private static final double LEFT_MARGIN = 2.0; // for clock arrow
+  private static final double RIGHT_MARGIN = 0.0;
+  private static final Stroke PLAIN_STROKE =
+    new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f);
+  private static final Stroke DOTTED_STROKE =
+    new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, 0.0f,
+                    new float[]{2.0f}, 0.0f);
 
   private final DiagramModel model;
   private final List<ToolTip> toolTips;
@@ -87,8 +96,7 @@ public class SignalPanel extends JComponent implements Constants
     double preferredHeight = TOP_MARGIN + BOTTOM_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
-        preferredHeight +=
-          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        preferredHeight += signal.getDisplayHeight();
       }
     }
     preferredSize.setSize((int)preferredSize.getWidth(), (int)preferredHeight);
@@ -145,8 +153,7 @@ public class SignalPanel extends JComponent implements Constants
     double y = TOP_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
-        final double height =
-          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        final double height = signal.getDisplayHeight();
         signal.paintCycle(toolTips, g, zoom, xStart, y += height, cycle,
                           firstCycle, lastCycle);
       }
@@ -191,7 +198,7 @@ public class SignalPanel extends JComponent implements Constants
                           final IOException exception)
   {
     g.setStroke(PLAIN_STROKE);
-    g.setFont(VALUE_FONT);
+    g.setFont(LABEL_FONT);
     g.drawString(exception.getMessage(), 10.0f, 10.0f);
   }
 
@@ -214,8 +221,7 @@ public class SignalPanel extends JComponent implements Constants
     double y = TOP_MARGIN;
     for (final Signal signal : model) {
       if (signal.getVisible()) {
-        final double height =
-          signal.isValued() ? VALUED_LANE_HEIGHT : BIT_LANE_HEIGHT;
+        final double height = signal.getDisplayHeight();
         signal.createToolTip(toolTips, cycle, firstCycle, lastCycle,
                              zoom, xStart, y += height);
       }

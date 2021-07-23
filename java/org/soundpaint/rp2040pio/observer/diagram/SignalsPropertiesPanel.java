@@ -34,6 +34,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import org.soundpaint.rp2040pio.SwingUtils;
@@ -43,12 +44,29 @@ public class SignalsPropertiesPanel extends Box
 {
   private static final long serialVersionUID = -8921092912489516701L;
 
+  private static class IndexedButton extends JButton
+  {
+    private static final long serialVersionUID = -7131638926376704356L;
+
+    private final int index;
+
+    public IndexedButton(final String text, final int index)
+    {
+      super(text);
+      this.index = index;
+    }
+
+    public int getIndex() { return index; }
+  }
+
   private final Diagram diagram;
   private final List<Signal> signals;
   private final List<JTextField> signalIndices;
   private final List<JTextField> signalLabels;
   private final List<JCheckBox> signalVisibilities;
+  private final List<IndexedButton> signalActions;
   private final AddSignalDialog addSignalDialog;
+  private final JPopupMenu pmActions;
 
   public SignalsPropertiesPanel(final Diagram diagram, final SDK sdk)
   {
@@ -59,10 +77,37 @@ public class SignalsPropertiesPanel extends Box
     signalIndices = new ArrayList<JTextField>();
     signalLabels = new ArrayList<JTextField>();
     signalVisibilities = new ArrayList<JCheckBox>();
+    signalActions = new ArrayList<IndexedButton>();
     addSignalDialog =
       new AddSignalDialog(diagram, sdk,
-                          (addIndex, signal) -> addSignal(addIndex, signal),
+                          (index, signal, add) ->
+                          addOrSetSignal(index, signal, add),
                           (label) -> checkLabel(label));
+    pmActions = createActions();
+  }
+
+  private JPopupMenu createActions()
+  {
+    final JPopupMenu pmActions = new JPopupMenu("Actions");
+    pmActions.add("Edit…").addActionListener((action) -> editSignal());
+    pmActions.add("Delete").addActionListener((action) -> deleteSignal());
+    return pmActions;
+  }
+
+  private void editSignal()
+  {
+    final IndexedButton btActions = (IndexedButton)pmActions.getInvoker();
+    final int index = btActions.getIndex();
+    addSignalDialog.open(index, signals.get(index));
+  }
+
+  private void deleteSignal()
+  {
+    final IndexedButton btActions = (IndexedButton)pmActions.getInvoker();
+    final int index = btActions.getIndex();
+    signals.remove(index);
+    rebuildSignals();
+    rebuildGUI();
   }
 
   public void applyChanges()
@@ -92,16 +137,14 @@ public class SignalsPropertiesPanel extends Box
     revalidate();
   }
 
-  private void addSignal(final int addIndex, final Signal signal)
+  private void addOrSetSignal(final int index, final Signal signal,
+                              final boolean add)
   {
-    signals.add(addIndex, signal);
-    rebuildSignals();
-    rebuildGUI();
-  }
-
-  private void deleteSignal(final int delIndex)
-  {
-    signals.remove(delIndex);
+    if (add) {
+      signals.add(index, signal);
+    } else {
+      signals.set(index, signal);
+    }
     rebuildSignals();
     rebuildGUI();
   }
@@ -137,7 +180,7 @@ public class SignalsPropertiesPanel extends Box
     headerLine.add(Box.createHorizontalGlue());
     headerLine.add(new JLabel("Show"));
     headerLine.add(Box.createHorizontalStrut(5));
-    headerLine.add(new JLabel("Delete"));
+    headerLine.add(new JLabel("Actions"));
     headerLine.add(Box.createHorizontalStrut(5));
     SwingUtils.setPreferredHeightAsMaximum(headerLine);
     add(Box.createVerticalStrut(15));
@@ -159,7 +202,8 @@ public class SignalsPropertiesPanel extends Box
         final JButton btAdd =
           SwingUtils.createIconButton("add12x12.png", "+");
         final int addIndex = index;
-        btAdd.addActionListener((event) -> addSignalDialog.open(addIndex));
+        btAdd.
+          addActionListener((event) -> addSignalDialog.open(addIndex, null));
         btAdd.setBorderPainted(false);
         btAdd.setContentAreaFilled(false);
         infixLine.add(btAdd);
@@ -175,13 +219,7 @@ public class SignalsPropertiesPanel extends Box
       signalLine.add(Box.createHorizontalGlue());
       signalLine.add(signalVisibilities.get(index));
       signalLine.add(Box.createHorizontalStrut(12));
-      final JButton btDel =
-        SwingUtils.createIconButton("del12x12.png", "+");
-      final int delIndex = index;
-      btDel.addActionListener((event) -> deleteSignal(delIndex));
-      btDel.setBorderPainted(false);
-      btDel.setContentAreaFilled(false);
-      signalLine.add(btDel);
+      signalLine.add(signalActions.get(index));
       SwingUtils.setPreferredHeightAsMaximum(signalLine);
       index++;
     }
@@ -194,6 +232,7 @@ public class SignalsPropertiesPanel extends Box
     signalIndices.clear();
     signalLabels.clear();
     signalVisibilities.clear();
+    signalActions.clear();
     int index = 0;
     for (final Signal signal : signals) {
       final JTextField tfIndex = new JTextField() {
@@ -218,8 +257,18 @@ public class SignalsPropertiesPanel extends Box
       cbVisible.setSelected(signal.getVisible());
       signalVisibilities.add(cbVisible);
 
+      final int actionsIndex = index;
+      final IndexedButton btActions = new IndexedButton("…", actionsIndex);
+      signalActions.add(btActions);
+      btActions.addActionListener((action) -> popupActions(btActions));
+
       index++;
     }
+  }
+
+  private void popupActions(final JButton btActions)
+  {
+    pmActions.show(btActions, 10, 10);
   }
 
   public void rebuild()

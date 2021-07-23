@@ -41,25 +41,31 @@ public class AddSignalDialog extends JDialog
 {
   private static final long serialVersionUID = 4433806198970312268L;
 
+  @FunctionalInterface
+  public static interface SignalConsumer
+  {
+    void accept(final Integer index, final Signal signal,
+                final Boolean add);
+  }
+
   private class ActionPanel extends Box
   {
     private static final long serialVersionUID = 7200614607584132864L;
 
-    private final JButton btAdd;
+    private final JButton btApply;
     private final JButton btCancel;
 
     public ActionPanel()
     {
       super(BoxLayout.LINE_AXIS);
       setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-      btAdd = new JButton("Add");
-      btAdd.setMnemonic(KeyEvent.VK_A);
-      btAdd.addActionListener((event) -> {
-          if (AddSignalDialog.this.add()) {
+      btApply = new JButton();
+      btApply.addActionListener((event) -> {
+          if (AddSignalDialog.this.apply()) {
             AddSignalDialog.this.setVisible(false);
           }
         });
-      add(btAdd);
+      add(btApply);
       add(Box.createHorizontalGlue());
       btCancel = new JButton("Cancel");
       btCancel.setMnemonic(KeyEvent.VK_C);
@@ -71,9 +77,11 @@ public class AddSignalDialog extends JDialog
   }
 
   private final Diagram diagram;
-  private final BiConsumer<Integer, Signal> signalAdder;
+  private final SignalConsumer signalConsumer;
   private final SignalFactoryPanel signalFactoryPanel;
-  private int addIndex;
+  private final ActionPanel actionPanel;
+  private int index;
+  private Signal editSignal;
 
   private AddSignalDialog()
   {
@@ -81,34 +89,50 @@ public class AddSignalDialog extends JDialog
   }
 
   public AddSignalDialog(final Diagram diagram, final SDK sdk,
-                         final BiConsumer<Integer, Signal> signalAdder,
+                         final SignalConsumer signalConsumer,
                          final Function<String, String> labelChecker)
   {
-    super(diagram, "Add Signal", Dialog.ModalityType.DOCUMENT_MODAL);
+    super(diagram, "Signal", Dialog.ModalityType.DOCUMENT_MODAL);
     Objects.requireNonNull(diagram);
+    Objects.requireNonNull(signalConsumer);
+    Objects.requireNonNull(labelChecker);
     this.diagram = diagram;
-    this.signalAdder = signalAdder;
+    this.signalConsumer = signalConsumer;
     getContentPane().add(signalFactoryPanel =
                          new SignalFactoryPanel(diagram, sdk, labelChecker));
-    getContentPane().add(new ActionPanel(), BorderLayout.SOUTH);
+    getContentPane().add(actionPanel = new ActionPanel(), BorderLayout.SOUTH);
   }
 
-  private boolean add()
+  private boolean apply()
   {
     final Signal signal = signalFactoryPanel.createSignal();
     if (signal != null) {
-      signal.setVisible(true);
-      signalAdder.accept(addIndex, signal);
+      if (editSignal != null) {
+        signalConsumer.accept(index, signal, false);
+      } else {
+        signal.setVisible(true);
+        signalConsumer.accept(index, signal, true);
+      }
       return true;
     }
     return false;
   }
 
-  public void open(final int addIndex)
+  public void open(final int index, final Signal editSignal)
   {
-    this.addIndex = addIndex;
-    signalFactoryPanel.reset();
-    setTitle(String.format("Insert New Signal Before Signal #%d", addIndex));
+    if (editSignal != null) {
+      actionPanel.btApply.setText("Apply");
+      actionPanel.btApply.setMnemonic(KeyEvent.VK_A);
+      signalFactoryPanel.load(editSignal);
+      setTitle(String.format("Edit Signal %s", editSignal.getLabel()));
+    } else {
+      actionPanel.btApply.setText("Add");
+      actionPanel.btApply.setMnemonic(KeyEvent.VK_A);
+      signalFactoryPanel.load(null);
+      setTitle(String.format("Insert New Signal Before Signal #%d", index));
+    }
+    this.editSignal = editSignal;
+    this.index = index;
     pack();
     setVisible(true);
   }

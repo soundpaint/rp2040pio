@@ -27,44 +27,52 @@ package org.soundpaint.rp2040pio.observer.diagram;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.TexturePaint;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
+public abstract class ValuedSignal<T> extends AbstractSignal<T>
 {
-  private Supplier<T> valueGetter;
-  private Supplier<Boolean> changeInfoGetter;
+  private static final double SIGNAL_HEIGHT = 24.0;
+  private static final double VALUE_LABEL_MARGIN_BOTTOM = 8.0;
+  private static final BufferedImage FILL_IMAGE =
+    ((Supplier<BufferedImage>)(() -> {
+        final BufferedImage image =
+          new BufferedImage(12, 12, BufferedImage.TYPE_INT_RGB);
+        final Graphics2D g = (Graphics2D)image.getGraphics();
+        for (int x = -12; x < 12; x += 2) {
+          g.drawLine(x, 12, x + 12, 0);
+        }
+        return image;
+      })).get();
+  private static final TexturePaint FILL_PAINT =
+    new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
 
-  public ValuedSignal(final String label,
-                      final Supplier<T> valueGetter)
-  {
-    this(label, valueGetter, null);
-  }
+  private Supplier<Boolean> changeInfoGetter;
 
   /**
    * @param changeInfoGetter If set to &lt;code&gt;null&lt;/code&gt;,
    * then a change is assumed only when the updated value changes.
    */
   public ValuedSignal(final String label,
-                      final Supplier<T> valueGetter,
                       final Supplier<Boolean> changeInfoGetter)
   {
     super(label);
-    if (valueGetter == null) {
-      throw new NullPointerException("valueGetter");
-    }
-    this.valueGetter = valueGetter;
     this.changeInfoGetter = changeInfoGetter;
   }
 
+  abstract protected T sampleValue() throws IOException;
+
   @Override
-  public void record()
+  public void record() throws IOException
   {
     final boolean enforceChanged =
       changeInfoGetter != null ? changeInfoGetter.get() : false;
-    record(valueGetter.get(), enforceChanged);
+    record(sampleValue(), enforceChanged);
   }
 
   private static void addToolTip(final List<ToolTip> toolTips,
@@ -90,7 +98,7 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
     final int previousCycles = getNotChangedSince(cycle - 1) + 1;
     addToolTip(toolTips,
                (int)(xStart - previousCycles * zoom),
-               (int)(yBottom - VALUED_SIGNAL_HEIGHT),
+               (int)(yBottom - SIGNAL_HEIGHT),
                (int)xStart - 1, (int)yBottom,
                previousToolTipText);
     if (isLastCycle) {
@@ -99,10 +107,16 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
       final int cycles = getNotChangedSince(cycle) - 1;
       addToolTip(toolTips,
                  (int)(xStart - cycles * zoom),
-                 (int)(yBottom - VALUED_SIGNAL_HEIGHT),
+                 (int)(yBottom - SIGNAL_HEIGHT),
                  (int)xStart - 1, (int)yBottom,
                  toolTipText);
     }
+  }
+
+  @Override
+  public double getDisplayHeight()
+  {
+    return SIGNAL_HEIGHT + 16.0;
   }
 
   private static void paintValuedLabel(final List<ToolTip> toolTips,
@@ -115,11 +129,11 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
                                        final int cycles)
   {
     if (label != null) {
-      g.setFont(VALUE_FONT);
+      g.setFont(Constants.LABEL_FONT);
       final FontMetrics fm = g.getFontMetrics(g.getFont());
       final int width = fm.stringWidth(label);
       final double xLabelStart =
-        xStart - 0.5 * (cycles * zoom - SIGNAL_SETUP_X + width);
+        xStart - 0.5 * (cycles * zoom - Constants.SIGNAL_SETUP_X + width);
 
       final double yTextBottom = yBottom - VALUE_LABEL_MARGIN_BOTTOM;
       g.drawString(label, (float)xLabelStart, (float)yTextBottom);
@@ -150,8 +164,8 @@ public class ValuedSignal<T> extends AbstractSignal<T> implements Constants
     }
 
     // draw lines for current value
-    final double yTop = yBottom - VALUED_SIGNAL_HEIGHT;
-    final double xStable = xStart + SIGNAL_SETUP_X;
+    final double yTop = yBottom - SIGNAL_HEIGHT;
+    final double xStable = xStart + Constants.SIGNAL_SETUP_X;
     final double xStop = xStart + zoom;
     if (changed(cycle) && !firstCycle) {
       g.draw(new Line2D.Double(xStart, yTop, xStable, yBottom));
