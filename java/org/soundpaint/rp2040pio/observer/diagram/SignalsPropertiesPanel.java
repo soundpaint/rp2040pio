@@ -65,7 +65,7 @@ public class SignalsPropertiesPanel extends Box
   private final List<JTextField> signalLabels;
   private final List<JCheckBox> signalVisibilities;
   private final List<IndexedButton> signalActions;
-  private final AddSignalDialog addSignalDialog;
+  private final SignalDialog signalDialog;
   private final JPopupMenu pmActions;
 
   public SignalsPropertiesPanel(final Diagram diagram, final SDK sdk)
@@ -78,11 +78,11 @@ public class SignalsPropertiesPanel extends Box
     signalLabels = new ArrayList<JTextField>();
     signalVisibilities = new ArrayList<JCheckBox>();
     signalActions = new ArrayList<IndexedButton>();
-    addSignalDialog =
-      new AddSignalDialog(diagram, sdk,
-                          (index, signal, add) ->
-                          addOrSetSignal(index, signal, add),
-                          (label) -> checkLabel(label));
+    signalDialog =
+      new SignalDialog(diagram, sdk,
+                       (index, signal, add) ->
+                       addOrSetSignal(index, signal, add),
+                       (label, signal) -> checkLabel(label, signal));
     pmActions = createActions();
   }
 
@@ -98,7 +98,7 @@ public class SignalsPropertiesPanel extends Box
   {
     final IndexedButton btActions = (IndexedButton)pmActions.getInvoker();
     final int index = btActions.getIndex();
-    addSignalDialog.open(index, signals.get(index));
+    signalDialog.open(index, signals.get(index));
   }
 
   private void deleteSignal()
@@ -149,7 +149,7 @@ public class SignalsPropertiesPanel extends Box
     rebuildGUI();
   }
 
-  private String checkLabel(final String label)
+  private String checkLabel(final String label, final Signal ignoreSignal)
   {
     if (label == null) {
       return "Signal label must not be null.";
@@ -158,8 +158,10 @@ public class SignalsPropertiesPanel extends Box
       return "Signal label must not be empty.";
     }
     for (final Signal signal : signals) {
-      if (label.equals(signal.getLabel())) {
-        return "Signal label is already in use.";
+      if (signal != ignoreSignal) {
+        if (label.equals(signal.getLabel())) {
+          return "Signal label is already in use.";
+        }
       }
     }
     return null;
@@ -203,7 +205,7 @@ public class SignalsPropertiesPanel extends Box
           SwingUtils.createIconButton("add12x12.png", "+");
         final int addIndex = index;
         btAdd.
-          addActionListener((event) -> addSignalDialog.open(addIndex, null));
+          addActionListener((event) -> signalDialog.open(addIndex, null));
         btAdd.setBorderPainted(false);
         btAdd.setContentAreaFilled(false);
         infixLine.add(btAdd);

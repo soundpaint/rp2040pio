@@ -41,10 +41,9 @@ public class MenuBar
   private final Diagram diagram;
   private final ViewPropertiesDialog viewPropertiesDialog;
 
-  public MenuBar(final Diagram diagram, final SDK sdk,
-                 final PrintStream console)
+  public MenuBar(final Diagram diagram, final SDK sdk)
   {
-    super(diagram, console);
+    super(diagram);
     if (diagram == null) {
       throw new NullPointerException("diagram");
     }

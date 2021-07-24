@@ -107,15 +107,15 @@ public class Diagram extends GUIObserver
   }
 
   @Override
-  protected ActionPanel createActionPanel(final PrintStream console)
+  protected ActionPanel createActionPanel()
   {
     return new ActionPanel(this);
   }
 
   @Override
-  protected MenuBar createMenuBar(final PrintStream console)
+  protected MenuBar createMenuBar()
   {
-    return new MenuBar(this, getSDK(), console);
+    return new MenuBar(this, getSDK());
   }
 
   private void modelChanged()
@@ -183,7 +183,7 @@ public class Diagram extends GUIObserver
       setVisible(true);
     final GPIOIOBank0Registers.Regs regGpio0Status =
       GPIOIOBank0Registers.Regs.GPIO0_STATUS;
-    for (int gpioNum = 0; gpioNum < 32; gpioNum++) {
+    for (int gpioNum = 0; gpioNum < 30; gpioNum++) {
       final String label = "GPIO" + gpioNum + " (out from peri)";
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);

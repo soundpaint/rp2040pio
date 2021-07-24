@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -100,15 +101,9 @@ public abstract class GUIObserver extends JFrame
     throws IOException
   {
     super(appTitle);
-    if (appTitle == null) {
-      throw new NullPointerException("appTitle");
-    }
-    if (console == null) {
-      throw new NullPointerException("console");
-    }
-    if (argv == null) {
-      throw new NullPointerException("argv");
-    }
+    Objects.requireNonNull(appTitle);
+    Objects.requireNonNull(console);
+    Objects.requireNonNull(argv);
     this.appTitle = appTitle;
     this.appFullName =
       appFullName != null ? appFullName : DEFAULT_APP_FULL_NAME;
@@ -121,13 +116,13 @@ public abstract class GUIObserver extends JFrame
     sdk = new SDK(console, sdkClient);
     updateLoopClient = createRemoteAddressSpace("update loop thread");
     connect(null, getPort());
-    add(createActionPanel(console), BorderLayout.NORTH);
-    add(createStatusLine(console), BorderLayout.SOUTH);
-    setJMenuBar(createMenuBar(console));
+    add(createActionPanel(), BorderLayout.NORTH);
+    add(createStatusLine(), BorderLayout.SOUTH);
+    setJMenuBar(createMenuBar());
     printAbout();
   }
 
-  private Box createStatusLine(final PrintStream console)
+  private Box createStatusLine()
   {
     final Box hBox = new Box(BoxLayout.LINE_AXIS);
     hBox.add(lbStatus);
@@ -151,8 +146,7 @@ public abstract class GUIObserver extends JFrame
    * default implementation of this method uses the default
    * ActionPanel implementation in the java package of this class.
    */
-  protected ActionPanel<? extends GUIObserver>
-    createActionPanel(final PrintStream console)
+  protected ActionPanel<? extends GUIObserver> createActionPanel()
   {
     return new ActionPanel<GUIObserver>(this);
   }
@@ -162,10 +156,9 @@ public abstract class GUIObserver extends JFrame
    * implementation of this method uses the default MenuBar
    * implementation in the java package of this class.
    */
-  protected MenuBar<? extends GUIObserver>
-    createMenuBar(final PrintStream console)
+  protected MenuBar<? extends GUIObserver> createMenuBar()
   {
-    return new MenuBar<GUIObserver>(this, console);
+    return new MenuBar<GUIObserver>(this);
   }
 
   public String getAppTitle()
@@ -178,7 +171,7 @@ public abstract class GUIObserver extends JFrame
     return appFullName;
   }
 
-  protected PrintStream getConsole()
+  public PrintStream getConsole()
   {
     return console;
   }

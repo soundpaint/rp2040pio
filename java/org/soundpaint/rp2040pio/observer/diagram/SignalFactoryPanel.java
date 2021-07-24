@@ -25,7 +25,7 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JOptionPane;
@@ -37,7 +37,7 @@ public class SignalFactoryPanel extends JPanel
   private static final long serialVersionUID = 4492836175968992560L;
 
   private final Diagram diagram;
-  private final Function<String, String> labelChecker;
+  private final BiFunction<String, Signal, String> labelChecker;
   private final SignalLabelPanel signalLabelPanel;
   private final SignalTypePanel signalTypePanel;
 
@@ -47,7 +47,7 @@ public class SignalFactoryPanel extends JPanel
   }
 
   public SignalFactoryPanel(final Diagram diagram, final SDK sdk,
-                            final Function<String, String> labelChecker)
+                            final BiFunction<String, Signal, String> labelChecker)
   {
     Objects.requireNonNull(diagram);
     Objects.requireNonNull(labelChecker);
@@ -63,10 +63,10 @@ public class SignalFactoryPanel extends JPanel
     add(Box.createVerticalGlue());
   }
 
-  public Signal createSignal()
+  public Signal createSignal(final Signal ignoreSignal)
   {
     final String label = signalLabelPanel.getText();
-    final String message = labelChecker.apply(label);
+    final String message = labelChecker.apply(label, ignoreSignal);
     if (message != null) {
       JOptionPane.showMessageDialog(this, message, "Invalid Signal Label",
                                     JOptionPane.ERROR_MESSAGE);

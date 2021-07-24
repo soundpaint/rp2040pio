@@ -29,7 +29,7 @@ import java.awt.Dialog;
 import java.awt.event.KeyEvent;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -37,7 +37,7 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class AddSignalDialog extends JDialog
+public class SignalDialog extends JDialog
 {
   private static final long serialVersionUID = 4433806198970312268L;
 
@@ -61,8 +61,8 @@ public class AddSignalDialog extends JDialog
       setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
       btApply = new JButton();
       btApply.addActionListener((event) -> {
-          if (AddSignalDialog.this.apply()) {
-            AddSignalDialog.this.setVisible(false);
+          if (SignalDialog.this.apply()) {
+            SignalDialog.this.setVisible(false);
           }
         });
       add(btApply);
@@ -70,7 +70,7 @@ public class AddSignalDialog extends JDialog
       btCancel = new JButton("Cancel");
       btCancel.setMnemonic(KeyEvent.VK_C);
       btCancel.addActionListener((event) -> {
-          AddSignalDialog.this.setVisible(false);
+          SignalDialog.this.setVisible(false);
         });
       add(btCancel);
     }
@@ -83,14 +83,14 @@ public class AddSignalDialog extends JDialog
   private int index;
   private Signal editSignal;
 
-  private AddSignalDialog()
+  private SignalDialog()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public AddSignalDialog(final Diagram diagram, final SDK sdk,
-                         final SignalConsumer signalConsumer,
-                         final Function<String, String> labelChecker)
+  public SignalDialog(final Diagram diagram, final SDK sdk,
+                      final SignalConsumer signalConsumer,
+                      final BiFunction<String, Signal, String> labelChecker)
   {
     super(diagram, "Signal", Dialog.ModalityType.DOCUMENT_MODAL);
     Objects.requireNonNull(diagram);
@@ -105,7 +105,7 @@ public class AddSignalDialog extends JDialog
 
   private boolean apply()
   {
-    final Signal signal = signalFactoryPanel.createSignal();
+    final Signal signal = signalFactoryPanel.createSignal(editSignal);
     if (signal != null) {
       if (editSignal != null) {
         signalConsumer.accept(index, signal, false);
@@ -129,7 +129,7 @@ public class AddSignalDialog extends JDialog
       actionPanel.btApply.setText("Add");
       actionPanel.btApply.setMnemonic(KeyEvent.VK_A);
       signalFactoryPanel.load(null);
-      setTitle(String.format("Insert New Signal Before Signal #%d", index));
+      setTitle(String.format("Insert New Signal After Signal #%d", index - 1));
     }
     this.editSignal = editSignal;
     this.index = index;

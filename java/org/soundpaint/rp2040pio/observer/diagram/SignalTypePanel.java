@@ -271,9 +271,10 @@ public class SignalTypePanel extends JPanel
       valueFilterPanel.load(valuedSignal);
       smSelectionPanel.load(valuedSignal);
     } else {
-      // TODO: Do not use System.out.  Use console instead.
-      System.out.println("warning: failed loading signal preload values: " +
-                         "unknown signal type: " + signal.getClass());
+      final String message =
+        String.format("warning: failed loading signal preload values: " +
+                      "unknown signal type: %s", signal.getClass());
+      diagram.getConsole().println(message);
     }
   }
 }

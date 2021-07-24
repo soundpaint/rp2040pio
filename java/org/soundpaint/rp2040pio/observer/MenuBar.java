@@ -50,12 +50,12 @@ public class MenuBar<T extends GUIObserver> extends JMenuBar
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public MenuBar(final T observer, final PrintStream console)
+  public MenuBar(final T observer)
   {
     Objects.requireNonNull(observer);
     this.observer = observer;
     aboutDialog = createAboutDialog();
-    final LicenseView licenseView = new LicenseView(console);
+    final LicenseView licenseView = new LicenseView(observer.getConsole());
     licenseDialog = licenseView.createDialog(this, licenseView.getTitle());
     licenseDialog.setModal(false);
     add(createFileMenu());
