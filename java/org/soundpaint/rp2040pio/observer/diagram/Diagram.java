@@ -188,23 +188,23 @@ public class Diagram extends GUIObserver
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
       model.addSignal(label + " Value", address, 8, 8).setVisible(gpioNum < 2);
-      model.addSignal(label + " Level", address, 8);
+      model.addSignal(label + " Level", address, 8, null, -1, -1);
     }
     final SDK sdk = getSDK();
-    final Supplier<Boolean> noDelayFilter =
-      ValueFilterPanel.createNoDelayFilter(sdk, 0, 0);
+    final List<SignalFilter> noDelayFilter =
+      ValueFilterPanel.createFilters(true, false);
     final int addrSm0Pc =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
     model.addSignal("SM0_PC", addrSm0Pc);
-    model.addSignal("SM0_PC (hidden delay)", addrSm0Pc, noDelayFilter);
+    model.addSignal("SM0_PC (hidden delay)", addrSm0Pc, noDelayFilter, 0, 0);
     final int instrAddr =
       PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
-    final Supplier<Boolean> displayFilter =
-      ValueFilterPanel.createFilter(getSDK(), true, true, 0, 0);
+    final List<SignalFilter> displayFilters =
+      ValueFilterPanel.createFilters(true, true);
     final ValueRenderingPanel.SignalParams signalParams =
-      new ValueRenderingPanel.SignalParams(this, getSDK(), 0, 0,
+      new ValueRenderingPanel.SignalParams(this, getSDK(),
                                            "PIO0_SM0_INSTR", instrAddr,
-                                           15, 0, displayFilter);
+                                           15, 0, displayFilters, 0, 0);
     model.addSignal(SignalFactory.
                     createFromRegister(getSDK(), "PIO0_SM0_INSTR",
                                        instrAddr, 15, 0,
@@ -216,7 +216,7 @@ public class Diagram extends GUIObserver
                                        ValueRenderingPanel.Representation.
                                        formatFullMnemonic(cycle, value,
                                                           signalParams),
-                                       signalParams.displayFilter)).
+                                       signalParams.displayFilters, 0, 0)).
       setVisible(true);
     final int addrSm0RegX =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGX);

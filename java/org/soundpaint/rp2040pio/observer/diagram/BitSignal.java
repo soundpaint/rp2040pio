@@ -26,9 +26,9 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -37,27 +37,30 @@ public class BitSignal extends ValuedSignal<Bit>
 {
   private static final double SIGNAL_HEIGHT = 16.0;
 
-  private final SDK sdk;
   private final int address;
   private final int bit;
 
   public BitSignal(final SDK sdk,
                    final String label,
+                   final List<SignalFilter> displayFilters,
+                   final int pioNum,
+                   final int smNum,
                    final int address,
                    final int bit)
   {
-    this(sdk, label, address, bit, null);
+    this(sdk, label, displayFilters, pioNum, smNum, address, bit, null);
   }
 
   public BitSignal(final SDK sdk,
                    final String label,
+                   final List<SignalFilter> displayFilters,
+                   final int pioNum,
+                   final int smNum,
                    final int address,
                    final int bit,
                    final Supplier<Boolean> changeInfoGetter)
   {
-    super(label, changeInfoGetter);
-    Objects.requireNonNull(sdk);
-    this.sdk = sdk;
+    super(sdk, label, displayFilters, pioNum, smNum, changeInfoGetter);
     this.address = address;
     this.bit = bit;
   }
@@ -75,13 +78,7 @@ public class BitSignal extends ValuedSignal<Bit>
   @Override
   protected Bit sampleValue() throws IOException
   {
-    return Bit.fromValue(sdk.readAddress(address, bit, bit));
-  }
-
-  public Boolean asBoolean(final int cycle)
-  {
-    final Bit value = getValue(cycle);
-    return value != null ? (value == Bit.HIGH) : null;
+    return Bit.fromValue(getSDK().readAddress(address, bit, bit));
   }
 
   @Override
@@ -100,14 +97,30 @@ public class BitSignal extends ValuedSignal<Bit>
     if (!next(cycle - 1)) return;
     final double xStable = xStart + Constants.SIGNAL_SETUP_X;
     final double xStop = xStart + zoom;
-    final double yStable =
-      yBottom - (asBoolean(cycle) ? SIGNAL_HEIGHT : 0.0);
-    final double yPrev =
-      firstCycle ?
-      yStable :
-      yBottom - (asBoolean(cycle - 1) ? SIGNAL_HEIGHT : 0.0);
-    g.draw(new Line2D.Double(xStart, yPrev, xStable, yStable));
-    g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
+
+    final Bit prevBit = getValue(cycle - 1);
+    final Bit bit = getValue(cycle);
+    if (bit != null) {
+      final double yStable =
+        yBottom - (bit == Bit.HIGH ? SIGNAL_HEIGHT : 0.0);
+      g.draw(new Line2D.Double(xStable, yStable, xStop, yStable));
+      if (prevBit != null) {
+        final double yPrev =
+          firstCycle ?
+          yStable :
+          yBottom - (prevBit == Bit.HIGH ? SIGNAL_HEIGHT : 0.0);
+        g.draw(new Line2D.Double(xStart, yPrev, xStable, yStable));
+      }
+    } else {
+      final double xPatternStart = changed(cycle) ? xStable : xStart;
+      final Graphics2D fillG = (Graphics2D)g.create();
+      final double yTop = yBottom - SIGNAL_HEIGHT;
+      final Rectangle2D.Double rectangle =
+        new Rectangle2D.Double(xPatternStart, yTop + 1,
+                               xStop - xPatternStart + 1, yBottom - yTop - 1);
+      fillG.setPaint(FILL_PAINT);
+      fillG.fill(rectangle);
+    }
   }
 }
 

@@ -25,8 +25,8 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -67,8 +67,11 @@ public class SignalFactory
         (lsb != msb ? ":" + lsb : "")));
   }
 
-  public static BitSignal createFromRegister(final SDK sdk, final String label,
-                                             final int address, final int bit)
+  public static BitSignal
+    createFromRegister(final SDK sdk, final String label,
+                       final int address, final int bit,
+                       final List<SignalFilter> displayFilters,
+                       final int pioNum, final int smNum)
     throws IOException
   {
     if (sdk == null) {
@@ -76,14 +79,15 @@ public class SignalFactory
     }
     Constants.checkBit(bit);
     final String signalLabel = createSignalLabel(sdk, label, address, bit);
-    return new BitSignal(sdk, signalLabel, address, bit);
+    return new BitSignal(sdk, signalLabel, displayFilters, pioNum, smNum,
+                         address, bit);
   }
 
   public static RegisterIntSignal
     createInternal(final SDK sdk, final String label, final int address)
     throws IOException
   {
-    return new RegisterIntSignal(sdk, label, null, address, 31, 0);
+    return new RegisterIntSignal(sdk, label, null, -1, -1, address, 31, 0);
   }
 
   public static RegisterIntSignal
@@ -91,7 +95,8 @@ public class SignalFactory
                        final int address, final int msb, final int lsb,
                        final BiFunction<Integer, Integer, String> valueRenderer,
                        final BiFunction<Integer, Integer, String> toolTipRenderer,
-                       final Supplier<Boolean> displayFilter)
+                       final List<SignalFilter> displayFilters,
+                       final int pioNum, final int smNum)
     throws IOException
   {
     if (sdk == null) {
@@ -100,7 +105,7 @@ public class SignalFactory
     Constants.checkMSBLSB(msb, lsb);
     final String signalLabel = createSignalLabel(sdk, label, address, msb, lsb);
     final RegisterIntSignal intSignal =
-      new RegisterIntSignal(sdk, signalLabel, displayFilter,
+      new RegisterIntSignal(sdk, signalLabel, displayFilters, pioNum, smNum,
                             address, msb, lsb);
     intSignal.setRenderer((cycle, intValue) ->
                           valueRenderer.apply(cycle, intValue));

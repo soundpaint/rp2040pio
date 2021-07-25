@@ -100,7 +100,8 @@ public class DiagramModel implements Iterable<Signal>
 
   public Signal addSignal(final String label, final int address,
                           final int msb, final int lsb,
-                          final Supplier<Boolean> displayFilter)
+                          final List<SignalFilter> displayFilters,
+                          final int pioNum, final int smNum)
     throws IOException
   {
     final ValuedSignal<Integer> signal =
@@ -108,7 +109,7 @@ public class DiagramModel implements Iterable<Signal>
       createFromRegister(sdk, label, address, msb, lsb,
                          (cycle, value) -> String.format("%x", value),
                          (cycle, value) -> String.format("0x%x", value),
-                         displayFilter);
+                         displayFilters, pioNum, smNum);
     return addSignal(signal);
   }
 
@@ -116,20 +117,23 @@ public class DiagramModel implements Iterable<Signal>
                           final int msb, final int lsb)
     throws IOException
   {
-    return addSignal(label, address, msb, lsb, null);
+    return addSignal(label, address, msb, lsb, null, -1, -1);
   }
 
-  public Signal addSignal(final String label, final int address, final int bit)
+  public Signal addSignal(final String label, final int address, final int bit,
+                          final List<SignalFilter> displayFilters,
+                          final int pioNum, final int smNum)
     throws IOException
   {
     final BitSignal signal =
-      SignalFactory.createFromRegister(sdk, label, address, bit);
+      SignalFactory.createFromRegister(sdk, label, address, bit,
+                                       displayFilters, pioNum, smNum);
     return addSignal(signal);
   }
 
   public Signal addSignal(final int address, final int bit) throws IOException
   {
-    return addSignal(null, address, bit);
+    return addSignal(null, address, bit, null, -1, -1);
   }
 
   public Signal addSignal(final String label, final int address)
@@ -139,10 +143,11 @@ public class DiagramModel implements Iterable<Signal>
   }
 
   public Signal addSignal(final String label, final int address,
-                          final Supplier<Boolean> displayFilter)
+                          final List<SignalFilter> displayFilters,
+                          final int pioNum, final int smNum)
     throws IOException
   {
-    return addSignal(label, address, 31, 0, displayFilter);
+    return addSignal(label, address, 31, 0, displayFilters, pioNum, smNum);
   }
 
   public Signal addSignal(final int address) throws IOException
@@ -151,10 +156,11 @@ public class DiagramModel implements Iterable<Signal>
   }
 
   public Signal addSignal(final int address,
-                          final Supplier<Boolean> displayFilter)
+                          final List<SignalFilter> displayFilters,
+                          final int pioNum, final int smNum)
     throws IOException
   {
-    return addSignal(null, address, displayFilter);
+    return addSignal(null, address, displayFilters, pioNum, smNum);
   }
 
   public void resetSignals()

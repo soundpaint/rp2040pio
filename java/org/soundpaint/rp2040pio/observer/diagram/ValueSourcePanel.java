@@ -126,6 +126,16 @@ public class ValueSourcePanel extends JPanel
                      PicoEmuRegisters.Regs.values(),
                      Constants.EMULATOR_BASE, -1);
 
+    private static RegistersSet fromAddress(final int address)
+    {
+      final int baseAddress = address & 0xffffc000;
+      for (final RegistersSet registersSet : RegistersSet.values()) {
+        if (registersSet.baseAddress == baseAddress)
+          return registersSet;
+      }
+      return null;
+    }
+
     private final String id;
     private final String label;
     private final String description;
@@ -552,25 +562,65 @@ public class ValueSourcePanel extends JPanel
     }
   }
 
-  private void selectRegister(final int address)
+  private void selectRegisterByAddress(final int address)
   {
-    // TODO
+    final RegistersSet registersSet = RegistersSet.fromAddress(address);
+    if (registersSet != null) {
+      cbRegistersSet.setSelectedItem(registersSet);
+      registersSetSelected(registersSet);
+      final int registerIndex = (address - registersSet.baseAddress) >> 2;
+      if (registerIndex < cbRegister.getItemCount()) {
+        cbRegister.setSelectedIndex(registerIndex);
+        registerSelected(cbRegister.getItemAt(registerIndex));
+      } else {
+        final String message =
+          String.format("warning: registers set %s: " +
+                        "register not found for signal address 0x%8x",
+                        registersSet, address);
+        diagram.getConsole().println(message);
+      }
+    } else {
+      final String message =
+        String.format("warning: " +
+                      "no registers set found for signal address 0x%8x",
+                      address);
+      diagram.getConsole().println(message);
+      cbRegistersSet.setSelectedIndex(0);
+      initRegistersForSelectedRegisterSet();
+    }
   }
 
   private void selectBitsRange(final int msb, final int lsb)
   {
-    // TODO
+    final int rowCount = tbBitsInfos.getRowCount();
+    for (int row = 0; row < rowCount; row++) {
+      final BitsRange bitsRange =
+        (BitsRange)bitsInfos.getValueAt(row, COLUMN_BITS_RANGE_IDX);
+      final int rangeMsb = bitsRange.getMsb();
+      final int rangeLsb = bitsRange.getLsb();
+      if ((rangeMsb <= msb) && (rangeLsb >= lsb)) {
+        tbBitsInfos.addRowSelectionInterval(row, row);
+      } else if (((rangeMsb <= msb) && (rangeMsb >= lsb)) ||
+                 ((rangeLsb <= msb) && (rangeLsb >= lsb))) {
+        final String message =
+          String.format("warning: signal specifies bit range [%d:%d] not " +
+                        "describable by register bit ranges; " +
+                        "ignoring bit range [%d:%d]",
+                        msb, lsb, rangeMsb, rangeLsb);
+        diagram.getConsole().println(message);
+      }
+    }
   }
 
   public void load(final RegisterIntSignal signal)
   {
-    selectRegister(signal.getAddress());
+    selectRegisterByAddress(signal.getAddress());
     selectBitsRange(signal.getMsb(), signal.getLsb());
   }
 
   public void load(final BitSignal signal)
   {
-    selectRegister(signal.getAddress());
+    selectRegisterByAddress(signal.getAddress());
     final int bit = signal.getBit();
     selectBitsRange(bit, bit);
   }

@@ -27,6 +27,7 @@ package org.soundpaint.rp2040pio.observer.diagram;
 import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.List;
 import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -54,6 +55,7 @@ public class SignalTypePanel extends JPanel
   private final ValueRenderingPanel valueRenderingPanel;
   private final ValueFilterPanel valueFilterPanel;
   private final SmSelectionPanel smSelectionPanel;
+  private boolean visible;
 
   private SignalTypePanel()
   {
@@ -91,6 +93,7 @@ public class SignalTypePanel extends JPanel
     createAndAddSmSelectionPanel();
     valueSourcePanel.initRegistersForSelectedRegisterSet();
     selectValued();
+    visible = false;
   }
 
   private void createAndAddCycleRulerRadio()
@@ -235,11 +238,12 @@ public class SignalTypePanel extends JPanel
       final int sourceSmNum = valueSourcePanel.getSelectedRegisterSm();
       final int pioNum = smSelectionPanel.getPioNum(sourcePioNum);
       final int smNum = smSelectionPanel.getSmNum(sourceSmNum);
-      final Supplier<Boolean> displayFilter =
-        valueFilterPanel.createFilter(pioNum, smNum);
+      final List<SignalFilter> displayFilters =
+        valueFilterPanel.createFilters();
       return
         valueRenderingPanel.createSignal(label, pioNum, smNum,
-                                         address, msb, lsb, displayFilter);
+                                         address, msb, lsb, displayFilters,
+                                         visible);
     }
     return null;
   }
@@ -247,14 +251,18 @@ public class SignalTypePanel extends JPanel
   public void load(final Signal signal)
   {
     if (signal == null) {
-      // keep settings unmodified
+      visible = false;
+      // keep all other settings unmodified
     } else if (signal instanceof CycleRuler) {
+      visible = signal.getVisible();
       rbCycleRuler.setSelected(true);
       selectCycleRuler();
     } else if (signal instanceof ClockSignal) {
+      visible = signal.getVisible();
       rbClock.setSelected(true);
       selectClock();
     } else if (signal instanceof BitSignal) {
+      visible = signal.getVisible();
       rbValued.setSelected(true);
       selectValued();
       final BitSignal bitSignal = (BitSignal)signal;
@@ -263,6 +271,7 @@ public class SignalTypePanel extends JPanel
       valueFilterPanel.load(bitSignal);
       smSelectionPanel.load(bitSignal);
     } else if (signal instanceof RegisterIntSignal) {
+      visible = signal.getVisible();
       rbValued.setSelected(true);
       selectValued();
       final RegisterIntSignal valuedSignal = (RegisterIntSignal)signal;

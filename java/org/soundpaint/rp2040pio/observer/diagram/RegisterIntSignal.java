@@ -25,52 +25,42 @@
 package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
-import java.util.Objects;
+import java.util.List;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class RegisterIntSignal extends ValuedSignal<Integer>
 {
-  private final SDK sdk;
-  private final Supplier<Boolean> displayFilter;
   private final int address;
   private final int msb;
   private final int lsb;
 
   public RegisterIntSignal(final SDK sdk,
                            final String label,
-                           final Supplier<Boolean> displayFilter,
+                           final List<SignalFilter> displayFilters,
+                           final int pioNum,
+                           final int smNum,
                            final int address,
                            final int msb,
                            final int lsb)
   {
-    this(sdk, label, displayFilter, address, msb, lsb, null);
+    this(sdk, label, displayFilters, pioNum, smNum, address, msb, lsb, null);
   }
 
-  /**
-   * @param changeInfoGetter If set to &lt;code&gt;null&lt;/code&gt;,
-   * then a change is assumed only when the updated value changes.
-   */
   public RegisterIntSignal(final SDK sdk,
                            final String label,
-                           final Supplier<Boolean> displayFilter,
+                           final List<SignalFilter> displayFilters,
+                           final int pioNum,
+                           final int smNum,
                            final int address,
                            final int msb,
                            final int lsb,
                            final Supplier<Boolean> changeInfoGetter)
   {
-    super(label, changeInfoGetter);
-    Objects.requireNonNull(sdk);
-    this.sdk = sdk;
-    this.displayFilter = displayFilter;
+    super(sdk, label, displayFilters, pioNum, smNum, changeInfoGetter);
     this.address = address;
     this.msb = msb;
     this.lsb = lsb;
-  }
-
-  public Supplier<Boolean> getDisplayFilter()
-  {
-    return displayFilter;
   }
 
   public int getAddress()
@@ -91,9 +81,7 @@ public class RegisterIntSignal extends ValuedSignal<Integer>
   @Override
   protected Integer sampleValue() throws IOException
   {
-    if ((displayFilter != null) && (!displayFilter.get()))
-      return null;
-    return sdk.readAddress(address, msb, lsb);
+    return getSDK().readAddress(address, msb, lsb);
   }
 }
 

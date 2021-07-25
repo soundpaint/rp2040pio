@@ -33,13 +33,15 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
+import org.soundpaint.rp2040pio.sdk.SDK;
 
 public abstract class ValuedSignal<T> extends AbstractSignal<T>
 {
-  private static final double SIGNAL_HEIGHT = 24.0;
   private static final double VALUE_LABEL_MARGIN_BOTTOM = 8.0;
-  private static final BufferedImage FILL_IMAGE =
+  protected static final double SIGNAL_HEIGHT = 24.0;
+  protected static final BufferedImage FILL_IMAGE =
     ((Supplier<BufferedImage>)(() -> {
         final BufferedImage image =
           new BufferedImage(12, 12, BufferedImage.TYPE_INT_RGB);
@@ -49,30 +51,65 @@ public abstract class ValuedSignal<T> extends AbstractSignal<T>
         }
         return image;
       })).get();
-  private static final TexturePaint FILL_PAINT =
+  protected static final TexturePaint FILL_PAINT =
     new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
 
-  private Supplier<Boolean> changeInfoGetter;
+  private final SDK sdk;
+  private final List<SignalFilter> displayFilters;
+  private final int pioNum;
+  private final int smNum;
+  private final Supplier<Boolean> changeInfoGetter;
 
   /**
    * @param changeInfoGetter If set to &lt;code&gt;null&lt;/code&gt;,
    * then a change is assumed only when the updated value changes.
    */
-  public ValuedSignal(final String label,
+  public ValuedSignal(final SDK sdk,
+                      final String label,
+                      final List<SignalFilter> displayFilters,
+                      final int pioNum,
+                      final int smNum,
                       final Supplier<Boolean> changeInfoGetter)
   {
     super(label);
+    Objects.requireNonNull(sdk);
+    this.sdk = sdk;
+    this.displayFilters = displayFilters;
+    this.pioNum = pioNum;
+    this.smNum = smNum;
     this.changeInfoGetter = changeInfoGetter;
   }
 
+  protected SDK getSDK() { return sdk; }
+
+  public List<SignalFilter> getDisplayFilters()
+  {
+    return displayFilters;
+  }
+
   abstract protected T sampleValue() throws IOException;
+
+  private boolean passAllFilters() throws IOException
+  {
+    for (final SignalFilter filter : displayFilters) {
+      if (!filter.acceptCurrentSignalValue(sdk, pioNum, smNum))
+        return false;
+    }
+    return true;
+  }
 
   @Override
   public void record() throws IOException
   {
     final boolean enforceChanged =
       changeInfoGetter != null ? changeInfoGetter.get() : false;
-    record(sampleValue(), enforceChanged);
+    final boolean pass;
+    if (displayFilters != null) {
+      pass = passAllFilters();
+    } else {
+      pass = true;
+    }
+    record(pass ? sampleValue() : null, enforceChanged);
   }
 
   private static void addToolTip(final List<ToolTip> toolTips,

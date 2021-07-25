@@ -26,6 +26,7 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -59,14 +60,14 @@ public class ValueRenderingPanel extends JPanel implements Constants
   {
     private final Diagram diagram;
     private final SDK sdk;
-    private final int pioNum;
-    private final int smNum;
     private final String label;
     private final int address;
     private final int msb;
     private final int lsb;
     // TODO: Make private again when removing demo signals from Diagram class
-    public final Supplier<Boolean> displayFilter;
+    public final List<SignalFilter> displayFilters;
+    private final int pioNum;
+    private final int smNum;
     private final boolean isSmInstr;
 
     private SignalParams()
@@ -76,14 +77,14 @@ public class ValueRenderingPanel extends JPanel implements Constants
 
     // TODO: Make private again when removing demo signals from Diagram class
     public SignalParams(final Diagram diagram,
-                         final SDK sdk,
-                         final int pioNum,
-                         final int smNum,
-                         final String label,
-                         final int address,
-                         final int msb,
-                         final int lsb,
-                         final Supplier<Boolean> displayFilter)
+                        final SDK sdk,
+                        final String label,
+                        final int address,
+                        final int msb,
+                        final int lsb,
+                        final List<SignalFilter> displayFilters,
+                        final int pioNum,
+                        final int smNum)
       throws IOException
     {
       Objects.requireNonNull(diagram);
@@ -91,13 +92,13 @@ public class ValueRenderingPanel extends JPanel implements Constants
       Objects.requireNonNull(label);
       this.diagram = diagram;
       this.sdk = sdk;
-      this.pioNum = pioNum;
       this.label = label;
       this.address = address;
-      this.smNum = smNum;
       this.msb = msb;
       this.lsb = lsb;
-      this.displayFilter = displayFilter;
+      this.displayFilters = displayFilters;
+      this.pioNum = pioNum;
+      this.smNum = smNum;
       isSmInstr =
         sdk.getFullLabelForAddress(address).matches("PIO\\d_SM\\d_INSTR");
     }
@@ -188,7 +189,10 @@ public class ValueRenderingPanel extends JPanel implements Constants
         SignalFactory.createFromRegister(signalParams.sdk,
                                          signalParams.label,
                                          signalParams.address,
-                                         signalParams.msb)),
+                                         signalParams.msb,
+                                         signalParams.displayFilters,
+                                         signalParams.pioNum,
+                                         signalParams.smNum)),
     Binary("binary digits", "binary representation of unsigned integer value",
            (signalParams, bitSize) ->
            SignalFactory.createFromRegister(signalParams.sdk,
@@ -200,7 +204,9 @@ public class ValueRenderingPanel extends JPanel implements Constants
                                             formatBinary(value, bitSize),
                                             (cycle, value) ->
                                             "0b" + formatBinary(value, bitSize),
-                                            signalParams.displayFilter)),
+                                            signalParams.displayFilters,
+                                            signalParams.pioNum,
+                                            signalParams.smNum)),
     Unsigned("unsigned decimal",
              "decimal representation of unsigned integer value",
              (signalParams, bitSize) ->
@@ -213,7 +219,9 @@ public class ValueRenderingPanel extends JPanel implements Constants
                                               formatUnsigned(value),
                                               (cycle, value) ->
                                               formatUnsigned(value),
-                                              signalParams.displayFilter)),
+                                              signalParams.displayFilters,
+                                              signalParams.pioNum,
+                                              signalParams.smNum)),
     Signed("signed decimal",
            "decimal representation of signed integer value",
            (signalParams, bitSize) ->
@@ -226,7 +234,9 @@ public class ValueRenderingPanel extends JPanel implements Constants
                                             formatSigned(value),
                                             (cycle, value) ->
                                             formatSigned(value),
-                                            signalParams.displayFilter)),
+                                            signalParams.displayFilters,
+                                            signalParams.pioNum,
+                                            signalParams.smNum)),
     Hex("hexadecimal",
         "hexadecimal representation of unsigned integer value",
         (signalParams, bitSize) ->
@@ -239,7 +249,9 @@ public class ValueRenderingPanel extends JPanel implements Constants
                                          formatHex(value, bitSize),
                                          (cycle, value) ->
                                          "0x" + formatHex(value, bitSize),
-                                         signalParams.displayFilter)),
+                                         signalParams.displayFilters,
+                                         signalParams.pioNum,
+                                         signalParams.smNum)),
     Octal("octal",
           "octal representation of unsigned integer value",
           (signalParams, bitSize) ->
@@ -252,7 +264,9 @@ public class ValueRenderingPanel extends JPanel implements Constants
                                            formatOctal(value, bitSize),
                                            (cycle, value) ->
                                            "0o" + formatOctal(value, bitSize),
-                                           signalParams.displayFilter)),
+                                           signalParams.displayFilters,
+                                           signalParams.pioNum,
+                                           signalParams.smNum)),
     Mnemonic("PIO instruction with side-set for below target state machine",
              "mnemonic of PIO instruction with op-code that equals the value",
              (signalParams, bitSize) ->
@@ -267,7 +281,9 @@ public class ValueRenderingPanel extends JPanel implements Constants
                                               (cycle, value) ->
                                               formatFullMnemonic(cycle, value,
                                                                  signalParams),
-                                              signalParams.displayFilter));
+                                              signalParams.displayFilters,
+                                              signalParams.pioNum,
+                                              signalParams.smNum));
 
     private static String formatBinary(final int value, final int bitSize)
     {
@@ -397,7 +413,8 @@ public class ValueRenderingPanel extends JPanel implements Constants
                              final int address,
                              final int msb,
                              final int lsb,
-                             final Supplier<Boolean> displayFilter)
+                             final List<SignalFilter> displayFilters,
+                             final boolean visible)
   {
     if ((msb < 0) || (lsb < 0)) {
       JOptionPane.showMessageDialog(this,
@@ -408,10 +425,12 @@ public class ValueRenderingPanel extends JPanel implements Constants
     }
     try {
       final SignalParams signalParams =
-        new SignalParams(diagram, sdk, pioNum, smNum, label, address,
-                         msb, lsb, displayFilter);
-      return
+        new SignalParams(diagram, sdk, label, address,
+                         msb, lsb, displayFilters, pioNum, smNum);
+      final Signal signal =
         selectedRendering.signalCreator.apply(signalParams, msb - lsb + 1);
+      signal.setVisible(visible);
+      return signal;
     } catch (final IOException e) {
       JOptionPane.showMessageDialog(this, e.getMessage(),
                                     "I/O Exception",

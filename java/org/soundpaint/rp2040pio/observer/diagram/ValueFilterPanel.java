@@ -109,73 +109,24 @@ public class ValueFilterPanel extends JPanel
    * Filter returns true, if current signal value passes the filter's
    * condition(s) for value display, and false otherwise.
    */
-  public Supplier<Boolean> createFilter(final int pioNum, final int smNum)
+  public List<SignalFilter> createFilters()
   {
-    return createFilter(sdk,
-                        cbNoDelayFilter.isSelected(),
-                        cbClkEnabledFilter.isSelected(),
-                        pioNum, smNum);
+    return createFilters(cbNoDelayFilter.isSelected(),
+                         cbClkEnabledFilter.isSelected());
   }
 
   // TODO: Make private again when removing demo signals from Diagram class
-  public static Supplier<Boolean> createFilter(final SDK sdk,
-                                                final boolean createNoDelay,
-                                                final boolean createClkEnabled,
-                                                final int pioNum,
-                                                final int smNum)
+  public static List<SignalFilter> createFilters(final boolean createNoDelay,
+                                                 final boolean createClkEnabled)
   {
-    final List<Supplier<Boolean>> suppliers =
-      new ArrayList<Supplier<Boolean>>();
+    final List<SignalFilter> filters = new ArrayList<SignalFilter>();
     if (createNoDelay) {
-      suppliers.add(createNoDelayFilter(sdk, pioNum, smNum));
+      filters.add(SignalFilter.NO_DELAY);
     }
     if (createClkEnabled) {
-      suppliers.add(createClkEnabledFilter(sdk, pioNum, smNum));
+      filters.add(SignalFilter.CLK_ENABLED);
     }
-    return () -> suppliers.stream().allMatch(supplier -> supplier.get());
-  }
-
-  /*
-   * TODO: Make this method private as soon as preliminary example
-   * filter configuration in Diagram class will be eliminated.
-   */
-  public static Supplier<Boolean> createNoDelayFilter(final SDK sdk,
-                                                      final int pioNum,
-                                                      final int smNum)
-  {
-    final Supplier<Boolean> filter = () -> {
-      final int smDelayCycleAddress =
-      PIOEmuRegisters.getSMAddress(pioNum, smNum,
-                                   PIOEmuRegisters.Regs.SM0_DELAY_CYCLE);
-      try {
-        final boolean isDelayCycle =
-          sdk.readAddress(smDelayCycleAddress) != 0x0;
-        return !isDelayCycle;
-      } catch (final IOException e) {
-        // TODO: Maybe log warning that we failed to evaluate delay?
-        return false;
-      }
-    };
-    return filter;
-  }
-
-  private static Supplier<Boolean> createClkEnabledFilter(final SDK sdk,
-                                                          final int pioNum,
-                                                          final int smNum)
-  {
-    final Supplier<Boolean> filter = () -> {
-      final int clkEnableAddress =
-      PIOEmuRegisters.getSMAddress(pioNum, smNum,
-                                   PIOEmuRegisters.Regs.SM0_CLK_ENABLE);
-      try {
-        final int clkEnable = sdk.readAddress(clkEnableAddress) & 0x1;
-        return clkEnable != 0x0;
-      } catch (final IOException e) {
-        // TODO: Maybe log warning that we failed to evaluate delay?
-        return false;
-      }
-    };
-    return filter;
+    return filters;
   }
 
   @Override
@@ -186,14 +137,22 @@ public class ValueFilterPanel extends JPanel
     cbClkEnabledFilter.setEnabled(enabled);
   }
 
-  public void load(final RegisterIntSignal signal)
+  public void load(final ValuedSignal<?> signal)
   {
-    // TODO
-  }
-
-  public void load(final BitSignal signal)
-  {
-    // TODO
+    final List<SignalFilter> displayFilters = signal.getDisplayFilters();
+    if (displayFilters != null) {
+      boolean selectNoDelay = false;
+      boolean selectClkenabled = false;
+      for (final SignalFilter filter : displayFilters) {
+        selectNoDelay |= filter == SignalFilter.NO_DELAY;
+        selectClkenabled |= filter == SignalFilter.CLK_ENABLED;
+      }
+      cbNoDelayFilter.setSelected(selectNoDelay);
+      cbClkEnabledFilter.setSelected(selectClkenabled);
+    } else {
+      cbNoDelayFilter.setSelected(false);
+      cbClkEnabledFilter.setSelected(false);
+    }
   }
 }
 
