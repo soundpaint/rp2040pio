@@ -201,19 +201,19 @@ public class Diagram extends GUIObserver
       PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     final List<SignalFilter> displayFilters =
       ValueFilterPanel.createFilters(true, true);
-    final ValueRenderingPanel.SignalParams signalParams =
-      new ValueRenderingPanel.SignalParams(this, getSDK(),
-                                           "PIO0_SM0_INSTR", instrAddr,
-                                           15, 0, displayFilters, 0, 0);
+    final SignalRendering.SignalParams signalParams =
+      new SignalRendering.SignalParams(this, getSDK(),
+                                       "PIO0_SM0_INSTR", instrAddr,
+                                       15, 0, displayFilters, 0, 0);
     model.addSignal(SignalFactory.
                     createFromRegister(getSDK(), "PIO0_SM0_INSTR",
                                        instrAddr, 15, 0,
                                        (cycle, value) ->
-                                       ValueRenderingPanel.Representation.
+                                       SignalRendering.
                                        formatShortMnemonic(cycle, value,
                                                            signalParams),
                                        (cycle, value) ->
-                                       ValueRenderingPanel.Representation.
+                                       SignalRendering.
                                        formatFullMnemonic(cycle, value,
                                                           signalParams),
                                        signalParams.displayFilters, 0, 0)).
