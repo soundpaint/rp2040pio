@@ -618,7 +618,7 @@ public class ValueSourcePanel extends JPanel
     selectBitsRange(signal.getMsb(), signal.getLsb());
   }
 
-  public void load(final BitSignal signal)
+  public void load(final RegisterBitSignal signal)
   {
     selectRegisterByAddress(signal.getAddress());
     final int bit = signal.getBit();

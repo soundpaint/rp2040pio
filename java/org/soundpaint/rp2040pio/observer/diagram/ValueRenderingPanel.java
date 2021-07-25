@@ -454,7 +454,7 @@ public class ValueRenderingPanel extends JPanel implements Constants
     // TODO
   }
 
-  public void load(final BitSignal signal)
+  public void load(final RegisterBitSignal signal)
   {
     // TODO
   }

@@ -261,11 +261,11 @@ public class SignalTypePanel extends JPanel
       visible = signal.getVisible();
       rbClock.setSelected(true);
       selectClock();
-    } else if (signal instanceof BitSignal) {
+    } else if (signal instanceof RegisterBitSignal) {
       visible = signal.getVisible();
       rbValued.setSelected(true);
       selectValued();
-      final BitSignal bitSignal = (BitSignal)signal;
+      final RegisterBitSignal bitSignal = (RegisterBitSignal)signal;
       valueSourcePanel.load(bitSignal);
       valueRenderingPanel.load(bitSignal);
       valueFilterPanel.load(bitSignal);
@@ -274,11 +274,11 @@ public class SignalTypePanel extends JPanel
       visible = signal.getVisible();
       rbValued.setSelected(true);
       selectValued();
-      final RegisterIntSignal valuedSignal = (RegisterIntSignal)signal;
-      valueSourcePanel.load(valuedSignal);
-      valueRenderingPanel.load(valuedSignal);
-      valueFilterPanel.load(valuedSignal);
-      smSelectionPanel.load(valuedSignal);
+      final RegisterIntSignal intSignal = (RegisterIntSignal)signal;
+      valueSourcePanel.load(intSignal);
+      valueRenderingPanel.load(intSignal);
+      valueFilterPanel.load(intSignal);
+      smSelectionPanel.load(intSignal);
     } else {
       final String message =
         String.format("warning: failed loading signal preload values: " +

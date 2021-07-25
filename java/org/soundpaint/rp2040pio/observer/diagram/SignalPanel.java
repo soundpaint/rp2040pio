@@ -154,7 +154,7 @@ public class SignalPanel extends JComponent implements Constants
     for (final Signal signal : model) {
       if (signal.getVisible()) {
         final double height = signal.getDisplayHeight();
-        signal.paintCycle(toolTips, g, zoom, xStart, y += height, cycle,
+        signal.paintCycle(g, zoom, xStart, y += height, cycle,
                           firstCycle, lastCycle);
       }
     }

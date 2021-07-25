@@ -56,7 +56,6 @@ public abstract class AbstractSignal<T> implements Signal
 
   private final List<SignalRecord<T>> signalRecords;
   private final String label;
-  private BiFunction<Integer, T, String> renderer;
   private BiFunction<Integer, T, String> toolTipTexter;
   private boolean visible;
 
@@ -72,7 +71,6 @@ public abstract class AbstractSignal<T> implements Signal
     }
     this.signalRecords = new ArrayList<SignalRecord<T>>();
     this.label = label;
-    this.renderer = null;
     this.toolTipTexter = null;
     visible = false;
   }
@@ -132,32 +130,6 @@ public abstract class AbstractSignal<T> implements Signal
   public boolean changed(final int cycle)
   {
     return getNotChangedSince(cycle) == 0;
-  }
-
-  /**
-   * Setting the renderer to &lt;code&gt;null&lt;/code&gt; results in
-   * reverting to the default behavior of calling method
-   * String.valueOf(value) for rendering.
-   */
-  public void setRenderer(final BiFunction<Integer, T, String> renderer)
-  {
-    this.renderer = renderer;
-  }
-
-  protected String renderValue(final int cycle, final T value)
-  {
-    if (value == null)
-      return null;
-    else if (renderer != null)
-      return renderer.apply(cycle, value);
-    else
-      return String.valueOf(value);
-  }
-
-  @Override
-  public String getRenderedValue(final int cycle)
-  {
-    return renderValue(cycle, getValue(cycle));
   }
 
   /**

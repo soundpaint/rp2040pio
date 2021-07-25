@@ -220,7 +220,7 @@ public class SmSelectionPanel extends JPanel
     // TODO
   }
 
-  public void load(final BitSignal signal)
+  public void load(final RegisterBitSignal signal)
   {
     // TODO
   }

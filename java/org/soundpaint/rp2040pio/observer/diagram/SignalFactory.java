@@ -67,7 +67,7 @@ public class SignalFactory
         (lsb != msb ? ":" + lsb : "")));
   }
 
-  public static BitSignal
+  public static RegisterBitSignal
     createFromRegister(final SDK sdk, final String label,
                        final int address, final int bit,
                        final List<SignalFilter> displayFilters,
@@ -79,8 +79,8 @@ public class SignalFactory
     }
     Constants.checkBit(bit);
     final String signalLabel = createSignalLabel(sdk, label, address, bit);
-    return new BitSignal(sdk, signalLabel, displayFilters, pioNum, smNum,
-                         address, bit);
+    return new RegisterBitSignal(sdk, signalLabel,
+                                 displayFilters, pioNum, smNum, address, bit);
   }
 
   public static RegisterIntSignal

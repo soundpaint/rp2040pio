@@ -125,7 +125,7 @@ public class DiagramModel implements Iterable<Signal>
                           final int pioNum, final int smNum)
     throws IOException
   {
-    final BitSignal signal =
+    final RegisterBitSignal signal =
       SignalFactory.createFromRegister(sdk, label, address, bit,
                                        displayFilters, pioNum, smNum);
     return addSignal(signal);

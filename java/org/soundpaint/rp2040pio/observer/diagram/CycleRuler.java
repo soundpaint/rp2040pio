@@ -27,7 +27,6 @@ package org.soundpaint.rp2040pio.observer.diagram;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
-import java.util.List;
 
 public class CycleRuler extends AbstractSignal<Void>
 {
@@ -57,8 +56,7 @@ public class CycleRuler extends AbstractSignal<Void>
   }
 
   @Override
-  public void paintCycle(final List<ToolTip> toolTips,
-                         final Graphics2D g, final double zoom,
+  public void paintCycle(final Graphics2D g, final double zoom,
                          final double xStart, final double yBottom,
                          final int cycle,
                          final boolean firstCycle, final boolean lastCycle)

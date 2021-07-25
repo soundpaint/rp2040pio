@@ -1,5 +1,5 @@
 /*
- * @(#)BitSignal.java 1.00 21/02/12
+ * @(#)RegisterBitSignal.java 1.00 21/02/12
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -33,32 +33,32 @@ import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class BitSignal extends ValuedSignal<Bit>
+public class RegisterBitSignal extends ValuedSignal<Bit>
 {
   private static final double SIGNAL_HEIGHT = 16.0;
 
   private final int address;
   private final int bit;
 
-  public BitSignal(final SDK sdk,
-                   final String label,
-                   final List<SignalFilter> displayFilters,
-                   final int pioNum,
-                   final int smNum,
-                   final int address,
-                   final int bit)
+  public RegisterBitSignal(final SDK sdk,
+                           final String label,
+                           final List<SignalFilter> displayFilters,
+                           final int pioNum,
+                           final int smNum,
+                           final int address,
+                           final int bit)
   {
     this(sdk, label, displayFilters, pioNum, smNum, address, bit, null);
   }
 
-  public BitSignal(final SDK sdk,
-                   final String label,
-                   final List<SignalFilter> displayFilters,
-                   final int pioNum,
-                   final int smNum,
-                   final int address,
-                   final int bit,
-                   final Supplier<Boolean> changeInfoGetter)
+  public RegisterBitSignal(final SDK sdk,
+                           final String label,
+                           final List<SignalFilter> displayFilters,
+                           final int pioNum,
+                           final int smNum,
+                           final int address,
+                           final int bit,
+                           final Supplier<Boolean> changeInfoGetter)
   {
     super(sdk, label, displayFilters, pioNum, smNum, changeInfoGetter);
     this.address = address;
@@ -76,20 +76,19 @@ public class BitSignal extends ValuedSignal<Bit>
   }
 
   @Override
-  protected Bit sampleValue() throws IOException
-  {
-    return Bit.fromValue(getSDK().readAddress(address, bit, bit));
-  }
-
-  @Override
   public double getDisplayHeight()
   {
     return SIGNAL_HEIGHT + 16.0;
   }
 
   @Override
-  public void paintCycle(final List<ToolTip> toolTips,
-                         final Graphics2D g, final double zoom,
+  protected Bit sampleValue() throws IOException
+  {
+    return Bit.fromValue(getSDK().readAddress(address, bit, bit));
+  }
+
+  @Override
+  public void paintCycle(final Graphics2D g, final double zoom,
                          final double xStart, final double yBottom,
                          final int cycle,
                          final boolean firstCycle, final boolean lastCycle)

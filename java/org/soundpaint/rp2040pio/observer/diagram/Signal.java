@@ -34,14 +34,12 @@ public interface Signal
   String getLabel();
   double getDisplayHeight();
   int size();
-  String getRenderedValue(final int cycle);
   String getToolTipText(final int cycle);
   void record() throws IOException;
   int getNotChangedSince(final int cycle);
   void setVisible(final boolean visible);
   boolean getVisible();
-  void paintCycle(final List<ToolTip> toolTips,
-                  final Graphics2D g, final double zoom,
+  void paintCycle(final Graphics2D g, final double zoom,
                   final double xStart, final double yBottom,
                   final int cycle,
                   final boolean isFirstCycle, final boolean isLastCycle);
