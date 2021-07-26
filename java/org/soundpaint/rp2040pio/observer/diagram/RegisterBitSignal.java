@@ -37,7 +37,6 @@ public class RegisterBitSignal extends ValuedSignal<Bit>
 {
   private static final double SIGNAL_HEIGHT = 16.0;
 
-  private final int address;
   private final int bit;
 
   public RegisterBitSignal(final SDK sdk,
@@ -60,14 +59,8 @@ public class RegisterBitSignal extends ValuedSignal<Bit>
                            final int bit,
                            final Supplier<Boolean> changeInfoGetter)
   {
-    super(sdk, label, displayFilters, pioNum, smNum, changeInfoGetter);
-    this.address = address;
+    super(sdk, label, address, displayFilters, pioNum, smNum, changeInfoGetter);
     this.bit = bit;
-  }
-
-  public int getAddress()
-  {
-    return address;
   }
 
   public int getBit()
@@ -84,7 +77,7 @@ public class RegisterBitSignal extends ValuedSignal<Bit>
   @Override
   protected Bit sampleValue() throws IOException
   {
-    return Bit.fromValue(getSDK().readAddress(address, bit, bit));
+    return Bit.fromValue(getSDK().readAddress(getAddress(), bit, bit));
   }
 
   @Override

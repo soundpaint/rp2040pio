@@ -39,7 +39,6 @@ public class RegisterIntSignal extends ValuedSignal<Integer>
 {
   private static final double VALUE_LABEL_MARGIN_BOTTOM = 8.0;
 
-  private final int address;
   private final int msb;
   private final int lsb;
   private BiFunction<Integer, Integer, String> renderer;
@@ -66,16 +65,10 @@ public class RegisterIntSignal extends ValuedSignal<Integer>
                            final int lsb,
                            final Supplier<Boolean> changeInfoGetter)
   {
-    super(sdk, label, displayFilters, pioNum, smNum, changeInfoGetter);
-    this.address = address;
+    super(sdk, label, address, displayFilters, pioNum, smNum, changeInfoGetter);
     this.msb = msb;
     this.lsb = lsb;
     this.renderer = null;
-  }
-
-  public int getAddress()
-  {
-    return address;
   }
 
   public int getMsb()
@@ -107,7 +100,7 @@ public class RegisterIntSignal extends ValuedSignal<Integer>
   @Override
   protected Integer sampleValue() throws IOException
   {
-    return getSDK().readAddress(address, msb, lsb);
+    return getSDK().readAddress(getAddress(), msb, lsb);
   }
 
   private String getRenderedValue(final int cycle)

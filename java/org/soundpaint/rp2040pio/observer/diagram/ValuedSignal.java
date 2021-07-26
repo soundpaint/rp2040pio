@@ -51,6 +51,7 @@ public abstract class ValuedSignal<T> extends AbstractSignal<T>
     new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
 
   private final SDK sdk;
+  private final int address;
   private final List<SignalFilter> displayFilters;
   private final int pioNum;
   private final int smNum;
@@ -62,6 +63,7 @@ public abstract class ValuedSignal<T> extends AbstractSignal<T>
    */
   public ValuedSignal(final SDK sdk,
                       final String label,
+                      final int address,
                       final List<SignalFilter> displayFilters,
                       final int pioNum,
                       final int smNum,
@@ -70,6 +72,7 @@ public abstract class ValuedSignal<T> extends AbstractSignal<T>
     super(label);
     Objects.requireNonNull(sdk);
     this.sdk = sdk;
+    this.address = address;
     this.displayFilters = displayFilters;
     this.pioNum = pioNum;
     this.smNum = smNum;
@@ -77,6 +80,11 @@ public abstract class ValuedSignal<T> extends AbstractSignal<T>
   }
 
   protected SDK getSDK() { return sdk; }
+
+  public int getAddress()
+  {
+    return address;
+  }
 
   public List<SignalFilter> getDisplayFilters()
   {
