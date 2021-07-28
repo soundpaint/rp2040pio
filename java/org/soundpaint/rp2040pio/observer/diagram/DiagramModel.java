@@ -38,7 +38,7 @@ public class DiagramModel implements Iterable<Signal>
 {
   private final PrintStream console;
   private final SDK sdk;
-  private final HashMap<Integer, ValuedSignal<Integer>> address2internalSignal;
+  private final HashMap<Integer, RegisterIntSignal> address2internalSignal;
   private final List<Signal> signals;
   private long wallClock;
   private int signalSize;
@@ -59,7 +59,7 @@ public class DiagramModel implements Iterable<Signal>
     }
     this.console = console;
     this.sdk = sdk;
-    address2internalSignal = new HashMap<Integer, ValuedSignal<Integer>>();
+    address2internalSignal = new HashMap<Integer, RegisterIntSignal>();
     signals = new ArrayList<Signal>();
     wallClock = -1;
     signalSize = 0;
@@ -70,21 +70,22 @@ public class DiagramModel implements Iterable<Signal>
     return signals.iterator();
   }
 
-  public Collection<ValuedSignal<Integer>> getInternalSignals()
+  public Collection<RegisterIntSignal> getInternalSignals()
   {
     return address2internalSignal.values();
   }
 
-  public Signal addInternalSignal(final String label, final int address)
+  public Signal addInternalSignal(final Diagram diagram,
+                                  final String label, final int address)
     throws IOException
   {
-    final ValuedSignal<Integer> signal =
-      SignalFactory.createInternal(sdk, label, address);
+    final RegisterIntSignal signal =
+      SignalFactory.createInternal(diagram, sdk, label, address);
     address2internalSignal.put(address, signal);
     return signal;
   }
 
-  public ValuedSignal<Integer> getInternalSignalByAddress(final int address)
+  public RegisterIntSignal getInternalSignalByAddress(final int address)
   {
     return address2internalSignal.get(address);
   }
@@ -98,69 +99,76 @@ public class DiagramModel implements Iterable<Signal>
     return signal;
   }
 
-  public Signal addSignal(final String label, final int address,
+  public Signal addSignal(final Diagram diagram,
+                          final String label, final int address,
                           final int msb, final int lsb,
                           final List<SignalFilter> displayFilters,
                           final int pioNum, final int smNum)
     throws IOException
   {
-    final ValuedSignal<Integer> signal =
+    final Signal signal =
       SignalFactory.
-      createFromRegister(sdk, label, address, msb, lsb,
-                         (cycle, value) -> String.format("%x", value),
-                         (cycle, value) -> String.format("0x%x", value),
-                         displayFilters, pioNum, smNum);
+      createFromRegister(diagram, sdk, label, address, msb, lsb,
+                         SignalRendering.Hex, displayFilters, pioNum, smNum);
     return addSignal(signal);
   }
 
-  public Signal addSignal(final String label, final int address,
+  public Signal addSignal(final Diagram diagram,
+                          final String label, final int address,
                           final int msb, final int lsb)
     throws IOException
   {
-    return addSignal(label, address, msb, lsb, null, -1, -1);
+    return addSignal(diagram, label, address, msb, lsb, null, -1, -1);
   }
 
-  public Signal addSignal(final String label, final int address, final int bit,
+  public Signal addSignal(final Diagram diagram,
+                          final String label, final int address, final int bit,
                           final List<SignalFilter> displayFilters,
                           final int pioNum, final int smNum)
     throws IOException
   {
     final RegisterBitSignal signal =
-      SignalFactory.createFromRegister(sdk, label, address, bit,
+      SignalFactory.createFromRegister(diagram, sdk, label, address, bit,
                                        displayFilters, pioNum, smNum);
     return addSignal(signal);
   }
 
-  public Signal addSignal(final int address, final int bit) throws IOException
-  {
-    return addSignal(null, address, bit, null, -1, -1);
-  }
-
-  public Signal addSignal(final String label, final int address)
+  public Signal addSignal(final Diagram diagram, final String label,
+                          final int address, final int bit)
     throws IOException
   {
-    return addSignal(label, address, 31, 0);
+    return addSignal(diagram, label, address, bit, null, -1, -1);
   }
 
-  public Signal addSignal(final String label, final int address,
+  public Signal addSignal(final Diagram diagram,
+                          final String label, final int address)
+    throws IOException
+  {
+    return addSignal(diagram, label, address, 31, 0);
+  }
+
+  public Signal addSignal(final Diagram diagram,
+                          final String label, final int address,
                           final List<SignalFilter> displayFilters,
                           final int pioNum, final int smNum)
     throws IOException
   {
-    return addSignal(label, address, 31, 0, displayFilters, pioNum, smNum);
+    return addSignal(diagram, label, address, 31, 0,
+                     displayFilters, pioNum, smNum);
   }
 
-  public Signal addSignal(final int address) throws IOException
+  public Signal addSignal(final Diagram diagram, final int address)
+    throws IOException
   {
-    return addSignal(null, address);
+    return addSignal(diagram, null, address);
   }
 
-  public Signal addSignal(final int address,
+  public Signal addSignal(final Diagram diagram, final int address,
                           final List<SignalFilter> displayFilters,
                           final int pioNum, final int smNum)
     throws IOException
   {
-    return addSignal(null, address, displayFilters, pioNum, smNum);
+    return addSignal(diagram, null, address, displayFilters, pioNum, smNum);
   }
 
   public void resetSignals()

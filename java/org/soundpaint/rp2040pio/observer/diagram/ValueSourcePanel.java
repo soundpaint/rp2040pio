@@ -614,13 +614,15 @@ public class ValueSourcePanel extends JPanel
 
   public void load(final RegisterIntSignal signal)
   {
-    selectRegisterByAddress(signal.getAddress());
-    selectBitsRange(signal.getMsb(), signal.getLsb());
+    final SignalRendering.SignalParams signalParams = signal.getSignalParams();
+    selectRegisterByAddress(signalParams.getAddress());
+    selectBitsRange(signalParams.getMsb(), signalParams.getLsb());
   }
 
   public void load(final RegisterBitSignal signal)
   {
-    selectRegisterByAddress(signal.getAddress());
+    final SignalRendering.SignalParams signalParams = signal.getSignalParams();
+    selectRegisterByAddress(signalParams.getAddress());
     final int bit = signal.getBit();
     selectBitsRange(bit, bit);
   }

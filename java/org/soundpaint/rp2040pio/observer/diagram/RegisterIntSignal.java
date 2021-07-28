@@ -31,7 +31,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
@@ -39,46 +39,22 @@ public class RegisterIntSignal extends ValuedSignal<Integer>
 {
   private static final double VALUE_LABEL_MARGIN_BOTTOM = 8.0;
 
-  private final int msb;
-  private final int lsb;
-  private BiFunction<Integer, Integer, String> renderer;
-
-  public RegisterIntSignal(final SDK sdk,
-                           final String label,
-                           final List<SignalFilter> displayFilters,
-                           final int pioNum,
-                           final int smNum,
-                           final int address,
-                           final int msb,
-                           final int lsb)
+  public RegisterIntSignal(final SignalRendering valueRendering,
+                           final SignalRendering.SignalParams signalParams)
   {
-    this(sdk, label, displayFilters, pioNum, smNum, address, msb, lsb, null);
+    this(valueRendering, signalParams, null);
   }
 
-  public RegisterIntSignal(final SDK sdk,
-                           final String label,
-                           final List<SignalFilter> displayFilters,
-                           final int pioNum,
-                           final int smNum,
-                           final int address,
-                           final int msb,
-                           final int lsb,
+  public RegisterIntSignal(final SignalRendering valueRendering,
+                           final SignalRendering.SignalParams signalParams,
                            final Supplier<Boolean> changeInfoGetter)
   {
-    super(sdk, label, address, displayFilters, pioNum, smNum, changeInfoGetter);
-    this.msb = msb;
-    this.lsb = lsb;
-    this.renderer = null;
-  }
-
-  public int getMsb()
-  {
-    return msb;
-  }
-
-  public int getLsb()
-  {
-    return lsb;
+    super(valueRendering, signalParams, changeInfoGetter);
+    Objects.requireNonNull(valueRendering.getToolTipRenderer());
+    if (valueRendering == SignalRendering.Bit) {
+      final String message = "this class does not support bit rendering";
+      throw new IllegalArgumentException(message);
+    }
   }
 
   @Override
@@ -87,20 +63,29 @@ public class RegisterIntSignal extends ValuedSignal<Integer>
     return SIGNAL_HEIGHT + 16.0;
   }
 
-  /**
-   * Setting the renderer to &lt;code&gt;null&lt;/code&gt; results in
-   * reverting to the default behavior of calling method
-   * String.valueOf(value) for rendering.
-   */
-  public void setRenderer(final BiFunction<Integer, Integer, String> renderer)
-  {
-    this.renderer = renderer;
-  }
-
   @Override
   protected Integer sampleValue() throws IOException
   {
-    return getSDK().readAddress(getAddress(), msb, lsb);
+    final SignalRendering.SignalParams signalParams = getSignalParams();
+    final SDK sdk = signalParams.getSDK();
+    final int address = signalParams.getAddress();
+    final int msb = signalParams.getMsb();
+    final int lsb = signalParams.getLsb();
+    return sdk.readAddress(address, msb, lsb);
+  }
+
+  @Override
+  public String getToolTipText(final int cycle)
+  {
+    final Integer value = getValue(cycle);
+    if (value == null)
+      return null;
+    final SignalRendering.ValueRenderer toolTipRenderer =
+      getValueRendering().getToolTipRenderer();
+    final SignalRendering.SignalParams signalParams = getSignalParams();
+    return
+      toolTipRenderer != null ?
+      toolTipRenderer.renderValue(signalParams, cycle, value) : null;
   }
 
   private String getRenderedValue(final int cycle)
@@ -108,10 +93,12 @@ public class RegisterIntSignal extends ValuedSignal<Integer>
     final Integer value = getValue(cycle);
     if (value == null)
       return null;
-    else if (renderer != null)
-      return renderer.apply(cycle, value);
-    else
-      return String.valueOf(value);
+    final SignalRendering.ValueRenderer lifeLineRenderer =
+      getValueRendering().getLifeLineRenderer();
+    return
+      lifeLineRenderer != null ?
+      lifeLineRenderer.renderValue(getSignalParams(), cycle, value) :
+      String.valueOf(value);
   }
 
   private static void paintValuedLabel(final Graphics2D g,

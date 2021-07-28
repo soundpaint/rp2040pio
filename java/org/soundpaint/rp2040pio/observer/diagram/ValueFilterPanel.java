@@ -139,7 +139,8 @@ public class ValueFilterPanel extends JPanel
 
   public void load(final ValuedSignal<?> signal)
   {
-    final List<SignalFilter> displayFilters = signal.getDisplayFilters();
+    final SignalRendering.SignalParams signalParams = signal.getSignalParams();
+    final List<SignalFilter> displayFilters = signalParams.getDisplayFilters();
     if (displayFilters != null) {
       boolean selectNoDelay = false;
       boolean selectClkenabled = false;

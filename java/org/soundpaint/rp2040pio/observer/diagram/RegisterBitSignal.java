@@ -37,35 +37,28 @@ public class RegisterBitSignal extends ValuedSignal<Bit>
 {
   private static final double SIGNAL_HEIGHT = 16.0;
 
-  private final int bit;
-
-  public RegisterBitSignal(final SDK sdk,
-                           final String label,
-                           final List<SignalFilter> displayFilters,
-                           final int pioNum,
-                           final int smNum,
-                           final int address,
-                           final int bit)
+  public RegisterBitSignal(final SignalRendering.SignalParams signalParams)
   {
-    this(sdk, label, displayFilters, pioNum, smNum, address, bit, null);
+    this(signalParams, null);
   }
 
-  public RegisterBitSignal(final SDK sdk,
-                           final String label,
-                           final List<SignalFilter> displayFilters,
-                           final int pioNum,
-                           final int smNum,
-                           final int address,
-                           final int bit,
+  public RegisterBitSignal(final SignalRendering.SignalParams signalParams,
                            final Supplier<Boolean> changeInfoGetter)
   {
-    super(sdk, label, address, displayFilters, pioNum, smNum, changeInfoGetter);
-    this.bit = bit;
+    super(SignalRendering.Bit, signalParams, changeInfoGetter);
+    final int msb = signalParams.getMsb();
+    final int lsb = signalParams.getLsb();
+    if (msb != lsb) {
+      final String message =
+        String.format("RegisterBitSignal: msb != lsb: %d != %d",
+                      msb, lsb);
+      throw new IllegalArgumentException(message);
+    }
   }
 
   public int getBit()
   {
-    return bit;
+    return getSignalParams().getMsb();
   }
 
   @Override
@@ -77,7 +70,18 @@ public class RegisterBitSignal extends ValuedSignal<Bit>
   @Override
   protected Bit sampleValue() throws IOException
   {
-    return Bit.fromValue(getSDK().readAddress(getAddress(), bit, bit));
+    final SignalRendering.SignalParams signalParams = getSignalParams();
+    final SDK sdk = signalParams.getSDK();
+    final int address = signalParams.getAddress();
+    final int bit = getBit();
+    return Bit.fromValue(sdk.readAddress(address, bit, bit));
+  }
+
+  @Override
+  public String getToolTipText(final int cycle)
+  {
+    final Bit bit = getValue(cycle);
+    return bit != null ? bit.getLevel() : null;
   }
 
   @Override

@@ -26,7 +26,7 @@ package org.soundpaint.rp2040pio.observer.diagram;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.Objects;
 import org.soundpaint.rp2040pio.Bit;
 import org.soundpaint.rp2040pio.Constants;
 import org.soundpaint.rp2040pio.sdk.SDK;
@@ -47,11 +47,19 @@ public class SignalFactory
   }
 
   private static String createSignalLabel(final SDK sdk, final String label,
-                                          final int address, final int bit)
+                                          final int address,
+                                          final String bitRange)
     throws IOException
   {
     return
-      (label != null) ? label : sdk.getLabelForAddress(address) + "_" + bit;
+      (label != null) ? label : sdk.getLabelForAddress(address) + bitRange;
+  }
+
+  private static String createSignalLabel(final SDK sdk, final String label,
+                                          final int address, final int bit)
+    throws IOException
+  {
+    return createSignalLabel(sdk, label, address, "_" + bit);
   }
 
   private static String createSignalLabel(final SDK sdk, final String label,
@@ -59,61 +67,58 @@ public class SignalFactory
                                           final int msb, final int lsb)
     throws IOException
   {
-    if (label != null) return label;
-    return
-      sdk.getLabelForAddress(address) +
-      ((lsb == 0) && (msb == 31) ? "" :
-       ("_" + msb +
-        (lsb != msb ? ":" + lsb : "")));
+    return createSignalLabel(sdk, label, address,
+                             ((lsb == 0) && (msb == 31) ? "" :
+                              ("_" + msb +
+                               (lsb != msb ? ":" + lsb : ""))));
+
   }
 
   public static RegisterBitSignal
-    createFromRegister(final SDK sdk, final String label,
+    createFromRegister(final Diagram diagram, final SDK sdk, final String label,
                        final int address, final int bit,
                        final List<SignalFilter> displayFilters,
                        final int pioNum, final int smNum)
     throws IOException
   {
-    if (sdk == null) {
-      throw new NullPointerException("sdk");
-    }
+    Objects.requireNonNull(diagram);
+    Objects.requireNonNull(sdk);
+    Objects.requireNonNull(label);
     Constants.checkBit(bit);
     final String signalLabel = createSignalLabel(sdk, label, address, bit);
-    return new RegisterBitSignal(sdk, signalLabel,
-                                 displayFilters, pioNum, smNum, address, bit);
+    final SignalRendering.SignalParams signalParams =
+      new SignalRendering.SignalParams(diagram, sdk, label, address,
+                                       bit, bit, displayFilters, pioNum, smNum);
+    return new RegisterBitSignal(signalParams);
   }
 
   public static RegisterIntSignal
-    createInternal(final SDK sdk, final String label, final int address)
+    createInternal(final Diagram diagram, final SDK sdk,
+                   final String label, final int address)
     throws IOException
   {
-    return new RegisterIntSignal(sdk, label, null, -1, -1, address, 31, 0);
+    final SignalRendering.SignalParams signalParams =
+      new SignalRendering.SignalParams(diagram, sdk, label, address, 31, 0,
+                                       null, -1, -1);
+    return new RegisterIntSignal(SignalRendering.Unsigned, signalParams);
   }
 
   public static RegisterIntSignal
-    createFromRegister(final SDK sdk, final String label,
+    createFromRegister(final Diagram diagram, final SDK sdk, final String label,
                        final int address, final int msb, final int lsb,
-                       final BiFunction<Integer, Integer, String> valueRenderer,
-                       final BiFunction<Integer, Integer, String> toolTipRenderer,
+                       final SignalRendering valueRendering,
                        final List<SignalFilter> displayFilters,
                        final int pioNum, final int smNum)
     throws IOException
   {
-    if (sdk == null) {
-      throw new NullPointerException("sdk");
-    }
-    Constants.checkMSBLSB(msb, lsb);
+    Objects.requireNonNull(diagram);
+    Objects.requireNonNull(sdk);
+    Objects.requireNonNull(label);
     final String signalLabel = createSignalLabel(sdk, label, address, msb, lsb);
-    final RegisterIntSignal intSignal =
-      new RegisterIntSignal(sdk, signalLabel, displayFilters, pioNum, smNum,
-                            address, msb, lsb);
-    intSignal.setRenderer((cycle, intValue) ->
-                          valueRenderer.apply(cycle, intValue));
-    if (toolTipRenderer != null) {
-      intSignal.setToolTipTexter((cycle, intValue) ->
-                                 toolTipRenderer.apply(cycle, intValue));
-    }
-    return intSignal;
+    final SignalRendering.SignalParams signalParams =
+      new SignalRendering.SignalParams(diagram, sdk, signalLabel, address,
+                                       msb, lsb, displayFilters, pioNum, smNum);
+    return new RegisterIntSignal(valueRendering, signalParams);
   }
 }
 

@@ -37,111 +37,43 @@ public enum SignalRendering implements Constants
 {
   Bit("bit signal shape",
       "single bit value visualized by upper or lower signal pulse",
-      (signalParams, bitSize) ->
-      SignalFactory.createFromRegister(signalParams.sdk,
-                                       signalParams.label,
-                                       signalParams.address,
-                                       signalParams.msb,
-                                       signalParams.displayFilters,
-                                       signalParams.pioNum,
-                                       signalParams.smNum)),
+      null, null),
   Binary("binary digits", "binary rendering of unsigned integer value",
-         (signalParams, bitSize) ->
-         SignalFactory.createFromRegister(signalParams.sdk,
-                                          signalParams.label,
-                                          signalParams.address,
-                                          signalParams.msb,
-                                          signalParams.lsb,
-                                          (cycle, value) ->
-                                          formatBinary(value, bitSize),
-                                          (cycle, value) ->
-                                          "0b" + formatBinary(value, bitSize),
-                                          signalParams.displayFilters,
-                                          signalParams.pioNum,
-                                          signalParams.smNum)),
+         (signalParams, cycle, value) ->
+         formatBinary(value, 1),
+         (signalParams, cycle, value) ->
+         "0b" + formatBinary(value, signalParams.bitSize)),
   Unsigned("unsigned decimal",
            "decimal rendering of unsigned integer value",
-           (signalParams, bitSize) ->
-           SignalFactory.createFromRegister(signalParams.sdk,
-                                            signalParams.label,
-                                            signalParams.address,
-                                            signalParams.msb,
-                                            signalParams.lsb,
-                                            (cycle, value) ->
-                                            formatUnsigned(value),
-                                            (cycle, value) ->
-                                            formatUnsigned(value),
-                                            signalParams.displayFilters,
-                                            signalParams.pioNum,
-                                            signalParams.smNum)),
+           (signalParams, cycle, value) -> formatUnsigned(value),
+           (signalParams, cycle, value) -> formatUnsigned(value)),
   Signed("signed decimal",
          "decimal rendering of signed integer value",
-         (signalParams, bitSize) ->
-         SignalFactory.createFromRegister(signalParams.sdk,
-                                          signalParams.label,
-                                          signalParams.address,
-                                          signalParams.msb,
-                                          signalParams.lsb,
-                                          (cycle, value) ->
-                                          formatSigned(value),
-                                          (cycle, value) ->
-                                          formatSigned(value),
-                                          signalParams.displayFilters,
-                                          signalParams.pioNum,
-                                          signalParams.smNum)),
+         (signalParams, cycle, value) -> formatSigned(value),
+         (signalParams, cycle, value) -> formatSigned(value)),
   Hex("hexadecimal",
       "hexadecimal rendering of unsigned integer value",
-      (signalParams, bitSize) ->
-      SignalFactory.createFromRegister(signalParams.sdk,
-                                       signalParams.label,
-                                       signalParams.address,
-                                       signalParams.msb,
-                                       signalParams.lsb,
-                                       (cycle, value) ->
-                                       formatHex(value, bitSize),
-                                       (cycle, value) ->
-                                       "0x" + formatHex(value, bitSize),
-                                       signalParams.displayFilters,
-                                       signalParams.pioNum,
-                                       signalParams.smNum)),
+      (signalParams, cycle, value) -> formatHex(value, 1),
+      (signalParams, cycle, value) ->
+      "0x" + formatHex(value, signalParams.bitSize)),
   Octal("octal",
         "octal rendering of unsigned integer value",
-        (signalParams, bitSize) ->
-        SignalFactory.createFromRegister(signalParams.sdk,
-                                         signalParams.label,
-                                         signalParams.address,
-                                         signalParams.msb,
-                                         signalParams.lsb,
-                                         (cycle, value) ->
-                                         formatOctal(value, bitSize),
-                                         (cycle, value) ->
-                                         "0o" + formatOctal(value, bitSize),
-                                         signalParams.displayFilters,
-                                         signalParams.pioNum,
-                                         signalParams.smNum)),
+        (signalParams, cycle, value) ->
+        formatOctal(value, 1),
+        (signalParams, cycle, value) ->
+        "0o" + formatOctal(value, signalParams.bitSize)),
   Mnemonic("PIO instruction with side-set for below target state machine",
            "mnemonic of PIO instruction with op-code that equals the value",
-           (signalParams, bitSize) ->
-           SignalFactory.createFromRegister(signalParams.sdk,
-                                            signalParams.label,
-                                            signalParams.address,
-                                            signalParams.msb,
-                                            signalParams.lsb,
-                                            (cycle, value) ->
-                                            formatShortMnemonic(cycle, value,
-                                                                signalParams),
-                                            (cycle, value) ->
-                                            formatFullMnemonic(cycle, value,
-                                                               signalParams),
-                                            signalParams.displayFilters,
-                                            signalParams.pioNum,
-                                            signalParams.smNum));
+           (signalParams, cycle, value) ->
+           formatShortMnemonic(cycle, value, signalParams),
+           (signalParams, cycle, value) ->
+           formatFullMnemonic(cycle, value, signalParams));
 
   @FunctionalInterface
-  private static interface SignalCreator
+  public static interface ValueRenderer
   {
-    Signal apply(final SignalParams signalParams, final int bitSize)
-      throws IOException;
+    String renderValue(final SignalParams signalParams,
+                       final int cycle, final int value);
   }
 
   // TODO: Make private again when removing demo signals from Diagram class
@@ -153,6 +85,7 @@ public enum SignalRendering implements Constants
     private final int address;
     private final int msb;
     private final int lsb;
+    private final int bitSize;
     // TODO: Make private again when removing demo signals from Diagram class
     public final List<SignalFilter> displayFilters;
     private final int pioNum;
@@ -162,6 +95,22 @@ public enum SignalRendering implements Constants
     private SignalParams()
     {
       throw new UnsupportedOperationException("unsupported default constructor");
+    }
+
+    public SignalParams(final String label)
+    {
+      Objects.requireNonNull(label);
+      diagram = null;
+      sdk = null;
+      this.label = label;
+      address = -1;
+      msb = -1;
+      lsb = -1;
+      bitSize = -1;
+      displayFilters = null;
+      pioNum = -1;
+      smNum = -1;
+      isSmInstr = false;
     }
 
     // TODO: Make private again when removing demo signals from Diagram class
@@ -176,21 +125,45 @@ public enum SignalRendering implements Constants
                         final int smNum)
       throws IOException
     {
-      Objects.requireNonNull(diagram);
-      Objects.requireNonNull(sdk);
       Objects.requireNonNull(label);
+      if ((msb != -1) || (lsb != -1)) {
+        Constants.checkMSBLSB(msb, lsb);
+      }
       this.diagram = diagram;
       this.sdk = sdk;
       this.label = label;
       this.address = address;
       this.msb = msb;
       this.lsb = lsb;
+      bitSize = (msb != -1) || (lsb != -1) ? msb - lsb + 1 : -1;
       this.displayFilters = displayFilters;
       this.pioNum = pioNum;
       this.smNum = smNum;
       isSmInstr =
         sdk.getFullLabelForAddress(address).matches("PIO\\d_SM\\d_INSTR");
     }
+
+    public Diagram getDiagram() { return diagram; }
+
+    public SDK getSDK() { return sdk; }
+
+    public String getLabel() { return label; }
+
+    public int getAddress() { return address; }
+
+    public int getMsb() { return msb; }
+
+    public int getLsb() { return lsb; }
+
+    public int getBitSize() { return bitSize; }
+
+    public List<SignalFilter> getDisplayFilters() { return displayFilters; }
+
+    public int getPioNum() { return pioNum; }
+
+    public int getSmNum() { return smNum; }
+
+    public boolean isSmInstr() { return isSmInstr; }
 
     /*
      * TODO: Performance: This method is typically called twice with
@@ -289,14 +262,16 @@ public enum SignalRendering implements Constants
   {
     final String digits = Integer.toHexString(value);
     return
-      String.format("%" + (bitSize / 4 + 1) + "s", digits).replace(' ', '0');
+      String.format("%" + ((bitSize - 1) / 4 + 1) + "s", digits).
+      replace(' ', '0');
   }
 
   private static String formatOctal(final int value, final int bitSize)
   {
     final String digits = Integer.toOctalString(value);
     return
-      String.format("%" + (bitSize / 3 + 1) + "s", digits).replace(' ', '0');
+      String.format("%" + ((bitSize - 1) / 3 + 1) + "s", digits).
+      replace(' ', '0');
   }
 
   // TODO: Make private again when removing demo signals from Diagram class
@@ -318,18 +293,24 @@ public enum SignalRendering implements Constants
 
   private final String label;
   private final String description;
-  private final SignalCreator signalCreator;
+  private final ValueRenderer lifeLineRenderer;
+  private final ValueRenderer toolTipRenderer;
 
   private SignalRendering(final String label, final String description,
-                          final SignalCreator signalCreator)
+                          final ValueRenderer lifeLineRenderer,
+                          final ValueRenderer toolTipRenderer)
   {
     Objects.requireNonNull(label);
     Objects.requireNonNull(description);
-    Objects.requireNonNull(signalCreator);
     this.label = label;
     this.description = description;
-    this.signalCreator = signalCreator;
+    this.lifeLineRenderer = lifeLineRenderer;
+    this.toolTipRenderer = toolTipRenderer;
   }
+
+  public ValueRenderer getLifeLineRenderer() { return lifeLineRenderer; }
+
+  public ValueRenderer getToolTipRenderer() { return toolTipRenderer; }
 
   public Signal createSignal(final Diagram diagram,
                              final SDK sdk,
@@ -342,10 +323,15 @@ public enum SignalRendering implements Constants
                              final int smNum)
     throws IOException
   {
-    final SignalParams params =
-      new SignalParams(diagram, sdk, label, address,
-                       msb, lsb, displayFilters, pioNum, smNum);
-    return signalCreator.apply(params, params.msb - params.lsb + 1);
+    if (this == Bit) {
+      return
+        SignalFactory.createFromRegister(diagram, sdk, label, address, msb,
+                                         displayFilters, pioNum, smNum);
+    } else {
+      return
+        SignalFactory.createFromRegister(diagram, sdk, label, address, msb, lsb,
+                                         this, displayFilters, pioNum, smNum);
+    }
   }
 
   @Override

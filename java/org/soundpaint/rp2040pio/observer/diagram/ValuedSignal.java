@@ -50,53 +50,44 @@ public abstract class ValuedSignal<T> extends AbstractSignal<T>
   protected static final TexturePaint FILL_PAINT =
     new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
 
-  private final SDK sdk;
-  private final int address;
-  private final List<SignalFilter> displayFilters;
-  private final int pioNum;
-  private final int smNum;
+  private final SignalRendering valueRendering;
   private final Supplier<Boolean> changeInfoGetter;
 
   /**
    * @param changeInfoGetter If set to &lt;code&gt;null&lt;/code&gt;,
    * then a change is assumed only when the updated value changes.
    */
-  public ValuedSignal(final SDK sdk,
-                      final String label,
-                      final int address,
-                      final List<SignalFilter> displayFilters,
-                      final int pioNum,
-                      final int smNum,
-                      final Supplier<Boolean> changeInfoGetter)
+  protected ValuedSignal(final SignalRendering valueRendering,
+                         final SignalRendering.SignalParams signalParams,
+                         final Supplier<Boolean> changeInfoGetter)
   {
-    super(label);
-    Objects.requireNonNull(sdk);
-    this.sdk = sdk;
-    this.address = address;
-    this.displayFilters = displayFilters;
-    this.pioNum = pioNum;
-    this.smNum = smNum;
+    super(signalParams);
+    Objects.requireNonNull(signalParams);
+    Objects.requireNonNull(signalParams.getDiagram());
+    Objects.requireNonNull(signalParams.getSDK());
+    this.valueRendering = valueRendering;
     this.changeInfoGetter = changeInfoGetter;
   }
 
-  protected SDK getSDK() { return sdk; }
-
-  public int getAddress()
+  public SignalRendering getValueRendering()
   {
-    return address;
+    return valueRendering;
   }
 
-  public List<SignalFilter> getDisplayFilters()
-  {
-    return displayFilters;
-  }
+  @Override
+  protected double getSignalHeight() { return SIGNAL_HEIGHT; }
 
   abstract protected T sampleValue() throws IOException;
 
-  private boolean passAllFilters() throws IOException
+  private boolean passesAllFilters(final List<SignalFilter> displayFilters)
+    throws IOException
   {
-    for (final SignalFilter filter : displayFilters) {
-      if (!filter.acceptCurrentSignalValue(sdk, pioNum, smNum))
+    final SignalRendering.SignalParams signalParams = getSignalParams();
+    final SDK sdk = signalParams.getSDK();
+    final int pioNum = signalParams.getPioNum();
+    final int smNum = signalParams.getSmNum();
+    for (final SignalFilter displayFilter : displayFilters) {
+      if (!displayFilter.acceptCurrentSignalValue(sdk, pioNum, smNum))
         return false;
     }
     return true;
@@ -107,51 +98,15 @@ public abstract class ValuedSignal<T> extends AbstractSignal<T>
   {
     final boolean enforceChanged =
       changeInfoGetter != null ? changeInfoGetter.get() : false;
-    final boolean pass;
+    final SignalRendering.SignalParams signalParams = getSignalParams();
+    final List<SignalFilter> displayFilters = signalParams.getDisplayFilters();
+    final boolean passes;
     if (displayFilters != null) {
-      pass = passAllFilters();
+      passes = passesAllFilters(displayFilters);
     } else {
-      pass = true;
+      passes = true;
     }
-    record(pass ? sampleValue() : null, enforceChanged);
-  }
-
-  private static void addToolTip(final List<ToolTip> toolTips,
-                                 final int x0, final int y0,
-                                 final int x1, final int y1,
-                                 final String text)
-  {
-    if (text != null) {
-      toolTips.add(new ToolTip(x0, y0, x1, y1, text));
-    }
-  }
-
-  @Override
-  public void createToolTip(final List<ToolTip> toolTips,
-                            final int cycle,
-                            final boolean isFirstCycle,
-                            final boolean isLastCycle,
-                            final double zoom,
-                            final double xStart,
-                            final double yBottom)
-  {
-    final String previousToolTipText = getToolTipText(cycle - 1);
-    final int previousCycles = getNotChangedSince(cycle - 1) + 1;
-    addToolTip(toolTips,
-               (int)(xStart - previousCycles * zoom),
-               (int)(yBottom - SIGNAL_HEIGHT),
-               (int)xStart - 1, (int)yBottom,
-               previousToolTipText);
-    if (isLastCycle) {
-      // print label as preview for not yet finished value
-      final String toolTipText = getToolTipText(cycle);
-      final int cycles = getNotChangedSince(cycle) - 1;
-      addToolTip(toolTips,
-                 (int)(xStart - cycles * zoom),
-                 (int)(yBottom - SIGNAL_HEIGHT),
-                 (int)xStart - 1, (int)yBottom,
-                 toolTipText);
-    }
+    record(passes ? sampleValue() : null, enforceChanged);
   }
 }
 

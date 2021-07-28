@@ -141,14 +141,25 @@ public class ValueRenderingPanel extends JPanel
     }
   }
 
-  public void load(final RegisterIntSignal signal)
+  private void selectRendering(final SignalRendering signalRendering)
   {
-    // TODO
+    selectedRendering = signalRendering;
+    final Enumeration<AbstractButton> buttons = buttonGroup.getElements();
+    while (buttons.hasMoreElements()) {
+      final JRadioButton button = (JRadioButton)buttons.nextElement();
+      final boolean isSelected =
+        /*
+         * TODO: Better use a hash map rather than relying on button
+         * label.
+         */
+        button.getText() == signalRendering.toString();
+      button.setSelected(isSelected);
+    }
   }
 
-  public void load(final RegisterBitSignal signal)
+  public void load(final ValuedSignal<?> signal)
   {
-    // TODO
+    selectRendering(signal.getValueRendering());
   }
 }
 

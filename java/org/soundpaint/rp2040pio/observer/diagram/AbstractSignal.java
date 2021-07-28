@@ -24,9 +24,9 @@
  */
 package org.soundpaint.rp2040pio.observer.diagram;
 
-import java.util.List;
 import java.util.ArrayList;
-import java.util.function.BiFunction;
+import java.util.List;
+import java.util.Objects;
 
 public abstract class AbstractSignal<T> implements Signal
 {
@@ -55,8 +55,7 @@ public abstract class AbstractSignal<T> implements Signal
   }
 
   private final List<SignalRecord<T>> signalRecords;
-  private final String label;
-  private BiFunction<Integer, T, String> toolTipTexter;
+  private final SignalRendering.SignalParams signalParams;
   private boolean visible;
 
   private AbstractSignal()
@@ -64,15 +63,17 @@ public abstract class AbstractSignal<T> implements Signal
     throw new UnsupportedOperationException("unsupported empty constructor");
   }
 
-  public AbstractSignal(final String label)
+  public AbstractSignal(final SignalRendering.SignalParams signalParams)
   {
-    if (label == null) {
-      throw new NullPointerException("label");
-    }
+    Objects.requireNonNull(signalParams);
     this.signalRecords = new ArrayList<SignalRecord<T>>();
-    this.label = label;
-    this.toolTipTexter = null;
+    this.signalParams = signalParams;
     visible = false;
+  }
+
+  public SignalRendering.SignalParams getSignalParams()
+  {
+    return signalParams;
   }
 
   @Override
@@ -82,7 +83,7 @@ public abstract class AbstractSignal<T> implements Signal
   }
 
   @Override
-  public String getLabel() { return label; }
+  public String getLabel() { return signalParams.getLabel(); }
 
   protected void record(final T value, final boolean enforceChanged)
   {
@@ -132,37 +133,14 @@ public abstract class AbstractSignal<T> implements Signal
     return getNotChangedSince(cycle) == 0;
   }
 
-  /**
-   * Setting the tooltip texter to &lt;code&gt;null&lt;/code&gt;
-   * results in reverting to the default behavior of not providing any
-   * tooltip text.
-   */
-  public void setToolTipTexter(final BiFunction<Integer, T, String>
-                               toolTipTexter)
-  {
-    this.toolTipTexter = toolTipTexter;
-  }
-
-  protected String toolTipTextForValue(final int cycle, final T value)
-  {
-    if (value == null)
-      return null;
-    else if (toolTipTexter != null)
-      return toolTipTexter.apply(cycle, value);
-    else
-      return null;
-  }
-
   @Override
   public String getToolTipText(final int cycle)
   {
-    return toolTipTextForValue(cycle, getValue(cycle));
+    return null;
   }
 
-  /**
-   * Default implementation does not create any tooltip.  Override
-   * this method for a signal to create tooltips.
-   */
+  abstract protected double getSignalHeight();
+
   @Override
   public void createToolTip(final List<ToolTip> toolTips,
                             final int cycle,
@@ -172,6 +150,25 @@ public abstract class AbstractSignal<T> implements Signal
                             final double xStart,
                             final double yBottom)
   {
+    final String previousToolTipText = getToolTipText(cycle - 1);
+    if (previousToolTipText != null) {
+      final int previousCycles = getNotChangedSince(cycle - 1) + 1;
+      toolTips.add(new ToolTip((int)(xStart - previousCycles * zoom),
+                               (int)(yBottom - getSignalHeight()),
+                               (int)xStart - 1, (int)yBottom,
+                               previousToolTipText));
+    }
+    if (isLastCycle) {
+      // print label as preview for not yet finished value
+      final String toolTipText = getToolTipText(cycle);
+      if (toolTipText != null) {
+        final int cycles = getNotChangedSince(cycle) - 1;
+        toolTips.add(new ToolTip((int)(xStart - cycles * zoom),
+                                 (int)(yBottom - getSignalHeight()),
+                                 (int)xStart - 1, (int)yBottom,
+                                 toolTipText));
+      }
+    }
   }
 
   @Override
@@ -194,7 +191,7 @@ public abstract class AbstractSignal<T> implements Signal
       if (values.length() > 0) values.append(", ");
       values.append(record.value);
     }
-    return String.format("Signal[label=%s, values={%s}]", label, values);
+    return String.format("Signal[label=%s, values={%s}]", getLabel(), values);
   }
 }
 

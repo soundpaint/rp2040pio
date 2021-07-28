@@ -148,27 +148,27 @@ public class Diagram extends GUIObserver
           PIORegisters.getSMAddress(pioNum, smNum,
                                     PIORegisters.Regs.SM0_PINCTRL);
         final String labelPinCtrl = labelPrefix + "PINCTRL";
-        model.addInternalSignal(labelPinCtrl, addressPinCtrl);
+        model.addInternalSignal(this, labelPinCtrl, addressPinCtrl);
         final int addressExecCtrl =
           PIORegisters.getSMAddress(pioNum, smNum,
                                     PIORegisters.Regs.SM0_EXECCTRL);
         final String labelExecCtrl = labelPrefix + "EXECCTRL";
-        model.addInternalSignal(labelExecCtrl, addressExecCtrl);
+        model.addInternalSignal(this, labelExecCtrl, addressExecCtrl);
         final int addressDelayCycle =
           PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                        PIOEmuRegisters.Regs.SM0_DELAY_CYCLE);
         final String labelDelayCycle = labelPrefix + "DELAY_CYCLE";
-        model.addInternalSignal(labelDelayCycle, addressDelayCycle);
+        model.addInternalSignal(this, labelDelayCycle, addressDelayCycle);
         final int addressDelay =
           PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                        PIOEmuRegisters.Regs.SM0_DELAY);
         final String labelDelay = labelPrefix + "DELAY";
-        model.addInternalSignal(labelDelay, addressDelay);
+        model.addInternalSignal(this, labelDelay, addressDelay);
         final int addressInstrOrigin =
           PIOEmuRegisters.getSMAddress(pioNum, smNum,
                                        PIOEmuRegisters.Regs.SM0_INSTR_ORIGIN);
         final String labelInstrOrigin = labelPrefix + "INSTR_ORIGIN";
-        model.addInternalSignal(labelInstrOrigin, addressInstrOrigin);
+        model.addInternalSignal(this, labelInstrOrigin, addressInstrOrigin);
       }
     }
   }
@@ -178,7 +178,7 @@ public class Diagram extends GUIObserver
     createInternalSignals();
     model.addSignal(SignalFactory.createRuler("cycle#")).setVisible(true);
     model.addSignal(SignalFactory.createClockSignal("clock")).setVisible(true);
-    model.addSignal(PIOEmuRegisters.
+    model.addSignal(this, "SM0_CLK_ENABLE", PIOEmuRegisters.
                     getAddress(0, PIOEmuRegisters.Regs.SM0_CLK_ENABLE), 0).
       setVisible(true);
     final GPIOIOBank0Registers.Regs regGpio0Status =
@@ -187,43 +187,33 @@ public class Diagram extends GUIObserver
       final String label = "GPIO" + gpioNum + " (out from peri)";
       final int address =
         GPIOIOBank0Registers.getGPIOAddress(gpioNum, regGpio0Status);
-      model.addSignal(label + " Value", address, 8, 8).setVisible(gpioNum < 2);
-      model.addSignal(label + " Level", address, 8, null, -1, -1);
+      model.addSignal(this, label + " Value", address, 8, 8).
+        setVisible(gpioNum < 2);
+      model.addSignal(this, label + " Level", address, 8, null, -1, -1);
     }
-    final SDK sdk = getSDK();
     final List<SignalFilter> noDelayFilter =
       ValueFilterPanel.createFilters(true, false);
     final int addrSm0Pc =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_PC);
-    model.addSignal("SM0_PC", addrSm0Pc);
-    model.addSignal("SM0_PC (hidden delay)", addrSm0Pc, noDelayFilter, 0, 0);
+    model.addSignal(this, "SM0_PC", addrSm0Pc);
+    model.addSignal(this, "SM0_PC (hidden delay)", addrSm0Pc,
+                    noDelayFilter, 0, 0);
     final int instrAddr =
       PIORegisters.getAddress(0, PIORegisters.Regs.SM0_INSTR);
     final List<SignalFilter> displayFilters =
       ValueFilterPanel.createFilters(true, true);
-    final SignalRendering.SignalParams signalParams =
-      new SignalRendering.SignalParams(this, getSDK(),
-                                       "PIO0_SM0_INSTR", instrAddr,
-                                       15, 0, displayFilters, 0, 0);
     model.addSignal(SignalFactory.
-                    createFromRegister(getSDK(), "PIO0_SM0_INSTR",
+                    createFromRegister(this, getSDK(), "PIO0_SM0_INSTR",
                                        instrAddr, 15, 0,
-                                       (cycle, value) ->
-                                       SignalRendering.
-                                       formatShortMnemonic(cycle, value,
-                                                           signalParams),
-                                       (cycle, value) ->
-                                       SignalRendering.
-                                       formatFullMnemonic(cycle, value,
-                                                          signalParams),
-                                       signalParams.displayFilters, 0, 0)).
+                                       SignalRendering.Mnemonic,
+                                       displayFilters, 0, 0)).
       setVisible(true);
     final int addrSm0RegX =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGX);
-    model.addSignal("SM0_REGX", addrSm0RegX).setVisible(true);
+    model.addSignal(this, "SM0_REGX", addrSm0RegX).setVisible(true);
     final int addrSm0RegY =
       PIOEmuRegisters.getAddress(0, PIOEmuRegisters.Regs.SM0_REGY);
-    model.addSignal("SM0_REGY", addrSm0RegY);
+    model.addSignal(this, "SM0_REGY", addrSm0RegY);
   }
 
   public void clear()
@@ -245,7 +235,7 @@ public class Diagram extends GUIObserver
     diagramPanel.setZoom(zoom);
   }
 
-  public ValuedSignal<Integer> getInternalSignalByAddress(final int address)
+  public RegisterIntSignal getInternalSignalByAddress(final int address)
   {
     return model.getInternalSignalByAddress(address);
   }

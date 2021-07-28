@@ -38,7 +38,7 @@ public class ClockSignal extends AbstractSignal<Void>
 
   public ClockSignal(final String label)
   {
-    super(label);
+    super(new SignalRendering.SignalParams(label));
   }
 
   @Override
@@ -46,6 +46,9 @@ public class ClockSignal extends AbstractSignal<Void>
   {
     record(null, false);
   }
+
+  @Override
+  protected double getSignalHeight() { return SIGNAL_HEIGHT; }
 
   @Override
   public double getDisplayHeight()

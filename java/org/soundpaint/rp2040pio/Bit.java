@@ -29,26 +29,30 @@ package org.soundpaint.rp2040pio;
  */
 public enum Bit
 {
-  LOW(0, '0', "\u001b[30;42m0\u001b[0m", "\u001b[37;41m0\u001b[0m"),
-  HIGH(1, '1', "\u001b[30;42m1\u001b[0m", "\u001b[37;41m1\u001b[0m");
+  LOW(0, '0', "low", "\u001b[30;42m0\u001b[0m", "\u001b[37;41m0\u001b[0m"),
+  HIGH(1, '1', "high", "\u001b[30;42m1\u001b[0m", "\u001b[37;41m1\u001b[0m");
 
   private final int value;
   private final char charLabel;
+  private final String level;
   private final String superScriptLabel;
   private final String subScriptLabel;
   private final String stringLabel;
 
-  private Bit(final int value, final char charLabel,
+  private Bit(final int value, final char charLabel, final String level,
               final String superScriptLabel, final String subScriptLabel)
   {
     this.value = value;
     this.charLabel = charLabel;
+    this.level = level;
     this.superScriptLabel = superScriptLabel;
     this.subScriptLabel = subScriptLabel;
     this.stringLabel = String.valueOf(charLabel);
   }
 
   public int getValue() { return value; }
+
+  public String getLevel() { return level; }
 
   public static Bit fromValue(final boolean value)
   {

@@ -40,7 +40,7 @@ public class CycleRuler extends AbstractSignal<Void>
 
   public CycleRuler(final String label)
   {
-    super(label);
+    super(new SignalRendering.SignalParams(label));
   }
 
   @Override
@@ -50,9 +50,18 @@ public class CycleRuler extends AbstractSignal<Void>
   }
 
   @Override
+  protected double getSignalHeight() { return SIGNAL_HEIGHT; }
+
+  @Override
   public double getDisplayHeight()
   {
     return SIGNAL_HEIGHT + 16.0;
+  }
+
+  @Override
+  public String getToolTipText(final int cycle)
+  {
+    return "cycle #" + cycle;
   }
 
   @Override
