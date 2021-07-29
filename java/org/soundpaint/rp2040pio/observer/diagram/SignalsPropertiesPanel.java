@@ -222,6 +222,7 @@ public class SignalsPropertiesPanel extends Box
       signalLine.add(signalVisibilities.get(index));
       signalLine.add(Box.createHorizontalStrut(12));
       signalLine.add(signalActions.get(index));
+      signalLine.add(Box.createHorizontalStrut(5));
       SwingUtils.setPreferredHeightAsMaximum(signalLine);
       index++;
     }

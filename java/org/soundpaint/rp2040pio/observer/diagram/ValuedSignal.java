@@ -36,8 +36,7 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 
 public abstract class ValuedSignal<T> extends AbstractSignal<T>
 {
-  protected static final double SIGNAL_HEIGHT = 24.0;
-  protected static final BufferedImage FILL_IMAGE =
+  private static final BufferedImage FILL_IMAGE =
     ((Supplier<BufferedImage>)(() -> {
         final BufferedImage image =
           new BufferedImage(12, 12, BufferedImage.TYPE_INT_RGB);
@@ -49,6 +48,7 @@ public abstract class ValuedSignal<T> extends AbstractSignal<T>
       })).get();
   protected static final TexturePaint FILL_PAINT =
     new TexturePaint(FILL_IMAGE, new Rectangle2D.Double(0.0, 0.0, 12.0, 12.0));
+  protected static final double SIGNAL_HEIGHT = 24.0;
 
   private final SignalRendering valueRendering;
   private final Supplier<Boolean> changeInfoGetter;

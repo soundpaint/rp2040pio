@@ -215,14 +215,48 @@ public class SmSelectionPanel extends JPanel
     lbSourceSmNum.setEnabled(enabled);
   }
 
-  public void load(final RegisterIntSignal signal)
+  private void selectPio(final int selectedPio)
   {
-    // TODO
+    this.selectedPio = selectedPio;
+    final Enumeration<AbstractButton> buttons = pioButtons.getElements();
+    int pioNum = 0;
+    while (buttons.hasMoreElements()) {
+      final JRadioButton button = (JRadioButton)buttons.nextElement();
+      button.setSelected(pioNum++ == selectedPio);
+    }
   }
 
-  public void load(final RegisterBitSignal signal)
+  private void selectSm(final int selectedSm)
   {
-    // TODO
+    this.selectedSm = selectedSm;
+    final Enumeration<AbstractButton> buttons = smButtons.getElements();
+    int smNum = 0;
+    while (buttons.hasMoreElements()) {
+      final JRadioButton button = (JRadioButton)buttons.nextElement();
+      button.setSelected(smNum++ == selectedSm);
+    }
+  }
+
+  public void load(final ValuedSignal<?> signal,
+                   final int sourcePioNum, final int sourceSmNum)
+  {
+    final int signalPioNum;
+    final int signalSmNum;
+    if (signal != null) {
+      final SignalRendering.SignalParams signalParams =
+        signal.getSignalParams();
+      signalPioNum = signalParams.getPioNum();
+      signalSmNum = signalParams.getSmNum();
+    } else {
+      signalPioNum = -1;
+      signalSmNum = -1;
+    }
+    final int pioNum = signalPioNum >= 0 ? signalPioNum : sourcePioNum;
+    final int smNum = signalSmNum >= 0 ? signalSmNum : sourceSmNum;
+    selectPio(pioNum >= 0 ? pioNum : 0);
+    selectSm(smNum >= 0 ? smNum : 0);
+    cbUseSourcePio.setSelected(pioNum == sourcePioNum);
+    cbUseSourceSm.setSelected(smNum == sourceSmNum);
   }
 }
 

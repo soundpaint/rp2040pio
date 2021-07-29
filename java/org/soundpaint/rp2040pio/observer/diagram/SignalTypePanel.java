@@ -250,35 +250,28 @@ public class SignalTypePanel extends JPanel
 
   public void load(final Signal signal)
   {
-    if (signal == null) {
-      visible = false;
-      // keep all other settings unmodified
+    visible = signal != null ? signal.getVisible() : false;
+    valueTabs.setSelectedIndex(0);
+    final ValuedSignal<?> valuedSignal =
+      signal instanceof ValuedSignal ? (ValuedSignal<?>)signal : null;
+    valueSourcePanel.load(valuedSignal);
+    final int pioNum =
+      valuedSignal != null ? valueSourcePanel.getSelectedRegisterSetPio() : -1;
+    final int smNum =
+      valuedSignal != null ? valueSourcePanel.getSelectedRegisterSm() : -1;
+    valueRenderingPanel.load(valuedSignal);
+    valueFilterPanel.load(valuedSignal);
+    smSelectionPanel.load(valuedSignal, pioNum, smNum);
+    if ((signal == null) ||
+        (signal instanceof ValuedSignal)) {
+      rbValued.setSelected(true);
+      selectValued();
     } else if (signal instanceof CycleRuler) {
-      visible = signal.getVisible();
       rbCycleRuler.setSelected(true);
       selectCycleRuler();
     } else if (signal instanceof ClockSignal) {
-      visible = signal.getVisible();
       rbClock.setSelected(true);
       selectClock();
-    } else if (signal instanceof RegisterBitSignal) {
-      visible = signal.getVisible();
-      rbValued.setSelected(true);
-      selectValued();
-      final RegisterBitSignal bitSignal = (RegisterBitSignal)signal;
-      valueSourcePanel.load(bitSignal);
-      valueRenderingPanel.load(bitSignal);
-      valueFilterPanel.load(bitSignal);
-      smSelectionPanel.load(bitSignal);
-    } else if (signal instanceof RegisterIntSignal) {
-      visible = signal.getVisible();
-      rbValued.setSelected(true);
-      selectValued();
-      final RegisterIntSignal intSignal = (RegisterIntSignal)signal;
-      valueSourcePanel.load(intSignal);
-      valueRenderingPanel.load(intSignal);
-      valueFilterPanel.load(intSignal);
-      smSelectionPanel.load(intSignal);
     } else {
       final String message =
         String.format("warning: failed loading signal preload values: " +

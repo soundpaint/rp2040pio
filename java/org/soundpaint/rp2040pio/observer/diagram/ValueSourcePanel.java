@@ -562,6 +562,12 @@ public class ValueSourcePanel extends JPanel
     }
   }
 
+  private void resetInputs()
+  {
+    cbRegistersSet.setSelectedIndex(0);
+    initRegistersForSelectedRegisterSet();
+  }
+
   private void selectRegisterByAddress(final int address)
   {
     final RegistersSet registersSet = RegistersSet.fromAddress(address);
@@ -585,8 +591,7 @@ public class ValueSourcePanel extends JPanel
                       "no registers set found for signal address 0x%8x",
                       address);
       diagram.getConsole().println(message);
-      cbRegistersSet.setSelectedIndex(0);
-      initRegistersForSelectedRegisterSet();
+      resetInputs();
     }
   }
 
@@ -612,19 +617,21 @@ public class ValueSourcePanel extends JPanel
     }
   }
 
-  public void load(final RegisterIntSignal signal)
+  public void load(final ValuedSignal<?> signal)
   {
-    final SignalRendering.SignalParams signalParams = signal.getSignalParams();
-    selectRegisterByAddress(signalParams.getAddress());
-    selectBitsRange(signalParams.getMsb(), signalParams.getLsb());
-  }
-
-  public void load(final RegisterBitSignal signal)
-  {
-    final SignalRendering.SignalParams signalParams = signal.getSignalParams();
-    selectRegisterByAddress(signalParams.getAddress());
-    final int bit = signal.getBit();
-    selectBitsRange(bit, bit);
+    if (signal != null) {
+      final SignalRendering.SignalParams signalParams =
+        signal.getSignalParams();
+      selectRegisterByAddress(signalParams.getAddress());
+      if (signal instanceof RegisterBitSignal) {
+        final int bit = ((RegisterBitSignal)signal).getBit();
+        selectBitsRange(bit, bit);
+      } else {
+        selectBitsRange(signalParams.getMsb(), signalParams.getLsb());
+      }
+    } else {
+      resetInputs();
+    }
   }
 }
 
