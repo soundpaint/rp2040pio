@@ -1,5 +1,5 @@
 /*
- * @(#)AddSignalDialog.java 1.00 21/06/29
+ * @(#)SignalDialog.java 1.00 21/06/29
  *
  * Copyright (C) 2021 Jürgen Reuter
  *

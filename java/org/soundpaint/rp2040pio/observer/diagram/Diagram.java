@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
@@ -222,12 +223,26 @@ public class Diagram extends GUIObserver
     modelChanged();
   }
 
-  public void applyCycles(final int count) throws IOException
+  private void applyCycles(final int count) throws IOException
   {
     model.applyCycles(count);
     modelChanged();
     diagramPanel.ensureCycleIsVisible(model.getSignalSize() - 1);
     diagramPanel.rebuildToolTips();
+  }
+
+  public void applyCycles()
+  {
+    final int cycles = ((ActionPanel)getActionPanel()).getCycles();
+    try {
+      applyCycles(cycles);
+    } catch (final IOException e) {
+      final String title = "Emulation Failed";
+      final String message = "I/O error: " + e.getMessage();
+      JOptionPane.showMessageDialog(this, message, title,
+                                    JOptionPane.WARNING_MESSAGE);
+      clear();
+    }
   }
 
   public void setZoom(final int zoom)

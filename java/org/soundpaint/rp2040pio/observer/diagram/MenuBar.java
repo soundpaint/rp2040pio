@@ -35,11 +35,12 @@ import org.soundpaint.rp2040pio.sdk.SDK;
 
 public class MenuBar
   extends org.soundpaint.rp2040pio.observer.MenuBar<Diagram>
+  implements Constants
 {
   private static final long serialVersionUID = -5984414867480448181L;
 
   private final Diagram diagram;
-  private final ViewPropertiesDialog viewPropertiesDialog;
+  private final SignalsDialog signalsDialog;
 
   public MenuBar(final Diagram diagram, final SDK sdk)
   {
@@ -48,7 +49,7 @@ public class MenuBar
       throw new NullPointerException("diagram");
     }
     this.diagram = diagram;
-    viewPropertiesDialog = new ViewPropertiesDialog(diagram, sdk);
+    signalsDialog = new SignalsDialog(diagram, sdk);
   }
 
   @Override
@@ -69,33 +70,53 @@ public class MenuBar
   @Override
   protected void addAdditionalMenus(final Diagram diagram)
   {
-    add(createViewMenu());
+    add(createEditMenu());
+    add(createEmulationMenu());
   }
 
-  private JMenu createViewMenu()
+  private JMenu createEditMenu()
   {
-    final JMenu view = new JMenu("View");
-    view.setMnemonic(KeyEvent.VK_V);
+    final JMenu edit = new JMenu("Edit");
+    edit.setMnemonic(KeyEvent.VK_E);
 
-    final JMenuItem properties = new JMenuItem("Properties…");
+    final JMenuItem properties = new JMenuItem("Signals…");
     properties.setMnemonic(KeyEvent.VK_P);
     properties.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,
                                                      ActionEvent.ALT_MASK));
     properties.getAccessibleContext().
       setAccessibleDescription("Open Properties Dialog");
-    properties.addActionListener((event) -> viewPropertiesDialog.open());
-    view.add(properties);
+    properties.addActionListener((event) -> signalsDialog.open());
+    edit.add(properties);
+
+    return edit;
+  }
+
+  private JMenu createEmulationMenu()
+  {
+    final JMenu emulation = new JMenu("Emulation");
+    emulation.setMnemonic(KeyEvent.VK_M);
+
+    final JMenuItem emulate =
+      SwingUtils.createIconMenuItem("cycle16x16.png", "Emulate Cycles");
+    emulate.setMnemonic(KeyEvent.VK_E);
+    emulate.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U,
+                                                  ActionEvent.ALT_MASK));
+    emulate.getAccessibleContext().
+      setAccessibleDescription(TOOLTIP_TEXT_EMULATE);
+    emulate.addActionListener((event) -> diagram.applyCycles());
+    emulation.add(emulate);
 
     final JMenuItem clear =
-      SwingUtils.createIconMenuItem("trash16x16.png", "Clear View");
+      SwingUtils.createIconMenuItem("trash16x16.png", "Clear Recorded Cycles");
     clear.setMnemonic(KeyEvent.VK_C);
     clear.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C,
                                                 ActionEvent.ALT_MASK));
-    clear.getAccessibleContext().setAccessibleDescription("Clear Diagram View");
+    clear.getAccessibleContext().
+      setAccessibleDescription(TOOLTIP_TEXT_CLEAR);
     clear.addActionListener((event) -> diagram.clear());
-    view.add(clear);
+    emulation.add(clear);
 
-    return view;
+    return emulation;
   }
 }
 

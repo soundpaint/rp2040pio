@@ -29,6 +29,16 @@ import java.awt.Font;
 
 public interface Constants
 {
+  static final String TOOLTIP_TEXT_LOAD =
+    "load and run script for setting up emulation…";
+  static final String TOOLTIP_TEXT_CYCLES =
+    "number of cycles to emulate in one go";
+  static final String TOOLTIP_TEXT_EMULATE =
+    "emulate specified number of cycles in one go";
+  static final String TOOLTIP_TEXT_CLEAR =
+    "clear recorded cycles data";
+  static final String TOOLTIP_TEXT_ZOOM =
+    "change horizontal display scale";
   static final int ZOOM_MIN = 16;
   static final int ZOOM_MAX = 112;
   static final int ZOOM_DEFAULT = 32;

@@ -89,9 +89,17 @@ public class SignalsPropertiesPanel extends Box
   private JPopupMenu createActions()
   {
     final JPopupMenu pmActions = new JPopupMenu("Actions");
+    pmActions.add("Add Signal…").addActionListener((action) -> addSignal());
     pmActions.add("Edit…").addActionListener((action) -> editSignal());
     pmActions.add("Delete").addActionListener((action) -> deleteSignal());
     return pmActions;
+  }
+
+  private void addSignal()
+  {
+    final IndexedButton btActions = (IndexedButton)pmActions.getInvoker();
+    final int index = btActions.getIndex();
+    signalDialog.open(index + 1, null);
   }
 
   private void editSignal()
@@ -176,10 +184,6 @@ public class SignalsPropertiesPanel extends Box
     headerLine.add(Box.createHorizontalStrut(5));
     headerLine.add(new JLabel("# Label"));
     headerLine.add(Box.createHorizontalGlue());
-    headerLine.add(new JLabel("Swap"));
-    headerLine.add(Box.createHorizontalStrut(15));
-    headerLine.add(new JLabel("Add"));
-    headerLine.add(Box.createHorizontalGlue());
     headerLine.add(new JLabel("Show"));
     headerLine.add(Box.createHorizontalStrut(5));
     headerLine.add(new JLabel("Actions"));
@@ -191,7 +195,6 @@ public class SignalsPropertiesPanel extends Box
       if (index > 0) {
         final Box infixLine = new Box(BoxLayout.LINE_AXIS);
         add(infixLine);
-        infixLine.add(Box.createHorizontalGlue());
 
         final JButton btSwap =
           SwingUtils.createIconButton("swapv12x12.png", "⬍");
@@ -200,15 +203,6 @@ public class SignalsPropertiesPanel extends Box
         btSwap.setBorderPainted(false);
         btSwap.setContentAreaFilled(false);
         infixLine.add(btSwap);
-
-        final JButton btAdd =
-          SwingUtils.createIconButton("add12x12.png", "+");
-        final int addIndex = index;
-        btAdd.
-          addActionListener((event) -> signalDialog.open(addIndex, null));
-        btAdd.setBorderPainted(false);
-        btAdd.setContentAreaFilled(false);
-        infixLine.add(btAdd);
 
         infixLine.add(Box.createHorizontalGlue());
         SwingUtils.setPreferredHeightAsMaximum(infixLine);
@@ -262,8 +256,10 @@ public class SignalsPropertiesPanel extends Box
 
       final int actionsIndex = index;
       final IndexedButton btActions = new IndexedButton("…", actionsIndex);
-      signalActions.add(btActions);
+      btActions.setBorderPainted(false);
+      btActions.setContentAreaFilled(false);
       btActions.addActionListener((action) -> popupActions(btActions));
+      signalActions.add(btActions);
 
       index++;
     }

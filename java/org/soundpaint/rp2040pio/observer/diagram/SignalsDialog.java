@@ -1,5 +1,5 @@
 /*
- * @(#)ViewPropertiesDialog.java 1.00 21/04/07
+ * @(#)SignalsDialog.java 1.00 21/04/07
  *
  * Copyright (C) 2021 Jürgen Reuter
  *
@@ -44,7 +44,7 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import org.soundpaint.rp2040pio.sdk.SDK;
 
-public class ViewPropertiesDialog extends JDialog
+public class SignalsDialog extends JDialog
 {
   private static final long serialVersionUID = 8248679860337463934L;
 
@@ -64,7 +64,7 @@ public class ViewPropertiesDialog extends JDialog
       btOk.setMnemonic(KeyEvent.VK_O);
       btOk.addActionListener((event) -> {
           applyChanges();
-          ViewPropertiesDialog.this.setVisible(false);
+          SignalsDialog.this.setVisible(false);
         });
       add(btOk);
       add(Box.createHorizontalGlue());
@@ -78,7 +78,7 @@ public class ViewPropertiesDialog extends JDialog
       btCancel = new JButton("Cancel");
       btCancel.setMnemonic(KeyEvent.VK_C);
       btCancel.addActionListener((event) -> {
-          ViewPropertiesDialog.this.setVisible(false);
+          SignalsDialog.this.setVisible(false);
         });
       add(btCancel);
     }
@@ -86,14 +86,14 @@ public class ViewPropertiesDialog extends JDialog
 
   private final SignalsPropertiesPanel signalsPropertiesPanel;
 
-  private ViewPropertiesDialog()
+  private SignalsDialog()
   {
     throw new UnsupportedOperationException("unsupported default constructor");
   }
 
-  public ViewPropertiesDialog(final Diagram diagram, final SDK sdk)
+  public SignalsDialog(final Diagram diagram, final SDK sdk)
   {
-    super(diagram, "View Properties", Dialog.ModalityType.DOCUMENT_MODAL);
+    super(diagram, "Signals", Dialog.ModalityType.DOCUMENT_MODAL);
     Objects.requireNonNull(diagram);
     signalsPropertiesPanel = new SignalsPropertiesPanel(diagram, sdk);
     final JScrollPane scrollPane = new JScrollPane(signalsPropertiesPanel);

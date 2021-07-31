@@ -90,6 +90,7 @@ public abstract class GUIObserver extends JFrame
   private final SDK sdk;
   private final RemoteAddressSpaceClient sdkClient;
   private final RemoteAddressSpaceClient updateLoopClient;
+  private final ActionPanel<? extends GUIObserver> actionPanel;
 
   private GUIObserver()
   {
@@ -116,7 +117,7 @@ public abstract class GUIObserver extends JFrame
     sdk = new SDK(console, sdkClient);
     updateLoopClient = createRemoteAddressSpace("update loop thread");
     connect(null, getPort());
-    add(createActionPanel(), BorderLayout.NORTH);
+    add(actionPanel = createActionPanel(), BorderLayout.NORTH);
     add(createStatusLine(), BorderLayout.SOUTH);
     setJMenuBar(createMenuBar());
     printAbout();
@@ -179,6 +180,11 @@ public abstract class GUIObserver extends JFrame
   protected SDK getSDK()
   {
     return sdk;
+  }
+
+  protected ActionPanel<? extends GUIObserver> getActionPanel()
+  {
+    return actionPanel;
   }
 
   protected int getPort()

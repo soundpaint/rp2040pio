@@ -31,7 +31,6 @@ import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JSlider;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerModel;
@@ -40,6 +39,7 @@ import org.soundpaint.rp2040pio.SwingUtils;
 
 public class ActionPanel
   extends org.soundpaint.rp2040pio.observer.ActionPanel<Diagram>
+  implements Constants
 {
   private static final long serialVersionUID = -4136799373128393432L;
   private static final int defaultCycles = 1;
@@ -47,10 +47,12 @@ public class ActionPanel
   private static final ImageIcon iconClear;
   private static final ImageIcon iconScript;
 
+  private /*final*/ JSpinner spCycles;
+
   static {
     try {
       iconEmulate = SwingUtils.createImageIcon("cycle16x16.png", "Emulate");
-      iconClear = SwingUtils.createImageIcon("trash16x16.png", "Clear View");
+      iconClear = SwingUtils.createImageIcon("trash16x16.png", "Clear");
       iconScript = SwingUtils.createImageIcon("floppy-blue16x16.png", "Load…");
     } catch (final IOException e) {
       final String message =
@@ -65,31 +67,25 @@ public class ActionPanel
     super(diagram);
   }
 
+  public int getCycles()
+  {
+    return (Integer)spCycles.getValue();
+  }
+
   @Override
   protected void addAdditionalButtons(final Diagram diagram)
   {
     addButtonLoad(diagram);
     add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
-    final JSpinner spCycles = addCyclesControl();
+    addCyclesControl();
     add(Box.createHorizontalStrut(5));
     final JButton btEmulate = new JButton(iconEmulate);
-    btEmulate.setToolTipText("Emulate");
+    btEmulate.setToolTipText(TOOLTIP_TEXT_EMULATE);
     add(btEmulate);
     add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
-    btEmulate.addActionListener((event) -> {
-        final int cycles = (Integer)spCycles.getValue();
-        try {
-          diagram.applyCycles(cycles);
-        } catch (final IOException e) {
-          final String title = "Emulation Failed";
-          final String message = "I/O error: " + e.getMessage();
-          JOptionPane.showMessageDialog(this, message, title,
-                                        JOptionPane.WARNING_MESSAGE);
-          diagram.clear();
-        }
-      });
+    btEmulate.addActionListener((event) -> diagram.applyCycles());
     addButtonClear(diagram);
     add(Box.createHorizontalStrut(15));
     add(Box.createHorizontalGlue());
@@ -101,34 +97,35 @@ public class ActionPanel
   private void addButtonLoad(final Diagram diagram)
   {
     final JButton btScript = new JButton(iconScript);
-    btScript.setToolTipText("Load…");
+    btScript.setToolTipText(TOOLTIP_TEXT_LOAD);
     btScript.addActionListener((event) -> { diagram.showScriptDialog(); });
     add(btScript);
   }
 
-  private JSpinner addCyclesControl()
+  private void addCyclesControl()
   {
     final JLabel lbCycles = new JLabel("Cycles");
     lbCycles.setDisplayedMnemonic(KeyEvent.VK_Y);
+    lbCycles.setToolTipText(TOOLTIP_TEXT_CYCLES);
     add(lbCycles);
     add(Box.createHorizontalStrut(5));
     final SpinnerModel cyclesModel =
       new SpinnerNumberModel(defaultCycles, 1, 999, 1);
-    final JSpinner spCycles = new JSpinner(cyclesModel);
+    spCycles = new JSpinner(cyclesModel);
     final JSpinner.DefaultEditor editor =
       (JSpinner.DefaultEditor)spCycles.getEditor();
     editor.getTextField().setColumns(3);
     final int spCyclesHeight = spCycles.getPreferredSize().height;
     spCycles.setMaximumSize(new Dimension(100, spCyclesHeight));
+    spCycles.setToolTipText(TOOLTIP_TEXT_CYCLES);
     lbCycles.setLabelFor(spCycles);
     add(spCycles);
-    return spCycles;
   }
 
   private void addButtonClear(final Diagram diagram)
   {
     final JButton btClear = new JButton(iconClear);
-    btClear.setToolTipText("Clear View");
+    btClear.setToolTipText(TOOLTIP_TEXT_CLEAR);
     btClear.addActionListener((event) -> diagram.clear());
     add(btClear);
   }
@@ -137,6 +134,7 @@ public class ActionPanel
   {
     final JLabel lbZoom = new JLabel("Zoom");
     lbZoom.setDisplayedMnemonic(KeyEvent.VK_Z);
+    lbZoom.setToolTipText(TOOLTIP_TEXT_ZOOM);
     add(lbZoom);
     add(Box.createHorizontalStrut(5));
     final JSlider slZoom =
@@ -148,6 +146,7 @@ public class ActionPanel
     slZoom.setLabelTable(slZoom.createStandardLabels(SignalPanel.ZOOM_MIN));
     slZoom.setPaintLabels(true);
     slZoom.addChangeListener((event) -> diagram.setZoom(slZoom.getValue()));
+    slZoom.setToolTipText(TOOLTIP_TEXT_ZOOM);
     add(slZoom);
   }
 }
