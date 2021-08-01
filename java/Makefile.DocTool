@@ -42,8 +42,13 @@ EXAMPLES_SRC=$(wildcard $(EXAMPLES_SRC_DIR)/*.hex) $(wildcard $(EXAMPLES_SRC_DIR
 EXAMPLES_OBJ=$(patsubst $(EXAMPLES_SRC_DIR)/%,$(EXAMPLES_OBJ_DIR)/%,$(EXAMPLES_SRC))
 
 JAR_OBJ=$(JAR_DIR)/rp2040pio_doctool.jar
+RST_DOC_OBJ = \
+	$(RST_DOC_DIR)/example-scripts.rst \
+	$(RST_DOC_DIR)/monitor-commands.rst \
+	$(RST_DOC_DIR)/pico-emu-registers.rst \
+	$(RST_DOC_DIR)/pio-emu-registers.rst
 
-all: obj jar
+all: obj jar doc
 
 obj: $(BUILD_DIR) $(JAVA_OBJ) \
 	$(MEDIA_OBJ_DIR) $(MEDIA_OBJ) \
@@ -66,10 +71,10 @@ $(JAR_DIR):
 $(RST_DOC_DIR):
 	mkdir -p $@
 
-jar: $(JAR_OBJ)
+jar: $(JAR_DIR) $(JAR_OBJ)
 
-$(JAR_OBJ): $(JAR_DIR) $(JAVA_OBJ)
-	cd $(BUILD_DIR); \
+$(JAR_OBJ): $(JAVA_OBJ)
+	cd $(BUILD_DIR) ; \
 	jar -0cvfm ../$(JAR_OBJ) ../$(JAVA_DIR)/META-INF/MANIFEST.MF.DocTool .
 
 $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%
@@ -83,7 +88,9 @@ $(EXAMPLES_OBJ_DIR)/%.mon: $(EXAMPLES_SRC_DIR)/%.mon
 
 depend:
 
-doc: all $(RST_DOC_DIR)
+doc: $(RST_DOC_DIR) $(JAR_OBJ) $(RST_DOC_OBJ)
+
+$(RST_DOC_OBJ): $(JAR_OBJ)
 	cd $(RST_DOC_DIR) ; java -jar $(JAR_OBJ)
 
 run: all

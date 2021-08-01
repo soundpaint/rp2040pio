@@ -32,7 +32,7 @@ all:
 	cd $(JAVA_DIR) ; make -f Makefile.GPIOObserver all
 	cd $(JAVA_DIR) ; make -f Makefile.CodeObserver all
 	cd $(JAVA_DIR) ; make -f Makefile.FifoObserver all
-	cd $(JAVA_DIR) ; make -f Makefile.DocTool doc
+	cd $(JAVA_DIR) ; make -f Makefile.DocTool all
 
 run: all
 	cd $(JAVA_DIR) ; make -f Makefile.Server run

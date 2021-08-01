@@ -63,10 +63,10 @@ $(EXAMPLES_OBJ_DIR):
 $(JAR_DIR):
 	mkdir -p $@
 
-jar: $(JAR_OBJ)
+jar: $(JAR_DIR) $(JAR_OBJ)
 
-$(JAR_OBJ): $(JAR_DIR) $(JAVA_OBJ)
-	cd $(BUILD_DIR); \
+$(JAR_OBJ): $(JAVA_OBJ)
+	cd $(BUILD_DIR) ; \
 	jar -0cvfm ../$(JAR_OBJ) ../$(JAVA_DIR)/META-INF/MANIFEST.MF.FifoObserver .
 
 $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%
