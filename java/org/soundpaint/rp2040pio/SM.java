@@ -688,6 +688,11 @@ public class SM implements Constants
 
   public int getISRShiftCount() { return status.isrShiftCount; }
 
+  public void setISRShiftCount(final int value)
+  {
+    status.isrShiftCount = value;
+  }
+
   public void setISRShiftCount(final int value, final int mask,
                                final boolean xor)
   {
@@ -708,6 +713,12 @@ public class SM implements Constants
   }
 
   public int getOSRShiftCount() { return status.osrShiftCount; }
+
+
+  public void setOSRShiftCount(final int value)
+  {
+    status.osrShiftCount = value;
+  }
 
   public void setOSRShiftCount(final int value, final int mask,
                                final boolean xor)

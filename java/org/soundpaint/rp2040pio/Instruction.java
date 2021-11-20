@@ -954,10 +954,12 @@ public abstract class Instruction
         }),
       ISR(0b110, "isr", (sm, data) -> {
           sm.setISRValue(data);
+          sm.setISRShiftCount(0);
           return null;
         }),
       OSR(0b111, "osr", (sm, data) -> {
           sm.setOSRValue(data);
+          sm.setOSRShiftCount(0);
           return null;
         });
 
