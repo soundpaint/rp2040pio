@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.IntConsumer;
+import java.util.function.Consumer;
 
 /**
  * Instruction
@@ -569,46 +569,56 @@ public abstract class Instruction
     private static final Map<Integer, Destination> code2dst =
       new HashMap<Integer, Destination>();
 
+    private class DestinationData {
+      public final int shiftOutBits;
+      public final int bitsToShift;
+      public DestinationData(int shiftOutBits, int bitsToShift) {
+        this.shiftOutBits = shiftOutBits;
+        this.bitsToShift = bitsToShift;
+      }
+    }
+
     public enum Destination
     {
       PINS(0b000, "pins", (sm, data) -> {
-          SM.IOMapping.OUT.collatePins(sm, data);
+          SM.IOMapping.OUT.collatePins(sm, data.shiftOutBits);
           return null;
         }),
       X(0b001, "x", (sm, data) -> {
-          sm.setX(data);
+          sm.setX(data.shiftOutBits);
           return null;
         }),
       Y(0b010, "y", (sm, data) -> {
-          sm.setY(data);
+          sm.setY(data.shiftOutBits);
           return null;
         }),
       NULL(0b011, "null", (sm, data) -> {
           return null;
         }),
       PINDIRS(0b100, "pindirs", (sm, data) -> {
-          SM.IOMapping.OUT.collatePinDirs(sm, data);
+          SM.IOMapping.OUT.collatePinDirs(sm, data.shiftOutBits);
           return null;
         }),
       PC(0b101, "pc", (sm, data) -> {
-          sm.setPC(data & 0x1f);
+          sm.setPC(data.shiftOutBits & 0x1f);
           return null;
         }),
       ISR(0b110, "isr", (sm, data) -> {
-          sm.setISRValue(data);
+          sm.setISRValue(data.shiftOutBits);
+          sm.setISRShiftCount(data.bitsToShift);
           return null;
         }),
       EXEC(0b111, "exec", (sm, data) -> {
-          sm.execInstruction(data);
+          sm.execInstruction(data.shiftOutBits);
           return null;
         });
 
       private final int code;
       private final String mnemonic;
-      private final BiFunction<SM, Integer, Void> eval;
+      private final BiFunction<SM, DestinationData, Void> eval;
 
       private Destination(final int code, final String mnemonic,
-                          final BiFunction<SM, Integer, Void> eval)
+                          final BiFunction<SM, DestinationData, Void> eval)
       {
         this.code = code;
         this.mnemonic = mnemonic;
@@ -616,7 +626,7 @@ public abstract class Instruction
         code2dst.put(code, this);
       }
 
-      public IntConsumer getConsumer(final SM sm)
+      public Consumer<DestinationData> getConsumer(final SM sm)
       {
         return (data) -> {
           eval.apply(sm, data);
@@ -691,7 +701,7 @@ public abstract class Instruction
       } else {
         shiftOutBits = smStatus.osrValue;
       }
-      dst.getConsumer(sm).accept(shiftOutBits);
+      dst.getConsumer(sm).accept(new DestinationData(shiftOutBits, bitsToShift));
     }
 
     private void shiftOsr(final SM sm, final SM.Status smStatus,
@@ -954,10 +964,12 @@ public abstract class Instruction
         }),
       ISR(0b110, "isr", (sm, data) -> {
           sm.setISRValue(data);
+          sm.setISRShiftCount(0);
           return null;
         }),
       OSR(0b111, "osr", (sm, data) -> {
           sm.setOSRValue(data);
+          sm.setOSRShiftCount(0);
           return null;
         });
 
